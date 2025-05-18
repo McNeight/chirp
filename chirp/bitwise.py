@@ -26,6 +26,8 @@
 #  ul24 foo;     /* Unsigned 24-bit value (LE)              */
 #  u32  foo;     /* Unsigned 32-bit value                   */
 #  ul32 foo;     /* Unsigned 32-bit value (LE)              */
+#  u64  foo;     /* Unsigned 64-bit value                   */
+#  ul64 foo;     /* Unsigned 64-bit value (LE)              */
 #  i8   foo;     /* Signed 8-bit value                      */
 #  i16  foo;     /* Signed 16-bit value                     */
 #  il16 foo;     /* Signed 16-bit value (LE)                */
@@ -612,6 +614,20 @@ class u32DataElement(intDataElement):
 class ul32DataElement(u32DataElement):
     _endianess = "<"
 
+class u64DataElement(intDataElement):
+    _size = 8
+    _endianess = ">"
+
+    def _get_value(self, data):
+        return struct.unpack(self._endianess + "Q", data)[0]
+
+    def set_value(self, value):
+        self._data[self._offset] = struct.pack(self._endianess + "Q",
+                                               int(value) & 0xFFFFFFFFFFFFFFFF)
+
+
+class ul64DataElement(u64DataElement):
+    _endianess = "<"
 
 class i8DataElement(u8DataElement):
     _size = 1
@@ -892,6 +908,8 @@ class Processor:
         "ul24":  ul24DataElement,
         "u32":   u32DataElement,
         "ul32":  ul32DataElement,
+        "u64":   u64DataElement,
+        "ul64":  ul64DataElement,
         "i8":    i8DataElement,
         "i16":   i16DataElement,
         "il16":  il16DataElement,

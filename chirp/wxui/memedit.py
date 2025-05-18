@@ -101,12 +101,69 @@ class ChirpMemoryGrid(wx.grid.Grid, glr.GridWithLabelRenderersMixin):
         wx.grid.Grid.__init__(self, *a, **k)
         self.SetColLabelSize(wx.grid.GRID_AUTOSIZE)
         glr.GridWithLabelRenderersMixin.__init__(self)
+        
+        # Add event handler for scrolling to update zone colors
+        self.Bind(wx.EVT_SCROLLWIN, self._on_scroll)
+        
+    def _on_scroll(self, event):
+        # Let the scroll happen first
+        event.Skip()
+        
+        # Schedule zone color update after scroll completes
+        wx.CallAfter(self._update_visible_zone_colors)
+        
+    def _update_visible_zone_colors(self):
+        """Update zone background colors for visible rows"""
+        # Get the visible row range
+        first_visible = self.GetFirstFullyVisibleRow()
+        visible_count = self.GetScrollPageSize(wx.VERTICAL)
+        
+        # Apply zone colors to all visible rows
+        for row in range(first_visible, first_visible + visible_count + 5):  # Add extra rows for smooth scrolling
+            if row >= self.GetNumberRows():
+                break
+                
+            # Try to find the memory in the cache to determine its zone
+            memedit = self.GetParent()
+            if hasattr(memedit, '_radio') and hasattr(memedit._radio, 'get_zone_configuration'):
+                try:
+                    if row in memedit._memory_cache:
+                        mem_num = memedit.row2mem(row)
+                        if isinstance(mem_num, int) and mem_num > 0:
+                            zone_count, chans_per_zone = memedit._radio.get_zone_configuration()
+                            zone_num = ((mem_num - 1) // chans_per_zone) + 1
+                            
+                            # Apply background color based on zone
+                            zone_colors = [
+                                '#F0F0FF',  # Very light blue
+                                '#F0FFF0',  # Very light green
+                                '#FFF0F0',  # Very light red
+                                '#F0FFF5',  # Very light cyan
+                                '#FFF0FF',  # Very light magenta
+                                '#FFFFF0',  # Very light yellow
+                                '#F5F5FF',  # Light lavender
+                                '#F5FFF5',  # Light mint
+                                '#FFF5F5',  # Light peach
+                                '#F5FFFF',  # Light azure
+                            ]
+                            color_index = (zone_num - 1) % len(zone_colors)
+                            bg_color = zone_colors[color_index]
+                            
+                            for col in range(self.GetNumberCols()):
+                                self.SetCellBackgroundColour(row, col, bg_color)
+                except Exception:
+                    # Ignore any errors during background coloring
+                    pass
 
 
 class ChirpRowLabelRenderer(glr.GridDefaultRowLabelRenderer):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self.bgcolor = None
+        self.memedit = None  # Reference to ChirpMemEdit for row/mem conversion
+        
+    def set_memedit(self, memedit):
+        self.memedit = memedit
 
     def set_error(self):
         self.bgcolor = '#FF0000'
@@ -118,6 +175,58 @@ class ChirpRowLabelRenderer(glr.GridDefaultRowLabelRenderer):
         self.bgcolor = None
 
     def Draw(self, grid, dc, rect, row):
+        # Check for zone boundaries if applicable
+        if self.memedit and hasattr(self.memedit._radio, 'get_zone_configuration'):
+            try:
+                zone_count, chans_per_zone = self.memedit._radio.get_zone_configuration()
+                mem_num = self.memedit.row2mem(row)
+                
+                if isinstance(mem_num, int):
+                    # Calculate which zone this memory belongs to
+                    if mem_num > 0:
+                        zone_num = ((mem_num - 1) // chans_per_zone) + 1
+                        
+                        # Set the background color for all cells in this row based on zone
+                        # Use a palette of 10 different colors that cycle
+                        zone_colors = [
+                            '#F0F0FF',  # Very light blue
+                            '#F0FFF0',  # Very light green
+                            '#FFF0F0',  # Very light red
+                            '#F0FFF5',  # Very light cyan
+                            '#FFF0FF',  # Very light magenta
+                            '#FFFFF0',  # Very light yellow
+                            '#F5F5FF',  # Light lavender
+                            '#F5FFF5',  # Light mint
+                            '#FFF5F5',  # Light peach
+                            '#F5FFFF',  # Light azure
+                        ]
+                        color_index = (zone_num - 1) % len(zone_colors)
+                        bg_color = zone_colors[color_index]
+                        
+                        # Set cell background colors for the entire row
+                        cols = grid.GetNumberCols()
+                        for col in range(cols):
+                            grid.SetCellBackgroundColour(row, col, bg_color)
+                        
+                        # If this is the first row of a zone, draw a separator line
+                        if mem_num % chans_per_zone == 1 and mem_num > 1:
+                            # Draw separator in the row label area
+                            zone_separator_rect = wx.Rect(rect.x, rect.y-2, rect.width, 3)
+                            dc.SetPen(wx.Pen(wx.Colour(0, 0, 150), 1))
+                            dc.SetBrush(wx.Brush(wx.Colour(180, 180, 230)))
+                            dc.DrawRectangle(zone_separator_rect)
+                            
+                            # Also add a small zone number label in the row header
+                            dc.SetTextForeground(wx.Colour(0, 0, 150))
+                            dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+                            text = f"Z{zone_num}"
+                            text_width = dc.GetTextExtent(text)[0]
+                            dc.DrawText(text, rect.x + (rect.width - text_width)/2, rect.y - 12)
+            except Exception as e:
+                # Silently ignore errors trying to draw zone boundaries
+                pass
+                
+        # Draw the standard row label
         if self.bgcolor:
             dc.SetBrush(wx.Brush(self.bgcolor))
             dc.SetPen(wx.TRANSPARENT_PEN)
@@ -126,8 +235,7 @@ class ChirpRowLabelRenderer(glr.GridDefaultRowLabelRenderer):
         text = grid.GetRowLabelValue(row)
         self.DrawBorder(grid, dc, rect)
         self.DrawText(grid, dc, rect, text, hAlign, vAlign)
-
-
+      
 DEFAULT_COLUMN_HELP = {
     'freq': _('Receive frequency'),
     'name': _('Memory label (stored in radio)'),
@@ -1647,7 +1755,9 @@ class ChirpMemEdit(common.ChirpEditor, common.ChirpSyncEditor):
         # indicate success or failure
         self._row_label_renderers = []
         for row in range(0, self._grid.GetNumberRows()):
-            self._row_label_renderers.append(ChirpRowLabelRenderer())
+            renderer = ChirpRowLabelRenderer()
+            renderer.set_memedit(self)  # Set reference to this editor
+            self._row_label_renderers.append(renderer)
             self._grid.SetRowLabelRenderer(row, self._row_label_renderers[-1])
 
         row = 0

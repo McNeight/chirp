@@ -5,6 +5,7 @@
 **.rej
 dist
 build/bdist
+build/
 tools/cpep8.venv/
 tests/logs/
 logs/

@@ -3996,6 +3996,10 @@ class QB25(chirp_common.Alias):
     VENDOR = "Radioddity"
     MODEL = "QB25"
 
+# Declaring Aliases (Clones of the real radios)
+class DB25(chirp_common.Alias):
+    VENDOR = "Radioddity"
+    MODEL = "DB25"
 
 # real radios
 @directory.register
@@ -4100,7 +4104,7 @@ class KT8900D(BTechColor):
                KT8900D_fp]
 
     # Clones
-    ALIASES = [OTGRadioV1]
+    ALIASES = [OTGRadioV1, DB25]
 
 
 @directory.register
