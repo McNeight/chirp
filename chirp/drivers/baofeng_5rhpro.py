@@ -2803,11 +2803,9 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
 
             elif objname == "dtmf":
                 obj = _dtmf
-                # [... existing DTMF handling ...]
 
             elif objname == "scan":
                 obj = _scan
-                # [... existing scan handling ...]
 
             elif objname.startswith("zone_"):
                 # Zone names are handled by apply_callback
