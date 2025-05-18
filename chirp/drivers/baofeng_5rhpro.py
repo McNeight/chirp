@@ -1713,19 +1713,203 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
         _dtmf = self._memobj.DtmfSysInfo
         _zones = self._memobj.zones
         _scan = self._memobj.scandata
+        _vfos = self._memobj.vfo  # Access VFO structures
 
         # Create setting groups
+        
         normal = RadioSettingGroup("normal", "Normal Settings")
         more = RadioSettingGroup("more", "More Settings")
-        dtmf = RadioSettingGroup("dtmf", "DTMF Settings")
+        vfo_group = RadioSettingGroup("vfo", "VFO")  # Add new VFO group
         scan = RadioSettingGroup("scan", "Scan Settings")
+        dtmf = RadioSettingGroup("dtmf", "DTMF Settings")
         zones_group = RadioSettingGroup("zones", "Zone Management")
         bluetooth = RadioSettingGroup("bluetooth", "Bluetooth Settings")
 
         # Main settings container
-        group = RadioSettings(normal, more, dtmf, scan, 
-                             zones_group, bluetooth)
+        group = RadioSettings(normal, more, vfo_group, zones_group, bluetooth)
 
+        # Create sub-groups for VFO A and VFO B
+        vfo_a = RadioSettingGroup("vfo_a", "VFO A")
+        vfo_b = RadioSettingGroup("vfo_b", "VFO B")
+        vfo_group.append(vfo_a)
+        vfo_group.append(vfo_b)
+
+        # Define all the options we'll need
+        freq_step_options = ["2.5K", "5.0K", "6.25K", "8.33K", "10.0K", "12.5K", "20.0K", "25.0K", "30.0K", "50.0K", "100.0K"]
+        freq_diff_dir_options = ["None", "+", "-"]
+        bandwidth_options = ["12.5kHz", "25kHz"]
+        power_options = ["Low", "Mid", "High"]
+        signaling_options = ["None", "DTMF", "2Tone", "5Tone", "MDC", "BIS", "APRS"]
+        ptt_id_options = ["OFF", "BOT", "EOT", "BOTH"]
+        squelch_options = ["None", "CTDCS", "Optional", "CTDCS and Optional"]
+        onoff_options = ["OFF", "ON"]
+        emergency_options = ["None"] + [str(i) for i in range(1, 11)]
+
+        # Build CTCSS/DCS options list
+        tone_options = ["None"]
+        # Add CTCSS tones
+        for tone in chirp_common.TONES:
+            tone_options.append(f"{tone:.1f}Hz")
+        # Add DCS codes
+        for code in chirp_common.DTCS_CODES:
+            tone_options.append(f"D{code}N")
+            tone_options.append(f"D{code}I")
+
+        # Configure both VFOs
+        for vfo_idx, vfo_panel in enumerate([vfo_a, vfo_b]):
+            vfo = _vfos[vfo_idx]
+            vfo_name = "A" if vfo_idx == 0 else "B"
+
+            # RX Frequency
+            rx_freq = self._bcd_decode_freq(int(vfo.rx_freq)) / 1000000.0
+            rs = RadioSetting(f"vfo{vfo_idx}.rx_freq", f"RX Frequency [MHz]",
+                             RadioSettingValueFloat(0, 999.999999, rx_freq, 6, 6))
+            vfo_panel.append(rs)
+
+            # TX Frequency
+            tx_freq = self._bcd_decode_freq(int(vfo.tx_freq)) / 1000000.0
+            rs = RadioSetting(f"vfo{vfo_idx}.tx_freq", f"TX Frequency [MHz]",
+                             RadioSettingValueFloat(0, 999.999999, tx_freq, 6, 6))
+            vfo_panel.append(rs)
+
+            # Frequency Difference Direction
+            offsetdir_idx = min(vfo.offsetdir, len(freq_diff_dir_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.offsetdir", f"Freq Diff Direction",
+                             RadioSettingValueList(freq_diff_dir_options, current_index=offsetdir_idx))
+            vfo_panel.append(rs)
+
+            # Frequency Difference (calculated from rx and tx)
+            if vfo.offsetdir == 0 or tx_freq == 0:
+                freq_diff = 0
+            else:
+                freq_diff = abs(rx_freq - tx_freq)
+
+            rs = RadioSetting(f"vfo{vfo_idx}.freq_diff", f"Frequency Difference [MHz]",
+                             RadioSettingValueFloat(0, 999.999999, freq_diff, 6, 6))
+            vfo_panel.append(rs)
+
+            # Step
+            step_idx = min(vfo.freq_step, len(freq_step_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.freq_step", f"Step [kHz]",
+                             RadioSettingValueList(freq_step_options, current_index=step_idx))
+            vfo_panel.append(rs)
+
+            # CTCSS/DCS Decode
+            rx_mode, rx_tone, rx_pol = self._decode_tone(vfo.rx_ctcss_dcs_h, vfo.rx_ctcss_dcs_l)
+            rx_tone_str = "None"
+            if rx_mode == "Tone":
+                rx_tone_str = f"{rx_tone:.1f}Hz"
+            elif rx_mode == "DTCS":
+                rx_tone_str = f"D{rx_tone}{'I' if rx_pol == 'I' else 'N'}"
+
+            idx = 0
+            if rx_tone_str in tone_options:
+                idx = tone_options.index(rx_tone_str)
+
+            rs = RadioSetting(f"vfo{vfo_idx}.rx_tone", f"CTCSS/DCS Dec",
+                             RadioSettingValueList(tone_options, current_index=idx))
+            vfo_panel.append(rs)
+
+            # CTCSS/DCS Encode
+            tx_mode, tx_tone, tx_pol = self._decode_tone(vfo.tx_ctcss_dcs_h, vfo.tx_ctcss_dcs_l)
+            tx_tone_str = "None"
+            if tx_mode == "Tone":
+                tx_tone_str = f"{tx_tone:.1f}Hz"
+            elif tx_mode == "DTCS":
+                tx_tone_str = f"D{tx_tone}{'I' if tx_pol == 'I' else 'N'}"
+
+            idx = 0
+            if tx_tone_str in tone_options:
+                idx = tone_options.index(tx_tone_str)
+
+            rs = RadioSetting(f"vfo{vfo_idx}.tx_tone", f"CTCSS/DCS Enc",
+                             RadioSettingValueList(tone_options, current_index=idx))
+            vfo_panel.append(rs)
+
+            # Bandwidth
+            bandwidth_idx = 1 if vfo.wideth == 1 else 0  # 0=narrow(12.5kHz), 1=wide(25kHz)
+            rs = RadioSetting(f"vfo{vfo_idx}.wideth", f"Bandwidth",
+                             RadioSettingValueList(bandwidth_options, current_index=bandwidth_idx))
+            vfo_panel.append(rs)
+
+            # Power
+            power_idx = min(vfo.power, 2)
+            rs = RadioSetting(f"vfo{vfo_idx}.power", f"Power",
+                             RadioSettingValueList(power_options, current_index=power_idx))
+            vfo_panel.append(rs)
+
+            # Optional Signaling
+            signal_idx = min(vfo.signaltype, len(signaling_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.signaltype", f"Optional Signaling",
+                             RadioSettingValueList(signaling_options, current_index=signal_idx))
+            vfo_panel.append(rs)
+
+            # DTMF Index
+            rs = RadioSetting(f"vfo{vfo_idx}.dtmf_idx", f"DTMF Index Number",
+                             RadioSettingValueInteger(0, 15, vfo.dtmf_idx))
+            vfo_panel.append(rs)
+
+            # 2-Tone Index
+            rs = RadioSetting(f"vfo{vfo_idx}.twotone_idx", f"2-Tone Index Number",
+                             RadioSettingValueInteger(0, 15, vfo.twotone_idx))
+            vfo_panel.append(rs)
+
+            # 5-Tone Index
+            rs = RadioSetting(f"vfo{vfo_idx}.fivetone_idx", f"5-Tone Index Number",
+                             RadioSettingValueInteger(0, 103, vfo.fivetone_idx))
+            vfo_panel.append(rs)
+
+            # MDC Index
+            rs = RadioSetting(f"vfo{vfo_idx}.mdc_idx", f"MDC Index Number",
+                             RadioSettingValueInteger(0, 99, vfo.mdc_idx))
+            vfo_panel.append(rs)
+
+            # DTMF PTT ID
+            dtmf_ptt_idx = min(vfo.dtmfptt, len(ptt_id_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.dtmfptt", f"DTMF PTT ID",
+                             RadioSettingValueList(ptt_id_options, current_index=dtmf_ptt_idx))
+            vfo_panel.append(rs)
+
+            # 5-Tone PTT ID
+            fivetone_ptt_idx = min(vfo.fivetoneptt, len(ptt_id_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.fivetoneptt", f"5-Tone PTT ID",
+                             RadioSettingValueList(ptt_id_options, current_index=fivetone_ptt_idx))
+            vfo_panel.append(rs)
+
+            # Talkaround
+            rs = RadioSetting(f"vfo{vfo_idx}.talkaround", f"Talkaround",
+                             RadioSettingValueList(onoff_options, current_index=vfo.talkaround))
+            vfo_panel.append(rs)
+
+            # Squelch
+            sqtype_idx = min(vfo.sqtype, len(squelch_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.sqtype", f"Squelch",
+                             RadioSettingValueList(squelch_options, current_index=sqtype_idx))
+            vfo_panel.append(rs)
+
+            # Emergency System
+            emerglist_val = vfo.emerglist if 0 <= vfo.emerglist <= MAX_EMERG_SYS_NUM else 0
+            rs = RadioSetting(f"vfo{vfo_idx}.emerglist", f"Emergency System",
+                             RadioSettingValueList(emergency_options, current_index=emerglist_val))
+            vfo_panel.append(rs)
+
+            # Launch Banned (TX Disable)
+            txdis_idx = 1 if vfo.txdis else 0
+            rs = RadioSetting(f"vfo{vfo_idx}.txdis", f"Launch Banned",
+                             RadioSettingValueList(onoff_options, current_index=txdis_idx))
+            vfo_panel.append(rs)
+
+            # Jump Frequency
+            jumpfreq_idx = min(vfo.jumpfreq, len(onoff_options) - 1)
+            rs = RadioSetting(f"vfo{vfo_idx}.jumpfreq", f"JumpFreq",
+                             RadioSettingValueList(onoff_options, current_index=jumpfreq_idx))
+            vfo_panel.append(rs)
+
+            # Inverted Frequency
+            freqinvert_idx = 1 if vfo.freqinvert else 0
+            rs = RadioSetting(f"vfo{vfo_idx}.freqinvert", f"Inverted Freq.",
+                             RadioSettingValueList(onoff_options, current_index=freqinvert_idx))
+            vfo_panel.append(rs)
         # Normal Settings
         # Band A Work Mode
         rs = RadioSetting("ch_a_mode", "Band A Work Mode",
@@ -2472,6 +2656,7 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
         _dtmf = self._memobj.DtmfSysInfo
         _zones = self._memobj.zones
         _scan = self._memobj.scandata
+        _vfos = self._memobj.vfo  # Access VFO structures
 
         # Process each setting group
         for element in settings:
@@ -2492,15 +2677,142 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
             # Extract object and setting names
             objname, setting = self._extract_setting_name(element.get_name())
 
-            # Select the appropriate object to modify
-            obj = None
-            if objname == "dtmf":
+            # Handle VFO settings
+            if objname.startswith("vfo"):
+                vfo_idx = int(objname[3:])
+                vfo = _vfos[vfo_idx]
+
+                if setting == "rx_freq":
+                    # Convert MHz to Hz and encode as BCD
+                    freq_mhz = float(element.value)
+                    freq_hz = int(freq_mhz * 1000000)
+                    vfo.rx_freq = self._bcd_encode_freq(freq_hz)
+
+                elif setting == "tx_freq":
+                    # Convert MHz to Hz and encode as BCD
+                    freq_mhz = float(element.value)
+                    freq_hz = int(freq_mhz * 1000000)
+                    vfo.tx_freq = self._bcd_encode_freq(freq_hz)
+
+                elif setting == "offsetdir":
+                    # 0=None, 1=+, 2=-
+                    options = ["None", "+", "-"]
+                    idx = options.index(str(element.value))
+                    vfo.offsetdir = idx
+
+                elif setting == "freq_diff":
+                    # This is handled by rx_freq, tx_freq and offsetdir
+                    continue
+
+                elif setting == "freq_step":
+                    # Convert step from string to index
+                    steps = ["2.5K", "5.0K", "6.25K", "8.33K", "10.0K", "12.5K", 
+                            "20.0K", "25.0K", "30.0K", "50.0K", "100.0K"]
+                    idx = steps.index(str(element.value))
+                    vfo.freq_step = idx
+
+                elif setting == "rx_tone":
+                    # Handle CTCSS/DCS decode tone
+                    tone_val = str(element.value)
+                    if tone_val == "None":
+                        vfo.rx_ctcss_dcs_h = 0
+                        vfo.rx_ctcss_dcs_l = 0
+                    elif tone_val.endswith("Hz"):
+                        # CTCSS tone
+                        tone = float(tone_val.replace("Hz", ""))
+                        h, l = self._encode_tone("Tone", tone)
+                        vfo.rx_ctcss_dcs_h = h
+                        vfo.rx_ctcss_dcs_l = l
+                    elif tone_val.startswith("D"):
+                        # DCS code - extract code and polarity
+                        code = int(tone_val[1:-1])
+                        pol = "I" if tone_val.endswith("I") else "N"
+                        h, l = self._encode_tone("DTCS", code, pol)
+                        vfo.rx_ctcss_dcs_h = h
+                        vfo.rx_ctcss_dcs_l = l
+
+                elif setting == "tx_tone":
+                    # Handle CTCSS/DCS encode tone
+                    tone_val = str(element.value)
+                    if tone_val == "None":
+                        vfo.tx_ctcss_dcs_h = 0
+                        vfo.tx_ctcss_dcs_l = 0
+                    elif tone_val.endswith("Hz"):
+                        # CTCSS tone
+                        tone = float(tone_val.replace("Hz", ""))
+                        h, l = self._encode_tone("Tone", tone)
+                        vfo.tx_ctcss_dcs_h = h
+                        vfo.tx_ctcss_dcs_l = l
+                    elif tone_val.startswith("D"):
+                        # DCS code - extract code and polarity
+                        code = int(tone_val[1:-1])
+                        pol = "I" if tone_val.endswith("I") else "N"
+                        h, l = self._encode_tone("DTCS", code, pol)
+                        vfo.tx_ctcss_dcs_h = h
+                        vfo.tx_ctcss_dcs_l = l
+
+                elif setting == "wideth":
+                    # 0=12.5kHz, 1=25kHz
+                    vfo.wideth = 1 if str(element.value) == "25kHz" else 0
+
+                elif setting == "power":
+                    # 0=Low, 1=Mid, 2=High
+                    power_options = ["Low", "Mid", "High"]
+                    vfo.power = power_options.index(str(element.value))
+
+                elif setting == "signaltype":
+                    # Signal type options
+                    signal_options = ["None", "DTMF", "2Tone", "5Tone", "MDC", "BIS", "APRS"]
+                    vfo.signaltype = signal_options.index(str(element.value))
+
+                elif setting in ("dtmf_idx", "twotone_idx", "fivetone_idx", "mdc_idx"):
+                    # Direct integer assignments
+                    setattr(vfo, setting, int(element.value))
+
+                elif setting == "dtmfptt" or setting == "fivetoneptt":
+                    # 0=OFF, 1=BOT, 2=EOT, 3=BOTH
+                    ptt_options = ["OFF", "BOT", "EOT", "BOTH"]
+                    setattr(vfo, setting, ptt_options.index(str(element.value)))
+
+                elif setting == "talkaround":
+                    # ON/OFF boolean
+                    vfo.talkaround = 1 if str(element.value) == "ON" else 0
+
+                elif setting == "sqtype":
+                    # Squelch type options
+                    sq_options = ["None", "CTDCS", "Optional", "CTDCS and Optional"]
+                    vfo.sqtype = sq_options.index(str(element.value))
+
+                elif setting == "emerglist":
+                    # Emergency system options
+                    emerg_options = ["None"] + [str(i) for i in range(1, 11)]
+                    vfo.emerglist = emerg_options.index(str(element.value))
+
+                elif setting == "txdis":
+                    # Transmit disable (Launch Banned)
+                    vfo.txdis = 1 if str(element.value) == "ON" else 0
+
+                elif setting == "jumpfreq":
+                    # Jump frequency options
+                    jumpfreq_options = ["OFF", "ON"]
+                    vfo.jumpfreq = jumpfreq_options.index(str(element.value))
+
+                elif setting == "freqinvert":
+                    # Frequency inversion
+                    vfo.freqinvert = 1 if str(element.value) == "ON" else 0
+
+            elif objname == "dtmf":
                 obj = _dtmf
+                # [... existing DTMF handling ...]
+
             elif objname == "scan":
                 obj = _scan
+                # [... existing scan handling ...]
+
             elif objname.startswith("zone_"):
                 # Zone names are handled by apply_callback
                 continue
+
             else:
                 obj = _settings
 
