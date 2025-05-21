@@ -817,7 +817,7 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
     """Baofeng 5RHPRO"""
     VENDOR = "Baofeng"
     MODEL = "5RHPRO"
-    BAUD_RATE = 19200
+    BAUD_RATE = 115200
     NEEDS_COMPAT_SERIAL = False
     
     def get_features(self):
