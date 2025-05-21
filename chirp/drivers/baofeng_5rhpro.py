@@ -1726,7 +1726,7 @@ class BF5RHPRORadio(chirp_common.CloneModeRadio):
         bluetooth = RadioSettingGroup("bluetooth", "Bluetooth Settings")
 
         # Main settings container
-        group = RadioSettings(normal, more, vfo_group, zones_group, bluetooth)
+        group = RadioSettings(normal, more, vfo_group, scan, dtmf, zones_group, bluetooth)
 
         # Create sub-groups for VFO A and VFO B
         vfo_a = RadioSettingGroup("vfo_a", "VFO A")
