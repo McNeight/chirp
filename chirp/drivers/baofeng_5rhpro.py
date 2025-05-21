@@ -762,22 +762,42 @@ struct {
 
 #seekto 0x9E00;
 struct {
-    char SrcNo[6];           // Source number
-    u8 SrcID;                // Source ID
-    u8 reserved1;            // Reserved
-    char DesNo[6];           // Destination number
-    u8 DesID;                // Destination ID
-    u8 reserved2;            // Reserved
+    char DesNo[6];           // Destination callsign
+    u8 DesID;                // Destination SSID
+    u8 PacketFlags;          // Packet flags bitfield (passall:1,position:1,mice:1,object:1,item:1,message:1,wxreport:1,nmeareport:1)
+    char SrcNo[6];           // Source callsign
+    u8 SrcID;                // Source SSID
+    u8 StatusFlags;          // Status flags (statusreport:1,other:1,power:2,band:1,beeptone:1,longdir:1,latdir:1)
     u8 PreTime;              // Pre time
     u8 CodeDly;              // Code delay
-    u8 reserved3[6];         // Reserved
+    u8 CtdcsH;               // CTCSS/DCS high byte
+    u8 CtdcsL;               // CTCSS/DCS low byte
+    char PositionTable;      // Position symbol table
+    char PositionIcon;       // Position symbol icon
+    u8 RxCallsignNum;        // RX callsign number
     u8 CallSignTotal;        // Call sign total
-    u8 reserved4[7];         // Reserved
     struct {
-        char CallSignNo[6];  // Call sign number
-        u8 CallSignID;       // Call sign ID
+        char CallSign[6];    // Callsign
+        u8 ID;               // ID
         u8 reserved;         // Reserved
     } CallSigns[8];          // Call signs (8 entries)
+    u8 SendInterval;         // Send interval
+    u8 RegularlySend;        // Regularly send
+    u8 AprsDisplayTime;      // APRS display time
+    u8 reserved1;            // Reserved
+    u8 ConfigFlags;          // Config flags (mice_type:3,ptt_id:2,height_type:1,beacon:1,reserved2:1)
+    u8 reserved3[2];         // Reserved
+    u8 TxtLength;            // Text length
+    i32 Longitude;           // Longitude (scaled by 100000)
+    i32 Latitude;            // Latitude (scaled by 100000)
+    i32 Height;              // Height
+    char Text[60];           // Text message
+    u32 Freq[8];             // Frequencies (8 frequencies)
+    struct {
+        char CallSign[6];    // Callsign
+        u8 ID;               // ID
+        u8 Filter;           // Filter
+    } RxCallSigns[32];       // RX callsigns (32 entries)
 } AprsSet;                   // APRS settings
 
 #seekto 0xA000;
