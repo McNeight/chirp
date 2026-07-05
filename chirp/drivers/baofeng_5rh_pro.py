@@ -349,7 +349,7 @@ def _encode_name(text, maxbytes=16):
         encoded = text.encode('ascii', errors='replace')[:maxbytes]
     if not encoded:
         return b'\x00' * maxbytes
-    return encoded.ljust(maxbytes, b'\xFF')
+    return encoded.ljust(maxbytes, b'\x00')
 
 
 # ── DTMF character helpers ──────────────────────────────────────────────
