@@ -870,6 +870,7 @@ class BaofengUV5RMPlusGPS(chirp_common.CloneModeRadio):
             raise errors.RadioError(
                 'Unexpected error communicating with radio')
         self._mmap = memmap.MemoryMapBytes(data)
+        self.process_mmap()
         self._model = model
 
     def sync_out(self):
