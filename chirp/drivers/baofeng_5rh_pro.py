@@ -57,10 +57,8 @@ MEM_FORMAT = """
 struct {
     lbcd rxfreq[4];
     lbcd txfreq[4];
-    u8 rxtone_hi;
-    u8 rxtone_lo;
-    u8 txtone_hi;
-    u8 txtone_lo;
+    ul16 rxtone;
+    ul16 txtone;
     u8 unknown_c[4];
     u8 power:2,
        narrow:2,
@@ -987,6 +985,9 @@ class BaofengUV5RMPlusGPS(chirp_common.CloneModeRadio):
     VALID_CHARS = _CHARSET
     LENGTH_NAME = 8
 
+    _tone_model = kenwood_tone.KenwoodToneModel(
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._boot_image_path = ""
@@ -1145,11 +1146,7 @@ class BaofengUV5RMPlusGPS(chirp_common.CloneModeRadio):
                     mem.offset = abs(diff)
 
         # Tones
-        tx_mode, tx_val, tx_pol = _decode_tone(_mem.txtone_hi, _mem.txtone_lo)
-        rx_mode, rx_val, rx_pol = _decode_tone(_mem.rxtone_hi, _mem.rxtone_lo)
-        chirp_common.split_tone_decode(
-            mem, (tx_mode, tx_val, tx_pol), (rx_mode, rx_val, rx_pol)
-        )
+        self._tone_model.get_tone(_mem, mem)
 
         # Byte 16 fields via bitwise struct
         mem.power = self.POWER_LEVELS[min(int(_mem.power), 2)]
@@ -1279,11 +1276,7 @@ class BaofengUV5RMPlusGPS(chirp_common.CloneModeRadio):
             _mem.txfreq = mem.freq // 10
 
         # Tones
-        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
-            chirp_common.split_tone_encode(mem)
-        )
-        _mem.txtone_hi, _mem.txtone_lo = _encode_tone(txmode, txtone, txpol)
-        _mem.rxtone_hi, _mem.rxtone_lo = _encode_tone(rxmode, rxtone, rxpol)
+        self._tone_model.set_tone(mem, _mem)
 
         # Bit-packed fields (byte 16)
         _offsetdir_map = {"": 0, "+": 1, "-": 2, "split": 3, "off": 0}
