@@ -1,3 +1,5 @@
+# Copyright 2024 Campbell Reed
+# Copyright 2025 Mike Iacovacci <ascendr@linuxmail.org>
 # Copyright 2026 Dan <dannjb@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -23,10 +25,15 @@ from chirp import bitwise
 from chirp import chirp_common
 from chirp import directory
 from chirp import errors
+from chirp import kenwood_tone
 from chirp import memmap
 from chirp.settings import (
-    RadioSettings, RadioSettingGroup, RadioSetting,
-    RadioSettingValueList, RadioSettingValueBoolean, RadioSettingValueString,
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettings,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
 )
 
 LOG = logging.getLogger(__name__)
@@ -56,8 +63,10 @@ ZONE_TOTAL_OFF = 31360
 ZONE_BASE = 31376
 ZONE_SIZE = 152
 ZONE_MAX = 10
-ZONE_CHN_MAX = 64       # firmware limit (FormMain.cs:383); 10 * 64 = 640 channels
-ZONE_NAME_OFF = 136     # 64 IDs occupy bytes 2..129; 130..135 unused; name 136..151
+# firmware limit (FormMain.cs:383); 10 * 64 = 640 channels
+ZONE_CHN_MAX = 64
+# 64 IDs occupy bytes 2..129; 130..135 unused; name 136..151
+ZONE_NAME_OFF = 136
 
 TONES = chirp_common.TONES
 DTCS = chirp_common.ALL_DTCS_CODES
@@ -97,11 +106,14 @@ VOICE_LIST = ["OFF", "Chinese", "English"]
 ENDTONE_LIST = ["OFF", "Mode 1", "Mode 2", "Mode 3"]
 HZ1750_LIST = ["1000Hz", "1450Hz", "1750Hz", "2100Hz"]
 TAIL_LIST = ["OFF", "55Hz", "120deg", "180deg", "240deg"]
-BLIGHTLV_LIST = [str(i) for i in range(1, 6)]        # 1..5
+# 1..5
+BLIGHTLV_LIST = [str(i) for i in range(1, 6)]
 # Special transforms (byte != index):
 VOXLV_LIST = [str(i) for i in range(1, 10)]          # byte == int(label)
-VOXDLY_LIST = ["%.1f" % (1.0 + 0.5 * i) for i in range(19)]  # byte == val*10
-BLIGHTTIME_LIST = ["Always"] + [str(i) for i in range(5, 31)]  # byte: <5 == Always
+# byte == val*10
+VOXDLY_LIST = ["%.1f" % (1.0 + 0.5 * i) for i in range(19)]
+# byte: <5 == Always
+BLIGHTTIME_LIST = ["Always"] + [str(i) for i in range(5, 31)]
 
 # key == settings struct field, value == option list (stored byte == index)
 _INDEX_SETTINGS = [
@@ -131,84 +143,6 @@ _BOOL_SETTINGS = [
     ("dispdir", "Display direction"),
     ("enhance", "Enhanced function"),
 ]
-
-
-def _freq_bcd_to_hz(raw):
-    """Convert BCD-in-hex frequency to Hz.
-
-    Raw value when parsed as hex string and interpreted as decimal gives MHz*100000.
-    Example: 0x43781000 -> hex_str="43781000" -> dec=43781000 -> "437.81000" MHz -> 437810000 Hz
-    """
-    if raw == 0 or raw == 0xFFFFFFFF:
-        return 0
-
-    # Convert to hex string, then parse as decimal
-    hex_str = f"{raw:08X}"
-    try:
-        dec = int(hex_str)  # Parse hex digits as decimal
-        # Format as MHz: first 3 chars, decimal point, remaining chars
-        mhz_str = f"{dec:08d}"[:3] + "." + f"{dec:08d}"[3:]
-        mhz = float(mhz_str)
-        return int(mhz * 1000000)  # Convert MHz to Hz
-    except ValueError:
-        return 0
-
-
-def _freq_hz_to_bcd(freq_hz):
-    """Convert Hz to BCD-in-hex frequency value.
-
-    Reverse of _freq_bcd_to_hz, matching CPS FreqToData (DataProtocol.cs:1484):
-    strip the decimal point and parse the digit string as hex. Done with
-    integer math (freq_hz // 10 == MHz*100000) to avoid float rounding.
-    """
-    if not freq_hz:
-        return 0
-    dec = freq_hz // 10  # MHz * 100000, e.g. 437810000 -> 43781000
-    return int("%08d" % dec, 16)
-
-
-def _decode_tone(dath, datl):
-    """Decode a 2-byte sub-audio field into a (mode, value, polarity) spec.
-
-    Mirrors CPS SubVoiceConvert (DataProtocol.cs:630). The stored 16-bit value
-    is BCD-in-hex: its hex digits read as decimal give the CTCSS freq*10 or the
-    DCS code. Returns specs compatible with chirp_common.split_tone_decode:
-        (None, None, None)        - off
-        ("Tone", 123.0, None)     - CTCSS
-        ("DTCS", 23, "N"/"R")     - DCS normal/inverted
-    """
-    dath = int(dath)
-    datl = int(datl)
-    if dath & 0x80:
-        # DCS
-        if dath == 0xFF:
-            return (None, None, None)
-        pol = "R" if (dath & 0xC0) == 0xC0 else "N"
-        val = ((dath & 0x07) << 8) | datl
-        code = int("%X" % val)  # hex digits as decimal: 0x023 -> 23
-        return ("DTCS", code, pol)
-    if dath == 0:
-        return (None, None, None)
-    val = (dath << 8) | datl
-    freq = int("%X" % val)  # hex digits as decimal: 0x1000 -> 1000
-    return ("Tone", freq / 10.0, None)
-
-
-def _encode_tone(spec):
-    """Encode a (mode, value, polarity) spec into 2 bytes (datH, datL).
-
-    Reverse of _decode_tone, matching CPS SubAudioToData (DataProtocol.cs:1505).
-    """
-    mode, val, pol = spec
-    if mode == "Tone":
-        raw = int("%d" % int(round(val * 10)), 16)  # 100.0 -> 1000 -> 0x1000
-        return (raw >> 8) & 0xFF, raw & 0xFF
-    if mode == "DTCS":
-        raw = int("%d" % val, 16)  # 23 -> 0x023
-        high = (raw >> 8) & 0x07
-        high |= 0xC0 if pol == "R" else 0x80
-        return high, raw & 0xFF
-    return 0x00, 0x00
 
 
 # ============================================================================
@@ -287,8 +221,10 @@ def _handshake(radio, is_write=False):
     time.sleep(0.1)
     if port.in_waiting > 0:
         model_data = port.read(min(port.in_waiting, 16))
-        model_str = "".join(chr(b ^ seed) if b != 0xFF else "" for b in model_data).strip()
-        LOG.info(f"Radio model: {model_str}")
+        model_str = "".join(
+            chr(b ^ seed) if b != 0xFF else "" for b in model_data
+        ).strip()
+        LOG.info("Radio model: %s", model_str)
 
     # Send direction (0x52='R' for read, 0x57='W' for write)
     direction = 0x57 if is_write else 0x52
@@ -499,9 +435,10 @@ def _load_boot_image(path):
 
     try:
         from PIL import Image
-    except ImportError:
+    except ImportError as exc:
         raise errors.RadioError(
-            "Pillow is required for BMP conversion (pip install Pillow)")
+            "Pillow is required for BMP conversion (pip install Pillow)"
+        ) from exc
 
     img = Image.open(path)
     w, h = img.size
@@ -595,19 +532,16 @@ def upload_boot_image(radio, path):
 MEM_FORMAT = """
 #seekto 0x0080;
 struct {
-  ul32 rx_freq;    // 0  (little-endian)
-  ul32 tx_freq;    // 4  (little-endian)
-  u8 rx_tone[2];   // 8-9   (decode / receive sub-audio)
-  u8 tx_tone[2];   // 10-11 (encode / transmit sub-audio)
+  lbcd rxfreq;     // 0  (little-endian)
+  lbcd txfreq;     // 4  (little-endian)
+  ul16 rxtone;     // 8-9   (decode / receive sub-audio)
+  ul16 txtone;     // 10-11 (encode / transmit sub-audio)
   u8 unknown1[4];  // 12-15
   u8 flags1;       // 16    power[7:6] wideth[5] offsetdir[3:2] freqinvert[1] talkaround[0]
   u8 flags2;       // 17    fivetoneptt[7:6] dtmfptt[5:4] sqtype[3:0]
   u8 unknown2[14]; // 18-31
   char name[16];   // 32-47 GB2312
 } memory[640];
-
-#seekto 0x7A20;
-u8 valid_flags[80];
 
 #seekto 0x7980;
 struct {
@@ -663,6 +597,106 @@ struct {
   char bluet_name[16];                                          // 96-111
   char pair_name[16];                                           // 112-127
 } settings;
+
+# seekto 0x79b0;
+struct{
+    u8      pf1_short;
+    u8      pf2_short;
+    u8      pf1_long;
+    u8      pf2_long;
+}prog_key;
+
+# seekto 0x79c0;
+struct{
+    u8      power_on_pwd[8];
+    u8      program_pwd[8];
+    u8      power_on_char[8];
+} power_on;
+
+# seekto 0x7a20;
+struct{
+    lbit      bitfield[640];
+} chan_empty;
+
+# seekto 0x8102;
+struct{
+    lbcd        upper_freq[2];
+    u8          sc_pad[2];
+    lbcd        lower_freq[2];
+} scan_freq;
+
+# seekto 0x8180;
+struct{
+    u8      scan_mode;
+    u8      flyback;
+    u8      rx_recovery;
+    u8      tx_recovery;
+    u8      channel_rtn;
+    u8      priority;
+    u8      unk_0x8186[1];
+    u8      prio_scan_chan;
+    u8      scan_range;
+} scan_menu;
+
+# seekto 0x81a0;
+struct{
+    lbit      bitfield[640];
+} scan_skip;
+
+# seekto 0x8200;
+struct{
+    u8      dtmf_ani;
+    u8      sending_rate;
+    u8      first_tm_code;
+    u8      precarrier_tm;
+    u8      delay_tm;
+    u8      ptt_pause_tm;
+    u8      dtmf_st;
+    u8      auto_reset_tm;
+    u8      sepr_opts;
+    u8      group_num;
+    u8      decode_resp;
+    u8      unk_0xb_f[5];
+    u8      self_id[3];
+    u8      unk_0x13_17[5];
+    u8      ptt_id[16];
+    u8      ptt_id_offline[16];
+    u8      stun[11];
+    u8      pad_0x43_47[5];
+    u8      kill[11];
+}dtmf;
+
+# seekto 0x8260;
+struct{
+    u8      entry[16];
+} dtmf_list[16];
+
+# seekto 0x9e00;
+struct{
+    char        selfid[6];
+    u8          self_ssid;
+    u8          self_pad;
+    char        targetid[6];
+    u8          target_ssid;
+    u8          target_pad;
+    u8          precarrier_tm;
+    u8          code_dly_tm;
+
+} aprs_menu;
+
+# seekto 0x9e18;
+struct{
+    char        entry[6];
+    u8          ssid;
+    u8          unused;
+} ssid_tbl[8];
+
+# seekto 0xa010;
+struct{
+    u8          code;
+    u8          unused2;
+    char        name[14];
+} contacts[80];
 """
 
 
@@ -675,9 +709,9 @@ def _download(radio):
 
     try:
         seed = _handshake(radio, is_write=False)
-        LOG.info(f"Handshake complete, seed=0x{seed:02X}")
+        LOG.info("Handshake complete, seed=0x%02X", seed)
         data = _read_blocks(radio, seed)
-        LOG.info(f"Downloaded {len(data)} bytes")
+        LOG.info("Downloaded %d bytes", len(data))
         return data
     except Exception as e:
         raise errors.RadioError(f"Download failed: {e}")
@@ -692,9 +726,9 @@ def _upload(radio, data):
 
     try:
         seed = _handshake(radio, is_write=True)
-        LOG.info(f"Handshake complete, seed=0x{seed:02X}")
+        LOG.info("Handshake complete, seed=0x%02X", seed)
         _write_blocks(radio, seed, data)
-        LOG.info(f"Uploaded {len(data)} bytes")
+        LOG.info("Uploaded %d bytes", len(data))
     except Exception as e:
         raise errors.RadioError(f"Upload failed: {e}")
 
@@ -705,6 +739,41 @@ class BaofengUV5RHRadio(chirp_common.CloneModeRadio):
     VENDOR = "Baofeng"
     MODEL = "5RH Pro with GPS (v2)"
     BAUD_RATE = 19200
+
+    _tone_model = kenwood_tone.KenwoodToneModel(
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._boot_image_path = ""
+        self._boot_image_data = None
+        self._model = ""
+
+    @classmethod
+    def get_prompts(cls):
+        rp = chirp_common.RadioPrompts()
+        rp.experimental = _(
+            "This driver is a beta version.\n"
+            "\n"
+            "Please save an unedited copy of your first successful\n"
+            "download to a CHIRP Radio Images(*.img) file."
+        )
+        rp.pre_download = _(
+            "Follow these steps to download:\n"
+            "1. Turn off radio\n"
+            "2. Connect programming cable\n"
+            "3. Turn on radio\n"
+            "4. Click OK\n"
+        )
+        rp.pre_upload = _(
+            "Follow these steps to upload:\n"
+            "1. Turn off radio\n"
+            "2. Connect programming cable\n"
+            "3. Turn on radio\n"
+            "4. Click OK\n"
+        )
+        return rp
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -756,7 +825,7 @@ class BaofengUV5RHRadio(chirp_common.CloneModeRadio):
             for idx in range(ZONE_CHN_MAX):
                 ch_index = z * ZONE_CHN_MAX + idx
                 off = zbase + 2 + idx * 2
-                if ch_index < CHN_MAX and self._get_valid(ch_index):
+                if ch_index < CHN_MAX and self._memobj.chan_empty.bitfield[ch_index]:
                     mm[off] = (ch_index >> 8) & 0xFF   # ID high byte
                     mm[off + 1] = ch_index & 0xFF      # ID low byte
                     count += 1
@@ -782,51 +851,38 @@ class BaofengUV5RHRadio(chirp_common.CloneModeRadio):
     def process_mmap(self):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
-    def _get_valid(self, index):
-        """Channel valid flag from bitmap at 0x7A20 (bit==0 means in use).
-
-        Matches CPS ConvertChnValidFlg (DataProtocol.cs:883).
-        """
-        flags = int(self._memobj.valid_flags[index // 8])
-        return ((flags >> (index % 8)) & 1) == 0
-
-    def _set_valid(self, index, valid):
-        byte_i = index // 8
-        bit = index % 8
-        flags = int(self._memobj.valid_flags[byte_i])
-        if valid:
-            flags &= ~(1 << bit)  # bit 0 == in use
-        else:
-            flags |= (1 << bit)
-        self._memobj.valid_flags[byte_i] = flags
-
     def get_memory(self, number):
-        _mem = self._memobj.memory[number - 1]
         mem = chirp_common.Memory()
         mem.number = number
+        _index = number - 1
 
-        if not self._get_valid(number - 1):
-            mem.empty = True
+        # Check if this memory is present in the occupied list
+        mem.empty = self._memobj.chan_empty.bitfield[_index] == 1
+
+        if mem.empty:
             return mem
 
-        # Frequency (BCD-in-hex encoded 32-bit)
-        mem.freq = _freq_bcd_to_hz(int(_mem.rx_freq))
-        tx_freq = _freq_bcd_to_hz(int(_mem.tx_freq))
+        _mem = self._memobj.memory[_index]
+
+        # Frequencies
+        mem.freq = int(_mem.rxfreq) * 10
 
         # Duplex
-        if tx_freq and tx_freq != mem.freq:
-            mem.offset = abs(tx_freq - mem.freq)
-            mem.duplex = "+" if tx_freq > mem.freq else "-"
-        else:
+        if int(_mem.txfreq) == int(_mem.rxfreq):
             mem.duplex = ""
             mem.offset = 0
+        elif int(_mem.txfreq) == 0:
+            mem.duplex = "off"
+            mem.offset = 0
+        elif int(_mem.txfreq) > int(_mem.rxfreq):
+            mem.duplex = "+"
+            mem.offset = (int(_mem.txfreq) - int(_mem.rxfreq)) * 10
+        elif int(_mem.rxfreq) > int(_mem.txfreq):
+            mem.duplex = "-"
+            mem.offset = (int(_mem.rxfreq) - int(_mem.txfreq)) * 10
 
-        # Tones (tx_tone = encode/transmit, rx_tone = decode/receive)
-        chirp_common.split_tone_decode(
-            mem,
-            _decode_tone(_mem.tx_tone[0], _mem.tx_tone[1]),
-            _decode_tone(_mem.rx_tone[0], _mem.rx_tone[1]),
-        )
+        # Tones
+        self._tone_model.get_tone(_mem, mem)
 
         # Power (stored field value 2 == High, 0 == Low)
         power_idx = (int(_mem.flags1) >> 6) & 0x03
@@ -850,53 +906,52 @@ class BaofengUV5RHRadio(chirp_common.CloneModeRadio):
 
         return mem
 
-    def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number - 1]
-
-        if mem.empty:
-            _mem.set_raw(b'\xff' * 48)
-            self._set_valid(mem.number - 1, False)
+    def set_memory(self, memory):
+        _index = memory.number - 1
+        if memory.empty:
+            self._memobj.memory[_index].set_raw(b"\x00" * CHN_SIZE)
+            self._memobj.chan_empty.bitfield[_index] = 1
             return
 
-        self._set_valid(mem.number - 1, True)
+        _mem = self._memobj.memory[_index]
 
         # Clear the slot first (CPS zero-fills before writing known fields)
-        _mem.set_raw(b'\x00' * 48)
+        _mem.set_raw(b"\x00" * CHN_SIZE)
 
         # Frequency (convert to BCD-in-hex)
-        _mem.rx_freq = _freq_hz_to_bcd(mem.freq)
+        _mem.rxfreq = memory.freq // 10
 
-        if mem.duplex == "+":
-            tx_freq = mem.freq + mem.offset
-        elif mem.duplex == "-":
-            tx_freq = mem.freq - mem.offset
-        elif mem.duplex == "split":
-            tx_freq = mem.offset
+        if memory.duplex == "off":
+            _mem.txfreq.set_raw(b"\xff\xff\xff\xff")
+        elif memory.duplex == "split":
+            _mem.txfreq = memory.offset // 10
+        elif memory.duplex == "+":
+            _mem.txfreq = (memory.freq + memory.offset) // 10
+        elif memory.duplex == "-":
+            _mem.txfreq = (memory.freq - memory.offset) // 10
         else:
-            tx_freq = mem.freq
-
-        _mem.tx_freq = _freq_hz_to_bcd(tx_freq)
+            _mem.txfreq = memory.freq // 10
 
         # Tones
-        txtone, rxtone = chirp_common.split_tone_encode(mem)
-        _mem.tx_tone[0], _mem.tx_tone[1] = _encode_tone(txtone)
-        _mem.rx_tone[0], _mem.rx_tone[1] = _encode_tone(rxtone)
+        self._tone_model.set_tone(memory, _mem)
 
         # flags1: power[7:6] (High == 2), wideth[5] (wide == FM)
         flags1 = 0
-        if mem.power == POWER_LEVELS[1]:
+        if memory.power == POWER_LEVELS[1]:
             flags1 |= 2 << 6
-        if mem.mode == "FM":
+        if memory.mode == "FM":
             flags1 |= 0x20
         _mem.flags1 = flags1
 
         # Name (GB2312 encoded, pad with 0x00 like CPS StringSwap2Char)
-        name = mem.name or ""
+        name = memory.name or ""
         try:
             name_bytes = name.encode('gb2312')
         except UnicodeEncodeError:
             name_bytes = name.encode('ascii', errors='ignore')
         _mem.name = name_bytes[:16].ljust(16, b'\x00')
+        self._memobj.chan_empty.bitfield[_index] = 0
+        self._memobj.chan_empty.bitfield[_index] = 0
 
     def get_settings(self):
         _s = self._memobj.settings
