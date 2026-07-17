@@ -21,7 +21,7 @@ import math
 import re
 import sys
 
-from chirp import CHIRP_VERSION, errors, memmap, settings
+from chirp import CHIRP_VERSION, errors, memmap
 
 LOG = logging.getLogger(__name__)
 
@@ -560,6 +560,8 @@ class ImmutableValueError(ValueError):
 class Memory:
     """Base class for a single radio memory"""
 
+    from settings import RadioSettingGroup  # noqa: PLC0415
+
     freq: int = 0
     number: int = 0
     extd_number: str = ''
@@ -587,7 +589,7 @@ class Memory:
 
     # A RadioSettingGroup of additional settings supported by the radio,
     # or an empty list if none
-    extra: settings.RadioSettingGroup | list = []
+    extra: RadioSettingGroup | list = []
 
     def __init__(self, number=0, empty=False, name=''):
         self.freq = 0
