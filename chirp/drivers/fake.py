@@ -1,14 +1,26 @@
+# Copyright 2022 Dan Smith <dsmith@danplanet.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Fake driver implementations for testing CHIRP behavior."""
+
 import importlib
 import logging
 import os
 import struct
 import time
 
-from chirp import chirp_common
-from chirp import directory
-from chirp import errors
-from chirp import settings
-from chirp import util
+from chirp import chirp_common, directory, errors, settings, util
 
 LOG = logging.getLogger(__name__)
 
@@ -44,8 +56,7 @@ class FakeLiveRadio(chirp_common.LiveRadio):
             number = len(self.memories)
         m = self.memories[number - 1]
         if isinstance(m, chirp_common.Memory) and m.number != number:
-            LOG.error('fake driver found %i instead of %i',
-                      m.number, number)
+            LOG.error('fake driver found %i instead of %i', m.number, number)
         return m
 
     def set_memory(self, mem):
@@ -56,9 +67,15 @@ class FakeLiveRadio(chirp_common.LiveRadio):
         g = settings.RadioSettingGroup('top', 'Some Settings')
         g.append(
             settings.RadioSetting(
-                'knob', 'A knob',
-                settings.RadioSettingValueInteger(0, 10,
-                                                  self.settings['knob'])))
+                'knob',
+                'A knob',
+                settings.RadioSettingValueInteger(
+                    0,
+                    10,
+                    self.settings['knob'],
+                ),
+            ),
+        )
         return settings.RadioSettings(g)
 
     def set_settings(self, rs):
@@ -101,14 +118,12 @@ class FakeLiveRadioWithErrors(FakeLiveRadio):
         m = super().get_memory(number)
         if isinstance(m, type):
             raise m('Error getting %i' % number)
-        else:
-            return m
+        return m
 
     def set_memory(self, mem):
         if not mem.empty and mem.freq < 145000000:
             raise errors.RadioError('Out of range')
-        else:
-            return super().set_memory(mem)
+        return super().set_memory(mem)
 
 
 class FakeCloneFail(chirp_common.CloneModeRadio):
@@ -134,8 +149,9 @@ class FakeKenwoodSerial:
         if buffer.startswith(b'ID'):
             self._rbuf += b'ID TH-F7\r'
         elif buffer.startswith(b'MR 0,001'):
-            self._rbuf += \
+            self._rbuf += (
                 b'MR 0,001,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0\r'
+            )
         elif buffer.startswith(b'MNA 001\r'):
             self._rbuf += b'MNA 001,Foo\r'
         elif buffer.startswith(b'MNA 0'):
@@ -161,10 +177,14 @@ class FakeUV17Serial:
     def __init__(self, *a, **k):
         self._sbuf = b''
         self.get_radio()
-        imgfn = os.path.join(os.path.dirname(__file__), '..', '..',
-                             'tests', 'images',
-                             '%s_%s.img' % (self.rclass.VENDOR,
-                                            self.rclass.MODEL))
+        imgfn = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            '..',
+            'tests',
+            'images',
+            '%s_%s.img' % (self.rclass.VENDOR, self.rclass.MODEL),
+        )
         LOG.debug('Opening %s' % imgfn)
         try:
             with open(imgfn, 'rb') as f:
@@ -176,7 +196,8 @@ class FakeUV17Serial:
 
     def write(self, buffer):
         baofeng_uv17Pro = importlib.import_module(
-            'chirp.drivers.baofeng_uv17Pro')
+            'chirp.drivers.baofeng_uv17Pro',
+        )
         if buffer == self.rclass._magic:
             LOG.debug('Sent first magic')
             self._sbuf += self.rclass._fingerprint
@@ -184,7 +205,7 @@ class FakeUV17Serial:
             LOG.debug('Got: %s' % util.hexprint(buffer))
             cmd, addr, blen = struct.unpack('>cHb', buffer)
             resp = struct.pack('>cHb', b'W', addr, blen)
-            block = self._img[addr:addr + blen] or (b'\x00' * blen)
+            block = self._img[addr : addr + blen] or (b'\x00' * blen)
             LOG.debug('Sending block length 0x%x', len(block))
             self._sbuf += resp + baofeng_uv17Pro._crypt(1, block)
         else:
@@ -208,7 +229,8 @@ class FakeUV17Serial:
 class FakeUV17ProSerial(FakeUV17Serial):
     def get_radio(self):
         baofeng_uv17Pro = importlib.import_module(
-            'chirp.drivers.baofeng_uv17Pro')
+            'chirp.drivers.baofeng_uv17Pro',
+        )
         self.rclass = baofeng_uv17Pro.UV17Pro
 
 

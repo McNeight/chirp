@@ -21,27 +21,87 @@ import math
 import re
 import sys
 
-from chirp import errors, memmap, CHIRP_VERSION
+from chirp import CHIRP_VERSION, errors, memmap, settings
 
 LOG = logging.getLogger(__name__)
 
-SEPCHAR = ","
+SEPCHAR = ','
 
 # 50 Tones
 TONES = (
-    67.0, 69.3, 71.9, 74.4, 77.0, 79.7, 82.5,
-    85.4, 88.5, 91.5, 94.8, 97.4, 100.0, 103.5,
-    107.2, 110.9, 114.8, 118.8, 123.0, 127.3,
-    131.8, 136.5, 141.3, 146.2, 151.4, 156.7,
-    159.8, 162.2, 165.5, 167.9, 171.3, 173.8,
-    177.3, 179.9, 183.5, 186.2, 189.9, 192.8,
-    196.6, 199.5, 203.5, 206.5, 210.7, 218.1,
-    225.7, 229.1, 233.6, 241.8, 250.3, 254.1,
+    67.0,
+    69.3,
+    71.9,
+    74.4,
+    77.0,
+    79.7,
+    82.5,
+    85.4,
+    88.5,
+    91.5,
+    94.8,
+    97.4,
+    100.0,
+    103.5,
+    107.2,
+    110.9,
+    114.8,
+    118.8,
+    123.0,
+    127.3,
+    131.8,
+    136.5,
+    141.3,
+    146.2,
+    151.4,
+    156.7,
+    159.8,
+    162.2,
+    165.5,
+    167.9,
+    171.3,
+    173.8,
+    177.3,
+    179.9,
+    183.5,
+    186.2,
+    189.9,
+    192.8,
+    196.6,
+    199.5,
+    203.5,
+    206.5,
+    210.7,
+    218.1,
+    225.7,
+    229.1,
+    233.6,
+    241.8,
+    250.3,
+    254.1,
 )
 
-OLD_TONES = tuple(x for x in sorted(
-    set(TONES) - set([159.8, 165.5, 171.3, 177.3, 183.5, 189.9,
-                      196.6, 199.5, 206.5, 229.1, 254.1])))
+OLD_TONES = tuple(
+    x
+    for x in sorted(
+        set(TONES)
+        - set(
+            [
+                159.8,
+                165.5,
+                171.3,
+                177.3,
+                183.5,
+                189.9,
+                196.6,
+                199.5,
+                206.5,
+                229.1,
+                254.1,
+            ]
+        )
+    )
+)
 
 
 def VALIDTONE(v):
@@ -50,118 +110,338 @@ def VALIDTONE(v):
 
 # 104 DTCS Codes
 DTCS_CODES = (
-    23,  25,  26,  31,  32,  36,  43,  47,  51,  53,  54,
-    65,  71,  72,  73,  74,  114, 115, 116, 122, 125, 131,
-    132, 134, 143, 145, 152, 155, 156, 162, 165, 172, 174,
-    205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252,
-    255, 261, 263, 265, 266, 271, 274, 306, 311, 315, 325,
-    331, 332, 343, 346, 351, 356, 364, 365, 371, 411, 412,
-    413, 423, 431, 432, 445, 446, 452, 454, 455, 462, 464,
-    465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606,
-    612, 624, 627, 631, 632, 654, 662, 664, 703, 712, 723,
-    731, 732, 734, 743, 754,
+    23,
+    25,
+    26,
+    31,
+    32,
+    36,
+    43,
+    47,
+    51,
+    53,
+    54,
+    65,
+    71,
+    72,
+    73,
+    74,
+    114,
+    115,
+    116,
+    122,
+    125,
+    131,
+    132,
+    134,
+    143,
+    145,
+    152,
+    155,
+    156,
+    162,
+    165,
+    172,
+    174,
+    205,
+    212,
+    223,
+    225,
+    226,
+    243,
+    244,
+    245,
+    246,
+    251,
+    252,
+    255,
+    261,
+    263,
+    265,
+    266,
+    271,
+    274,
+    306,
+    311,
+    315,
+    325,
+    331,
+    332,
+    343,
+    346,
+    351,
+    356,
+    364,
+    365,
+    371,
+    411,
+    412,
+    413,
+    423,
+    431,
+    432,
+    445,
+    446,
+    452,
+    454,
+    455,
+    462,
+    464,
+    465,
+    466,
+    503,
+    506,
+    516,
+    523,
+    526,
+    532,
+    546,
+    565,
+    606,
+    612,
+    624,
+    627,
+    631,
+    632,
+    654,
+    662,
+    664,
+    703,
+    712,
+    723,
+    731,
+    732,
+    734,
+    743,
+    754,
 )
 
 # 512 Possible DTCS Codes
-ALL_DTCS_CODES = tuple([((a * 100) + (b * 10) + c)
+ALL_DTCS_CODES = tuple(
+    [
+        ((a * 100) + (b * 10) + c)
                         for a in range(0, 8)
                         for b in range(0, 8)
-                        for c in range(0, 8)])
+        for c in range(0, 8)
+    ]
+)
 
 CROSS_MODES = (
-    "Tone->Tone",
-    "DTCS->",
-    "->DTCS",
-    "Tone->DTCS",
-    "DTCS->Tone",
-    "->Tone",
-    "DTCS->DTCS",
-    "Tone->"
+    'Tone->Tone',
+    'DTCS->',
+    '->DTCS',
+    'Tone->DTCS',
+    'DTCS->Tone',
+    '->Tone',
+    'DTCS->DTCS',
+    'Tone->',
 )
 
 # This is the "master" list of modes, and in general things should not be
 # added here without significant consideration. These must remain stable and
 # universal to allow importing memories between different radio vendors and
 # models.
-MODES = ("WFM", "FM", "NFM", "AM", "NAM", "DV", "USB", "LSB", "CW", "RTTY",
-         "DIG", "PKT", "NCW", "NCWR", "CWR", "P25", "Auto", "RTTYR",
-         "FSK", "FSKR", "DMR", "DN")
+MODES = (
+    'WFM',
+    'FM',
+    'NFM',
+    'AM',
+    'NAM',
+    'DV',
+    'USB',
+    'LSB',
+    'CW',
+    'RTTY',
+    'DIG',
+    'PKT',
+    'NCW',
+    'NCWR',
+    'CWR',
+    'P25',
+    'Auto',
+    'RTTYR',
+    'FSK',
+    'FSKR',
+    'DMR',
+    'DN',
+)
 
 TONE_MODES = (
-    "",
-    "Tone",
-    "TSQL",
-    "DTCS",
-    "DTCS-R",
-    "TSQL-R",
-    "Cross",
+    '',
+    'Tone',
+    'TSQL',
+    'DTCS',
+    'DTCS-R',
+    'TSQL-R',
+    'Cross',
 )
 
 TUNING_STEPS = (
-    5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0,
-    125.0, 200.0,
+    5.0,
+    6.25,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+    125.0,
+    200.0,
     # Need to fix drivers using this list as an index!
-    9.0, 1.0, 2.5,
+    9.0,
+    1.0,
+    2.5,
 )
 
 # These are the default for RadioFeatures.valid_tuning_steps
 COMMON_TUNING_STEPS = (5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0)
 
-SKIP_VALUES = ("", "S", "P")
+SKIP_VALUES = ('', 'S', 'P')
 
-CHARSET_UPPER_NUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890"
-CHARSET_ALPHANUMERIC = \
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 1234567890"
-CHARSET_ASCII = "".join([chr(x) for x in range(ord(" "), ord("~") + 1)])
+CHARSET_UPPER_NUMERIC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890'
+CHARSET_ALPHANUMERIC = (
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 1234567890'
+)
+CHARSET_ASCII = ''.join([chr(x) for x in range(ord(' '), ord('~') + 1)])
 CHARSET_1252 = bytes(
-    [x for x in range(0x20, 0x100)
-     if x not in [0x7F, 0x81, 0x8D, 0x8F, 0x90, 0x9D, 0xA0, 0xAD]]
+    [
+        x
+        for x in range(0x20, 0x100)
+        if x not in [0x7F, 0x81, 0x8D, 0x8F, 0x90, 0x9D, 0xA0, 0xAD]
+    ]
 ).decode('cp1252')
 
 # http://aprs.org/aprs11/SSIDs.txt
 APRS_SSID = (
-    "0 Your primary station usually fixed and message capable",
-    "1 generic additional station, digi, mobile, wx, etc",
-    "2 generic additional station, digi, mobile, wx, etc",
-    "3 generic additional station, digi, mobile, wx, etc",
-    "4 generic additional station, digi, mobile, wx, etc",
+    '0 Your primary station usually fixed and message capable',
+    '1 generic additional station, digi, mobile, wx, etc',
+    '2 generic additional station, digi, mobile, wx, etc',
+    '3 generic additional station, digi, mobile, wx, etc',
+    '4 generic additional station, digi, mobile, wx, etc',
     "5 Other networks (Dstar, Iphones, Androids, Blackberry's etc)",
-    "6 Special activity, Satellite ops, camping or 6 meters, etc",
+    '6 Special activity, Satellite ops, camping or 6 meters, etc',
     "7 walkie talkies, HT's or other human portable",
     "8 boats, sailboats, RV's or second main mobile",
-    "9 Primary Mobile (usually message capable)",
-    "10 internet, Igates, echolink, winlink, AVRS, APRN, etc",
-    "11 balloons, aircraft, spacecraft, etc",
-    "12 APRStt, DTMF, RFID, devices, one-way trackers*, etc",
-    "13 Weather stations",
-    "14 Truckers or generally full time drivers",
-    "15 generic additional station, digi, mobile, wx, etc")
+    '9 Primary Mobile (usually message capable)',
+    '10 internet, Igates, echolink, winlink, AVRS, APRN, etc',
+    '11 balloons, aircraft, spacecraft, etc',
+    '12 APRStt, DTMF, RFID, devices, one-way trackers*, etc',
+    '13 Weather stations',
+    '14 Truckers or generally full time drivers',
+    '15 generic additional station, digi, mobile, wx, etc',
+)
 APRS_POSITION_COMMENT = (
-    "off duty", "en route", "in service", "returning", "committed",
-    "special", "priority", "custom 0", "custom 1", "custom 2", "custom 3",
-    "custom 4", "custom 5", "custom 6", "EMERGENCY")
+    'off duty',
+    'en route',
+    'in service',
+    'returning',
+    'committed',
+    'special',
+    'priority',
+    'custom 0',
+    'custom 1',
+    'custom 2',
+    'custom 3',
+    'custom 4',
+    'custom 5',
+    'custom 6',
+    'EMERGENCY',
+)
 # http://aprs.org/symbols/symbolsX.txt
 APRS_SYMBOLS = (
-    "Police/Sheriff", "[reserved]", "Digi", "Phone", "DX Cluster",
-    "HF Gateway", "Small Aircraft", "Mobile Satellite Groundstation",
-    "Wheelchair", "Snowmobile", "Red Cross", "Boy Scouts", "House QTH (VHF)",
-    "X", "Red Dot", "0 in Circle", "1 in Circle", "2 in Circle",
-    "3 in Circle", "4 in Circle", "5 in Circle", "6 in Circle", "7 in Circle",
-    "8 in Circle", "9 in Circle", "Fire", "Campground", "Motorcycle",
-    "Railroad Engine", "Car", "File Server", "Hurricane Future Prediction",
-    "Aid Station", "BBS or PBBS", "Canoe", "[reserved]", "Eyeball",
-    "Tractor/Farm Vehicle", "Grid Square", "Hotel", "TCP/IP", "[reserved]",
-    "School", "PC User", "MacAPRS", "NTS Station", "Balloon", "Police", "TBD",
-    "Recreational Vehicle", "Space Shuttle", "SSTV", "Bus", "ATV",
-    "National WX Service Site", "Helicopter", "Yacht/Sail Boat", "WinAPRS",
-    "Human/Person", "Triangle", "Mail/Postoffice", "Large Aircraft",
-    "WX Station", "Dish Antenna", "Ambulance", "Bicycle",
-    "Incident Command Post", "Dual Garage/Fire Dept", "Horse/Equestrian",
-    "Fire Truck", "Glider", "Hospital", "IOTA", "Jeep", "Truck", "Laptop",
-    "Mic-Repeater", "Node", "Emergency Operations Center", "Rover (dog)",
-    "Grid Square above 128m", "Repeater", "Ship/Power Boat", "Truck Stop",
-    "Truck (18 wheeler)", "Van", "Water Station", "X-APRS", "Yagi at QTH",
-    "TDB", "[reserved]"
+    'Police/Sheriff',
+    '[reserved]',
+    'Digi',
+    'Phone',
+    'DX Cluster',
+    'HF Gateway',
+    'Small Aircraft',
+    'Mobile Satellite Groundstation',
+    'Wheelchair',
+    'Snowmobile',
+    'Red Cross',
+    'Boy Scouts',
+    'House QTH (VHF)',
+    'X',
+    'Red Dot',
+    '0 in Circle',
+    '1 in Circle',
+    '2 in Circle',
+    '3 in Circle',
+    '4 in Circle',
+    '5 in Circle',
+    '6 in Circle',
+    '7 in Circle',
+    '8 in Circle',
+    '9 in Circle',
+    'Fire',
+    'Campground',
+    'Motorcycle',
+    'Railroad Engine',
+    'Car',
+    'File Server',
+    'Hurricane Future Prediction',
+    'Aid Station',
+    'BBS or PBBS',
+    'Canoe',
+    '[reserved]',
+    'Eyeball',
+    'Tractor/Farm Vehicle',
+    'Grid Square',
+    'Hotel',
+    'TCP/IP',
+    '[reserved]',
+    'School',
+    'PC User',
+    'MacAPRS',
+    'NTS Station',
+    'Balloon',
+    'Police',
+    'TBD',
+    'Recreational Vehicle',
+    'Space Shuttle',
+    'SSTV',
+    'Bus',
+    'ATV',
+    'National WX Service Site',
+    'Helicopter',
+    'Yacht/Sail Boat',
+    'WinAPRS',
+    'Human/Person',
+    'Triangle',
+    'Mail/Postoffice',
+    'Large Aircraft',
+    'WX Station',
+    'Dish Antenna',
+    'Ambulance',
+    'Bicycle',
+    'Incident Command Post',
+    'Dual Garage/Fire Dept',
+    'Horse/Equestrian',
+    'Fire Truck',
+    'Glider',
+    'Hospital',
+    'IOTA',
+    'Jeep',
+    'Truck',
+    'Laptop',
+    'Mic-Repeater',
+    'Node',
+    'Emergency Operations Center',
+    'Rover (dog)',
+    'Grid Square above 128m',
+    'Repeater',
+    'Ship/Power Boat',
+    'Truck Stop',
+    'Truck (18 wheeler)',
+    'Van',
+    'Water Station',
+    'X-APRS',
+    'Yagi at QTH',
+    'TDB',
+    '[reserved]',
 )
 
 
@@ -214,14 +494,14 @@ class PowerLevel:
         return int(self) != 0
 
     def __repr__(self):
-        return "%s (%i dBm)" % (self._label, self._power)
+        return '%s (%i dBm)' % (self._label, self._power)
 
 
 class AutoNamedPowerLevel(PowerLevel):
     """A power level that is simply named by its value in watts"""
 
     def __init__(self, watts):
-        fmt = ('%iW' if watts >= 10 else '%.1fW')
+        fmt = '%iW' if watts >= 10 else '%.1fW'
         super().__init__(fmt % watts, watts=watts)
 
 
@@ -244,20 +524,20 @@ def parse_power(powerstr):
 def parse_freq(freqstr: str) -> int:
     """Parse a frequency string and return the value in integral Hz"""
     freqstr = freqstr.strip()
-    if freqstr == "":
+    if freqstr == '':
         return 0
-    elif freqstr.endswith(" MHz"):
-        return parse_freq(freqstr.split(" ")[0])
-    elif freqstr.endswith(" kHz"):
-        return int(freqstr.split(" ")[0]) * 1000
+    elif freqstr.endswith(' MHz'):
+        return parse_freq(freqstr.split(' ')[0])
+    elif freqstr.endswith(' kHz'):
+        return int(freqstr.split(' ')[0]) * 1000
 
-    if "." in freqstr:
-        _mhz, _khz = freqstr.split(".")
-        if _mhz == "":
-            _mhz = "0"
-        _khz = _khz.ljust(6, "0")
+    if '.' in freqstr:
+        _mhz, _khz = freqstr.split('.')
+        if _mhz == '':
+            _mhz = '0'
+        _khz = _khz.ljust(6, '0')
         if len(_khz) > 6:
-            raise ValueError("Invalid kHz value: %s", _khz)
+            raise ValueError('Invalid kHz value: %s', _khz)
         mhz = int(_mhz) * 1000000
         khz = int(_khz)
     else:
@@ -270,7 +550,7 @@ def parse_freq(freqstr: str) -> int:
 def format_freq(freq: int) -> str:
     """Format a frequency given in Hz as a string"""
 
-    return "%i.%06i" % (freq / 1000000, freq % 1000000)
+    return '%i.%06i' % (freq / 1000000, freq % 1000000)
 
 
 class ImmutableValueError(ValueError):
@@ -279,26 +559,27 @@ class ImmutableValueError(ValueError):
 
 class Memory:
     """Base class for a single radio memory"""
+
     freq: int = 0
     number: int = 0
-    extd_number: str = ""
-    name: str = ""
+    extd_number: str = ''
+    name: str = ''
     vfo: int = 0
     rtone: float = 88.5
     ctone: float = 88.5
     dtcs: int = 23
     rx_dtcs: int = 23
-    tmode: str = ""
-    cross_mode: str = "Tone->Tone"
-    dtcs_polarity: str = "NN"
-    skip: str = ""
+    tmode: str = ''
+    cross_mode: str = 'Tone->Tone'
+    dtcs_polarity: str = 'NN'
+    skip: str = ''
     power: PowerLevel | None = None
-    duplex: str = ""
+    duplex: str = ''
     offset: int = 600000
-    mode: str = "FM"
+    mode: str = 'FM'
     tuning_step: float = 5.0
 
-    comment: str = ""
+    comment: str = ''
 
     empty: bool = False
 
@@ -306,53 +587,55 @@ class Memory:
 
     # A RadioSettingGroup of additional settings supported by the radio,
     # or an empty list if none
-    extra = []
+    extra: settings.RadioSettingGroup | list = []
 
-    def __init__(self, number=0, empty=False, name=""):
+    def __init__(self, number=0, empty=False, name=''):
         self.freq = 0
         self.number = number
-        self.extd_number = ""
+        self.extd_number = ''
         self.name = name
         self.vfo = 0
         self.rtone = 88.5
         self.ctone = 88.5
         self.dtcs = 23
         self.rx_dtcs = 23
-        self.tmode = ""
-        self.cross_mode = "Tone->Tone"
-        self.dtcs_polarity = "NN"
-        self.skip = ""
+        self.tmode = ''
+        self.cross_mode = 'Tone->Tone'
+        self.dtcs_polarity = 'NN'
+        self.skip = ''
         self.power = None
-        self.duplex = ""
+        self.duplex = ''
         self.offset = 600000
-        self.mode = "FM"
+        self.mode = 'FM'
         self.tuning_step = 5.0
 
-        self.comment = ""
+        self.comment = ''
 
         self.empty = empty
 
         self.immutable = []
 
     _valid_map = {
-        "rtone":          VALIDTONE,
-        "ctone":          VALIDTONE,
-        "dtcs":           ALL_DTCS_CODES,
-        "rx_dtcs":        ALL_DTCS_CODES,
-        "tmode":          TONE_MODES,
-        "dtcs_polarity":  ["NN", "NR", "RN", "RR"],
-        "cross_mode":     CROSS_MODES,
-        "mode":           MODES,
-        "duplex":         ["", "+", "-", "split", "off"],
-        "skip":           SKIP_VALUES,
-        "empty":          [True, False],
-        "dv_code":        [x for x in range(0, 100)],
+        'rtone': VALIDTONE,
+        'ctone': VALIDTONE,
+        'dtcs': ALL_DTCS_CODES,
+        'rx_dtcs': ALL_DTCS_CODES,
+        'tmode': TONE_MODES,
+        'dtcs_polarity': ['NN', 'NR', 'RN', 'RR'],
+        'cross_mode': CROSS_MODES,
+        'mode': MODES,
+        'duplex': ['', '+', '-', 'split', 'off'],
+        'skip': SKIP_VALUES,
+        'empty': [True, False],
+        'dv_code': [x for x in range(0, 100)],
     }
 
     def __repr__(self):
         ident, vals = self.debug_dump()
         return '<Memory %s: %s>' % (
-            ident, ','.join('%s=%r' % item for item in vals))
+            ident,
+            ','.join('%s=%r' % item for item in vals),
+        )
 
     def debug_diff(self, other, delim='/'):
         my_ident, my_vals = self.debug_dump()
@@ -372,8 +655,11 @@ class Memory:
         return ','.join(diffs)
 
     def debug_dump(self):
-        vals = [(k, v) for k, v in self.__dict__.items()
-                if k not in ('extra', 'number', 'extd_number')]
+        vals = [
+            (k, v)
+            for k, v in self.__dict__.items()
+            if k not in ('extra', 'number', 'extd_number')
+        ]
         for extra in self.extra:
             vals.append(('extra.%s' % extra.get_name(), str(extra.value)))
         if self.extd_number:
@@ -395,32 +681,51 @@ class Memory:
         for k, v in list(source.__dict__.items()):
             self.__dict__[k] = v
 
-    CSV_FORMAT = ["Location", "Name", "Frequency",
-                  "Duplex", "Offset", "Tone",
-                  "rToneFreq", "cToneFreq", "DtcsCode",
-                  "DtcsPolarity", "RxDtcsCode",
-                  "CrossMode",
-                  "Mode", "TStep",
-                  "Skip", "Power", "Comment",
-                  "URCALL", "RPT1CALL", "RPT2CALL", "DVCODE"]
+    CSV_FORMAT = [
+        'Location',
+        'Name',
+        'Frequency',
+        'Duplex',
+        'Offset',
+        'Tone',
+        'rToneFreq',
+        'cToneFreq',
+        'DtcsCode',
+        'DtcsPolarity',
+        'RxDtcsCode',
+        'CrossMode',
+        'Mode',
+        'TStep',
+        'Skip',
+        'Power',
+        'Comment',
+        'URCALL',
+        'RPT1CALL',
+        'RPT2CALL',
+        'DVCODE',
+    ]
 
     def __setattr__(self, name, val):
         if not hasattr(self, name):
             raise ValueError("No such attribute `%s'" % name)
 
         if name in self.immutable:
-            raise ImmutableValueError("Field %s is not " % name +
-                                      "mutable on this memory")
+            raise ImmutableValueError(
+                'Field %s is not ' % name + 'mutable on this memory'
+            )
 
         if name in self._valid_map:
             valid = self._valid_map[name]
             if callable(valid):
                 if not valid(val):
-                    raise ValueError("`%s' is not a valid value for `%s'" % (
-                        val, name))
+                    raise ValueError(
+                        "`%s' is not a valid value for `%s'" % (val, name)
+                    )
             elif val not in self._valid_map[name]:
-                raise ValueError("`%s' is not in valid list: %s" %
-                                 (val, self._valid_map[name]))
+                raise ValueError(
+                    "`%s' is not in valid list: %s"
+                    % (val, self._valid_map[name])
+                )
 
         self.__dict__[name] = val
 
@@ -434,29 +739,28 @@ class Memory:
         return self.freq
 
     def __str__(self):
-        if self.tmode == "Tone":
-            tenc = "*"
+        if self.tmode == 'Tone':
+            tenc = '*'
         else:
-            tenc = " "
+            tenc = ' '
 
-        if self.tmode == "TSQL":
-            tsql = "*"
+        if self.tmode == 'TSQL':
+            tsql = '*'
         else:
-            tsql = " "
+            tsql = ' '
 
-        if self.tmode == "DTCS":
-            dtcs = "*"
+        if self.tmode == 'DTCS':
+            dtcs = '*'
         else:
-            dtcs = " "
+            dtcs = ' '
 
-        if self.duplex == "":
-            dup = "/"
+        if self.duplex == '':
+            dup = '/'
         else:
             dup = self.duplex
 
-        return \
-            "Memory %s: %s%s%s %s (%s) r%.1f%s c%.1f%s d%03i%s%s [%.2f]" % \
-            (self.number if self.extd_number == "" else self.extd_number,
+        return 'Memory %s: %s%s%s %s (%s) r%.1f%s c%.1f%s d%03i%s%s [%.2f]' % (
+            self.number if self.extd_number == '' else self.extd_number,
              format_freq(self.freq),
              dup,
              format_freq(self.offset),
@@ -469,42 +773,48 @@ class Memory:
              self.dtcs,
              dtcs,
              self.dtcs_polarity,
-             self.tuning_step)
+            self.tuning_step,
+        )
 
     def to_csv(self):
         """Return a CSV representation of this memory"""
         return [
-            "%i" % self.number,
-            "%s" % self.name,
+            '%i' % self.number,
+            '%s' % self.name,
             format_freq(self.freq),
-            "%s" % self.duplex,
+            '%s' % self.duplex,
             format_freq(self.offset),
-            "%s" % self.tmode,
-            "%.1f" % self.rtone,
-            "%.1f" % self.ctone,
-            "%03i" % self.dtcs,
-            "%s" % self.dtcs_polarity,
-            "%03i" % self.rx_dtcs,
-            "%s" % self.cross_mode,
-            "%s" % self.mode,
-            "%.2f" % self.tuning_step,
-            "%s" % self.skip,
-            "%s" % self.power,
-            "%s" % self.comment,
-            "", "", "", ""]
+            '%s' % self.tmode,
+            '%.1f' % self.rtone,
+            '%.1f' % self.ctone,
+            '%03i' % self.dtcs,
+            '%s' % self.dtcs_polarity,
+            '%03i' % self.rx_dtcs,
+            '%s' % self.cross_mode,
+            '%s' % self.mode,
+            '%.2f' % self.tuning_step,
+            '%s' % self.skip,
+            '%s' % self.power,
+            '%s' % self.comment,
+            '',
+            '',
+            '',
+            '',
+        ]
 
     @classmethod
     def _from_csv(cls, _line):
         line = _line.strip()
-        if line.startswith("Location"):
-            raise errors.InvalidMemoryLocation("Non-CSV line")
+        if line.startswith('Location'):
+            raise errors.InvalidMemoryLocation('Non-CSV line')
 
         vals = line.split(SEPCHAR)
         if len(vals) < 11:
-            raise errors.InvalidDataError("CSV format error " +
-                                          "(14 columns expected)")
+            raise errors.InvalidDataError(
+                'CSV format error ' + '(14 columns expected)'
+            )
 
-        if vals[10] == "DV":
+        if vals[10] == 'DV':
             mem = DVMemory()
         else:
             mem = Memory()
@@ -518,119 +828,125 @@ class Memory:
             self.number = int(vals[0])
         except Exception:
             raise errors.InvalidDataError(
-                "Location '%s' is not a valid integer" % vals[0])
+                "Location '%s' is not a valid integer" % vals[0]
+            )
 
         self.name = vals[1]
 
         try:
             self.freq = to_MHz(float(vals[2]))
         except Exception:
-            raise errors.InvalidDataError("Frequency is not a valid number")
+            raise errors.InvalidDataError('Frequency is not a valid number')
 
-        if vals[3].strip() in ["+", "-", ""]:
+        if vals[3].strip() in ['+', '-', '']:
             self.duplex = vals[3].strip()
         else:
-            raise errors.InvalidDataError("Duplex is not +,-, or empty")
+            raise errors.InvalidDataError('Duplex is not +,-, or empty')
 
         try:
             self.offset = to_MHz(float(vals[4]))
         except Exception:
-            raise errors.InvalidDataError("Offset is not a valid number")
+            raise errors.InvalidDataError('Offset is not a valid number')
 
         self.tmode = vals[5]
         if self.tmode not in TONE_MODES:
-            raise errors.InvalidDataError("Invalid tone mode `%s'" %
-                                          self.tmode)
+            raise errors.InvalidDataError(
+                "Invalid tone mode `%s'" % self.tmode
+            )
 
         try:
             self.rtone = float(vals[6])
         except Exception:
-            raise errors.InvalidDataError("rTone is not a valid number")
+            raise errors.InvalidDataError('rTone is not a valid number')
         if self.rtone not in TONES:
-            raise errors.InvalidDataError("rTone is not valid")
+            raise errors.InvalidDataError('rTone is not valid')
 
         try:
             self.ctone = float(vals[7])
         except Exception:
-            raise errors.InvalidDataError("cTone is not a valid number")
+            raise errors.InvalidDataError('cTone is not a valid number')
         if self.ctone not in TONES:
-            raise errors.InvalidDataError("cTone is not valid")
+            raise errors.InvalidDataError('cTone is not valid')
 
         try:
             self.dtcs = int(vals[8], 10)
         except Exception:
-            raise errors.InvalidDataError("DTCS code is not a valid number")
+            raise errors.InvalidDataError('DTCS code is not a valid number')
         if self.dtcs not in DTCS_CODES:
-            raise errors.InvalidDataError("DTCS code is not valid")
+            raise errors.InvalidDataError('DTCS code is not valid')
 
-        if vals[9] in ["NN", "NR", "RN", "RR"]:
+        if vals[9] in ['NN', 'NR', 'RN', 'RR']:
             self.dtcs_polarity = vals[9]
         else:
-            raise errors.InvalidDataError("DtcsPolarity is not valid")
+            raise errors.InvalidDataError('DtcsPolarity is not valid')
 
         try:
             self.rx_dtcs = int(vals[10], 10)
         except Exception:
-            raise errors.InvalidDataError("DTCS Rx code is not a valid number")
+            raise errors.InvalidDataError('DTCS Rx code is not a valid number')
         if self.rx_dtcs not in DTCS_CODES:
-            raise errors.InvalidDataError("DTCS Rx code is not valid")
+            raise errors.InvalidDataError('DTCS Rx code is not valid')
 
         self.cross_mode = vals[11]
 
         if vals[12] in MODES:
             self.mode = vals[12]
         else:
-            raise errors.InvalidDataError("Mode %r is not valid" % vals[10])
+            raise errors.InvalidDataError('Mode %r is not valid' % vals[10])
 
         try:
             self.tuning_step = float(vals[13])
         except Exception:
-            raise errors.InvalidDataError("Tuning step is invalid")
+            raise errors.InvalidDataError('Tuning step is invalid')
 
         try:
             self.skip = vals[14]
         except Exception:
-            raise errors.InvalidDataError("Skip value is not valid")
+            raise errors.InvalidDataError('Skip value is not valid')
 
         return True
 
 
 class DVMemory(Memory):
     """A Memory with D-STAR attributes"""
-    dv_urcall: str = "CQCQCQ"
-    dv_rpt1call: str = ""
-    dv_rpt2call: str = ""
+
+    dv_urcall: str = 'CQCQCQ'
+    dv_rpt1call: str = ''
+    dv_rpt2call: str = ''
     dv_code: int = 0
 
     def __str__(self):
         string = Memory.__str__(self)
 
-        string += " <%s,%s,%s>" % (self.dv_urcall,
+        string += ' <%s,%s,%s>' % (
+            self.dv_urcall,
                                    self.dv_rpt1call,
-                                   self.dv_rpt2call)
+            self.dv_rpt2call,
+        )
 
         return string
 
     def to_csv(self):
         return [
-            "%i" % self.number,
-            "%s" % self.name,
+            '%i' % self.number,
+            '%s' % self.name,
             format_freq(self.freq),
-            "%s" % self.duplex,
+            '%s' % self.duplex,
             format_freq(self.offset),
-            "%s" % self.tmode,
-            "%.1f" % self.rtone,
-            "%.1f" % self.ctone,
-            "%03i" % self.dtcs,
-            "%s" % self.dtcs_polarity,
-            "%s" % self.mode,
-            "%.2f" % self.tuning_step,
-            "%s" % self.skip,
-            "%s" % self.comment,
-            "%s" % self.dv_urcall,
-            "%s" % self.dv_rpt1call,
-            "%s" % self.dv_rpt2call,
-            "%i" % self.dv_code]
+            '%s' % self.tmode,
+            '%.1f' % self.rtone,
+            '%.1f' % self.ctone,
+            '%03i' % self.dtcs,
+            '%s' % self.dtcs_polarity,
+            '%s' % self.mode,
+            '%.2f' % self.tuning_step,
+            '%s' % self.skip,
+            '%s' % self.comment,
+            '%s' % self.dv_urcall,
+            '%s' % self.dv_rpt1call,
+            '%s' % self.dv_rpt2call,
+            '%i' % self.dv_code,
+        ]
 
     def really_from_csv(self, vals):
         Memory.really_from_csv(self, vals)
@@ -667,13 +983,17 @@ def FrozenMemory(source, strict=True):
                 # are not being strict, then we just log a warning.
                 caller = inspect.getframeinfo(inspect.stack()[1][0])
                 LOG.warning(
-                    '%s@%i: Illegal set on attribute %s - Fix this driver!' % (
-                        caller.filename, caller.lineno, k))
+                    '%s@%i: Illegal set on attribute %s - Fix this driver!'
+                    % (caller.filename, caller.lineno, k)
+                )
                 if strict:
                     raise errors.FrozenMemoryError(
-                        _('Internal driver error: Attempt to modify '
+                        _(
+                            'Internal driver error: Attempt to modify '
                           'frozen memory; Please report this as a bug using '
-                          '"Report or update a bug" in the Help menu'))
+                            '"Report or update a bug" in the Help menu'
+                        )
+                    )
             super().__setattr__(k, v)
 
         def dupe(self):
@@ -697,7 +1017,7 @@ class MemoryMapping(object):
         return self.get_name()
 
     def __repr__(self):
-        return "%s-%s" % (self.__class__.__name__, self._index)
+        return '%s-%s' % (self.__class__.__name__, self._index)
 
     def get_name(self):
         """Returns the mapping name"""
@@ -833,6 +1153,7 @@ class MappingModelIndexInterface:
 
 class MTOBankModel(BankModel):
     """A bank model where one memory can be in multiple banks at once """
+
     pass
 
 
@@ -840,17 +1161,20 @@ def console_status(status):
     """Write a status object to the console"""
     import logging
     from chirp import logger
+
     if not logger.is_visible(logging.WARN):
         return
     import sys
     import os
-    sys.stdout.write("\r%s" % status)
+
+    sys.stdout.write('\r%s' % status)
     if status.cur == status.max:
         sys.stdout.write(os.linesep)
 
 
 class RadioPrompts:
     """Radio prompt strings"""
+
     info = None
     experimental = None
     pre_download = None
@@ -897,55 +1221,53 @@ def TONELIST(v):
 
 class RadioFeatures:
     """Radio Feature Flags"""
+
     _valid_map = {
         # General
-        "has_bank_index":       BOOLEAN,
-        "has_dtcs":             BOOLEAN,
-        "has_rx_dtcs":          BOOLEAN,
-        "has_dtcs_polarity":    BOOLEAN,
-        "has_mode":             BOOLEAN,
-        "has_offset":           BOOLEAN,
-        "has_name":             BOOLEAN,
-        "has_bank":             BOOLEAN,
-        "has_bank_names":       BOOLEAN,
-        "has_tuning_step":      BOOLEAN,
-        "has_ctone":            BOOLEAN,
-        "has_cross":            BOOLEAN,
-        "has_infinite_number":  BOOLEAN,
-        "has_nostep_tuning":    BOOLEAN,
-        "has_comment":          BOOLEAN,
-        "has_settings":         BOOLEAN,
-        "has_variable_power":   BOOLEAN,
-        "has_dynamic_subdevices": BOOLEAN,
-
+        'has_bank_index': BOOLEAN,
+        'has_dtcs': BOOLEAN,
+        'has_rx_dtcs': BOOLEAN,
+        'has_dtcs_polarity': BOOLEAN,
+        'has_mode': BOOLEAN,
+        'has_offset': BOOLEAN,
+        'has_name': BOOLEAN,
+        'has_bank': BOOLEAN,
+        'has_bank_names': BOOLEAN,
+        'has_tuning_step': BOOLEAN,
+        'has_ctone': BOOLEAN,
+        'has_cross': BOOLEAN,
+        'has_infinite_number': BOOLEAN,
+        'has_nostep_tuning': BOOLEAN,
+        'has_comment': BOOLEAN,
+        'has_settings': BOOLEAN,
+        'has_variable_power': BOOLEAN,
+        'has_dynamic_subdevices': BOOLEAN,
         # Attributes
-        "valid_modes":          LIST,
-        "valid_tmodes":         LIST,
-        "valid_duplexes":       LIST,
-        "valid_tuning_steps":   LIST_NONZERO_INT,
-        "valid_bands":          LIST,
-        "valid_skips":          LIST,
-        "valid_power_levels":   LIST,
-        "valid_characters":     STRING,
-        "valid_name_length":    INT(),
-        "valid_cross_modes":    LIST,
-        "valid_tones":          TONELIST,
-        "valid_dtcs_pols":      LIST,
-        "valid_dtcs_codes":     LIST,
-        "valid_special_chans":  LIST,
-
-        "has_sub_devices":      BOOLEAN,
-        "memory_bounds":        NTUPLE(2),
-        "can_odd_split":        BOOLEAN,
-        "can_delete":           BOOLEAN,
-
+        'valid_modes': LIST,
+        'valid_tmodes': LIST,
+        'valid_duplexes': LIST,
+        'valid_tuning_steps': LIST_NONZERO_INT,
+        'valid_bands': LIST,
+        'valid_skips': LIST,
+        'valid_power_levels': LIST,
+        'valid_characters': STRING,
+        'valid_name_length': INT(),
+        'valid_cross_modes': LIST,
+        'valid_tones': TONELIST,
+        'valid_dtcs_pols': LIST,
+        'valid_dtcs_codes': LIST,
+        'valid_special_chans': LIST,
+        'has_sub_devices': BOOLEAN,
+        'memory_bounds': NTUPLE(2),
+        'can_odd_split': BOOLEAN,
+        'can_delete': BOOLEAN,
         # D-STAR
-        "requires_call_lists":  BOOLEAN,
-        "has_implicit_calls":   BOOLEAN,
+        'requires_call_lists': BOOLEAN,
+        'has_implicit_calls': BOOLEAN,
     }
 
     def __setattr__(self, name, val):
-        if name.startswith("_"):
+        if name.startswith('_'):
             self.__dict__[name] = val
             return
         elif name not in list(self._valid_map.keys()):
@@ -954,13 +1276,12 @@ class RadioFeatures:
         try:
             self._valid_map[name](val)
         except AssertionError:
-            raise ValueError('Invalid value %r for attribute %r' % (
-                val, name))
+            raise ValueError('Invalid value %r for attribute %r' % (val, name))
 
         self.__dict__[name] = val
 
     def __getattr__(self, name):
-        raise AttributeError("pylint is confused by RadioFeatures")
+        raise AttributeError('pylint is confused by RadioFeatures')
 
     def init(self, attribute, default, doc=None):
         """Initialize a feature flag @attribute with default value @default,
@@ -974,98 +1295,170 @@ class RadioFeatures:
 
     def __init__(self):
         self.__docs = {}
-        self.init("has_bank_index", False,
-                  "Indicates that memories in a bank can be stored in " +
-                  "an order other than in main memory")
-        self.init("has_dtcs", True,
-                  "Indicates that DTCS tone mode is available")
-        self.init("has_rx_dtcs", False,
-                  "Indicates that radio can use two different " +
-                  "DTCS codes for rx and tx")
-        self.init("has_dtcs_polarity", True,
-                  "Indicates that the DTCS polarity can be changed")
-        self.init("has_mode", True,
-                  "Indicates that multiple emission modes are supported")
-        self.init("has_offset", True,
-                  "Indicates that the TX offset memory property is supported")
-        self.init("has_name", True,
-                  "Indicates that an alphanumeric memory name is supported")
-        self.init("has_bank", True,
-                  "Indicates that memories may be placed into banks")
-        self.init("has_bank_names", False,
-                  "Indicates that banks may be named")
-        self.init("has_tuning_step", True,
-                  "Indicates that memories store their tuning step")
-        self.init("has_ctone", True,
-                  "Indicates that the radio keeps separate tone frequencies " +
-                  "for repeater and CTCSS operation")
-        self.init("has_cross", False,
-                  "Indicates that the radios supports different tone modes " +
-                  "on transmit and receive")
-        self.init("has_infinite_number", False,
-                  "Indicates that the radio is not constrained in the " +
-                  "number of memories that it can store")
-        self.init("has_nostep_tuning", False,
-                  "Indicates that the radio does not require a valid " +
-                  "tuning step to store a frequency")
-        self.init("has_comment", False,
-                  "Indicates that the radio supports storing a comment " +
-                  "with each memory")
-        self.init("has_settings", False,
-                  "Indicates that the radio supports general settings")
-        self.init("has_variable_power", False,
-                  "Indicates the radio supports any power level between the "
-                  "min and max in valid_power_levels")
-        self.init("has_dynamic_subdevices", False,
-                  "Indicates the radio has a non-static list of subdevices")
+        self.init(
+            'has_bank_index',
+            False,
+            'Indicates that memories in a bank can be stored in '
+            + 'an order other than in main memory',
+        )
+        self.init(
+            'has_dtcs', True, 'Indicates that DTCS tone mode is available'
+        )
+        self.init(
+            'has_rx_dtcs',
+            False,
+            'Indicates that radio can use two different '
+            + 'DTCS codes for rx and tx',
+        )
+        self.init(
+            'has_dtcs_polarity',
+            True,
+            'Indicates that the DTCS polarity can be changed',
+        )
+        self.init(
+            'has_mode',
+            True,
+            'Indicates that multiple emission modes are supported',
+        )
+        self.init(
+            'has_offset',
+            True,
+            'Indicates that the TX offset memory property is supported',
+        )
+        self.init(
+            'has_name',
+            True,
+            'Indicates that an alphanumeric memory name is supported',
+        )
+        self.init(
+            'has_bank',
+            True,
+            'Indicates that memories may be placed into banks',
+        )
+        self.init('has_bank_names', False, 'Indicates that banks may be named')
+        self.init(
+            'has_tuning_step',
+            True,
+            'Indicates that memories store their tuning step',
+        )
+        self.init(
+            'has_ctone',
+            True,
+            'Indicates that the radio keeps separate tone frequencies '
+            + 'for repeater and CTCSS operation',
+        )
+        self.init(
+            'has_cross',
+            False,
+            'Indicates that the radios supports different tone modes '
+            + 'on transmit and receive',
+        )
+        self.init(
+            'has_infinite_number',
+            False,
+            'Indicates that the radio is not constrained in the '
+            + 'number of memories that it can store',
+        )
+        self.init(
+            'has_nostep_tuning',
+            False,
+            'Indicates that the radio does not require a valid '
+            + 'tuning step to store a frequency',
+        )
+        self.init(
+            'has_comment',
+            False,
+            'Indicates that the radio supports storing a comment '
+            + 'with each memory',
+        )
+        self.init(
+            'has_settings',
+            False,
+            'Indicates that the radio supports general settings',
+        )
+        self.init(
+            'has_variable_power',
+            False,
+            'Indicates the radio supports any power level between the '
+            'min and max in valid_power_levels',
+        )
+        self.init(
+            'has_dynamic_subdevices',
+            False,
+            'Indicates the radio has a non-static list of subdevices',
+        )
 
-        self.init("valid_modes", list(MODES),
-                  "Supported emission (or receive) modes")
-        self.init("valid_tmodes", [],
-                  "Supported tone squelch modes")
-        self.init("valid_duplexes", ["", "+", "-"],
-                  "Supported duplex modes")
-        self.init("valid_tuning_steps", list(COMMON_TUNING_STEPS),
-                  "Supported tuning steps")
-        self.init("valid_bands", [],
-                  "Supported frequency ranges")
-        self.init("valid_skips", ["", "S"],
-                  "Supported memory scan skip settings")
-        self.init("valid_power_levels", [],
-                  "Supported power levels")
-        self.init("valid_characters", CHARSET_UPPER_NUMERIC,
-                  "Supported characters for a memory's alphanumeric tag")
-        self.init("valid_name_length", 6,
-                  "The maximum number of characters in a memory's " +
-                  "alphanumeric tag")
-        self.init("valid_cross_modes", list(CROSS_MODES),
-                  "Supported tone cross modes")
-        self.init("valid_tones", list(TONES),
-                  "Support Tones")
-        self.init("valid_dtcs_pols", ["NN", "RN", "NR", "RR"],
-                  "Supported DTCS polarities")
-        self.init("valid_dtcs_codes", list(DTCS_CODES),
-                  "Supported DTCS codes")
-        self.init("valid_special_chans", [],
-                  "Supported special channel names")
+        self.init(
+            'valid_modes', list(MODES), 'Supported emission (or receive) modes'
+        )
+        self.init('valid_tmodes', [], 'Supported tone squelch modes')
+        self.init('valid_duplexes', ['', '+', '-'], 'Supported duplex modes')
+        self.init(
+            'valid_tuning_steps',
+            list(COMMON_TUNING_STEPS),
+            'Supported tuning steps',
+        )
+        self.init('valid_bands', [], 'Supported frequency ranges')
+        self.init(
+            'valid_skips', ['', 'S'], 'Supported memory scan skip settings'
+        )
+        self.init('valid_power_levels', [], 'Supported power levels')
+        self.init(
+            'valid_characters',
+            CHARSET_UPPER_NUMERIC,
+            "Supported characters for a memory's alphanumeric tag",
+        )
+        self.init(
+            'valid_name_length',
+            6,
+            "The maximum number of characters in a memory's "
+            + 'alphanumeric tag',
+        )
+        self.init(
+            'valid_cross_modes',
+            list(CROSS_MODES),
+            'Supported tone cross modes',
+        )
+        self.init('valid_tones', list(TONES), 'Support Tones')
+        self.init(
+            'valid_dtcs_pols',
+            ['NN', 'RN', 'NR', 'RR'],
+            'Supported DTCS polarities',
+        )
+        self.init('valid_dtcs_codes', list(DTCS_CODES), 'Supported DTCS codes')
+        self.init('valid_special_chans', [], 'Supported special channel names')
 
-        self.init("has_sub_devices", False,
-                  "Indicates that the radio behaves as two semi-independent " +
-                  "devices")
-        self.init("memory_bounds", (0, 1),
-                  "The minimum and maximum channel numbers")
-        self.init("can_odd_split", False,
-                  "Indicates that the radio can store an independent " +
-                  "transmit frequency")
-        self.init("can_delete", True,
-                  "Indicates that the radio can delete memories")
-        self.init("requires_call_lists", True,
-                  "[D-STAR] Indicates that the radio requires all callsigns " +
-                  "to be in the master list and cannot be stored " +
-                  "arbitrarily in each memory channel")
-        self.init("has_implicit_calls", False,
-                  "[D-STAR] Indicates that the radio has an implied " +
-                  "callsign at the beginning of the master URCALL list")
+        self.init(
+            'has_sub_devices',
+            False,
+            'Indicates that the radio behaves as two semi-independent '
+            + 'devices',
+        )
+        self.init(
+            'memory_bounds', (0, 1), 'The minimum and maximum channel numbers'
+        )
+        self.init(
+            'can_odd_split',
+            False,
+            'Indicates that the radio can store an independent '
+            + 'transmit frequency',
+        )
+        self.init(
+            'can_delete', True, 'Indicates that the radio can delete memories'
+        )
+        self.init(
+            'requires_call_lists',
+            True,
+            '[D-STAR] Indicates that the radio requires all callsigns '
+            + 'to be in the master list and cannot be stored '
+            + 'arbitrarily in each memory channel',
+        )
+        self.init(
+            'has_implicit_calls',
+            False,
+            '[D-STAR] Indicates that the radio has an implied '
+            + 'callsign at the beginning of the master URCALL list',
+        )
 
     def is_a_feature(self, name):
         """Returns True if @name is a valid feature flag name"""
@@ -1077,11 +1470,12 @@ class RadioFeatures:
     @property
     def concise_bands(self):
         pp_range_strings = [
-            format_freq(lo).rstrip('0').rstrip('.') +
-            '-' +
-            format_freq(hi).rstrip('0').rstrip('.') +
-            'MHz'
-            for lo, hi in self.valid_bands]
+            format_freq(lo).rstrip('0').rstrip('.')
+            + '-'
+            + format_freq(hi).rstrip('0').rstrip('.')
+            + 'MHz'
+            for lo, hi in self.valid_bands
+        ]
         return ', '.join(pp_range_strings)
 
     def validate_memory(self, mem):
@@ -1103,60 +1497,71 @@ class RadioFeatures:
         msgs = []
 
         lo, hi = self.memory_bounds
-        if not self.has_infinite_number and \
-                (mem.number < lo or mem.number > hi) and \
-                mem.extd_number not in self.valid_special_chans:
-            msg = ValidationWarning("Location %i is out of range" % mem.number)
+        if (
+            not self.has_infinite_number
+            and (mem.number < lo or mem.number > hi)
+            and mem.extd_number not in self.valid_special_chans
+        ):
+            msg = ValidationWarning('Location %i is out of range' % mem.number)
             msgs.append(msg)
 
-        if (self.valid_modes and
-                mem.mode not in self.valid_modes and
-                'mode' not in mem.immutable and
-                mem.mode != "Auto"):
-            msg = ValidationError("Mode %s not supported" % mem.mode)
+        if (
+            self.valid_modes
+            and mem.mode not in self.valid_modes
+            and 'mode' not in mem.immutable
+            and mem.mode != 'Auto'
+        ):
+            msg = ValidationError('Mode %s not supported' % mem.mode)
             msgs.append(msg)
 
         if self.valid_tmodes and mem.tmode not in self.valid_tmodes:
-            msg = ValidationError("Tone mode %s not supported" % mem.tmode)
+            msg = ValidationError('Tone mode %s not supported' % mem.tmode)
             msgs.append(msg)
         else:
-            if mem.tmode == "Cross":
-                if self.valid_cross_modes and \
-                        mem.cross_mode not in self.valid_cross_modes:
-                    msg = ValidationError("Cross tone mode %s not supported" %
-                                          mem.cross_mode)
+            if mem.tmode == 'Cross':
+                if (
+                    self.valid_cross_modes
+                    and mem.cross_mode not in self.valid_cross_modes
+                ):
+                    msg = ValidationError(
+                        'Cross tone mode %s not supported' % mem.cross_mode
+                    )
                     msgs.append(msg)
 
         if self.valid_tones and mem.rtone not in self.valid_tones:
-            msg = ValidationError("Tone %.1f not supported" % mem.rtone)
+            msg = ValidationError('Tone %.1f not supported' % mem.rtone)
             msgs.append(msg)
         if self.valid_tones and mem.ctone not in self.valid_tones:
-            msg = ValidationError("Tone %.1f not supported" % mem.ctone)
+            msg = ValidationError('Tone %.1f not supported' % mem.ctone)
             msgs.append(msg)
 
-        if self.has_dtcs_polarity and \
-                mem.dtcs_polarity not in self.valid_dtcs_pols:
-            msg = ValidationError("DTCS Polarity %s not supported" %
-                                  mem.dtcs_polarity)
+        if (
+            self.has_dtcs_polarity
+            and mem.dtcs_polarity not in self.valid_dtcs_pols
+        ):
+            msg = ValidationError(
+                'DTCS Polarity %s not supported' % mem.dtcs_polarity
+            )
             msgs.append(msg)
 
-        if self.valid_dtcs_codes and \
-                mem.dtcs not in self.valid_dtcs_codes:
-            msg = ValidationError("DTCS Code %03i not supported" % mem.dtcs)
+        if self.valid_dtcs_codes and mem.dtcs not in self.valid_dtcs_codes:
+            msg = ValidationError('DTCS Code %03i not supported' % mem.dtcs)
             msgs.append(msg)
-        if self.valid_dtcs_codes and \
-                mem.rx_dtcs not in self.valid_dtcs_codes:
-            msg = ValidationError("DTCS Code %03i not supported" % mem.rx_dtcs)
+        if self.valid_dtcs_codes and mem.rx_dtcs not in self.valid_dtcs_codes:
+            msg = ValidationError('DTCS Code %03i not supported' % mem.rx_dtcs)
             msgs.append(msg)
 
         if self.valid_duplexes and mem.duplex not in self.valid_duplexes:
-            msg = ValidationError("Duplex %s not supported" % mem.duplex)
+            msg = ValidationError('Duplex %s not supported' % mem.duplex)
             msgs.append(msg)
 
         ts = mem.tuning_step
-        if self.valid_tuning_steps and ts not in self.valid_tuning_steps and \
-                not self.has_nostep_tuning:
-            msg = ValidationError("Tuning step %.2f not supported" % ts)
+        if (
+            self.valid_tuning_steps
+            and ts not in self.valid_tuning_steps
+            and not self.has_nostep_tuning
+        ):
+            msg = ValidationError('Tuning step %.2f not supported' % ts)
             msgs.append(msg)
 
         if self.valid_bands:
@@ -1167,20 +1572,24 @@ class RadioFeatures:
                     break
             if not valid:
                 msg = ValidationError(
-                    ("Frequency {freq} is out "
-                     "of supported ranges {ranges}").format(
-                         freq=format_freq(mem.freq),
-                         ranges=self.concise_bands))
+                    (
+                        'Frequency {freq} is out of supported ranges {ranges}'
+                    ).format(
+                        freq=format_freq(mem.freq), ranges=self.concise_bands
+                    )
+                )
                 msgs.append(msg)
 
-        if self.valid_bands and \
-                self.valid_duplexes and \
-                mem.duplex in ["split", "-", "+"]:
-            if mem.duplex == "split":
+        if (
+            self.valid_bands
+            and self.valid_duplexes
+            and mem.duplex in ['split', '-', '+']
+        ):
+            if mem.duplex == 'split':
                 freq = mem.offset
-            elif mem.duplex == "-":
+            elif mem.duplex == '-':
                 freq = mem.freq - mem.offset
-            elif mem.duplex == "+":
+            elif mem.duplex == '+':
                 freq = mem.freq + mem.offset
             valid = False
             for lo, hi in self.valid_bands:
@@ -1189,21 +1598,26 @@ class RadioFeatures:
                     break
             if not valid:
                 msg = ValidationError(
-                    ("Tx freq {freq} is out "
-                     "of supported range").format(freq=format_freq(freq)))
+                    ('Tx freq {freq} is out of supported range').format(
+                        freq=format_freq(freq)
+                    )
+                )
                 msgs.append(msg)
 
         if mem.power and self.valid_power_levels:
             if self.has_variable_power:
-                if (mem.power < min(self.valid_power_levels) or
-                        mem.power > max(self.valid_power_levels)):
+                if mem.power < min(self.valid_power_levels) or mem.power > max(
+                    self.valid_power_levels
+                ):
                     msg = ValidationWarning(
-                        "Power level %s is out of radio's range" % mem.power)
+                        "Power level %s is out of radio's range" % mem.power
+                    )
                     msgs.append(msg)
             else:
                 if mem.power not in self.valid_power_levels:
                     msg = ValidationWarning(
-                        "Power level %s not supported" % mem.power)
+                        'Power level %s not supported' % mem.power
+                    )
                     msgs.append(msg)
 
         if self.valid_tuning_steps and not self.has_nostep_tuning:
@@ -1215,50 +1629,61 @@ class RadioFeatures:
         if self.valid_characters:
             for char in mem.name:
                 if char not in self.valid_characters:
-                    msgs.append(ValidationWarning("Name character " +
-                                                  "`%s'" % char +
-                                                  " not supported"))
+                    msgs.append(
+                        ValidationWarning(
+                            'Name character '
+                            + "`%s'" % char
+                            + ' not supported'
+                        )
+                    )
                     break
 
         if is_airband(mem.freq):
             try:
                 fix_rounded_step(mem.freq)
             except errors.InvalidDataError as e:
-                msgs.append(ValidationError(
-                    '%s: %s' % (format_freq(mem.freq), e)))
+                msgs.append(
+                    ValidationError('%s: %s' % (format_freq(mem.freq), e))
+                )
 
         return msgs
 
 
 class ValidationMessage(str):
     """Base class for Validation Errors and Warnings"""
+
     pass
 
 
 class ValidationWarning(ValidationMessage):
     """A non-fatal warning during memory validation"""
+
     pass
 
 
 class ValidationError(ValidationMessage):
     """A fatal error during memory validation"""
+
     pass
 
 
 def split_validation_msgs(msgs):
     """Split a list of msgs into warnings,errors"""
-    return ([x for x in msgs if isinstance(x, ValidationWarning)],
-            [x for x in msgs if isinstance(x, ValidationError)])
+    return (
+        [x for x in msgs if isinstance(x, ValidationWarning)],
+        [x for x in msgs if isinstance(x, ValidationError)],
+    )
 
 
 class Alias(object):
-    VENDOR = "Unknown"
-    MODEL = "Unknown"
-    VARIANT = ""
+    VENDOR = 'Unknown'
+    MODEL = 'Unknown'
+    VARIANT = ''
 
 
 class Radio(Alias):
     """Base class for all Radio drivers"""
+
     BAUD_RATE = 9600
     # Whether or not we should use RTS/CTS flow control
     HARDWARE_FLOW = False
@@ -1285,7 +1710,7 @@ class Radio(Alias):
     @classmethod
     def get_name(cls) -> str:
         """Return a printable name for this radio"""
-        return "%s %s" % (cls.VENDOR, cls.MODEL)
+        return '%s %s' % (cls.VENDOR, cls.MODEL)
 
     @classmethod
     def get_prompts(cls) -> RadioPrompts:
@@ -1339,7 +1764,7 @@ class Radio(Alias):
 
     def get_mapping_models(self):
         """Returns a list of MappingModel objects (or an empty list)"""
-        if hasattr(self, "get_bank_model"):
+        if hasattr(self, 'get_bank_model'):
             # FIXME: Backwards compatibility for old bank models
             bank_model = self.get_bank_model()
             if bank_model:
@@ -1356,8 +1781,13 @@ class Radio(Alias):
         if rf.valid_characters == rf.valid_characters.upper():
             # Radio only supports uppercase, so help out here
             name = name.upper()
-        return "".join([x for x in name[:rf.valid_name_length]
-                        if x in rf.valid_characters])
+        return ''.join(
+            [
+                x
+                for x in name[: rf.valid_name_length]
+                if x in rf.valid_characters
+            ]
+        )
 
     def get_sub_devices(self) -> list[Alias]:
         """Return a list of sub-device Radio objects, if
@@ -1414,7 +1844,8 @@ class Radio(Alias):
         for field in existing.immutable:
             if getattr(existing, field) != getattr(new, field):
                 raise ImmutableValueError(
-                    'Field %s is not mutable on this memory' % field)
+                    'Field %s is not mutable on this memory' % field
+                )
 
 
 class ExternalMemoryProperties:
@@ -1467,6 +1898,7 @@ class ExternalMemoryProperties:
 
 class FileBackedRadio(Radio):
     """A file-backed radio stores its data in a file"""
+
     FILE_EXTENSION = 'dat'
 
     def save(self, filename):
@@ -1494,7 +1926,8 @@ class DetectableInterface:
         detected = getattr(cls, class_detected_models_attribute(cls), None)
         assert detected is None, (
             'Class has detected models but no detect_from_serial() '
-            'implementation')
+            'implementation'
+        )
         raise NotImplementedError()
 
     @classmethod
@@ -1523,11 +1956,13 @@ class DetectableInterface:
         return getattr(cls, '_MINOR_VARIANT', False)
 
 
-class CloneModeRadio(FileBackedRadio, ExternalMemoryProperties,
-                     DetectableInterface):
+class CloneModeRadio(
+    FileBackedRadio, ExternalMemoryProperties, DetectableInterface
+):
     """A clone-mode radio does a full memory dump in and out and we store
     an image of the radio into an image file"""
-    FILE_EXTENSION = "img"
+
+    FILE_EXTENSION = 'img'
     MAGIC = b'\x00\xffchirp\xeeimg\x00\x01'
 
     _memsize = 0
@@ -1625,14 +2060,17 @@ class CloneModeRadio(FileBackedRadio, ExternalMemoryProperties,
 
     def load_mmap(self, filename):
         """Load the radio's memory map from @filename"""
-        mapfile = open(filename, "rb")
+        mapfile = open(filename, 'rb')
         data = mapfile.read()
         if self.MAGIC in data:
             data, self._metadata = self._strip_metadata(data)
-            if ('chirp_version' in self._metadata and
-                    is_version_newer(self._metadata.get('chirp_version'))):
-                LOG.warning('Image is from version %s but we are %s' % (
-                    self._metadata.get('chirp_version'), CHIRP_VERSION))
+            if 'chirp_version' in self._metadata and is_version_newer(
+                self._metadata.get('chirp_version')
+            ):
+                LOG.warning(
+                    'Image is from version %s but we are %s'
+                    % (self._metadata.get('chirp_version'), CHIRP_VERSION)
+                )
         if self.NEEDS_COMPAT_SERIAL:
             self._mmap = memmap.MemoryMap(data)
         else:
@@ -1646,14 +2084,14 @@ class CloneModeRadio(FileBackedRadio, ExternalMemoryProperties,
         If IOError raise a File Access Error Exception
         """
         try:
-            mapfile = open(filename, "wb")
+            mapfile = open(filename, 'wb')
             mapfile.write(self._mmap.get_byte_compatible().get_packed())
-            if filename.lower().endswith(".img"):
+            if filename.lower().endswith('.img'):
                 mapfile.write(self.MAGIC)
                 mapfile.write(self._make_metadata())
             mapfile.close()
         except IOError:
-            raise Exception("File Access Error")
+            raise Exception('File Access Error')
 
     def get_mmap(self):
         """Return the radio's memory map object"""
@@ -1673,7 +2111,8 @@ class CloneModeRadio(FileBackedRadio, ExternalMemoryProperties,
             self._metadata.setdefault('mem_extra', {})
             try:
                 memory.comment = self._metadata['mem_extra'].get(
-                    '%04i_comment' % memory.number, '')
+                    '%04i_comment' % memory.number, ''
+                )
             except ImmutableValueError:
                 pass
         return memory
@@ -1697,6 +2136,7 @@ class CloneModeRadio(FileBackedRadio, ExternalMemoryProperties,
 
 class LiveRadio(Radio, DetectableInterface):
     """Base class for all Live-Mode radios"""
+
     pass
 
 
@@ -1710,6 +2150,7 @@ class NetworkSourceRadio(Radio):
 
 class IcomDstarSupport:
     """Base interface for radios supporting Icom's D-STAR technology"""
+
     MYCALL_LIMIT = (1, 1)
     URCALL_LIMIT = (1, 1)
     RPTCALL_LIMIT = (1, 1)
@@ -1741,16 +2182,20 @@ class IcomDstarSupport:
 
 class ExperimentalRadio:
     """Interface for experimental radios"""
+
     @classmethod
     def get_experimental_warning(cls):
-        return ("This radio's driver is marked as experimental and may " +
-                "be unstable or unsafe to use.")
+        return (
+            "This radio's driver is marked as experimental and may "
+            + 'be unstable or unsafe to use.'
+        )
 
 
 class Status:
     """Clone status object for conveying clone progress to the UI"""
-    name = "Job"
-    msg = "Unknown"
+
+    name = 'Job'
+    msg = 'Unknown'
     max = 100
     cur = 0
 
@@ -1758,12 +2203,12 @@ class Status:
         try:
             pct = (self.cur / float(self.max)) * 100
             nticks = int(pct) // 10
-            ticks = "=" * nticks
+            ticks = '=' * nticks
         except ValueError:
             pct = 0.0
-            ticks = "?" * 10
+            ticks = '?' * 10
 
-        return "|%-10s| %2.1f%% %s" % (ticks, pct, self.msg)
+        return '|%-10s| %2.1f%% %s' % (ticks, pct, self.msg)
 
 
 def is_fractional_step(freq):
@@ -1814,6 +2259,7 @@ def is_0_5(freq):
 def make_is(stephz):
     def validator(freq):
         return freq % stephz == 0
+
     return validator
 
 
@@ -1832,8 +2278,10 @@ def required_step(freq, allowed=None):
             LOG.debug('Chose step %s for %s' % (step, format_freq(freq)))
             return step
 
-    raise errors.InvalidDataError("Unable to find a supported " +
-                                  "tuning step for %s" % format_freq(freq))
+    raise errors.InvalidDataError(
+        'Unable to find a supported '
+        + 'tuning step for %s' % format_freq(freq)
+    )
 
 
 def is_airband(freq):
@@ -1871,17 +2319,20 @@ def fix_rounded_step(freq):
             ch_index = (freq - base) / 5000
             if ch_index == 1.0:
                 # Lower of the three, bump down
-                freq -= (25000 // 3)
+                freq -= 25000 // 3
             elif ch_index == 3.0:
                 # Upper of the three, bump up
-                freq += (25000 // 3)
+                freq += 25000 // 3
             elif ch_index >= 4.0 and ch_index == int(ch_index):
                 # This is 5kHz-aligned but not one of the three sub-channels,
                 # thus this is one of the gaps in the channel numbers. Refuse
                 # it so that it's clear to the user.
                 raise errors.InvalidDataError(
-                    _('Aircraft frequencies must be aligned to 25kHz, 8.33kHz'
-                      ', be or a valid channel'))
+                    _(
+                        'Aircraft frequencies must be aligned to 25kHz, 8.33kHz'
+                        ', be or a valid channel'
+                    )
+                )
 
             # These are the three possible 8.33kHz-aligned channels within
             # this 25kHz block.
@@ -1889,10 +2340,18 @@ def fix_rounded_step(freq):
 
             # Find the closest one to the original frequency
             best = min(channels, key=lambda x: abs(x - freq))
-            LOG.debug('833: Orig %s Channels %s best %s adjusted %s diffs %s '
-                      'chindex %s' % (
-                          orig, channels, best, freq,
-                          [x - freq for x in channels], ch_index))
+            LOG.debug(
+                '833: Orig %s Channels %s best %s adjusted %s diffs %s '
+                'chindex %s'
+                % (
+                    orig,
+                    channels,
+                    best,
+                    freq,
+                    [x - freq for x in channels],
+                    ch_index,
+                )
+            )
             return best
         else:
             return freq
@@ -1935,8 +2394,9 @@ def fix_rounded_step(freq):
     except errors.InvalidDataError:
         pass
 
-    raise errors.InvalidDataError("Unable to correct rounded frequency " +
-                                  format_freq(freq))
+    raise errors.InvalidDataError(
+        'Unable to correct rounded frequency ' + format_freq(freq)
+    )
 
 
 def _name(name, len, just_upper):
@@ -2019,39 +2479,39 @@ def split_tone_decode(mem, txtone, rxtone):
     txmode, txval, txpol = txtone
     rxmode, rxval, rxpol = rxtone
 
-    mem.dtcs_polarity = "%s%s" % (txpol or "N", rxpol or "N")
+    mem.dtcs_polarity = '%s%s' % (txpol or 'N', rxpol or 'N')
 
     if not txmode and not rxmode:
         # No tone
         return
 
-    if txmode == "Tone" and not rxmode:
-        mem.tmode = "Tone"
+    if txmode == 'Tone' and not rxmode:
+        mem.tmode = 'Tone'
         mem.rtone = txval
         return
 
-    if txmode == rxmode == "Tone" and txval == rxval:
+    if txmode == rxmode == 'Tone' and txval == rxval:
         # TX and RX same tone -> TSQL
-        mem.tmode = "TSQL"
+        mem.tmode = 'TSQL'
         mem.ctone = txval
         return
 
-    if txmode == rxmode == "DTCS" and txval == rxval:
-        mem.tmode = "DTCS"
+    if txmode == rxmode == 'DTCS' and txval == rxval:
+        mem.tmode = 'DTCS'
         mem.dtcs = txval
         return
 
-    mem.tmode = "Cross"
-    mem.cross_mode = "%s->%s" % (txmode or "", rxmode or "")
+    mem.tmode = 'Cross'
+    mem.cross_mode = '%s->%s' % (txmode or '', rxmode or '')
 
-    if txmode == "Tone":
+    if txmode == 'Tone':
         mem.rtone = txval
-    elif txmode == "DTCS":
+    elif txmode == 'DTCS':
         mem.dtcs = txval
 
-    if rxmode == "Tone":
+    if rxmode == 'Tone':
         mem.ctone = rxval
-    elif rxmode == "DTCS":
+    elif rxmode == 'DTCS':
         mem.rx_dtcs = rxval
 
 
@@ -2068,45 +2528,42 @@ def split_tone_encode(mem):
     txval = None
     rxval = None
 
-    if mem.tmode == "Tone":
-        txmode = "Tone"
+    if mem.tmode == 'Tone':
+        txmode = 'Tone'
         txval = mem.rtone
-    elif mem.tmode == "TSQL":
-        txmode = rxmode = "Tone"
+    elif mem.tmode == 'TSQL':
+        txmode = rxmode = 'Tone'
         txval = rxval = mem.ctone
-    elif mem.tmode == "DTCS":
-        txmode = rxmode = "DTCS"
+    elif mem.tmode == 'DTCS':
+        txmode = rxmode = 'DTCS'
         txval = rxval = mem.dtcs
-    elif mem.tmode == "Cross":
-        txmode, rxmode = mem.cross_mode.split("->", 1)
-        if txmode == "Tone":
+    elif mem.tmode == 'Cross':
+        txmode, rxmode = mem.cross_mode.split('->', 1)
+        if txmode == 'Tone':
             txval = mem.rtone
-        elif txmode == "DTCS":
+        elif txmode == 'DTCS':
             txval = mem.dtcs
-        if rxmode == "Tone":
+        if rxmode == 'Tone':
             rxval = mem.ctone
-        elif rxmode == "DTCS":
+        elif rxmode == 'DTCS':
             rxval = mem.rx_dtcs
 
-    if txmode == "DTCS":
+    if txmode == 'DTCS':
         txpol = mem.dtcs_polarity[0]
     else:
         txpol = None
-    if rxmode == "DTCS":
+    if rxmode == 'DTCS':
         rxpol = mem.dtcs_polarity[1]
     else:
         rxpol = None
 
-    return ((txmode, txval, txpol),
-            (rxmode, rxval, rxpol))
+    return ((txmode, txval, txpol), (rxmode, rxval, rxpol))
 
 
 def sanitize_string(astring, validcharset=CHARSET_ASCII, replacechar='*'):
     myfilter = ''.join(
-        [
-            [replacechar, chr(x)][chr(x) in validcharset]
-            for x in range(256)
-        ])
+        [[replacechar, chr(x)][chr(x) in validcharset] for x in range(256)]
+    )
     return astring.translate(myfilter)
 
 
@@ -2144,8 +2601,11 @@ def http_user_agent():
     ver = sys.version_info
     return 'chirp/%s (Python %i.%i.%i on %s)' % (
         CHIRP_VERSION,
-        ver.major, ver.minor, ver.micro,
-        sys.platform)
+        ver.major,
+        ver.minor,
+        ver.micro,
+        sys.platform,
+    )
 
 
 def urlretrieve(url, fn):
@@ -2222,9 +2682,14 @@ def mem_to_text(mem):
     if mem.duplex == 'split':
         pieces.append(format_freq(mem.offset))
     elif mem.duplex in ('-', '+'):
-        pieces.append('%s%i.%3.3s' % (mem.duplex,
+        pieces.append(
+            '%s%i.%3.3s'
+            % (
+                mem.duplex,
                                       mem.offset / 1000000,
-                                      '%03i' % (mem.offset % 1000000)))
+                '%03i' % (mem.offset % 1000000),
+            )
+        )
     txrx = split_tone_encode(mem)
     for mode, tone, pol in txrx:
         if mode == 'Tone':
@@ -2249,8 +2714,7 @@ def is_split(bands, freq1, freq2):
 
     # determine if the two freqs are in the same band
     for low, high in bands:
-        if freq1 >= low and freq1 <= high and \
-                freq2 >= low and freq2 <= high:
+        if freq1 >= low and freq1 <= high and freq2 >= low and freq2 <= high:
             # if the two freqs are on the same Band this is not a split
             return False
 
