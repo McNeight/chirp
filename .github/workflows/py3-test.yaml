@@ -52,8 +52,8 @@ jobs:
         id: pyinst
         with:
           python-version: '3.12'
-      - run: "sudo ln -s ${{ steps.pyinst.outputs.python-path }} /usr/local/bin/python3.12"
-      - run: "echo $PATH; ls -l /usr/local/bin"
+      - run: 'sudo ln -s ${{ steps.pyinst.outputs.python-path }} /usr/local/bin/python3.12'
+      - run: 'echo $PATH; ls -l /usr/local/bin'
       - name: Run tox
         uses: ./.github/actions/py3-tox
         with:

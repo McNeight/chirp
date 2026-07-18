@@ -1,9 +1,9 @@
 name: chirp-snap
 summary: A free, open-source tool for programming your amateur radio
 description: |
-    CHIRP is a free, open-source tool for programming your amateur radio.
-    It supports a large number of manufacturers and models, as well as
-    provides a way to interface with multiple data sources and formats.
+  CHIRP is a free, open-source tool for programming your amateur radio.
+  It supports a large number of manufacturers and models, as well as
+  provides a way to interface with multiple data sources and formats.
 
 adopt-info: chirp
 base: core22
@@ -40,7 +40,7 @@ parts:
     build-environment:
       # WORKAROUND: The python plugin is broken with gnome extension
       - PATH: ${CRAFT_PART_INSTALL}/bin:${PATH}
-      - PYTHONPATH: ""
+      - PYTHONPATH: ''
     override-pull: |
       apt install -y curl
       ver_with_next=$(basename $(curl -H "User-Agent: goldstar611" -Ls -o/dev/null -w '%{url_effective}' https://archive.chirpmyradio.com/download?stream=next))
