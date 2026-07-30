@@ -31,13 +31,13 @@ BANDS = {
 
 
 class BitwiseFrame(icomciv.Frame):
-    _fmt = ''
+    _fmt = ""
     _datalen = 0
     _querycmd: int | None = None
 
     def __init__(self):
         super().__init__()
-        self._data = memmap.MemoryMapBytes(b'\x00' * self._datalen)
+        self._data = memmap.MemoryMapBytes(b"\x00" * self._datalen)
         self.parse()
 
     def parse(self):
@@ -60,7 +60,7 @@ class SetFreqFrame(BitwiseFrame):
     _cmd = 0x05
     _querycmd = 0x03
     _sub = None
-    _fmt = 'lbcd freq[5];'
+    _fmt = "lbcd freq[5];"
 
     @property
     def freq(self):
@@ -76,18 +76,18 @@ class SetModeFrame(BitwiseFrame):
     _cmd = 0x06
     _querycmd = 0x04
     _sub = None
-    _fmt = 'u8 mode; u8 filter;'
+    _fmt = "u8 mode; u8 filter;"
     _modes = [
-        ('LSB', 0),
-        ('USB', 1),
-        ('AM', 2),
-        ('CW', 3),
-        ('RTTY', 4),
-        ('FM', 5),
-        ('CW-R', 7),
-        ('RTTY-R', 8),
-        ('PSK', 12),
-        ('PSK-R', 17),
+        ("LSB", 0),
+        ("USB", 1),
+        ("AM", 2),
+        ("CW", 3),
+        ("RTTY", 4),
+        ("FM", 5),
+        ("CW-R", 7),
+        ("RTTY-R", 8),
+        ("PSK", 12),
+        ("PSK-R", 17),
     ]
 
     @property
@@ -95,7 +95,7 @@ class SetModeFrame(BitwiseFrame):
         for mode, index in self._modes:
             if index == self._obj.mode:
                 return mode
-        raise RuntimeError('Unsupported mode %i' % self._obj.mode)
+        raise RuntimeError("Unsupported mode %i" % self._obj.mode)
 
     @mode.setter
     def mode(self, mode):
@@ -104,7 +104,7 @@ class SetModeFrame(BitwiseFrame):
             if mode == m:
                 self._obj.mode = index
                 return
-        raise RuntimeError('Unsupported mode %s' % mode)
+        raise RuntimeError("Unsupported mode %s" % mode)
 
     @property
     def filter(self):
@@ -115,8 +115,8 @@ class BKINFrame(BitwiseFrame):
     _datalen = 1
     _cmd = 0x16
     _sub = 0x47
-    _fmt = 'u8 mode;'
-    _modes = ('off', 'semi', 'full')
+    _fmt = "u8 mode;"
+    _modes = ("off", "semi", "full")
 
     @property
     def mode(self):
@@ -131,7 +131,7 @@ class CWSpeedFrame(BitwiseFrame):
     _datalen = 2
     _cmd = 0x14
     _sub = 0x0C
-    _fmt = 'bbcd speed[2];'
+    _fmt = "bbcd speed[2];"
 
     @property
     def speed(self):
@@ -146,7 +146,7 @@ class PowerFrame(BitwiseFrame):
     _datalen = 2
     _cmd = 0x15
     _sub = 0x11
-    _fmt = 'bbcd power[2];'
+    _fmt = "bbcd power[2];"
 
     @classmethod
     def get(cls, radio):
@@ -184,13 +184,13 @@ class Demo:
 
 
 def setup(port, rcls):
-    LOG.debug('Connecting to %s' % port)
+    LOG.debug("Connecting to %s" % port)
     s = serial.Serial(port, timeout=1)
-    LOG.debug('Starting radio')
+    LOG.debug("Starting radio")
     radio = rcls(s)
-    LOG.debug('Detecting baudrate')
+    LOG.debug("Detecting baudrate")
     radio._detect_baudrate()
-    LOG.debug('Connected')
+    LOG.debug("Connected")
     return radio
 
 
@@ -200,29 +200,29 @@ def set_freq(radio, khz, mode):
     radio._send_frame(f)
     r = radio._recv_frame()
     assert r._cmd == 0xFB
-    LOG.debug('Set frequency to %i kHz', khz)
+    LOG.debug("Set frequency to %i kHz", khz)
 
     f = SetModeFrame()
     f.mode = mode
     radio._send_frame(f)
     r = radio._recv_frame()
     assert r._cmd == 0xFB
-    LOG.debug('Set mode to %s', mode)
+    LOG.debug("Set mode to %s", mode)
 
 
 def interactive_next(current):
     print()
-    print('Options:')
-    print('r: Retry this frequency')
-    print('x: Exit immediately')
-    print('[enter]: Continue to the next frequency')
-    i = input('> ').lower()
-    if i == '':
+    print("Options:")
+    print("r: Retry this frequency")
+    print("x: Exit immediately")
+    print("[enter]: Continue to the next frequency")
+    i = input("> ").lower()
+    if i == "":
         return True
-    elif i == 'r':
+    elif i == "r":
         return False
-    elif i == 'x':
-        raise RuntimeError('Abort')
+    elif i == "x":
+        raise RuntimeError("Abort")
 
 
 def auto_next(current):
@@ -232,37 +232,37 @@ def auto_next(current):
 
 def send_id(radio, call):
     f = SetModeFrame()
-    f.mode = 'CW'
+    f.mode = "CW"
     radio._send_frame(f)
     r = radio._recv_frame()
     assert r._cmd == 0xFB
-    LOG.debug('Set mode to CW')
+    LOG.debug("Set mode to CW")
 
     f = BKINFrame()
-    f.mode = 'full'
+    f.mode = "full"
     radio._send_frame(f)
     r = radio._recv_frame()
     assert r._cmd == 0xFB
-    LOG.debug('Set BK-IN to full')
+    LOG.debug("Set BK-IN to full")
 
     f = CWSpeedFrame()
     f.speed = 22
     radio._send_frame(f)
     r = radio._recv_frame()
     assert r._cmd == 0xFB
-    LOG.debug('Set key speed to 22WPM')
+    LOG.debug("Set key speed to 22WPM")
 
     f = icomciv.Frame()
     f.set_command(0x17, 0x40)
-    f.set_data(b'DE %s' % call.upper().encode())
+    f.set_data(b"DE %s" % call.upper().encode())
     radio._send_frame(f)
     r = radio._recv_frame()
     if r._cmd != 0xFB:
-        print('Radio does not support CWID - ID manually now')
+        print("Radio does not support CWID - ID manually now")
     else:
-        print('Sending id %s' % call)
+        print("Sending id %s" % call)
     time.sleep(len(call) + 2)
-    LOG.debug('Sent ID')
+    LOG.debug("Sent ID")
 
 
 def wait_for_power(radio, fn):
@@ -270,18 +270,18 @@ def wait_for_power(radio, fn):
     maxl = 0
     while po is None or not fn(po):
         po = PowerFrame.get(radio).power
-        line = sys.stdout.write('Po: |%-10s| %3iW\r' % ('=' * (po // 10), po))
+        line = sys.stdout.write("Po: |%-10s| %3iW\r" % ("=" * (po // 10), po))
         maxl = max(maxl, line)
         time.sleep(0.5)
-    sys.stdout.write('%s\r' % (' ' * maxl))
+    sys.stdout.write("%s\r" % (" " * maxl))
 
 
 def wait_for_tune(radio):
-    print('Transmit to tune now (waiting for key)')
+    print("Transmit to tune now (waiting for key)")
     wait_for_power(radio, lambda po: po > 0)
-    print('Keyed, waiting for completion')
+    print("Keyed, waiting for completion")
     wait_for_power(radio, lambda po: po == 0)
-    print('Done')
+    print("Done")
 
 
 @contextlib.contextmanager
@@ -298,7 +298,7 @@ def restore_settings(radio):
     try:
         yield
     finally:
-        LOG.debug('Restoring previous settings')
+        LOG.debug("Restoring previous settings")
         for f in settings:
             radio._send_frame(f)
             radio._recv_frame()
@@ -309,8 +309,8 @@ def tune_loop(radio, bands, call, next_fn):
         for freq in BANDS[band]:
             done = False
             while not done:
-                print('Changing to %i kHz' % freq)
-                set_freq(radio, freq, 'RTTY')
+                print("Changing to %i kHz" % freq)
+                set_freq(radio, freq, "RTTY")
                 time.sleep(1)
 
                 wait_for_tune(radio)
@@ -327,43 +327,49 @@ def tune_loop(radio, bands, call, next_fn):
 def main():
     # More of these may work, but these are known to work
     radios = {
-        '7200': icomciv.Icom7200Radio,
-        '7300': icomciv.Icom7300Radio,
-        '7610': icomciv.Icom7610Radio,
-        'Demo': Demo,
+        "7200": icomciv.Icom7200Radio,
+        "7300": icomciv.Icom7300Radio,
+        "7610": icomciv.Icom7610Radio,
+        "Demo": Demo,
     }
 
-    p = argparse.ArgumentParser(description=(
-        'A simple tool to automate running through the required frequencies '
-        'to tune an SPE Expert linear.'))
-    p.add_argument('radio', choices=radios,
-                   help='Radio model')
-    p.add_argument('port', help='Serial port for CAT control')
-    p.add_argument('--bands', help=('Comma-separated list of bands '
-                                    'to tune (160, 80, etc)'))
-    p.add_argument('--call', help='Callsign for CW ID after each step')
-    p.add_argument('--next',
-                   choices=['interactive', 'auto'],
-                   default='interactive',
-                   help='Next step strategy')
-    p.add_argument('--debug', action='store_true',
-                   help='Enable verbose debugging')
+    p = argparse.ArgumentParser(
+        description=(
+            "A simple tool to automate running through the required frequencies "
+            "to tune an SPE Expert linear."
+        )
+    )
+    p.add_argument("radio", choices=radios, help="Radio model")
+    p.add_argument("port", help="Serial port for CAT control")
+    p.add_argument(
+        "--bands", help=("Comma-separated list of bands " "to tune (160, 80, etc)")
+    )
+    p.add_argument("--call", help="Callsign for CW ID after each step")
+    p.add_argument(
+        "--next",
+        choices=["interactive", "auto"],
+        default="interactive",
+        help="Next step strategy",
+    )
+    p.add_argument("--debug", action="store_true", help="Enable verbose debugging")
     args = p.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    next_fn = globals()['%s_next' % args.next]
+    next_fn = globals()["%s_next" % args.next]
 
     try:
-        bands = [int(i) for i in args.bands.split(',')]
+        bands = [int(i) for i in args.bands.split(",")]
         for band in bands:
             assert band in BANDS
     except (ValueError, AssertionError):
-        print('Invalid band input. Must be one or more of %s' % (
-            ','.join(str(i) for i in BANDS.keys())))
+        print(
+            "Invalid band input. Must be one or more of %s"
+            % (",".join(str(i) for i in BANDS.keys()))
+        )
         return 1
 
-    if args.radio == 'Demo':
+    if args.radio == "Demo":
         radio = Demo()
     else:
         radio = setup(args.port, radios[args.radio])
@@ -372,7 +378,7 @@ def main():
         tune_loop(radio, bands, args.call, next_fn)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:

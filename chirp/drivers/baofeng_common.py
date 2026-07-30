@@ -22,9 +22,13 @@ import logging
 from chirp import chirp_common, memmap
 from chirp import errors, util
 from chirp import bandplan_na
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, InternalError, \
-    RadioSettingValueList
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    InternalError,
+    RadioSettingValueList,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -51,11 +55,10 @@ def _rawrecv(radio, amount):
         raise errors.RadioError(msg)
 
     if not data:
-        LOG.debug('No response from radio')
+        LOG.debug("No response from radio")
         raise errors.RadioNoContactLikelyK1()
     elif len(data) != amount:
-        LOG.debug('Wanted %i, got %i: %s',
-                  amount, len(data), util.hexprint(data))
+        LOG.debug("Wanted %i, got %i: %s", amount, len(data), util.hexprint(data))
         msg = "Error reading data from radio: not the amount of data we want."
         raise errors.RadioError(msg)
 
@@ -81,7 +84,7 @@ def _make_frame(cmd, addr, length, data=""):
 
 
 def _recv(radio, addr, length):
-    """Get data from the radio """
+    """Get data from the radio"""
     # read 4 bytes of header
     hdr = _rawrecv(radio, 4)
 
@@ -108,9 +111,8 @@ def _read_from_data(data, data_start, data_stop):
 
 def _get_data_from_image(radio, _data_start, _data_stop):
     image_data = _read_from_data(
-        radio.get_mmap().get_byte_compatible(),
-        _data_start,
-        _data_stop)
+        radio.get_mmap().get_byte_compatible(), _data_start, _data_stop
+    )
     return image_data
 
 
@@ -121,8 +123,7 @@ def _read_block(radio, start, size, first_command=False):
     if radio._ack_block and first_command is False:
         ack = radio.pipe.read(1)
         if ack != b"\x06":
-            raise errors.RadioError(
-                "Radio refused to send second block 0x%04x" % start)
+            raise errors.RadioError("Radio refused to send second block 0x%04x" % start)
 
     answer = radio.pipe.read(4)
     if len(answer) != 4:
@@ -159,7 +160,7 @@ def _get_aux_data_from_radio(radio):
     area2 = block3[48:64]
     area3 = block4[16:64]
     # check for dropped byte
-    dropped_byte = block5[15:16] == b"\xFF"  # True/False
+    dropped_byte = block5[15:16] == b"\xff"  # True/False
     return version, area1, area2, area3, dropped_byte
 
 
@@ -184,7 +185,7 @@ def _get_radio_firmware_version(radio):
     # at the end, 0x1FFF, with 0x80).
 
     # detect dropped byte
-    dropped_byte = (block2[15:16] == b"\xFF")  # dropped byte?
+    dropped_byte = block2[15:16] == b"\xff"  # dropped byte?
 
     return version, dropped_byte
 
@@ -194,8 +195,9 @@ def _image_ident_from_data(data, start, stop):
 
 
 def _get_image_firmware_version(radio):
-    return _image_ident_from_data(radio.get_mmap(), radio._fw_ver_start,
-                                  radio._fw_ver_start + 0x0E)
+    return _image_ident_from_data(
+        radio.get_mmap(), radio._fw_ver_start, radio._fw_ver_start + 0x0E
+    )
 
 
 def _do_ident(radio, magic):
@@ -272,7 +274,7 @@ def _download(radio):
     LOG.debug(util.hexprint(radio_ident))
     LOG.info("Radio has dropped byte issue: %s" % repr(has_dropped_byte))
 
-    if radio_ident == "\xFF" * 16:
+    if radio_ident == "\xff" * 16:
         ident += radio.MODEL.ljust(8)
     elif radio.MODEL in ("GMRS-V1", "GMRS-V2", "MURS-V1", "MURS-V2"):
         # check if radio_ident is OK
@@ -316,8 +318,7 @@ def _download(radio):
             if radio._ack_block:
                 ack = _rawrecv(radio, 1)
                 if ack != b"\x06":
-                    raise errors.RadioError(
-                        "Radio refused to send block 0x%04x" % addr)
+                    raise errors.RadioError("Radio refused to send block 0x%04x" % addr)
 
             # now we read
             d = _recv(radio, addr, blocksize)
@@ -344,8 +345,9 @@ def _upload(radio):
     _ident_radio(radio)
 
     # identify radio
-    radio_ident, aux_r1, aux_r2, aux_r3, \
-        has_dropped_byte = _get_aux_data_from_radio(radio)
+    radio_ident, aux_r1, aux_r2, aux_r3, has_dropped_byte = _get_aux_data_from_radio(
+        radio
+    )
     LOG.info("Radio firmware version:")
     LOG.debug(util.hexprint(radio_ident))
     LOG.info("Radio has dropped byte issue: %s" % repr(has_dropped_byte))
@@ -392,17 +394,20 @@ def _upload(radio):
         aux_matched = True
 
     if has_dropped_byte and not aux_matched:
-        msg = ("Image not supported by radio. You must...\n"
-               "1. Download from radio.\n"
-               "2. Make changes.\n"
-               "3. Upload back to same radio.")
+        msg = (
+            "Image not supported by radio. You must...\n"
+            "1. Download from radio.\n"
+            "2. Make changes.\n"
+            "3. Upload back to same radio."
+        )
         raise errors.RadioError(msg)
 
     if has_dropped_byte or (aux_matched and radio.VENDOR != "BTECH"):
-        _ranges = [(0x0000, 0x0DF0),
-                   (0x0E00, 0x1800),
-                   (0x1E80, 0x2000),
-                   ]
+        _ranges = [
+            (0x0000, 0x0DF0),
+            (0x0E00, 0x1800),
+            (0x1E80, 0x2000),
+        ]
     else:
         _ranges = radio._ranges
 
@@ -417,7 +422,7 @@ def _upload(radio):
     for start, end in _ranges:
         for addr in range(start, end, radio._send_block_size):
             # sending the data
-            data = radio.get_mmap()[addr:addr + radio._send_block_size]
+            data = radio.get_mmap()[addr : addr + radio._send_block_size]
 
             frame = _make_frame("X", addr, radio._send_block_size, data)
 
@@ -440,15 +445,15 @@ def bcd_decode_freq(bytes):
     real_freq = 0
     for byte in bytes:
         if byte > 9:
-            msg = ("Found Invalid BCD Encoding")
+            msg = "Found Invalid BCD Encoding"
             raise InternalError(msg)
         real_freq = (real_freq * 10) + byte
     return chirp_common.format_freq(real_freq * 10)
 
 
-class BaofengCommonHT(chirp_common.CloneModeRadio,
-                      chirp_common.ExperimentalRadio):
+class BaofengCommonHT(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Baofeng HT Style Radios"""
+
     VENDOR = "Baofeng"
     MODEL = ""
     IDENT = ""
@@ -467,9 +472,8 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = memmap.MemoryMapBytes(data)
         self.process_mmap()
 
@@ -482,9 +486,8 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_features(self):
         """Get the radio's features"""
@@ -509,7 +512,7 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             rf.valid_duplexes = ["", "+", "off"]
         else:
             rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_cross_modes = [
             "Tone->Tone",
             "DTCS->",
@@ -517,7 +520,8 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_skips = self.SKIP_VALUES
         rf.valid_dtcs_codes = self.DTCS_CODES
         rf.memory_bounds = (0, 127)
@@ -531,7 +535,7 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
         raw_tx = b""
         for i in range(0, 4):
             raw_tx += _mem.txfreq[i].get_raw()
-        return raw_tx in (b"\xFF\xFF\xFF\xFF", b"\x00\x00\x00\x00")
+        return raw_tx in (b"\xff\xff\xff\xff", b"\x00\x00\x00\x00")
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number]
@@ -554,8 +558,9 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             # TX freq set
             offset = (int(_mem.txfreq) * 10) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.txfreq) * 10):
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.txfreq) * 10
+                ):
                     mem.duplex = "split"
                     mem.offset = int(_mem.txfreq) * 10
                 elif offset < 0:
@@ -568,7 +573,7 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
                 mem.offset = 0
 
         for char in _nam.name:
-            if str(char) == "\xFF":
+            if str(char) == "\xff":
                 char = " "  # The OEM software may have 0xFF mid-name
             mem.name += str(char)
         mem.name = mem.name.rstrip()
@@ -629,33 +634,40 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             elif _mem.lowpower == TXPOWER_LOW:
                 mem.power = levels[1]
             else:
-                LOG.error("Radio reported invalid power level %s (in %s)" %
-                          (_mem.power, levels))
+                LOG.error(
+                    "Radio reported invalid power level %s (in %s)"
+                    % (_mem.power, levels)
+                )
                 mem.power = levels[0]
         else:
             try:
                 mem.power = levels[_mem.lowpower]
             except IndexError:
-                LOG.error("Radio reported invalid power level %s (in %s)" %
-                          (_mem.power, levels))
+                LOG.error(
+                    "Radio reported invalid power level %s (in %s)"
+                    % (_mem.power, levels)
+                )
                 mem.power = levels[0]
 
         mem.mode = _mem.wide and "FM" or "NFM"
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("bcl", "BCL",
-                          RadioSettingValueBoolean(_mem.bcl))
+        rs = RadioSetting("bcl", "BCL", RadioSettingValueBoolean(_mem.bcl))
         mem.extra.append(rs)
 
-        rs = RadioSetting("pttid", "PTT ID",
-                          RadioSettingValueList(self.PTTID_LIST,
-                                                current_index=_mem.pttid))
+        rs = RadioSetting(
+            "pttid",
+            "PTT ID",
+            RadioSettingValueList(self.PTTID_LIST, current_index=_mem.pttid),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("scode", "S-CODE",
-                          RadioSettingValueList(self.SCODE_LIST,
-                                                current_index=_mem.scode))
+        rs = RadioSetting(
+            "scode",
+            "S-CODE",
+            RadioSettingValueList(self.SCODE_LIST, current_index=_mem.scode),
+        )
         mem.extra.append(rs)
 
         immutable = []
@@ -664,15 +676,15 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             if self.MODEL == "UV-9G":
                 if mem.number >= 1 and mem.number <= 30:
                     # 30 GMRS fixed channels
-                    GMRS_30_FIXED_FREQS = \
-                        bandplan_na.ALL_GMRS_FREQS + \
-                        bandplan_na.GMRS_HIRPT
+                    GMRS_30_FIXED_FREQS = (
+                        bandplan_na.ALL_GMRS_FREQS + bandplan_na.GMRS_HIRPT
+                    )
                     GMRS_FREQ = GMRS_30_FIXED_FREQS[mem.number - 1]
                     mem.freq = GMRS_FREQ
                     immutable = ["empty", "freq"]
                     if mem.number <= 22:
                         # GMRS simplex only channels
-                        mem.duplex = ''
+                        mem.duplex = ""
                         mem.offset = 0
                         immutable += ["duplex", "offset"]
                         if mem.number >= 8 and mem.number <= 14:
@@ -683,19 +695,19 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
                             immutable += ["mode", "power"]
                     if mem.number > 22:
                         # GMRS repeater only channels
-                        mem.duplex = '+'
+                        mem.duplex = "+"
                         mem.offset = 5000000
                         immutable += ["duplex", "offset"]
                 elif mem.freq in bandplan_na.ALL_GMRS_FREQS:
                     # 98 GMRS customizable channels
                     if mem.freq in bandplan_na.GMRS_LOW:
                         # GMRS 462 MHz interstitial frequencies
-                        mem.duplex = ''
+                        mem.duplex = ""
                         mem.offset = 0
                         immutable = ["duplex", "offset"]
                     if mem.freq in bandplan_na.GMRS_HHONLY:
                         # GMRS 467 MHz interstitial frequencies
-                        mem.duplex = ''
+                        mem.duplex = ""
                         mem.offset = 0
                         mem.mode = "NFM"
                         mem.power = self.POWER_LEVELS[2]
@@ -703,13 +715,13 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
                     if mem.freq in bandplan_na.GMRS_HIRPT:
                         # GMRS 462 MHz main frequencies
                         # GMRS 467 MHz main frequencies (repeater input)
-                        if mem.duplex == '':
+                        if mem.duplex == "":
                             mem.offset = 0
-                        if mem.duplex == '+':
+                        if mem.duplex == "+":
                             mem.offset = 5000000
                 else:
                     # Not a GMRS frequency - disable TX
-                    mem.duplex = 'off'
+                    mem.duplex = "off"
                     mem.offset = 0
                     immutable = ["duplex", "offset"]
 
@@ -732,7 +744,7 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -747,7 +759,7 @@ class BaofengCommonHT(chirp_common.CloneModeRadio,
             try:
                 _nam.name[i] = mem.name[i]
             except IndexError:
-                _nam.name[i] = "\xFF"
+                _nam.name[i] = "\xff"
 
         rxmode = txmode = ""
         if mem.tmode == "Tone":

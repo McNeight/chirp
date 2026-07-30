@@ -32,20 +32,22 @@ class ChirpConfig:
 
         self._default_section = "global"
 
-        self.__config = ConfigParser(interpolation=None, delimiters='=')
+        self.__config = ConfigParser(interpolation=None, delimiters="=")
 
         cfg = os.path.join(basepath, name)
         if os.path.exists(cfg):
             try:
-                self.__config.read(cfg, encoding='utf-8-sig')
+                self.__config.read(cfg, encoding="utf-8-sig")
             except UnicodeDecodeError:
-                LOG.warning('Failed to read config as UTF-8; '
-                            'falling back to default encoding')
+                LOG.warning(
+                    "Failed to read config as UTF-8; "
+                    "falling back to default encoding"
+                )
                 self.__config.read(cfg)
 
     def save(self):
         cfg = os.path.join(self.__basepath, self.__name)
-        with open(cfg, "w", encoding='utf-8') as cfg_file:
+        with open(cfg, "w", encoding="utf-8") as cfg_file:
             self.__config.write(cfg_file)
 
     def get(self, key, section, raw=False):
@@ -86,8 +88,7 @@ class ChirpConfigProxy:
         return self._section
 
     def get(self, key, section=None, raw=False):
-        return self._config.get(key, section or self._section,
-                                raw=raw)
+        return self._config.get(key, section or self._section, raw=raw)
 
     def get_password(self, key, section):
         # So, we used to store the password in plaintext in $key. Then some
@@ -100,7 +101,7 @@ class ChirpConfigProxy:
         # otherwise return the fully decoded thing. Conversion will happen
         # when people update passwords and set_passwoord() is called, which
         # always stores the new format.
-        encoded = self.get('%s_encoded' % key, section)
+        encoded = self.get("%s_encoded" % key, section)
         if encoded is None:
             encoded = self.get(key, section)
         if encoded:
@@ -130,7 +131,7 @@ class ChirpConfigProxy:
         # Clean up old cleartext passwords
         if self.is_defined(key, section):
             self.remove_option(key, section)
-        self.set('%s_encoded' % key, value, section)
+        self.set("%s_encoded" % key, value, section)
 
     def get_int(self, key, section=None):
         try:
@@ -204,6 +205,6 @@ def get_for_radio(radio):
         try:
             registered_id = directory.radio_class_id(rclass)
         except Exception:
-            LOG.warning('Unable to get radio-specific config for %s', rclass)
-            registered_id = 'other'
-    return get(section='radio_%s' % registered_id)
+            LOG.warning("Unable to get radio-specific config for %s", rclass)
+            registered_id = "other"
+    return get(section="radio_%s" % registered_id)

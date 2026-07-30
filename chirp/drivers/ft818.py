@@ -27,8 +27,8 @@ LOG = logging.getLogger(__name__)
 
 @directory.register
 class FT818Radio(ft817.FT817Radio):
-
     """Yaesu FT-818"""
+
     BAUD_RATE = 9600
     MODEL = "FT-818"
     _model = ""
@@ -242,14 +242,13 @@ class FT818Radio(ft817.FT817Radio):
 
     SPECIAL_MEMORIES.update(SPECIAL_PMS)
 
-    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(),
-                                    SPECIAL_MEMORIES.keys()))
+    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(), SPECIAL_MEMORIES.keys()))
 
 
 @directory.register
 class FT818NDUSRadio(FT818Radio):
-
     """Yaesu FT-818ND (US version)"""
+
     MODEL = "FT-818ND (US)"
 
     _model = ""
@@ -270,23 +269,33 @@ class FT818NDUSRadio(FT818Radio):
     SPECIAL_MEMORIES = dict(FT818Radio.SPECIAL_MEMORIES)
     SPECIAL_MEMORIES.update(SPECIAL_60M)
 
-    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(),
-                                    SPECIAL_MEMORIES.keys()))
+    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(), SPECIAL_MEMORIES.keys()))
 
     def _get_special_60m(self, number):
         mem = chirp_common.Memory()
         mem.number = self.SPECIAL_60M[number]
         mem.extd_number = number
 
-        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX +
-                                               mem.number]
+        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX + mem.number]
 
         mem = self._get_memory(mem, _mem)
 
-        mem.immutable = ["number", "rtone", "ctone",
-                         "extd_number", "name", "dtcs", "tmode", "cross_mode",
-                         "dtcs_polarity", "power", "duplex", "offset",
-                         "comment", "empty"]
+        mem.immutable = [
+            "number",
+            "rtone",
+            "ctone",
+            "extd_number",
+            "name",
+            "dtcs",
+            "tmode",
+            "cross_mode",
+            "dtcs_polarity",
+            "power",
+            "duplex",
+            "offset",
+            "comment",
+            "empty",
+        ]
 
         return mem
 
@@ -299,21 +308,23 @@ class FT818NDUSRadio(FT818Radio):
 
         for key in cur_mem.immutable:
             if cur_mem.__dict__[key] != mem.__dict__[key]:
-                raise errors.RadioError("Editing field `%s' " % key +
-                                        "is not supported on M-60x channels")
+                raise errors.RadioError(
+                    "Editing field `%s' " % key + "is not supported on M-60x channels"
+                )
 
         if mem.mode not in ["USB", "LSB", "CW", "CWR", "NCW", "NCWR", "DIG"]:
-            raise errors.RadioError("Mode {mode} is not valid "
-                                    "in 60m channels".format(mode=mem.mode))
-        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX +
-                                               mem.number]
+            raise errors.RadioError(
+                "Mode {mode} is not valid " "in 60m channels".format(mode=mem.mode)
+            )
+        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX + mem.number]
         self._set_memory(mem, _mem)
 
     def get_memory(self, number):
         if number in self.SPECIAL_60M.keys():
             return self._get_special_60m(number)
-        elif number < 0 and \
-                self.SPECIAL_MEMORIES_REV[number] in self.SPECIAL_60M.keys():
+        elif (
+            number < 0 and self.SPECIAL_MEMORIES_REV[number] in self.SPECIAL_60M.keys()
+        ):
             # I can't stop delete operation from losing extd_number but
             # I know how to get it back
             return self._get_special_60m(self.SPECIAL_MEMORIES_REV[number])
@@ -329,8 +340,10 @@ class FT818NDUSRadio(FT818Radio):
     def get_settings(self):
         top = FT818Radio.get_settings(self)
         basic = top[0]
-        rs = RadioSetting("emergency", "Emergency",
-                          RadioSettingValueBoolean(
-                              self._memobj.settings.emergency))
+        rs = RadioSetting(
+            "emergency",
+            "Emergency",
+            RadioSettingValueBoolean(self._memobj.settings.emergency),
+        )
         basic.append(rs)
         return top

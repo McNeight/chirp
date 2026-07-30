@@ -26,11 +26,16 @@ import logging
 import struct
 from chirp import chirp_common, bitwise, memmap, errors, directory
 from chirp.kenwood_tone import KenwoodToneModel
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-     RadioSettingValueBoolean, \
-     RadioSettingValueList, RadioSettingValueInteger, \
-     RadioSettingValueString, RadioSettings, \
-     InvalidValueError
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueInteger,
+    RadioSettingValueString,
+    RadioSettings,
+    InvalidValueError,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -42,13 +47,13 @@ CMD_RCHAN = 0x84
 CMD_WCHAN = 0x85
 
 cmd_name = {
-    CMD_IDENT:  "ident",
+    CMD_IDENT: "ident",
     CMD_HANGUP: "hangup",
-    CMD_RCONF:  "read config",
-    CMD_WCONF:  "write config",
-    CMD_RCHAN:  "read channel memory",  # Unused
-    CMD_WCHAN:  "write channel memory"  # Unused because it is a hack.
-    }
+    CMD_RCONF: "read config",
+    CMD_WCONF: "write config",
+    CMD_RCHAN: "read channel memory",  # Unused
+    CMD_WCHAN: "write channel memory",  # Unused because it is a hack.
+}
 
 # This is used to write the configuration of the radio base on info
 # gleaned from the downloaded app. There are empty spaces and we honor
@@ -60,76 +65,76 @@ cmd_name = {
 # records starting at address 0xa00 and ending at
 # 0x4800 (presuming the end of channel 1000 is 0x4860-1
 
-config_map = (          # map address, write size, write count
-    (0x40,   16, 1),    # Passwords
-    (0x60,   20, 1),    # RX frequency limits
-    (0x74,    8, 1),    # TX frequency limits
-    (0x740,  40, 1),    # FM chan 1-20
-    (0x780,  16, 1),    # vfo-b-150
-    (0x790,  16, 1),    # vfo-b-450
-    (0x800,  16, 1),    # vfo-a-150
-    (0x810,  16, 1),    # vfo-a-450
-    (0x820,  16, 1),    # vfo-a-300
-    (0x830,  16, 1),    # vfo-a-700
-    (0x840,  16, 1),    # vfo-a-200
-    (0x860,  16, 1),    # area-a-conf
-    (0x870,  16, 1),    # area-b-conf
-    (0x880,  16, 1),    # radio conf 0
-    (0x890,  16, 1),    # radio conf 1
-    (0x8a0,  16, 1),    # radio conf 2
-    (0x8b0,  16, 1),    # radio conf 3
-    (0x8c0,  16, 1),    # PTT-ANI
-    (0x8d0,  16, 1),    # SCC
-    (0x8e0,  16, 1),    # power save
-    (0x8f0,  16, 1),    # Display banner
-    (0x940,  64, 2),    # Scan groups and names
-    (0xa00,  64, 249),  # Memory Channels 1-996
-    (0x4840, 48, 1),    # Memory Channels 997-999
+config_map = (  # map address, write size, write count
+    (0x40, 16, 1),  # Passwords
+    (0x60, 20, 1),  # RX frequency limits
+    (0x74, 8, 1),  # TX frequency limits
+    (0x740, 40, 1),  # FM chan 1-20
+    (0x780, 16, 1),  # vfo-b-150
+    (0x790, 16, 1),  # vfo-b-450
+    (0x800, 16, 1),  # vfo-a-150
+    (0x810, 16, 1),  # vfo-a-450
+    (0x820, 16, 1),  # vfo-a-300
+    (0x830, 16, 1),  # vfo-a-700
+    (0x840, 16, 1),  # vfo-a-200
+    (0x860, 16, 1),  # area-a-conf
+    (0x870, 16, 1),  # area-b-conf
+    (0x880, 16, 1),  # radio conf 0
+    (0x890, 16, 1),  # radio conf 1
+    (0x8A0, 16, 1),  # radio conf 2
+    (0x8B0, 16, 1),  # radio conf 3
+    (0x8C0, 16, 1),  # PTT-ANI
+    (0x8D0, 16, 1),  # SCC
+    (0x8E0, 16, 1),  # power save
+    (0x8F0, 16, 1),  # Display banner
+    (0x940, 64, 2),  # Scan groups and names
+    (0xA00, 64, 249),  # Memory Channels 1-996
+    (0x4840, 48, 1),  # Memory Channels 997-999
     (0x4900, 32, 249),  # Memory Names    1-996
-    (0x6820, 24, 1),    # Memory Names    997-999
-    (0x7000, 8, 124),   # Valid Channel bytes 1-992
-    (0x73E0, 1, 7),     # Valid Channel Bytes 993-999
-    (0x7400, 64, 5),    # CALL-ID 1-20, names 1-20
-    )
+    (0x6820, 24, 1),  # Memory Names    997-999
+    (0x7000, 8, 124),  # Valid Channel bytes 1-992
+    (0x73E0, 1, 7),  # Valid Channel Bytes 993-999
+    (0x7400, 64, 5),  # CALL-ID 1-20, names 1-20
+)
 
-config_map2 = (          # map address, write size, write count
-    (0x40,   16, 1),    # Passwords
-    (0x50,   10, 1),    # OEM Display Name
-    (0x60,   20, 1),    # Rx Freq Limits Area A
-    (0x74,   8,  1),    # TX Frequency Limits 150M and 450M
-    (0x7c,   4,  1),    # Rx 150M Freq Limits Area B
+config_map2 = (  # map address, write size, write count
+    (0x40, 16, 1),  # Passwords
+    (0x50, 10, 1),  # OEM Display Name
+    (0x60, 20, 1),  # Rx Freq Limits Area A
+    (0x74, 8, 1),  # TX Frequency Limits 150M and 450M
+    (0x7C, 4, 1),  # Rx 150M Freq Limits Area B
     #   (0x80,   8,  1),    # unknown Freq limits
-    (0x740,  40, 1),    # FM chan 1-20
-    (0x780,  16, 1),    # vfo-b-150
-    (0x790,  16, 1),    # vfo-b-450
-    (0x800,  16, 1),    # vfo-a-150
-    (0x810,  16, 1),    # vfo-a-450
-    (0x820,  16, 1),    # vfo-a-300
-    (0x830,  16, 1),    # vfo-a-700
-    (0x840,  16, 1),    # vfo-a-200
-    (0x860,  16, 1),    # area-a-conf
-    (0x870,  16, 1),    # area-b-conf
-    (0x880,  16, 1),    # radio conf 0
-    (0x890,  16, 1),    # radio conf 1
-    (0x8a0,  16, 1),    # radio conf 2
-    (0x8b0,  16, 1),    # radio conf 3
-    (0x8c0,  16, 1),    # PTT-ANI
-    (0x8d0,  16, 1),    # SCC
-    (0x8e0,  16, 1),    # power save
-    (0x8f0,  16, 1),    # Display banner
-    (0x940,  64, 2),    # Scan groups and names
-    (0xa00,  64, 249),  # Memory Channels 1-996
-    (0x4840, 48, 1),    # Memory Channels 997-999
+    (0x740, 40, 1),  # FM chan 1-20
+    (0x780, 16, 1),  # vfo-b-150
+    (0x790, 16, 1),  # vfo-b-450
+    (0x800, 16, 1),  # vfo-a-150
+    (0x810, 16, 1),  # vfo-a-450
+    (0x820, 16, 1),  # vfo-a-300
+    (0x830, 16, 1),  # vfo-a-700
+    (0x840, 16, 1),  # vfo-a-200
+    (0x860, 16, 1),  # area-a-conf
+    (0x870, 16, 1),  # area-b-conf
+    (0x880, 16, 1),  # radio conf 0
+    (0x890, 16, 1),  # radio conf 1
+    (0x8A0, 16, 1),  # radio conf 2
+    (0x8B0, 16, 1),  # radio conf 3
+    (0x8C0, 16, 1),  # PTT-ANI
+    (0x8D0, 16, 1),  # SCC
+    (0x8E0, 16, 1),  # power save
+    (0x8F0, 16, 1),  # Display banner
+    (0x940, 64, 2),  # Scan groups and names
+    (0xA00, 64, 249),  # Memory Channels 1-996
+    (0x4840, 48, 1),  # Memory Channels 997-999
     (0x4900, 32, 249),  # Memory Names    1-996
-    (0x6820, 24, 1),    # Memory Names    997-999
-    (0x7000, 8, 124),   # Valid Channel bytes 1-992
-    (0x73E0, 1, 7),     # Valid Channel Bytes 993-999
-    (0x7400, 64, 5),    # CALL-ID 1-20, names 1-20
-    (0x7600,  1, 1)     # Screen Mode
-    )
+    (0x6820, 24, 1),  # Memory Names    997-999
+    (0x7000, 8, 124),  # Valid Channel bytes 1-992
+    (0x73E0, 1, 7),  # Valid Channel Bytes 993-999
+    (0x7400, 64, 5),  # CALL-ID 1-20, names 1-20
+    (0x7600, 1, 1),  # Screen Mode
+)
 
-MEM_VALID = 0xfc
-MEM_INVALID = 0xff
+MEM_VALID = 0xFC
+MEM_INVALID = 0xFF
 VALID_MEM_VALUES = [MEM_VALID, 0x00, 0x02, 0x40, 0x3D]
 INVALID_MEM_VALUES = [MEM_INVALID]
 # new CHAN_VALID/INVALID mem values to address some radios not showing
@@ -682,6 +687,7 @@ struct {
 # the maximum payload size (from the Wouxun software)
 # seems to be 66 bytes (2 bytes location + 64 bytes data).
 
+
 def _pkt_encode(op, payload):
     """Assemble a packet for the radio and encode it for transmission.
     Yes indeed, the checksum we store is only 4 bits. Why?
@@ -689,12 +695,12 @@ def _pkt_encode(op, payload):
     i.e. a typo 0xff -> 0xf..."""
 
     data = bytearray()
-    data.append(0x7d)  # tag that marks the beginning of the packet
+    data.append(0x7D)  # tag that marks the beginning of the packet
     data.append(op)
-    data.append(0xff)  # 0xff is from app to radio
+    data.append(0xFF)  # 0xff is from app to radio
     # calc checksum from op to end
-    cksum = op + 0xff
-    if (payload):
+    cksum = op + 0xFF
+    if payload:
         data.append(len(payload))
         cksum += len(payload)
         for byte in payload:
@@ -703,7 +709,7 @@ def _pkt_encode(op, payload):
     else:
         data.append(0x00)
         # Yea, this is a 4 bit cksum (also known as a bug)
-    data.append(cksum & 0xf)
+    data.append(cksum & 0xF)
 
     # now obfuscate by an xor starting with first payload byte ^ 0x52
     # including the trailing cksum.
@@ -712,7 +718,7 @@ def _pkt_encode(op, payload):
         xord = xorbits ^ byte
         data[i + 4] = xord
         xorbits = xord
-    return (data)
+    return data
 
 
 def _pkt_decode(data):
@@ -739,24 +745,27 @@ def _pkt_decode(data):
     for byte in payload[:-1]:
         cksum += byte
     # yes, a 4 bit cksum to match the encode
-    cksum_match = (cksum & 0xf) == payload[-1]
-    if (not cksum_match):
-        LOG.debug(
-            "Checksum mismatch: %x != %x; " % (cksum, payload[-1]))
+    cksum_match = (cksum & 0xF) == payload[-1]
+    if not cksum_match:
+        LOG.debug("Checksum mismatch: %x != %x; " % (cksum, payload[-1]))
     return (cksum_match, op, payload[:-1])
+
 
 # UI callbacks to process input for mapping UI fields to memory cells
 
 
 def freq2int(val, min, max):
-    """Convert a frequency as a string to a u32. Units is Hz
-    """
+    """Convert a frequency as a string to a u32. Units is Hz"""
     _freq = chirp_common.parse_freq(str(val))
     if _freq > max or _freq < min:
-        raise InvalidValueError("Frequency %s is not with in %s-%s" %
-                                (chirp_common.format_freq(_freq),
-                                 chirp_common.format_freq(min),
-                                 chirp_common.format_freq(max)))
+        raise InvalidValueError(
+            "Frequency %s is not with in %s-%s"
+            % (
+                chirp_common.format_freq(_freq),
+                chirp_common.format_freq(min),
+                chirp_common.format_freq(max),
+            )
+        )
     return _freq
 
 
@@ -766,7 +775,7 @@ def int2freq(freq):
     This is stored in the radio as units of 10 Hz which we compensate to Hz.
     A value of -1 indicates <no frequency>, i.e. unused channel.
     """
-    if (int(freq) > 0):
+    if int(freq) > 0:
         f = chirp_common.format_freq(freq)
         return f
     else:
@@ -774,25 +783,28 @@ def int2freq(freq):
 
 
 def freq2short(val, min, max):
-    """Convert a frequency as a string to a u16 which is units of 10 kHz
-    """
+    """Convert a frequency as a string to a u16 which is units of 10 kHz"""
     _freq = chirp_common.parse_freq(str(val))
     if _freq > max or _freq < min:
-        raise InvalidValueError("Frequency %s is not with in %s-%s" %
-                                (chirp_common.format_freq(_freq),
-                                 chirp_common.format_freq(min),
-                                 chirp_common.format_freq(max)))
+        raise InvalidValueError(
+            "Frequency %s is not with in %s-%s"
+            % (
+                chirp_common.format_freq(_freq),
+                chirp_common.format_freq(min),
+                chirp_common.format_freq(max),
+            )
+        )
     return _freq // 100000 & 0xFFFF
 
 
 def short2freq(freq):
     """
-       Convert a short frequency to a string for UI data entry/display
-       This is stored in the radio as units of 10 kHz which we
-       compensate to Hz.
-       A value of -1 indicates <no frequency>, i.e. unused channel.
+    Convert a short frequency to a string for UI data entry/display
+    This is stored in the radio as units of 10 kHz which we
+    compensate to Hz.
+    A value of -1 indicates <no frequency>, i.e. unused channel.
     """
-    if (int(freq) > 0):
+    if int(freq) > 0:
         f = chirp_common.format_freq(freq * 100000)
         return f
     else:
@@ -800,66 +812,62 @@ def short2freq(freq):
 
 
 def tone2short(t):
-    """Convert a string tone or DCS to an encoded u16
-    """
+    """Convert a string tone or DCS to an encoded u16"""
     tone = str(t)
     if tone == "----":
         u16tone = 0x0000
-    elif tone[0] == 'D':  # This is a DCS code
-        c = tone[1: -1]
+    elif tone[0] == "D":  # This is a DCS code
+        c = tone[1:-1]
         code = int(c, 8)
-        if tone[-1] == 'I':
+        if tone[-1] == "I":
             code |= 0x4000
         u16tone = code | 0x8000
-    else:              # This is an analog CTCSS
-        u16tone = int(tone[0:-2]+tone[-1]) & 0xffff  # strip the '.'
+    else:  # This is an analog CTCSS
+        u16tone = int(tone[0:-2] + tone[-1]) & 0xFFFF  # strip the '.'
     return u16tone
 
 
 def short2tone(tone):
-    """ Map a binary CTCSS/DCS to a string name for the tone
-    """
-    if tone == 0 or tone == 0xffff:
+    """Map a binary CTCSS/DCS to a string name for the tone"""
+    if tone == 0 or tone == 0xFFFF:
         ret = "----"
     else:
-        code = tone & 0x3fff
-        if tone & 0x8000:      # This is a DCS
+        code = tone & 0x3FFF
+        if tone & 0x8000:  # This is a DCS
             if tone & 0x4000:  # This is an inverse code
                 ret = "D%0.3oI" % code
             else:
                 ret = "D%0.3oN" % code
-        else:   # Just plain old analog CTCSS
+        else:  # Just plain old analog CTCSS
             ret = "%4.1f" % (code / 10.0)
     return ret
 
 
 def str2callid(val):
-    """ Convert caller id strings from callid2str.
-    """
+    """Convert caller id strings from callid2str."""
     ascii2bin = "0123456789"
     s = str(val).strip()
     if len(s) < 3 or len(s) > 6:
         raise InvalidValueError(
-            "Caller ID must be at least 3 and no more than 6 digits")
-    if s[0] == '0':
-        raise InvalidValueError(
-            "First digit of a Caller ID cannot be a zero '0'")
+            "Caller ID must be at least 3 and no more than 6 digits"
+        )
+    if s[0] == "0":
+        raise InvalidValueError("First digit of a Caller ID cannot be a zero '0'")
     blk = bytearray()
     for c in s:
         if c not in ascii2bin:
-            raise InvalidValueError(
-                "Caller ID must be all digits 0x%x" % c)
-        b = (0xa, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9)[int(c)]
+            raise InvalidValueError("Caller ID must be all digits 0x%x" % c)
+        b = (0xA, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9)[int(c)]
         blk.append(b)
     if len(blk) < 6:
-        blk.append(0xc)  # EOL a short ID
+        blk.append(0xC)  # EOL a short ID
     if len(blk) < 6:
         for i in range(0, (6 - len(blk))):
-            blk.append(0xf0)
+            blk.append(0xF0)
     return blk
 
 
-def digits2str(digits, padding=' ', width=6):
+def digits2str(digits, padding=" ", width=6):
     """Convert a password or SCC digit string to a string
     Passwords are expanded to and must be 6 chars. Fill them with '0'
     """
@@ -868,52 +876,49 @@ def digits2str(digits, padding=' ', width=6):
     digitsstr = ""
     for i in range(0, 6):
         b = digits[i].get_value()
-        if b == 0xc:  # the digits EOL
+        if b == 0xC:  # the digits EOL
             break
-        if b >= 0xa:
-            raise InvalidValueError(
-                "Value has illegal byte 0x%x" % ord(b))
+        if b >= 0xA:
+            raise InvalidValueError("Value has illegal byte 0x%x" % ord(b))
         digitsstr += bin2ascii[b]
     digitsstr = digitsstr.ljust(width, padding)
     return digitsstr
 
 
 def str2digits(val):
-    """ Callback for edited strings from digits2str.
-    """
+    """Callback for edited strings from digits2str."""
     ascii2bin = " 0123456789"
     s = str(val).strip()
     if len(s) < 3 or len(s) > 6:
-        raise InvalidValueError(
-            "Value must be at least 3 and no more than 6 digits")
+        raise InvalidValueError("Value must be at least 3 and no more than 6 digits")
     blk = bytearray()
     for c in s:
         if c not in ascii2bin:
             raise InvalidValueError("Value must be all digits 0x%x" % c)
         blk.append(int(c))
     for i in range(len(blk), 6):
-        blk.append(0xc)  # EOL a short ID
+        blk.append(0xC)  # EOL a short ID
     return blk
 
 
 def name2str(name):
-    """ Convert a callid or scan group name to a string
+    """Convert a callid or scan group name to a string
     Deal with fixed field padding (\0 or \0xff)
     """
 
     namestr = ""
     for i in range(0, len(name)):
         b = ord(name[i].get_value())
-        if b != 0 and b != 0xff:
+        if b != 0 and b != 0xFF:
             namestr += chr(b)
     return namestr
 
 
-def str2name(val, size=6, fillchar='\0', emptyfill='\0'):
-    """ Convert a string to a name. A name is a 6 element bytearray
+def str2name(val, size=6, fillchar="\0", emptyfill="\0"):
+    """Convert a string to a name. A name is a 6 element bytearray
     with ascii chars.
     """
-    val = str(val).rstrip(' \t\r\n\0\xff')
+    val = str(val).rstrip(" \t\r\n\0\xff")
     if len(val) == 0:
         name = "".ljust(size, emptyfill)
     else:
@@ -932,7 +937,7 @@ def pw2str(pw):
         if b not in ascii2bin:
             raise InvalidValueError("Value must be digits 0-9")
         pwstr += b
-    pwstr = pwstr.ljust(6, '0')
+    pwstr = pwstr.ljust(6, "0")
     return pwstr
 
 
@@ -943,7 +948,7 @@ def str2pw(val):
     Also, fill a < 6 digit pw with 0's
     """
     ascii2bin = "0123456789"
-    val = str(val).rstrip(' \t\r\n\0\0xff')
+    val = str(val).rstrip(" \t\r\n\0\0xff")
     if len(val) == 0:  # a null password
         val = "000000"
     for i in range(0, len(val)):
@@ -951,13 +956,14 @@ def str2pw(val):
         if b not in ascii2bin:
             raise InvalidValueError("Value must be digits 0-9")
     if len(val) == 0:
-        pw = "".ljust(6, '\0')
+        pw = "".ljust(6, "\0")
     else:
-        pw = val.ljust(6, '0')
+        pw = val.ljust(6, "0")
     return pw
 
 
 # Helpers to replace python2 things like confused str/byte
+
 
 def _hex_print(data, addrfmt=None):
     """Return a hexdump-like encoding of @data
@@ -966,7 +972,7 @@ def _hex_print(data, addrfmt=None):
     per comm packet format.
     """
     if addrfmt is None:
-        addrfmt = '%(addr)03i'
+        addrfmt = "%(addr)03i"
         addr = 0
     else:  # assume first 2 bytes are address
         a = struct.unpack(">H", data[0:2])
@@ -975,8 +981,8 @@ def _hex_print(data, addrfmt=None):
 
     block_size = 16
 
-    lines = (len(data) // block_size)
-    if (len(data) % block_size > 0):
+    lines = len(data) // block_size
+    if len(data) % block_size > 0:
         lines += 1
 
     out = ""
@@ -987,7 +993,7 @@ def _hex_print(data, addrfmt=None):
             out += addrfmt % locals()
         except (OverflowError, ValueError, TypeError, KeyError):
             out += "%03i" % addr
-        out += ': '
+        out += ": "
 
         if left < block_size:
             limit = left
@@ -995,7 +1001,7 @@ def _hex_print(data, addrfmt=None):
             limit = block_size
 
         for j in range(0, block_size):
-            if (j < limit):
+            if j < limit:
                 out += "%02x " % data[(block * block_size) + j]
             else:
                 out += "   "
@@ -1004,7 +1010,7 @@ def _hex_print(data, addrfmt=None):
 
         for j in range(0, block_size):
 
-            if (j < limit):
+            if j < limit:
                 _byte = data[(block * block_size) + j]
                 if _byte >= 0x20 and _byte < 0x7F:
                     out += "%s" % chr(_byte)
@@ -1013,7 +1019,7 @@ def _hex_print(data, addrfmt=None):
             else:
                 out += " "
         out += "\n"
-        if (left > block_size):
+        if left > block_size:
             left -= block_size
 
     return out
@@ -1023,8 +1029,8 @@ def _hex_print(data, addrfmt=None):
 STEPS = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0, 50.0, 100.0]
 STEPS_9K = [2.5, 5.0, 6.25, 8.33, 10.0, 12.5, 25.0, 50.0, 100.0]
 S_TONES = [str(x) for x in [1000, 1450, 1750, 2100]]
-STEP_LIST = [str(x)+"kHz" for x in STEPS]
-STEP_LIST_9K = [str(x)+"kHz" for x in STEPS_9K]
+STEP_LIST = [str(x) + "kHz" for x in STEPS]
+STEP_LIST_9K = [str(x) + "kHz" for x in STEPS_9K]
 ROGER_LIST = ["Off", "Begin", "End", "Both"]
 TIMEOUT_LIST = [str(x) + "s" for x in range(15, 601, 15)]
 TOA_LIST = ["Off"] + ["%ds" % t for t in range(1, 11)]
@@ -1032,19 +1038,14 @@ BANDWIDTH_LIST = ["Wide", "Narrow"]
 LANGUAGE_LIST = ["English", "Chinese"]
 LANGUAGE_LIST2 = ["English", "Chinese-DISABLED"]
 PF1KEY_LIST = ["OFF", "call id", "r-alarm", "SOS", "SF-TX"]
-PF1KEY_LIST9GX = ["OFF", "call id", "r-alarm", "SOS", "SF-TX", "Scan",
-                  "Second", "Lamp"]
+PF1KEY_LIST9GX = ["OFF", "call id", "r-alarm", "SOS", "SF-TX", "Scan", "Second", "Lamp"]
 PF2KEY_LIST = ["OFF", "Scan", "Second", "Lamp", "SDF-DIR", "K-lamp"]
 PF2KEY_LIST9GX = ["OFF", "Scan", "Second", "Lamp", "K-lamp"]
-PF3KEY_LIST2 = ["OFF", "Call ID", "R-ALARM", "SOS", "SF-TX", "Scan",
-                "Second", "Lamp"]
-PF3KEY_LIST9GX = ["OFF", "call id", "r-alarm", "SOS", "SF-TX", "Scan",
-                  "Second", "Lamp"]
+PF3KEY_LIST2 = ["OFF", "Call ID", "R-ALARM", "SOS", "SF-TX", "Scan", "Second", "Lamp"]
+PF3KEY_LIST9GX = ["OFF", "call id", "r-alarm", "SOS", "SF-TX", "Scan", "Second", "Lamp"]
 PF3KEY_LIST = ["OFF", "Call ID", "R-ALARM", "SOS", "SF-TX"]
-WORKMODE_LIST = ["VFO freq", "Channel No.", "Ch. No.+Freq.",
-                 "Ch. No.+Name"]
-BACKLIGHT_LIST = ["Off"] + ["%sS" % t for t in range(1, 31)] + \
-                 ["Always On"]
+WORKMODE_LIST = ["VFO freq", "Channel No.", "Ch. No.+Freq.", "Ch. No.+Name"]
+BACKLIGHT_LIST = ["Off"] + ["%sS" % t for t in range(1, 31)] + ["Always On"]
 BACKLIGHT_BRIGHT_MIN = 1
 BACKLIGHT_BRIGHT_MAX = 5
 SAVE_MODES = ["Off", "1", "2", "3", "4"]
@@ -1072,39 +1073,46 @@ SCANRANGE_LIST = ["Current band", "freq range", "ALL"]
 SCQT_LIST = ["Decoder", "Encoder", "Both"]
 S_MUTE_LIST = ["off", "rx mute", "tx mute", "r/t mute"]
 POWER_LIST = ["Low", "Med", "High"]
-RPTMODE_LIST = ["Radio/Talkie", "One direction Repeater",
-                "Two direction repeater"]
-TONE_LIST = ["----"] + ["%s" % str(t) for t in chirp_common.TONES] + \
-            ["D%0.3dN" % dts for dts in chirp_common.DTCS_CODES] + \
-            ["D%0.3dI" % dts for dts in chirp_common.DTCS_CODES]
+RPTMODE_LIST = ["Radio/Talkie", "One direction Repeater", "Two direction repeater"]
+TONE_LIST = (
+    ["----"]
+    + ["%s" % str(t) for t in chirp_common.TONES]
+    + ["D%0.3dN" % dts for dts in chirp_common.DTCS_CODES]
+    + ["D%0.3dI" % dts for dts in chirp_common.DTCS_CODES]
+)
 SCREEN_MODE_LIST = ["Classic", "Covert", "Day_1", "Day_2"]
 ACTIVE_AREA_LIST = ["Receiver A - Top", "Receiver B - Bottom"]
 TDR_LIST = ["TDR ON", "TDR OFF"]
 
 
 @directory.register
-class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
-                      chirp_common.ExperimentalRadio):
-
+class KGUV9DPlusRadio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Wouxun KG-UV9D Plus"""
+
     VENDOR = "Wouxun"
     MODEL = "KG-UV9D Plus"
     _model = b"KG-UV9D"
     _rev = b"00"  # default rev for the radio I know about...
     _file_ident = b"kg-uv9d"
     BAUD_RATE = 19200
-    POWER_LEVELS = [chirp_common.PowerLevel("L", watts=1),
-                    chirp_common.PowerLevel("M", watts=2),
-                    chirp_common.PowerLevel("H", watts=5)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("L", watts=1),
+        chirp_common.PowerLevel("M", watts=2),
+        chirp_common.PowerLevel("H", watts=5),
+    ]
     _step_list = STEP_LIST
     _valid_steps = STEPS
     _mmap = ""
     _tone_model = KenwoodToneModel(
-        dcs_base=0x8000, pol_mask=0x4000, tone_init=0x0000,
-        tone_flag=0x0000, dcs_enc_base=8)
+        dcs_base=0x8000,
+        pol_mask=0x4000,
+        tone_init=0x0000,
+        tone_flag=0x0000,
+        dcs_enc_base=8,
+    )
 
     def _read_record(self):
-        """ Read and validate the header of a radio reply.
+        """Read and validate the header of a radio reply.
         A record is a formatted byte stream as follows:
             0x7D   All records start with this
             opcode This is in the set of legal commands.
@@ -1121,29 +1129,26 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         data = bytearray(self.pipe.read(4))
         if not data:
             raise errors.RadioNoResponse()
-        if (len(data) < 4):
-            raise errors.RadioError('Radio sent short header')
-        if (data[0] != 0x7D):
-            raise errors.RadioError(
-                'Radio reply garbled (%02x)' % data[0])
-        if (data[1] not in cmd_name):
-            raise errors.RadioError(
-                "Unrecognized opcode (%02x)" % data[1])
-        if (data[2] != 0x00):
-            raise errors.RadioError(
-                "Direction incorrect. Got (%02x)" % data[2])
+        if len(data) < 4:
+            raise errors.RadioError("Radio sent short header")
+        if data[0] != 0x7D:
+            raise errors.RadioError("Radio reply garbled (%02x)" % data[0])
+        if data[1] not in cmd_name:
+            raise errors.RadioError("Unrecognized opcode (%02x)" % data[1])
+        if data[2] != 0x00:
+            raise errors.RadioError("Direction incorrect. Got (%02x)" % data[2])
         payload_len = data[3]
         # don't forget to read the checksum byte
         data.extend(self.pipe.read(payload_len + 1))
-        if (len(data) != (payload_len + 5)):  # we got a short read
+        if len(data) != (payload_len + 5):  # we got a short read
             raise errors.RadioError(
-                "Radio reply wrong size. Wanted %d, got %d" %
-                ((payload_len + 1), (len(data) - 4)))
+                "Radio reply wrong size. Wanted %d, got %d"
+                % ((payload_len + 1), (len(data) - 4))
+            )
         return _pkt_decode(data)
 
     def _write_record(self, cmd, payload=None):
-        """ Write a request packet to the radio.
-        """
+        """Write a request packet to the radio."""
 
         packet = _pkt_encode(cmd, payload)
         self.pipe.write(packet)
@@ -1158,7 +1163,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         return cls._file_ident in filedata[0x51:0x59].lower()
 
     def _identify(self):
-        """ Identify the radio
+        """Identify the radio
         The ident block identifies the radio and its capabilities.
         This block is always 78 bytes. The rev == '01' is the base
         radio and '02' seems to be the '-Plus' version.
@@ -1180,9 +1185,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             if len(_resp) == 0:
                 raise errors.RadioNoResponse()
             if len(_resp) != 74:
-                LOG.error(
-                    "Expected and IDENT reply of 78 bytes. Got (%d)" %
-                    len(_resp))
+                LOG.error("Expected and IDENT reply of 78 bytes. Got (%d)" % len(_resp))
                 continue
             if not chksum_match:
                 LOG.error("Checksum error: retrying ident...")
@@ -1192,7 +1195,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
                 LOG.error("Expected IDENT reply. Got (%02x)" % op)
                 continue
             LOG.debug("Got:\n%s" % _hex_print(_resp))
-            (mod, rev) = struct.unpack(">7s2s", _resp[0:9])
+            mod, rev = struct.unpack(">7s2s", _resp[0:9])
             LOG.debug("Model %s, rev %s" % (mod, rev))
             if mod == self._model:
                 self._rev = rev
@@ -1204,15 +1207,14 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
     def process_mmap(self):
         if self._rev != b"02" and self._rev != b"00":
             # new revision found - log it and assume same map and proceed
-            LOG.debug("Unrecognized model variation (%s) Using default Map" %
-                      self._rev)
+            LOG.debug("Unrecognized model variation (%s) Using default Map" % self._rev)
         self._memobj = bitwise.parse(_MEM_FORMAT02, self._mmap)
 
     def sync_in(self):
-        """ Public sync_in
-            Download contents of the radio. Throw errors back
-            to the core if the radio does not respond.
-            """
+        """Public sync_in
+        Download contents of the radio. Throw errors back
+        to the core if the radio does not respond.
+        """
         try:
             self._identify()
             self._mmap = self._do_download()
@@ -1220,15 +1222,14 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Unknown error during download process')
-            raise errors.RadioError(
-                "Failed to communicate with radio: %s" % e)
+            LOG.exception("Unknown error during download process")
+            raise errors.RadioError("Failed to communicate with radio: %s" % e)
         self.process_mmap()
 
     def sync_out(self):
-        """ Public sync_out
-            Upload the modified memory image into the radio.
-            """
+        """Public sync_out
+        Upload the modified memory image into the radio.
+        """
 
         try:
             self._identify()
@@ -1237,12 +1238,11 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         except errors.RadioError:
             raise
         except Exception as e:
-            raise errors.RadioError(
-                "Failed to communicate with radio: %s" % e)
+            raise errors.RadioError("Failed to communicate with radio: %s" % e)
         return
 
     def _do_download(self):
-        """ Read the whole of radio memory in 64 byte chunks.
+        """Read the whole of radio memory in 64 byte chunks.
         We load the config space followed by loading memory channels.
         The radio seems to be a "clone" type and the memory channels
         are actually within the config space. There are separate
@@ -1270,17 +1270,19 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             if not chksum_match:
                 LOG.debug(_hex_print(resp))
                 raise Exception(
-                    "Checksum error while reading configuration (0x%x)" %
-                    addr)
+                    "Checksum error while reading configuration (0x%x)" % addr
+                )
             pa = struct.unpack(">H", resp[0:2])
             pkt_addr = pa[0]
             payload = resp[2:]
             if op != CMD_RCONF or addr != pkt_addr:
                 raise Exception(
-                    "Expected CMD_RCONF (%x) reply. Got (%02x: %x)" %
-                    (addr, op, pkt_addr))
-            LOG.debug("Config read (0x%x):\n%s" %
-                      (addr, _hex_print(resp, '0x%(addr)04x')))
+                    "Expected CMD_RCONF (%x) reply. Got (%02x: %x)"
+                    % (addr, op, pkt_addr)
+                )
+            LOG.debug(
+                "Config read (0x%x):\n%s" % (addr, _hex_print(resp, "0x%(addr)04x"))
+            )
             # Orig Code from 9D Plus driver was len(Payload)-1:
             # This Caused every 64th byte to = 00
             for i in range(0, len(payload)):
@@ -1301,7 +1303,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         3 channel memory and names slots. As we discover other useful
         goodies in the map, we can add more slots...
         """
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
             cfgmap = config_map2
         else:
             cfgmap = config_map
@@ -1310,13 +1312,11 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             end = start + (blocksize * count)
             for addr in range(start, end, blocksize):
                 req = bytearray(struct.pack(">H", addr))
-                req.extend(self.get_mmap()[addr:addr + blocksize])
+                req.extend(self.get_mmap()[addr : addr + blocksize])
                 self._write_record(CMD_WCONF, req)
-                LOG.debug("Config write (0x%x):\n%s" %
-                          (addr, _hex_print(req)))
+                LOG.debug("Config write (0x%x):\n%s" % (addr, _hex_print(req)))
                 chksum_match, op, ack = self._read_record()
-                LOG.debug("Config write ack [%x]\n%s" %
-                          (addr, _hex_print(ack)))
+                LOG.debug("Config write ack [%x]\n%s" % (addr, _hex_print(ack)))
                 a = struct.unpack(">H", ack)  # big endian short...
                 ack = a[0]
                 if not chksum_match or op != CMD_WCONF or addr != ack:
@@ -1324,8 +1324,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
                     if not chksum_match:
                         msg += "Checksum err, "
                     if op != CMD_WCONF:
-                        msg += "cmd mismatch %x != %x, " % \
-                               (op, CMD_WCONF)
+                        msg += "cmd mismatch %x != %x, " % (op, CMD_WCONF)
                     if addr != ack:
                         msg += "ack error %x != %x, " % (addr, ack)
                     raise Exception("Radio did not ack block: %s error" % msg)
@@ -1337,10 +1336,10 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
                     self.status_fn(status)
 
     def get_features(self):
-        """ Public get_features
-            Return the features of this radio once we have identified
-            it and gotten its bits
-            """
+        """Public get_features
+        Return the features of this radio once we have identified
+        it and gotten its bits
+        """
         rf = chirp_common.RadioFeatures()
         rf.has_settings = True
         rf.has_ctone = True
@@ -1364,12 +1363,14 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_name_length = 8
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        rf.valid_bands = [(108000000, 136000000),  # Aircraft  AM
-                          (136000000, 180000000),  # supports 2m
-                          (230000000, 250000000),
-                          (350000000, 400000000),
-                          (400000000, 520000000),  # supports 70cm
-                          (700000000, 985000000)]
+        rf.valid_bands = [
+            (108000000, 136000000),  # Aircraft  AM
+            (136000000, 180000000),  # supports 2m
+            (230000000, 250000000),
+            (350000000, 400000000),
+            (400000000, 520000000),  # supports 70cm
+            (700000000, 985000000),
+        ]
         rf.valid_characters = chirp_common.CHARSET_ASCII
         rf.valid_tuning_steps = self._valid_steps
         rf.memory_bounds = (1, 999)  # 999 memories
@@ -1378,17 +1379,19 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = ("This radio driver is currently under development. "
-                           "There are no known issues with it, but you should "
-                           "proceed with caution.")
+        rp.experimental = (
+            "This radio driver is currently under development. "
+            "There are no known issues with it, but you should "
+            "proceed with caution."
+        )
         return rp
 
     def get_raw_memory(self, number):
         return repr(self._memobj.chan_blk[number - 1])
 
     def get_memory(self, number):
-        """ Public get_memory
-            Return the channel memory referenced by number to the UI.
+        """Public get_memory
+        Return the channel memory referenced by number to the UI.
         """
         _mem = self._memobj.chan_blk[number - 1]
         _nam = self._memobj.chan_name[number - 1]
@@ -1412,8 +1415,9 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             # assume empty regardless of _valid and proceed to next channel
             if _valid not in INVALID_MEM_VALUES:
                 # only log if _valid indicates the channel is not invalid
-                LOG.debug("CH %s Rx Freq = 0xFFFFFFFF - "
-                          "Treating chan as empty", mem.number)
+                LOG.debug(
+                    "CH %s Rx Freq = 0xFFFFFFFF - " "Treating chan as empty", mem.number
+                )
             mem.empty = True
             _val.ch_valid = CHAN_INVALID
             return mem
@@ -1422,21 +1426,28 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             # 0xFF for State -  accept it as valid as long as Rx Freq is
             # <= max value
             if _mem.rxfreq > 99999999:  # Max poss Value = 999.99999 MHz
-                LOG.debug("CH %s State invalid - Rx Frq > 999.99999 MHz: "
-                          "Treating chan as empty", mem.number)
+                LOG.debug(
+                    "CH %s State invalid - Rx Frq > 999.99999 MHz: "
+                    "Treating chan as empty",
+                    mem.number,
+                )
                 mem.empty = True
                 _val.ch_valid = CHAN_INVALID
                 return mem
             else:
-                LOG.debug("CH %s State invalid - Rx Freq valid: "
-                          "Assume chan valid", mem.number)
+                LOG.debug(
+                    "CH %s State invalid - Rx Freq valid: " "Assume chan valid",
+                    mem.number,
+                )
                 mem.empty = False
                 _val.ch_valid = CHAN_VALID
         else:  # State not Invalid and Rx Freq not 0xFFFFFFFF
             if _mem.rxfreq > 99999999:  # Max poss Value = 999.99999 MHz
-                LOG.debug("CH %s Invalid Rx Frq: %s MHz - "
-                          "Treating chan as empty", mem.number,
-                          int(_mem.rxfreq) / 100000)
+                LOG.debug(
+                    "CH %s Invalid Rx Frq: %s MHz - " "Treating chan as empty",
+                    mem.number,
+                    int(_mem.rxfreq) / 100000,
+                )
                 mem.empty = True
                 _val.ch_valid = CHAN_INVALID
                 return mem
@@ -1477,10 +1488,10 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         return mem
 
     def set_memory(self, mem):
-        """ Public set_memory
-            Inverse of get_memory. Update the radio memory image
-            from the mem object
-            """
+        """Public set_memory
+        Inverse of get_memory. Update the radio memory image
+        from the mem object
+        """
         number = mem.number
 
         _mem = self._memobj.chan_blk[number - 1]
@@ -1499,8 +1510,8 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             if self._memobj.b_conf.w_chan == number:
                 self._memobj.b_conf.w_chan = 1
 
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
-            _nam.name = str2name("", 8, '\0', '\0')
+            _mem.set_raw("\xff" * (_mem.size() // 8))
+            _nam.name = str2name("", 8, "\0", "\0")
             _mem.state = MEM_INVALID
             _val.ch_valid = CHAN_INVALID
             return
@@ -1518,13 +1529,13 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             _mem.txfreq = int(mem.freq / 10)
         _mem.scan = int(mem.skip != "S")
         if mem.mode == "FM":
-            _mem.mod = 0    # make sure forced AM is off
+            _mem.mod = 0  # make sure forced AM is off
             _mem.fm_dev = 0
         elif mem.mode == "NFM":
             _mem.mod = 0
             _mem.fm_dev = 1
         elif mem.mode == "AM":
-            _mem.mod = 1     # AM on
+            _mem.mod = 1  # AM on
             _mem.fm_dev = 1  # set NFM bandwidth
         else:
             _mem.mod = 0
@@ -1538,193 +1549,271 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             _mem.pwr = True
 
         # Set fields we can't access via the UI table to safe defaults
-        _mem.qt = 0   # mute mode to QT
-        _mem.bit5 = 0   # clear this bit to ensure accurate CPS power level
-        _nam.name = str2name(mem.name, 8, '\0', '\0')
+        _mem.qt = 0  # mute mode to QT
+        _mem.bit5 = 0  # clear this bit to ensure accurate CPS power level
+        _nam.name = str2name(mem.name, 8, "\0", "\0")
         _mem.state = MEM_VALID
         _val.ch_valid = CHAN_VALID
 
-# Build the UI configuration tabs
-# the channel memory tab is built by the core.
-# We have no control over it
+    # Build the UI configuration tabs
+    # the channel memory tab is built by the core.
+    # We have no control over it
 
     def _core_tab(self):
-        """ Build Core Configuration tab
+        """Build Core Configuration tab
         Radio settings common to all modes and areas go here.
         """
         s = self._memobj.settings
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
 
             sm = self._memobj.screen
 
         cf = RadioSettingGroup("cfg_grp", "Configuration")
 
-        cf.append(RadioSetting("auto_am",
-                               "Auto detect AM (Menu 53)",
-                               RadioSettingValueBoolean(s.auto_am)))
-        cf.append(RadioSetting("qt_sw",
-                               "Scan tone detect (Menu 59)",
-                               RadioSettingValueBoolean(s.qt_sw)))
         cf.append(
-            RadioSetting("s_mute",
-                         "SubFreq Mute (Menu 60)",
-                         RadioSettingValueList(S_MUTE_LIST,
-                                               current_index=s.s_mute)))
+            RadioSetting(
+                "auto_am",
+                "Auto detect AM (Menu 53)",
+                RadioSettingValueBoolean(s.auto_am),
+            )
+        )
         cf.append(
-            RadioSetting("tot",
-                         "Transmit timeout Timer (Menu 10)",
-                         RadioSettingValueList(TIMEOUT_LIST,
-                                               current_index=s.tot)))
+            RadioSetting(
+                "qt_sw", "Scan tone detect (Menu 59)", RadioSettingValueBoolean(s.qt_sw)
+            )
+        )
         cf.append(
-            RadioSetting("toa",
-                         "Transmit Timeout Alarm (Menu 11)",
-                         RadioSettingValueList(TOA_LIST,
-                                               current_index=s.toa)))
+            RadioSetting(
+                "s_mute",
+                "SubFreq Mute (Menu 60)",
+                RadioSettingValueList(S_MUTE_LIST, current_index=s.s_mute),
+            )
+        )
         cf.append(
-            RadioSetting("ptt_id",
-                         "PTT Caller ID mode (Menu 23)",
-                         RadioSettingValueList(PTTID_LIST,
-                                               current_index=s.ptt_id)))
+            RadioSetting(
+                "tot",
+                "Transmit timeout Timer (Menu 10)",
+                RadioSettingValueList(TIMEOUT_LIST, current_index=s.tot),
+            )
+        )
         cf.append(
-            RadioSetting("id_dly",
-                         "Caller ID Delay time (Menu 25)",
-                         RadioSettingValueList(ID_DLY_LIST,
-                                               current_index=s.id_dly)))
-        cf.append(RadioSetting("voice_sw",
-                               "Voice Guide (Menu 12)",
-                               RadioSettingValueBoolean(s.voice_sw)))
-        cf.append(RadioSetting("beep",
-                               "Keypad Beep (Menu 13)",
-                               RadioSettingValueBoolean(s.beep)))
+            RadioSetting(
+                "toa",
+                "Transmit Timeout Alarm (Menu 11)",
+                RadioSettingValueList(TOA_LIST, current_index=s.toa),
+            )
+        )
         cf.append(
-            RadioSetting("s_tone",
-                         "Side Tone (Menu 36)",
-                         RadioSettingValueList(S_TONES,
-                                               current_index=s.s_tone)))
+            RadioSetting(
+                "ptt_id",
+                "PTT Caller ID mode (Menu 23)",
+                RadioSettingValueList(PTTID_LIST, current_index=s.ptt_id),
+            )
+        )
         cf.append(
-            RadioSetting("ring_time",
-                         "Ring Time (Menu 26)",
-                         RadioSettingValueList(
-                             LIST_OFF_10,
-                             current_index=s.ring_time)))
+            RadioSetting(
+                "id_dly",
+                "Caller ID Delay time (Menu 25)",
+                RadioSettingValueList(ID_DLY_LIST, current_index=s.id_dly),
+            )
+        )
         cf.append(
-            RadioSetting("roger",
-                         "Roger Beep (Menu 9)",
-                         RadioSettingValueList(ROGER_LIST,
-                                               current_index=s.roger)))
-        cf.append(RadioSetting("blcdsw",
-                               "Backlight (Menu 41)",
-                               RadioSettingValueBoolean(s.blcdsw)))
+            RadioSetting(
+                "voice_sw",
+                "Voice Guide (Menu 12)",
+                RadioSettingValueBoolean(s.voice_sw),
+            )
+        )
         cf.append(
-            RadioSetting("abr",
-                         "Auto Backlight Time (Menu 1)",
-                         RadioSettingValueList(BACKLIGHT_LIST,
-                                               current_index=s.abr)))
+            RadioSetting(
+                "beep", "Keypad Beep (Menu 13)", RadioSettingValueBoolean(s.beep)
+            )
+        )
         cf.append(
-            RadioSetting("abr_lvl",
-                         "Backlight Brightness (Menu 27)",
-                         RadioSettingValueInteger(BACKLIGHT_BRIGHT_MIN,
-                                                  BACKLIGHT_BRIGHT_MAX,
-                                                  s.abr_lvl)))
-        cf.append(RadioSetting("lock",
-                               "Keypad Lock",
-                               RadioSettingValueBoolean(s.lock)))
+            RadioSetting(
+                "s_tone",
+                "Side Tone (Menu 36)",
+                RadioSettingValueList(S_TONES, current_index=s.s_tone),
+            )
+        )
         cf.append(
-            RadioSetting("lock_m",
-                         "Keypad Lock Mode (Menu 35)",
-                         RadioSettingValueList(LOCK_MODES,
-                                               current_index=s.lock_m)))
-        cf.append(RadioSetting("auto_lk",
-                               "Keypad Autolock (Menu 34)",
-                               RadioSettingValueBoolean(s.auto_lk)))
-        cf.append(RadioSetting("prich_sw",
-                               "Priority Channel Scan (Menu 33)",
-                               RadioSettingValueBoolean(s.prich_sw)))
-        cf.append(RadioSetting("pri_ch",
-                               "Priority Channel (Menu 32)",
-                               RadioSettingValueInteger(1, 999,
-                                                        s.pri_ch)))
+            RadioSetting(
+                "ring_time",
+                "Ring Time (Menu 26)",
+                RadioSettingValueList(LIST_OFF_10, current_index=s.ring_time),
+            )
+        )
         cf.append(
-            RadioSetting("dtmf_st",
-                         "DTMF Sidetone (Menu 22)",
-                         RadioSettingValueList(DTMFST_LIST,
-                                               current_index=s.dtmf_st)))
-        cf.append(RadioSetting("sc_qt",
-                               "Scan QT Save Mode (Menu 38)",
-                               RadioSettingValueList(
-                                   SCQT_LIST,
-                                   current_index=s.sc_qt)))
+            RadioSetting(
+                "roger",
+                "Roger Beep (Menu 9)",
+                RadioSettingValueList(ROGER_LIST, current_index=s.roger),
+            )
+        )
         cf.append(
-            RadioSetting("apo_tmr",
-                         "Automatic Power-off (Menu 39)",
-                         RadioSettingValueList(APO_TIMES,
-                                               current_index=s.apo_tmr)))
+            RadioSetting(
+                "blcdsw", "Backlight (Menu 41)", RadioSettingValueBoolean(s.blcdsw)
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "abr",
+                "Auto Backlight Time (Menu 1)",
+                RadioSettingValueList(BACKLIGHT_LIST, current_index=s.abr),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "abr_lvl",
+                "Backlight Brightness (Menu 27)",
+                RadioSettingValueInteger(
+                    BACKLIGHT_BRIGHT_MIN, BACKLIGHT_BRIGHT_MAX, s.abr_lvl
+                ),
+            )
+        )
+        cf.append(RadioSetting("lock", "Keypad Lock", RadioSettingValueBoolean(s.lock)))
+        cf.append(
+            RadioSetting(
+                "lock_m",
+                "Keypad Lock Mode (Menu 35)",
+                RadioSettingValueList(LOCK_MODES, current_index=s.lock_m),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "auto_lk",
+                "Keypad Autolock (Menu 34)",
+                RadioSettingValueBoolean(s.auto_lk),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "prich_sw",
+                "Priority Channel Scan (Menu 33)",
+                RadioSettingValueBoolean(s.prich_sw),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "pri_ch",
+                "Priority Channel (Menu 32)",
+                RadioSettingValueInteger(1, 999, s.pri_ch),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "dtmf_st",
+                "DTMF Sidetone (Menu 22)",
+                RadioSettingValueList(DTMFST_LIST, current_index=s.dtmf_st),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "sc_qt",
+                "Scan QT Save Mode (Menu 38)",
+                RadioSettingValueList(SCQT_LIST, current_index=s.sc_qt),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "apo_tmr",
+                "Automatic Power-off (Menu 39)",
+                RadioSettingValueList(APO_TIMES, current_index=s.apo_tmr),
+            )
+        )
         cf.append(  # VOX "guard" is really VOX trigger audio level
-            RadioSetting("vox_grd",
-                         "VOX level (Menu 7)",
-                         RadioSettingValueList(VOX_GRDS,
-                                               current_index=s.vox_grd)))
+            RadioSetting(
+                "vox_grd",
+                "VOX level (Menu 7)",
+                RadioSettingValueList(VOX_GRDS, current_index=s.vox_grd),
+            )
+        )
         cf.append(
-            RadioSetting("vox_dly",
-                         "VOX Delay (Menu 37)",
-                         RadioSettingValueList(VOX_DLYS,
-                                               current_index=s.vox_dly)))
-        cf.append(RadioSetting("bledsw",
-                               "Receive LED (Menu 42)",
-                               RadioSettingValueBoolean(s.bledsw)))
+            RadioSetting(
+                "vox_dly",
+                "VOX Delay (Menu 37)",
+                RadioSettingValueList(VOX_DLYS, current_index=s.vox_dly),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "bledsw", "Receive LED (Menu 42)", RadioSettingValueBoolean(s.bledsw)
+            )
+        )
 
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
-            cf.append(RadioSetting("screen.screen_mode",
-                                   "Screen Mode (Menu 62)",
-                                   RadioSettingValueList(
-                                         SCREEN_MODE_LIST,
-                                         current_index=sm.screen_mode)))
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
+            cf.append(
+                RadioSetting(
+                    "screen.screen_mode",
+                    "Screen Mode (Menu 62)",
+                    RadioSettingValueList(
+                        SCREEN_MODE_LIST, current_index=sm.screen_mode
+                    ),
+                )
+            )
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
             langlst = LANGUAGE_LIST2
         else:
             langlst = LANGUAGE_LIST
         cf.append(
-            RadioSetting("lang",
-                         "Menu Language (Menu 14)",
-                         RadioSettingValueList(langlst,
-                                               current_index=s.lang)))
+            RadioSetting(
+                "lang",
+                "Menu Language (Menu 14)",
+                RadioSettingValueList(langlst, current_index=s.lang),
+            )
+        )
 
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
             ponmsglst = PONMSG_LIST2
         else:
             ponmsglst = PONMSG_LIST
-        cf.append(RadioSetting("ponmsg",
-                               "Poweron message (Menu 40)",
-                               RadioSettingValueList(
-                                   ponmsglst, current_index=s.ponmsg)))
+        cf.append(
+            RadioSetting(
+                "ponmsg",
+                "Poweron message (Menu 40)",
+                RadioSettingValueList(ponmsglst, current_index=s.ponmsg),
+            )
+        )
         return cf
 
     def _repeater_tab(self):
-        """Repeater mode functions
-        """
+        """Repeater mode functions"""
         s = self._memobj.settings
         cf = RadioSettingGroup("repeater", "Repeater Functions")
 
         cf.append(
-            RadioSetting("type_set",
-                         "Radio Mode (Menu 43)",
-                         RadioSettingValueList(
-                             RPTMODE_LIST,
-                             current_index=s.type_set)))
-        cf.append(RadioSetting("rpt_ptt",
-                               "Repeater PTT (Menu 45)",
-                               RadioSettingValueBoolean(s.rpt_ptt)))
-        cf.append(RadioSetting("rpt_spk",
-                               "Repeater Mode Speaker (Menu 44)",
-                               RadioSettingValueBoolean(s.rpt_spk)))
+            RadioSetting(
+                "type_set",
+                "Radio Mode (Menu 43)",
+                RadioSettingValueList(RPTMODE_LIST, current_index=s.type_set),
+            )
+        )
         cf.append(
-            RadioSetting("rpt_kpt",
-                         "Repeater Hold Time (Menu 46)",
-                         RadioSettingValueList(RPT_KPTS,
-                                               current_index=s.rpt_kpt)))
-        cf.append(RadioSetting("rpt_rct",
-                               "Repeater Receipt Tone (Menu 47)",
-                               RadioSettingValueBoolean(s.rpt_rct)))
+            RadioSetting(
+                "rpt_ptt", "Repeater PTT (Menu 45)", RadioSettingValueBoolean(s.rpt_ptt)
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "rpt_spk",
+                "Repeater Mode Speaker (Menu 44)",
+                RadioSettingValueBoolean(s.rpt_spk),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "rpt_kpt",
+                "Repeater Hold Time (Menu 46)",
+                RadioSettingValueList(RPT_KPTS, current_index=s.rpt_kpt),
+            )
+        )
+        cf.append(
+            RadioSetting(
+                "rpt_rct",
+                "Repeater Receipt Tone (Menu 47)",
+                RadioSettingValueBoolean(s.rpt_rct),
+            )
+        )
         return cf
 
     def _admin_tab(self):
@@ -1751,45 +1840,50 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             setting.value = pw2str(obj.reset)
 
         def apply_wake(setting, obj):
-            obj.wake = int(setting.value)/10
+            obj.wake = int(setting.value) / 10
 
         def apply_sleep(setting, obj):
-            obj.sleep = int(setting.value)/10
+            obj.sleep = int(setting.value) / 10
 
         pw = self._memobj.passwords  # admin passwords
         s = self._memobj.settings
 
         cf = RadioSettingGroup("admin", "Admin Functions")
 
-        cf.append(RadioSetting("menu_avail",
-                               "Menu available in channel mode",
-                               RadioSettingValueBoolean(s.menu_avail)))
-        mode_sw = RadioSettingValueString(0, 6,
-                                          pw2str(pw.mode_sw), False)
-        rs = RadioSetting("passwords.mode_sw",
-                          "Mode Switch Password", mode_sw)
+        cf.append(
+            RadioSetting(
+                "menu_avail",
+                "Menu available in channel mode",
+                RadioSettingValueBoolean(s.menu_avail),
+            )
+        )
+        mode_sw = RadioSettingValueString(0, 6, pw2str(pw.mode_sw), False)
+        rs = RadioSetting("passwords.mode_sw", "Mode Switch Password", mode_sw)
         rs.set_apply_callback(apply_mode_sw, pw)
         cf.append(rs)
 
-        cf.append(RadioSetting("reset_avail",
-                               "Radio Reset Available",
-                               RadioSettingValueBoolean(s.reset_avail)))
+        cf.append(
+            RadioSetting(
+                "reset_avail",
+                "Radio Reset Available",
+                RadioSettingValueBoolean(s.reset_avail),
+            )
+        )
         reset = RadioSettingValueString(0, 6, pw2str(pw.reset), False)
-        rs = RadioSetting("passwords.reset",
-                          "Radio Reset Password", reset)
+        rs = RadioSetting("passwords.reset", "Radio Reset Password", reset)
         rs.set_apply_callback(apply_reset, pw)
         cf.append(rs)
 
         cf.append(
-            RadioSetting("dtmf_tx",
-                         "DTMF Tx Duration",
-                         RadioSettingValueList(DTMF_TIMES,
-                                               current_index=s.dtmf_tx)))
+            RadioSetting(
+                "dtmf_tx",
+                "DTMF Tx Duration",
+                RadioSettingValueList(DTMF_TIMES, current_index=s.dtmf_tx),
+            )
+        )
         cid = self._memobj.my_callid
-        my_callid = RadioSettingValueString(3, 6,
-                                            self.callid2str(cid.code), False)
-        rs = RadioSetting("my_callid.code",
-                          "PTT Caller ID code (Menu 24)", my_callid)
+        my_callid = RadioSettingValueString(3, 6, self.callid2str(cid.code), False)
+        rs = RadioSetting("my_callid.code", "PTT Caller ID code (Menu 24)", my_callid)
         rs.set_apply_callback(apply_cid, cid)
         cf.append(rs)
 
@@ -1800,54 +1894,54 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         cf.append(rs)
 
         cf.append(
-            RadioSetting("settings.save_m",
-                         "Save Mode  (Menu 2)",
-                         RadioSettingValueList(SAVE_MODES,
-                                               current_index=s.save_m)))
+            RadioSetting(
+                "settings.save_m",
+                "Save Mode  (Menu 2)",
+                RadioSettingValueList(SAVE_MODES, current_index=s.save_m),
+            )
+        )
         for i in range(0, 4):
             sm = self._memobj.save[i]
             wake = RadioSettingValueInteger(0, 18000, sm.wake * 10, 1)
-            wf = RadioSetting("save[%i].wake" % i,
-                              "Save Mode %d Wake Time" % (i+1), wake)
+            wf = RadioSetting(
+                "save[%i].wake" % i, "Save Mode %d Wake Time" % (i + 1), wake
+            )
             wf.set_apply_callback(apply_wake, sm)
             cf.append(wf)
 
             slp = RadioSettingValueInteger(0, 18000, sm.sleep * 10, 1)
-            wf = RadioSetting("save[%i].sleep" % i,
-                              "Save Mode %d Sleep Time" % (i+1), slp)
+            wf = RadioSetting(
+                "save[%i].sleep" % i, "Save Mode %d Sleep Time" % (i + 1), slp
+            )
             wf.set_apply_callback(apply_sleep, sm)
             cf.append(wf)
 
         _msg = str(self._memobj.display.banner).split("\0")[0]
         val = RadioSettingValueString(0, 16, _msg)
         val.set_mutable(True)
-        cf.append(RadioSetting("display.banner",
-                               "Display Message", val))
+        cf.append(RadioSetting("display.banner", "Display Message", val))
 
-        if (self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX"):
+        if self.MODEL == "KG-UV9PX" or self.MODEL == "KG-UV9GX":
             _str = str(self._memobj.oemmodel.model).split("\0")[0]
             val = RadioSettingValueString(0, 10, _str)
             val.set_mutable(True)
-            cf.append(RadioSetting("oemmodel.model",
-                                   "Custom Sub-Receiver Message", val))
+            cf.append(
+                RadioSetting("oemmodel.model", "Custom Sub-Receiver Message", val)
+            )
 
-            val = RadioSettingValueList(
-                                TDR_LIST,
-                                current_index=s.tdr)
+            val = RadioSettingValueList(TDR_LIST, current_index=s.tdr)
             val.set_mutable(True)
             cf.append(RadioSetting("tdr", "TDR", val))
 
-            val = RadioSettingValueList(
-                                ACTIVE_AREA_LIST,
-                                current_index=s.act_area)
+            val = RadioSettingValueList(ACTIVE_AREA_LIST, current_index=s.act_area)
             val.set_mutable(True)
             cf.append(RadioSetting("act_area", "Active Receiver(BAND)", val))
 
         return cf
 
     def _fm_tab(self):
-        """FM Broadcast channels
-        """
+        """FM Broadcast channels"""
+
         def apply_fm(setting, obj):
             f = freq2short(setting.value, 76000000, 108000000)
             obj.fm_freq = f
@@ -1855,19 +1949,17 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         fm = RadioSettingGroup("fm_chans", "FM Broadcast")
         for ch in range(0, 20):
             chan = self._memobj.fm_chans[ch]
-            freq = RadioSettingValueString(0, 20,
-                                           short2freq(chan.fm_freq))
-            rs = RadioSetting("fm_%d" % (ch + 1),
-                              "FM Channel %d" % (ch + 1), freq)
+            freq = RadioSettingValueString(0, 20, short2freq(chan.fm_freq))
+            rs = RadioSetting("fm_%d" % (ch + 1), "FM Channel %d" % (ch + 1), freq)
             rs.set_apply_callback(apply_fm, chan)
             fm.append(rs)
         return fm
 
     def _scan_grp(self):
-        """Scan groups
-        """
+        """Scan groups"""
+
         def apply_name(setting, obj):
-            name = str2name(setting.value, 8, '\0', '\0')
+            name = str2name(setting.value, 8, "\0", "\0")
             obj.name = name
 
         def apply_start(setting, obj):
@@ -1887,20 +1979,20 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         for i in range(0, 10):
             s_grp = sgrp.addrs[i]
             s_name = sgrp.names[i]
-            rs_name = RadioSettingValueString(0, 8,
-                                              name2str(s_name.name))
-            rs = RadioSetting("scn_grps.names[%i].name" % i,
-                              "Group %i Name" % (i + 1), rs_name)
+            rs_name = RadioSettingValueString(0, 8, name2str(s_name.name))
+            rs = RadioSetting(
+                "scn_grps.names[%i].name" % i, "Group %i Name" % (i + 1), rs_name
+            )
             rs.set_apply_callback(apply_name, s_name)
             scan.append(rs)
             rs_st = RadioSettingValueInteger(1, 999, s_grp.scan_st)
-            rs = RadioSetting("scn_grps.addrs[%i].scan_st" % i,
-                              "Starting Channel", rs_st)
+            rs = RadioSetting(
+                "scn_grps.addrs[%i].scan_st" % i, "Starting Channel", rs_st
+            )
             rs.set_apply_callback(apply_start, s_grp)
             scan.append(rs)
             rs_end = RadioSettingValueInteger(1, 999, s_grp.scan_end)
-            rs = RadioSetting("scn_grps.addrs[%i].scan_end" % i,
-                              "Last Channel", rs_end)
+            rs = RadioSetting("scn_grps.addrs[%i].scan_end" % i, "Last Channel", rs_end)
             rs.set_apply_callback(apply_end, s_grp)
             scan.append(rs)
         return scan
@@ -1909,12 +2001,13 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         """Caller IDs to be recognized by radio
         This really should be a table in the UI
         """
+
         def apply_callid(setting, obj):
             c = str2callid(setting.value)
             obj.cid = c
 
         def apply_name(setting, obj):
-            name = str2name(setting.value, 6, '\0', '\xff')
+            name = str2name(setting.value, 6, "\0", "\xff")
             obj.name = name
 
         cid = RadioSettingGroup("callids", "Caller IDs")
@@ -1922,29 +2015,27 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             callid = self._memobj.call_ids[i]
             name = self._memobj.cid_names[i]
             c_name = RadioSettingValueString(0, 6, name2str(name.name))
-            rs = RadioSetting("cid_names[%i].name" % i,
-                              "Caller ID %i Name" % (i + 1), c_name)
+            rs = RadioSetting(
+                "cid_names[%i].name" % i, "Caller ID %i Name" % (i + 1), c_name
+            )
             rs.set_apply_callback(apply_name, name)
             cid.append(rs)
-            c_id = RadioSettingValueString(0, 6,
-                                           self.callid2str(callid.cid),
-                                           False)
-            rs = RadioSetting("call_ids[%i].cid" % i,
-                              "Caller ID Code", c_id)
+            c_id = RadioSettingValueString(0, 6, self.callid2str(callid.cid), False)
+            rs = RadioSetting("call_ids[%i].cid" % i, "Caller ID Code", c_id)
             rs.set_apply_callback(apply_callid, callid)
             cid.append(rs)
         return cid
 
     def _band_tab(self, area, band):
-        """ Build a band tab inside a VFO/Area
-        """
+        """Build a band tab inside a VFO/Area"""
+
         def apply_freq(setting, lo, hi, obj):
             f = freq2int(setting.value, lo, hi)
-            obj.freq = f/10
+            obj.freq = f / 10
 
         def apply_offset(setting, obj):
             f = freq2int(setting.value, 0, 5000000)
-            obj.offset = f/10
+            obj.offset = f / 10
 
         def apply_enc(setting, obj):
             t = tone2short(setting.value)
@@ -1971,7 +2062,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
                 c = self._memobj.vfo_a.band_450
                 lo = 400000000
                 hi = 512000000
-            else:   # 700
+            else:  # 700
                 c = self._memobj.vfo_a.band_700
                 lo = 700000000
                 hi = 985000000
@@ -1997,49 +2088,69 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         rs.set_apply_callback(apply_offset, c)
         bf.append(rs)
 
-        rs = RadioSetting(prefix + ".encqt",
-                          "Encode QT (Menu 17,19)",
-                          RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.encqt)))
+        rs = RadioSetting(
+            prefix + ".encqt",
+            "Encode QT (Menu 17,19)",
+            RadioSettingValueList(TONE_LIST, short2tone(c.encqt)),
+        )
         rs.set_apply_callback(apply_enc, c)
         bf.append(rs)
 
-        rs = RadioSetting(prefix + ".decqt",
-                          "Decode QT (Menu 16,18)",
-                          RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.decqt)))
+        rs = RadioSetting(
+            prefix + ".decqt",
+            "Decode QT (Menu 16,18)",
+            RadioSettingValueList(TONE_LIST, short2tone(c.decqt)),
+        )
         rs.set_apply_callback(apply_dec, c)
         bf.append(rs)
 
-        bf.append(RadioSetting(prefix + ".qt",
-                               "Mute Mode (Menu 21)",
-                               RadioSettingValueList(SPMUTE_LIST,
-                                                     current_index=c.qt)))
-        bf.append(RadioSetting(prefix + ".scan",
-                               "Scan this (Menu 48)",
-                               RadioSettingValueBoolean(c.scan)))
-        bf.append(RadioSetting(prefix + ".pwr",
-                               "Power (Menu 5)",
-                               RadioSettingValueList(
-                                   POWER_LIST, current_index=c.pwr)))
-        bf.append(RadioSetting(prefix + ".mod",
-                               "AM Modulation (Menu 54)",
-                               RadioSettingValueBoolean(c.mod)))
-        bf.append(RadioSetting(prefix + ".fm_dev",
-                               "FM Deviation (Menu 4)",
-                               RadioSettingValueList(
-                                   BANDWIDTH_LIST,
-                                   current_index=c.fm_dev)))
         bf.append(
-            RadioSetting(prefix + ".shift",
-                         "Frequency Shift (Menu 6)",
-                         RadioSettingValueList(OFFSET_LIST,
-                                               current_index=c.shift)))
+            RadioSetting(
+                prefix + ".qt",
+                "Mute Mode (Menu 21)",
+                RadioSettingValueList(SPMUTE_LIST, current_index=c.qt),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".scan",
+                "Scan this (Menu 48)",
+                RadioSettingValueBoolean(c.scan),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".pwr",
+                "Power (Menu 5)",
+                RadioSettingValueList(POWER_LIST, current_index=c.pwr),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".mod",
+                "AM Modulation (Menu 54)",
+                RadioSettingValueBoolean(c.mod),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".fm_dev",
+                "FM Deviation (Menu 4)",
+                RadioSettingValueList(BANDWIDTH_LIST, current_index=c.fm_dev),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".shift",
+                "Frequency Shift (Menu 6)",
+                RadioSettingValueList(OFFSET_LIST, current_index=c.shift),
+            )
+        )
         return bf
 
     def _area_tab(self, area):
-        """Build a VFO tab
-        """
+        """Build a VFO tab"""
+
         def apply_scan_st(setting, scan_lo, scan_hi, obj):
             f = freq2short(setting.value, scan_lo, scan_hi)
             obj.scan_st = f
@@ -2066,80 +2177,90 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         prefix = "%s_conf" % area
         af = RadioSettingGroup(prefix, desc)
         af.append(
-            RadioSetting(prefix + ".w_mode",
-                         "Workmode",
-                         RadioSettingValueList(
-                             WORKMODE_LIST,
-                             current_index=c.w_mode)))
-        af.append(RadioSetting(prefix + ".w_chan",
-                               "Channel",
-                               RadioSettingValueInteger(1, 999,
-                                                        c.w_chan)))
+            RadioSetting(
+                prefix + ".w_mode",
+                "Workmode",
+                RadioSettingValueList(WORKMODE_LIST, current_index=c.w_mode),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_grp",
-                         "Scan Group (Menu 49)",
-                         RadioSettingValueList(
-                             SCANGRP_LIST,
-                             current_index=c.scan_grp)))
-        af.append(RadioSetting(prefix + ".bcl",
-                               "Busy Channel Lock-out (Menu 15)",
-                               RadioSettingValueBoolean(c.bcl)))
+            RadioSetting(
+                prefix + ".w_chan",
+                "Channel",
+                RadioSettingValueInteger(1, 999, c.w_chan),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".sql",
-                         "Squelch Level (Menu 8)",
-                         RadioSettingValueList(LIST_0_9,
-                                               current_index=c.sql)))
+            RadioSetting(
+                prefix + ".scan_grp",
+                "Scan Group (Menu 49)",
+                RadioSettingValueList(SCANGRP_LIST, current_index=c.scan_grp),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".cset",
-                         "Call ID Group (Menu 52)",
-                         RadioSettingValueList(LIST_1_20,
-                                               current_index=c.cset)))
+            RadioSetting(
+                prefix + ".bcl",
+                "Busy Channel Lock-out (Menu 15)",
+                RadioSettingValueBoolean(c.bcl),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".step",
-                         "Frequency Step (Menu 3)",
-                         RadioSettingValueList(
-                             self._step_list, current_index=c.step)))
+            RadioSetting(
+                prefix + ".sql",
+                "Squelch Level (Menu 8)",
+                RadioSettingValueList(LIST_0_9, current_index=c.sql),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_mode",
-                         "Scan Mode (Menu 20)",
-                         RadioSettingValueList(
-                             SCANMODE_LIST,
-                             current_index=c.scan_mode)))
+            RadioSetting(
+                prefix + ".cset",
+                "Call ID Group (Menu 52)",
+                RadioSettingValueList(LIST_1_20, current_index=c.cset),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_range",
-                         "Scan Range (Menu 50)",
-                         RadioSettingValueList(
-                             SCANRANGE_LIST,
-                             current_index=c.scan_range)))
-        st = RadioSettingValueString(0, 15,
-                                     short2freq(scan_rng.scan_st))
-        rs = RadioSetting("settings.%s.scan_st" % area,
-                          "Frequency Scan Start", st)
+            RadioSetting(
+                prefix + ".step",
+                "Frequency Step (Menu 3)",
+                RadioSettingValueList(self._step_list, current_index=c.step),
+            )
+        )
+        af.append(
+            RadioSetting(
+                prefix + ".scan_mode",
+                "Scan Mode (Menu 20)",
+                RadioSettingValueList(SCANMODE_LIST, current_index=c.scan_mode),
+            )
+        )
+        af.append(
+            RadioSetting(
+                prefix + ".scan_range",
+                "Scan Range (Menu 50)",
+                RadioSettingValueList(SCANRANGE_LIST, current_index=c.scan_range),
+            )
+        )
+        st = RadioSettingValueString(0, 15, short2freq(scan_rng.scan_st))
+        rs = RadioSetting("settings.%s.scan_st" % area, "Frequency Scan Start", st)
         rs.set_apply_callback(apply_scan_st, scan_lo, scan_hi, scan_rng)
         af.append(rs)
 
-        end = RadioSettingValueString(0, 15,
-                                      short2freq(scan_rng.scan_end))
-        rs = RadioSetting("settings.%s.scan_end" % area,
-                          "Frequency Scan End", end)
-        rs.set_apply_callback(apply_scan_end, scan_lo, scan_hi,
-                              scan_rng)
+        end = RadioSettingValueString(0, 15, short2freq(scan_rng.scan_end))
+        rs = RadioSetting("settings.%s.scan_end" % area, "Frequency Scan End", end)
+        rs.set_apply_callback(apply_scan_end, scan_lo, scan_hi, scan_rng)
         af.append(rs)
         # Each area has its own set of bands
-        for band in (band_list):
+        for band in band_list:
             af.append(self._band_tab(area, band))
         return af
 
     def _key_tab(self):
-        """Build radio key/button menu
-        """
+        """Build radio key/button menu"""
         s = self._memobj.settings
         if self.MODEL == "KG-UV9PX":
             pfkey1 = PF1KEY_LIST
             pfkey2 = PF2KEY_LIST
             pfkey3 = PF3KEY_LIST2
-        elif (self.MODEL == "KG-UV9GX" or
-              self.MODEL == "KG-UV9G Pro"):
+        elif self.MODEL == "KG-UV9GX" or self.MODEL == "KG-UV9G Pro":
             pfkey1 = PF1KEY_LIST9GX
             pfkey2 = PF2KEY_LIST9GX
             pfkey3 = PF3KEY_LIST9GX
@@ -2150,27 +2271,32 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
 
         kf = RadioSettingGroup("key_grp", "Key Settings")
 
-        kf.append(RadioSetting("settings.pf1",
-                               "PF1 Key function (Menu 55)",
-                               RadioSettingValueList(
-                                   pfkey1,
-                                   current_index=s.pf1)))
-        kf.append(RadioSetting("settings.pf2",
-                               "PF2 Key function (Menu 56)",
-                               RadioSettingValueList(
-                                   pfkey2,
-                                   current_index=s.pf2)))
+        kf.append(
+            RadioSetting(
+                "settings.pf1",
+                "PF1 Key function (Menu 55)",
+                RadioSettingValueList(pfkey1, current_index=s.pf1),
+            )
+        )
+        kf.append(
+            RadioSetting(
+                "settings.pf2",
+                "PF2 Key function (Menu 56)",
+                RadioSettingValueList(pfkey2, current_index=s.pf2),
+            )
+        )
 
-        kf.append(RadioSetting("settings.pf3",
-                               "PF3 Key function (Menu 57)",
-                               RadioSettingValueList(
-                                   pfkey3,
-                                   current_index=s.pf3)))
+        kf.append(
+            RadioSetting(
+                "settings.pf3",
+                "PF3 Key function (Menu 57)",
+                RadioSettingValueList(pfkey3, current_index=s.pf3),
+            )
+        )
         return kf
 
     def _fl_tab(self):
-        """Build the frequency limits tab
-        """
+        """Build the frequency limits tab"""
 
         # The stop limits in the factory KG-UV9D Mate memory image are 1 MHz
         # higher than the published specs. The settings panel will crash if
@@ -2180,7 +2306,7 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
             "band_450": (400000000, 513000000),
             "band_300": (350000000, 401000000),
             "band_700": (700000000, 987000000),
-            "band_200": (230000000, 251000000)
+            "band_200": (230000000, 251000000),
         }
 
         def apply_freq_start(setting, low, high, obj):
@@ -2205,65 +2331,51 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         for rx_band in rx.items():
             name, limits = rx_band
 
-            start_freq = RadioSettingValueString(1,
-                                                 20,
-                                                 short2freq(limits.start))
-            start_rs = RadioSetting("rx_start_" + name,
-                                    name + " Receive Start",
-                                    start_freq)
-            start_rs.set_apply_callback(apply_freq_start,
-                                        hard_limits[name][0],
-                                        hard_limits[name][1],
-                                        limits)
+            start_freq = RadioSettingValueString(1, 20, short2freq(limits.start))
+            start_rs = RadioSetting(
+                "rx_start_" + name, name + " Receive Start", start_freq
+            )
+            start_rs.set_apply_callback(
+                apply_freq_start, hard_limits[name][0], hard_limits[name][1], limits
+            )
             fl.append(start_rs)
 
             # Add 10 increments of 100 MHz before displaying to compensate for
             # the firmware off-by-1MHz problem.
-            stop_freq = RadioSettingValueString(1,
-                                                20,
-                                                short2freq(limits.stop + 10))
-            stop_rs = RadioSetting("rx_stop_" + name,
-                                   name + " Receive Stop",
-                                   stop_freq)
-            stop_rs.set_apply_callback(apply_freq_stop,
-                                       hard_limits[name][0],
-                                       hard_limits[name][1],
-                                       limits)
+            stop_freq = RadioSettingValueString(1, 20, short2freq(limits.stop + 10))
+            stop_rs = RadioSetting("rx_stop_" + name, name + " Receive Stop", stop_freq)
+            stop_rs.set_apply_callback(
+                apply_freq_stop, hard_limits[name][0], hard_limits[name][1], limits
+            )
             fl.append(stop_rs)
 
         for tx_band in tx.items():
             name, limits = tx_band
 
-            start_freq = RadioSettingValueString(1,
-                                                 20,
-                                                 short2freq(limits.start))
-            start_rs = RadioSetting("tx_start_" + name,
-                                    name + " Transmit Start",
-                                    start_freq)
-            start_rs.set_apply_callback(apply_freq_start,
-                                        hard_limits[name][0],
-                                        hard_limits[name][1], limits)
+            start_freq = RadioSettingValueString(1, 20, short2freq(limits.start))
+            start_rs = RadioSetting(
+                "tx_start_" + name, name + " Transmit Start", start_freq
+            )
+            start_rs.set_apply_callback(
+                apply_freq_start, hard_limits[name][0], hard_limits[name][1], limits
+            )
             fl.append(start_rs)
 
             # Add 10 increments of 100 MHz before displaying to compensate for
             # the firmware off-by-1MHz problem.
-            stop_freq = RadioSettingValueString(1,
-                                                20,
-                                                short2freq(limits.stop + 10))
-            stop_rs = RadioSetting("tx_stop_" + name,
-                                   name + " Transmit Stop",
-                                   stop_freq)
-            stop_rs.set_apply_callback(apply_freq_stop,
-                                       hard_limits[name][0],
-                                       hard_limits[name][1],
-                                       limits)
+            stop_freq = RadioSettingValueString(1, 20, short2freq(limits.stop + 10))
+            stop_rs = RadioSetting(
+                "tx_stop_" + name, name + " Transmit Stop", stop_freq
+            )
+            stop_rs.set_apply_callback(
+                apply_freq_stop, hard_limits[name][0], hard_limits[name][1], limits
+            )
             fl.append(stop_rs)
 
         return fl
 
     def _get_settings(self):
-        """Build the radio configuration settings menus
-        """
+        """Build the radio configuration settings menus"""
 
         core_grp = self._core_tab()
         fm_grp = self._fm_tab()
@@ -2280,50 +2392,47 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         core_grp.append(admin_grp)
         core_grp.append(rpt_grp)
         core_grp.append(freq_limit_grp)
-        group = RadioSettings(core_grp,
-                              area_a_grp,
-                              area_b_grp,
-                              fm_grp,
-                              scan_grp,
-                              callid_grp
-                              )
+        group = RadioSettings(
+            core_grp, area_a_grp, area_b_grp, fm_grp, scan_grp, callid_grp
+        )
         return group
 
     def get_settings(self):
-        """ Public build out linkage between radio settings and UI
-        """
+        """Public build out linkage between radio settings and UI"""
         try:
             return self._get_settings()
         except Exception:
             import traceback
-            LOG.error("Failed to parse settings: %s",
-                      traceback.format_exc())
+
+            LOG.error("Failed to parse settings: %s", traceback.format_exc())
             return None
 
     def _is_freq(self, element):
         """This is a hack to smoke out whether we need to do
         frequency translations for otherwise innocent u16s and u32s
         """
-        return "rxfreq" in element.get_name() or \
-               "txfreq" in element.get_name() or \
-               "scan_st" in element.get_name() or \
-               "scan_end" in element.get_name() or \
-               "offset" in element.get_name() or \
-               "fm_stop" in element.get_name()
+        return (
+            "rxfreq" in element.get_name()
+            or "txfreq" in element.get_name()
+            or "scan_st" in element.get_name()
+            or "scan_end" in element.get_name()
+            or "offset" in element.get_name()
+            or "fm_stop" in element.get_name()
+        )
 
     def _is_limit(self, element):
-        return "lower_limit" in element.get_name() or\
-               "upper_limit" in element.get_name()
+        return (
+            "lower_limit" in element.get_name() or "upper_limit" in element.get_name()
+        )
 
     def set_settings(self, settings):
-        """ Public update radio settings via UI callback
+        """Public update radio settings via UI callback
         A lot of this should be in common code....
         """
 
         for element in settings:
             if not isinstance(element, RadioSetting):
-                LOG.debug("set_settings: not instance %s" %
-                          element.get_name())
+                LOG.debug("set_settings: not instance %s" % element.get_name())
                 self.set_settings(element)
                 continue
             else:
@@ -2349,17 +2458,15 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
                         LOG.debug("Using apply callback")
                         element.run_apply_callback()
                     else:
-                        LOG.debug("Setting %s = %s" %
-                                  (setting, element.value))
+                        LOG.debug("Setting %s = %s" % (setting, element.value))
                         if self._is_freq(element):
-                            setattr(obj, setting, int(element.value)/10)
+                            setattr(obj, setting, int(element.value) / 10)
                         elif self._is_limit(element):
-                            setattr(obj, setting, int(element.value)*10)
+                            setattr(obj, setting, int(element.value) * 10)
                         else:
                             setattr(obj, setting, element.value)
                 except Exception:
-                    LOG.debug("set_settings: Exception with %s" %
-                              element.get_name())
+                    LOG.debug("set_settings: Exception with %s" % element.get_name())
                     raise
 
     def callid2str(self, cid):
@@ -2371,19 +2478,18 @@ class KGUV9DPlusRadio(chirp_common.CloneModeRadio,
         cidstr = ""
         for i in range(0, 6):
             b = cid[i].get_value()
-            if b == 0xc:  # the cid EOL
+            if b == 0xC:  # the cid EOL
                 break
-            if b == 0 or b > 0xa:
-                raise InvalidValueError(
-                    "Caller ID code has illegal byte 0x%x" % b)
+            if b == 0 or b > 0xA:
+                raise InvalidValueError("Caller ID code has illegal byte 0x%x" % b)
             cidstr += bin2ascii[b]
         return cidstr
 
 
 @directory.register
 class KGUV9PXRadio(KGUV9DPlusRadio):
-
     """Wouxun KG-UV9PX"""
+
     VENDOR = "Wouxun"
     MODEL = "KG-UV9PX"
     _model = b"KG-UV9D"
@@ -2400,15 +2506,14 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
     def process_mmap(self):
         if self._rev != b"02" and self._rev != b"00":
             # new revision found - log it and assume same map and proceed
-            LOG.debug("Unrecognized model variation (%s) Using default Map" %
-                      self._rev)
+            LOG.debug("Unrecognized model variation (%s) Using default Map" % self._rev)
         self._memobj = bitwise.parse(_MEM_FORMAT_9PX, self._mmap)
 
     def get_features(self):
-        """ Public get_features
-            Return the features of this radio once we have identified
-            it and gotten its bits
-            """
+        """Public get_features
+        Return the features of this radio once we have identified
+        it and gotten its bits
+        """
         rf = chirp_common.RadioFeatures()
         rf.has_settings = True
         rf.has_ctone = True
@@ -2432,12 +2537,14 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_name_length = 8
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        rf.valid_bands = [(108000000, 135997500),  # Aircraft  AM
-                          (136000000, 180997500),  # supports 2m
-                          (219000000, 250997500),
-                          (350000000, 399997500),
-                          (400000000, 512997500),  # supports 70cm
-                          (700000000, 986997500)]
+        rf.valid_bands = [
+            (108000000, 135997500),  # Aircraft  AM
+            (136000000, 180997500),  # supports 2m
+            (219000000, 250997500),
+            (350000000, 399997500),
+            (400000000, 512997500),  # supports 70cm
+            (700000000, 986997500),
+        ]
         rf.valid_characters = chirp_common.CHARSET_ASCII
         rf.valid_tuning_steps = STEPS
         rf.memory_bounds = (1, 999)  # 999 memories
@@ -2455,18 +2562,16 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
             # 9PX factory reset CID use 0x00 for 0 digit - instead of 0x0a
             # remap 0x00 to 0x0a
             if b == 0x00:
-                b = 0x0a
-            if b == 0xc or b == 0xf0:  # the cid EOL
+                b = 0x0A
+            if b == 0xC or b == 0xF0:  # the cid EOL
                 break
-            if b > 0xa:
-                raise InvalidValueError(
-                    "Caller ID code has illegal byte 0x%x" % b)
+            if b > 0xA:
+                raise InvalidValueError("Caller ID code has illegal byte 0x%x" % b)
             cidstr += bin2ascii[b]
         return cidstr
 
     def _get_settings(self):
-        """Build the radio configuration settings menus
-        """
+        """Build the radio configuration settings menus"""
 
         core_grp = self._core_tab()
         fm_grp = self._fm_tab()
@@ -2481,18 +2586,20 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
         core_grp.append(key_grp)
         core_grp.append(admin_grp)
         core_grp.append(rpt_grp)
-        group = RadioSettings(core_grp,
-                              area_a_grp,
-                              area_b_grp,
-                              fm_grp,
-                              scan_grp,
-                              callid_grp,
-                              freq_limit_grp,)
+        group = RadioSettings(
+            core_grp,
+            area_a_grp,
+            area_b_grp,
+            fm_grp,
+            scan_grp,
+            callid_grp,
+            freq_limit_grp,
+        )
         return group
 
     def _area_tab(self, area):
-        """Build a VFO tab
-        """
+        """Build a VFO tab"""
+
         def apply_scan_st(setting, scan_lo, scan_hi, obj):
             f = freq2short(setting.value, scan_lo, scan_hi)
             obj.scan_st = f
@@ -2519,80 +2626,92 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
         prefix = "%s_conf" % area
         af = RadioSettingGroup(prefix, desc)
         af.append(
-            RadioSetting(prefix + ".w_mode",
-                         "Workmode",
-                         RadioSettingValueList(
-                             WORKMODE_LIST,
-                             current_index=c.w_mode)))
-        af.append(RadioSetting(prefix + ".w_chan",
-                               "Channel",
-                               RadioSettingValueInteger(1, 999,
-                                                        c.w_chan)))
+            RadioSetting(
+                prefix + ".w_mode",
+                "Workmode",
+                RadioSettingValueList(WORKMODE_LIST, current_index=c.w_mode),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_grp",
-                         "Scan Group (Menu 49)",
-                         RadioSettingValueList(
-                             SCANGRP_LIST,
-                             current_index=c.scan_grp)))
-        af.append(RadioSetting(prefix + ".bcl",
-                               "Busy Channel Lock-out (Menu 15)",
-                               RadioSettingValueBoolean(c.bcl)))
+            RadioSetting(
+                prefix + ".w_chan",
+                "Channel",
+                RadioSettingValueInteger(1, 999, c.w_chan),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".sql",
-                         "Squelch Level (Menu 8)",
-                         RadioSettingValueList(LIST_0_9,
-                                               current_index=c.sql)))
+            RadioSetting(
+                prefix + ".scan_grp",
+                "Scan Group (Menu 49)",
+                RadioSettingValueList(SCANGRP_LIST, current_index=c.scan_grp),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".cset",
-                         "Call ID Group (Menu 52)",
-                         RadioSettingValueList(LIST_1_20,
-                                               current_index=c.cset)))
+            RadioSetting(
+                prefix + ".bcl",
+                "Busy Channel Lock-out (Menu 15)",
+                RadioSettingValueBoolean(c.bcl),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".step",
-                         "Frequency Step (Menu 3)",
-                         RadioSettingValueList(
-                             self._step_list, current_index=c.step)))
+            RadioSetting(
+                prefix + ".sql",
+                "Squelch Level (Menu 8)",
+                RadioSettingValueList(LIST_0_9, current_index=c.sql),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_mode",
-                         "Scan Mode (Menu 20)",
-                         RadioSettingValueList(
-                             SCANMODE_LIST,
-                             current_index=c.scan_mode)))
+            RadioSetting(
+                prefix + ".cset",
+                "Call ID Group (Menu 52)",
+                RadioSettingValueList(LIST_1_20, current_index=c.cset),
+            )
+        )
         af.append(
-            RadioSetting(prefix + ".scan_range",
-                         "Scan Range (Menu 50)",
-                         RadioSettingValueList(
-                             SCANRANGE_LIST,
-                             current_index=c.scan_range)))
-        st = RadioSettingValueString(0, 15,
-                                     short2freq(scan_rng.scan_st))
-        rs = RadioSetting("settings.%s.scan_st" % area,
-                          "Frequency Scan Start", st)
+            RadioSetting(
+                prefix + ".step",
+                "Frequency Step (Menu 3)",
+                RadioSettingValueList(self._step_list, current_index=c.step),
+            )
+        )
+        af.append(
+            RadioSetting(
+                prefix + ".scan_mode",
+                "Scan Mode (Menu 20)",
+                RadioSettingValueList(SCANMODE_LIST, current_index=c.scan_mode),
+            )
+        )
+        af.append(
+            RadioSetting(
+                prefix + ".scan_range",
+                "Scan Range (Menu 50)",
+                RadioSettingValueList(SCANRANGE_LIST, current_index=c.scan_range),
+            )
+        )
+        st = RadioSettingValueString(0, 15, short2freq(scan_rng.scan_st))
+        rs = RadioSetting("settings.%s.scan_st" % area, "Frequency Scan Start", st)
         rs.set_apply_callback(apply_scan_st, scan_lo, scan_hi, scan_rng)
         af.append(rs)
 
-        end = RadioSettingValueString(0, 15,
-                                      short2freq(scan_rng.scan_end))
-        rs = RadioSetting("settings.%s.scan_end" % area,
-                          "Frequency Scan End", end)
-        rs.set_apply_callback(apply_scan_end, scan_lo, scan_hi,
-                              scan_rng)
+        end = RadioSettingValueString(0, 15, short2freq(scan_rng.scan_end))
+        rs = RadioSetting("settings.%s.scan_end" % area, "Frequency Scan End", end)
+        rs.set_apply_callback(apply_scan_end, scan_lo, scan_hi, scan_rng)
         af.append(rs)
         # Each area has its own set of bands
-        for band in (band_list):
+        for band in band_list:
             af.append(self._band_tab(area, band))
         return af
 
     def _band_tab(self, area, band):
-        """ Build a band tab inside a VFO/Area
-        """
+        """Build a band tab inside a VFO/Area"""
+
         def apply_freq(setting, lo, hi, obj):
             f = freq2int(setting.value, lo, hi)
-            obj.freq = f/10
+            obj.freq = f / 10
 
         def apply_offset(setting, obj):
             f = freq2int(setting.value, 0, 5000000)
-            obj.offset = f/10
+            obj.offset = f / 10
 
         def apply_enc(setting, obj):
             t = tone2short(setting.value)
@@ -2619,7 +2738,7 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
                 c = self._memobj.vfo_a.band_450
                 lo = 400000000
                 hi = 512997500
-            else:   # 700
+            else:  # 700
                 c = self._memobj.vfo_a.band_700
                 lo = 700000000
                 hi = 986997500
@@ -2645,168 +2764,187 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
         rs.set_apply_callback(apply_offset, c)
         bf.append(rs)
 
-        rs = RadioSetting(prefix + ".encqt",
-                          "Encode QT (Menu 17,19)",
-                          RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.encqt)))
+        rs = RadioSetting(
+            prefix + ".encqt",
+            "Encode QT (Menu 17,19)",
+            RadioSettingValueList(TONE_LIST, short2tone(c.encqt)),
+        )
         rs.set_apply_callback(apply_enc, c)
         bf.append(rs)
 
-        rs = RadioSetting(prefix + ".decqt",
-                          "Decode QT (Menu 16,18)",
-                          RadioSettingValueList(TONE_LIST,
-                                                short2tone(c.decqt)))
+        rs = RadioSetting(
+            prefix + ".decqt",
+            "Decode QT (Menu 16,18)",
+            RadioSettingValueList(TONE_LIST, short2tone(c.decqt)),
+        )
         rs.set_apply_callback(apply_dec, c)
         bf.append(rs)
 
-        bf.append(RadioSetting(prefix + ".qt",
-                               "Mute Mode (Menu 21)",
-                               RadioSettingValueList(SPMUTE_LIST,
-                                                     current_index=c.qt)))
-        bf.append(RadioSetting(prefix + ".scan",
-                               "Scan this (Menu 48)",
-                               RadioSettingValueBoolean(c.scan)))
-        bf.append(RadioSetting(prefix + ".pwr",
-                               "Power (Menu 5)",
-                               RadioSettingValueList(
-                                   POWER_LIST, current_index=c.pwr)))
-        bf.append(RadioSetting(prefix + ".mod",
-                               "AM Modulation (Menu 54)",
-                               RadioSettingValueBoolean(c.mod)))
-        bf.append(RadioSetting(prefix + ".fm_dev",
-                               "FM Deviation (Menu 4)",
-                               RadioSettingValueList(
-                                   BANDWIDTH_LIST,
-                                   current_index=c.fm_dev)))
         bf.append(
-            RadioSetting(prefix + ".shift",
-                         "Frequency Shift (Menu 6)",
-                         RadioSettingValueList(OFFSET_LIST,
-                                               current_index=c.shift)))
+            RadioSetting(
+                prefix + ".qt",
+                "Mute Mode (Menu 21)",
+                RadioSettingValueList(SPMUTE_LIST, current_index=c.qt),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".scan",
+                "Scan this (Menu 48)",
+                RadioSettingValueBoolean(c.scan),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".pwr",
+                "Power (Menu 5)",
+                RadioSettingValueList(POWER_LIST, current_index=c.pwr),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".mod",
+                "AM Modulation (Menu 54)",
+                RadioSettingValueBoolean(c.mod),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".fm_dev",
+                "FM Deviation (Menu 4)",
+                RadioSettingValueList(BANDWIDTH_LIST, current_index=c.fm_dev),
+            )
+        )
+        bf.append(
+            RadioSetting(
+                prefix + ".shift",
+                "Frequency Shift (Menu 6)",
+                RadioSettingValueList(OFFSET_LIST, current_index=c.shift),
+            )
+        )
         return bf
 
     def _fl_tab(self):
 
-        freq_limit_grp = RadioSettingGroup("limits",
-                                           "Freq Limits")
+        freq_limit_grp = RadioSettingGroup("limits", "Freq Limits")
         limgrp = freq_limit_grp
 
         l = self._memobj.limits
 
         if self.MODEL == "KG-UV9PX":
-            val = RadioSettingValueInteger(136, 180,
-                                           (l.lim_150M_Txlower_limit) / 10.0)
-            rs = RadioSetting("limits.lim_150M_Txlower_limit",
-                              "150M Tx Lower Limit (MHz)",
-                              val)
+            val = RadioSettingValueInteger(136, 180, (l.lim_150M_Txlower_limit) / 10.0)
+            rs = RadioSetting(
+                "limits.lim_150M_Txlower_limit", "150M Tx Lower Limit (MHz)", val
+            )
             limgrp.append(rs)
 
-            val = RadioSettingValueInteger(136, 180,
-                                           (l.lim_150M_Txupper_limit) / 10.0)
-            rs = RadioSetting("limits.lim_150M_Txupper_limit",
-                              "150M Tx Upper Limit (MHz + 0.9975)",
-                              val)
+            val = RadioSettingValueInteger(136, 180, (l.lim_150M_Txupper_limit) / 10.0)
+            rs = RadioSetting(
+                "limits.lim_150M_Txupper_limit",
+                "150M Tx Upper Limit (MHz + 0.9975)",
+                val,
+            )
             limgrp.append(rs)
 
-            val = RadioSettingValueInteger(400, 512,
-                                           (l.lim_450M_Txlower_limit) / 10.0)
-            rs = RadioSetting("limits.lim_450M_Txlower_limit",
-                              "450M Tx Lower Limit (MHz)",
-                              val)
+            val = RadioSettingValueInteger(400, 512, (l.lim_450M_Txlower_limit) / 10.0)
+            rs = RadioSetting(
+                "limits.lim_450M_Txlower_limit", "450M Tx Lower Limit (MHz)", val
+            )
             limgrp.append(rs)
 
-            val = RadioSettingValueInteger(400, 512,
-                                           (l.lim_450M_Txupper_limit) / 10.0)
-            rs = RadioSetting("limits.lim_450M_Txupper_limit",
-                              "450M Tx Upper Limit (MHz + 0.9975)",
-                              val)
+            val = RadioSettingValueInteger(400, 512, (l.lim_450M_Txupper_limit) / 10.0)
+            rs = RadioSetting(
+                "limits.lim_450M_Txupper_limit",
+                "450M Tx Upper Limit (MHz + 0.9975)",
+                val,
+            )
             limgrp.append(rs)
 
-        val = RadioSettingValueInteger(108, 180,
-                                       (l.lim_150M_area_a_rxlower_limit) /
-                                       10.0)
-        rs = RadioSetting("limits.lim_150M_area_a_rxlower_limit",
-                          "Rcvr A 150M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(
+            108, 180, (l.lim_150M_area_a_rxlower_limit) / 10.0
+        )
+        rs = RadioSetting(
+            "limits.lim_150M_area_a_rxlower_limit",
+            "Rcvr A 150M Rx Lower Limit (MHz)",
+            val,
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(108, 180,
-                                       (l.lim_150M_area_a_rxupper_limit) /
-                                       10.0)
-        rs = RadioSetting("limits.lim_150M_area_a_rxupper_limit",
-                          "Rcvr A 150M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(
+            108, 180, (l.lim_150M_area_a_rxupper_limit) / 10.0
+        )
+        rs = RadioSetting(
+            "limits.lim_150M_area_a_rxupper_limit",
+            "Rcvr A 150M Rx Upper Limit (MHz + 0.9975)",
+            val,
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(136, 180,
-                                       (l.lim_150M_area_b_rxlower_limit) /
-                                       10.0)
-        rs = RadioSetting("limits.lim_150M_area_b_rxlower_limit",
-                          "Rcvr B 150M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(
+            136, 180, (l.lim_150M_area_b_rxlower_limit) / 10.0
+        )
+        rs = RadioSetting(
+            "limits.lim_150M_area_b_rxlower_limit",
+            "Rcvr B 150M Rx Lower Limit (MHz)",
+            val,
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(136, 180,
-                                       (l.lim_150M_area_b_rxupper_limit) /
-                                       10.0)
-        rs = RadioSetting("limits.lim_150M_area_b_rxupper_limit",
-                          "Rcvr B 150M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(
+            136, 180, (l.lim_150M_area_b_rxupper_limit) / 10.0
+        )
+        rs = RadioSetting(
+            "limits.lim_150M_area_b_rxupper_limit",
+            "Rcvr B 150M Rx Upper Limit (MHz + 0.9975)",
+            val,
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(400, 512,
-                                       (l.lim_450M_rxlower_limit) / 10.0)
-        rs = RadioSetting("limits.lim_450M_rxlower_limit",
-                          "450M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(400, 512, (l.lim_450M_rxlower_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_450M_rxlower_limit", "450M Rx Lower Limit (MHz)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(400, 512,
-                                       (l.lim_450M_rxupper_limit) / 10.0)
-        rs = RadioSetting("limits.lim_450M_rxupper_limit",
-                          "450M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(400, 512, (l.lim_450M_rxupper_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_450M_rxupper_limit", "450M Rx Upper Limit (MHz + 0.9975)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(350, 399,
-                                       (l.lim_300M_rxlower_limit) / 10.0)
-        rs = RadioSetting("limits.lim_300M_rxlower_limit",
-                          "300M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(350, 399, (l.lim_300M_rxlower_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_300M_rxlower_limit", "300M Rx Lower Limit (MHz)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(350, 399,
-                                       (l.lim_300M_rxupper_limit) / 10.0)
-        rs = RadioSetting("limits.lim_300M_rxupper_limit",
-                          "300M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(350, 399, (l.lim_300M_rxupper_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_300M_rxupper_limit", "300M Rx Upper Limit (MHz + 0.9975)", val
+        )
         limgrp.append(rs)
-        val = RadioSettingValueInteger(700, 986,
-                                       (l.lim_800M_rxlower_limit) / 10.0)
-        rs = RadioSetting("limits.lim_800M_rxlower_limit",
-                          "800M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(700, 986, (l.lim_800M_rxlower_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_800M_rxlower_limit", "800M Rx Lower Limit (MHz)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(700, 986,
-                                       (l.lim_800M_rxupper_limit) / 10.0)
-        rs = RadioSetting("limits.lim_800M_rxupper_limit",
-                          "800M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(700, 986, (l.lim_800M_rxupper_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_800M_rxupper_limit", "800M Rx Upper Limit (MHz + 0.9975)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(219, 250,
-                                       (l.lim_210M_rxlower_limit) / 10.0)
-        rs = RadioSetting("limits.lim_210M_rxlower_limit",
-                          "210M Rx Lower Limit (MHz)",
-                          val)
+        val = RadioSettingValueInteger(219, 250, (l.lim_210M_rxlower_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_210M_rxlower_limit", "210M Rx Lower Limit (MHz)", val
+        )
         limgrp.append(rs)
 
-        val = RadioSettingValueInteger(219, 250,
-                                       (l.lim_210M_rxupper_limit) / 10.0)
-        rs = RadioSetting("limits.lim_210M_rxupper_limit",
-                          "210M Rx Upper Limit (MHz + 0.9975)",
-                          val)
+        val = RadioSettingValueInteger(219, 250, (l.lim_210M_rxupper_limit) / 10.0)
+        rs = RadioSetting(
+            "limits.lim_210M_rxupper_limit", "210M Rx Upper Limit (MHz + 0.9975)", val
+        )
         limgrp.append(rs)
 
         return limgrp
@@ -2814,8 +2952,8 @@ class KGUV9PXRadio(KGUV9DPlusRadio):
 
 @directory.register
 class KGUV9GXRadio(KGUV9PXRadio):
-
     """Wouxun KG-UV9GX"""
+
     VENDOR = "Wouxun"
     MODEL = "KG-UV9GX"
     _model = b"KG-UV9D"
@@ -2831,8 +2969,8 @@ class KGUV9GXRadio(KGUV9PXRadio):
 
 @directory.register
 class KGUV9KRadio(KGUV9DPlusRadio):
-
     """Wouxun KG-UV9K"""
+
     VENDOR = "Wouxun"
     MODEL = "KG-UV9K"
     _model = b"KG-UV9D"
@@ -2849,8 +2987,8 @@ class KGUV9KRadio(KGUV9DPlusRadio):
 
 @directory.register
 class KGUV9GProRadio(KGUV9DPlusRadio):
-
     """Wouxun KG-UV9G Pro"""
+
     VENDOR = "Wouxun"
     MODEL = "KG-UV9G Pro"
     _model = b"KG-UV9D"

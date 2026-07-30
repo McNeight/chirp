@@ -28,19 +28,19 @@ LOG = logging.getLogger(__name__)
 CONF = config.get()
 
 MODES = {
-    "FM":     "FM",
-    "AM":     "AM",
-    "FMN":    "NFM",
+    "FM": "FM",
+    "AM": "AM",
+    "FMN": "NFM",
     "D-STAR": "DV",
-    "USB":    "USB",
-    "LSB":    "LSB",
-    "P25":    "P25",
-    "DMR":    "DMR",
+    "USB": "USB",
+    "LSB": "LSB",
+    "P25": "P25",
+    "DMR": "DMR",
 }
 
 CA_COUNTIES = []
 CA_PROVINCES = {}
-logging.getLogger('suds').setLevel(logging.WARNING)
+logging.getLogger("suds").setLevel(logging.WARNING)
 
 
 class RadioReferenceCAData(threading.Thread):
@@ -55,20 +55,21 @@ class RadioReferenceCAData(threading.Thread):
         radio.set_auth(self._username, self._password)
         try:
             counties, provinces = radio.do_getcanadacounties()
-            LOG.debug('Got counties: %r' % counties)
-            LOG.debug('Got provinces: %r' % provinces)
+            LOG.debug("Got counties: %r" % counties)
+            LOG.debug("Got provinces: %r" % provinces)
             CA_COUNTIES.clear()
             CA_COUNTIES.extend(counties)
             CA_PROVINCES.clear()
             CA_PROVINCES.update(provinces)
             self._callback(True)
         except Exception as e:
-            LOG.exception('Failed to query RR: %s' % e)
+            LOG.exception("Failed to query RR: %s" % e)
             self._callback(e)
 
 
 class RadioReferenceRadio(base.NetworkResultRadio):
     """RadioReference.com data source"""
+
     VENDOR = "RadioReference"
 
     URL = "http://api.radioreference.com/soap2/?wsdl"
@@ -79,8 +80,8 @@ class RadioReferenceRadio(base.NetworkResultRadio):
 
         class UnicodeFilter(MessagePlugin):
             def received(self, context):
-                decoded = context.reply.decode('latin1')
-                reencoded = decoded.encode('utf-8')
+                decoded = context.reply.decode("latin1")
+                reencoded = decoded.encode("utf-8")
                 context.reply = reencoded
 
         self._auth = {"appKey": self.APPKEY, "username": "", "password": ""}
@@ -104,11 +105,13 @@ class RadioReferenceRadio(base.NetworkResultRadio):
                 provinces[province[2]] = province[0]
                 provinceinfo = service.getStateInfo(province[0], self._auth)
                 for county in provinceinfo.countyList:
-                    if (county[1] != 'UNKNOWN' and county[1] != 'N/A' and
-                            county[1] != 'Provincewide'):
+                    if (
+                        county[1] != "UNKNOWN"
+                        and county[1] != "N/A"
+                        and county[1] != "Provincewide"
+                    ):
                         # some counties are actually cities but whatever fml
-                        clist.append([province[0], province[2],
-                                      county[0], county[1]])
+                        clist.append([province[0], province[2], county[0], county[1]])
         except WebFault as err:
             raise errors.RadioError(err)
         return clist, provinces
@@ -116,23 +119,21 @@ class RadioReferenceRadio(base.NetworkResultRadio):
     def do_fetch(self, status, params):
         """Fetches frequencies for all subcategories in a county
         (or zip if USA)."""
-        status.send_status('Querying...', 5)
+        status.send_status("Querying...", 5)
         self._freqs = []
         # if this method was accessed for the USA, use the zip; otherwise
         # use the county ID
-        if params['country'] == 'US':
+        if params["country"] == "US":
             try:
                 service = self._client.service
-                zipcode = service.getZipcodeInfo(params['zipcounty'],
-                                                 self._auth)
+                zipcode = service.getZipcodeInfo(params["zipcounty"], self._auth)
                 county = service.getCountyInfo(zipcode.ctid, self._auth)
             except WebFault as err:
                 raise errors.RadioError(err)
-        elif params['country'] == 'CA':
+        elif params["country"] == "CA":
             try:
                 service = self._client.service
-                county = service.getCountyInfo(params['zipcounty'],
-                                               self._auth)
+                county = service.getCountyInfo(params["zipcounty"], self._auth)
             except WebFault as err:
                 raise errors.RadioError(err)
 
@@ -144,17 +145,18 @@ class RadioReferenceRadio(base.NetworkResultRadio):
 
         for cat in county.cats:
             for subcat in cat.subcats:
-                result = self._client.service.getSubcatFreqs(subcat.scid,
-                                                             self._auth)
+                result = self._client.service.getSubcatFreqs(subcat.scid, self._auth)
                 self._freqs += result
                 status_cur += 1
                 try:
                     status.send_status(
-                        'Fetching %s:%s' % (cat.cName, subcat.scName),
-                        status_cur / status_max * 100)
+                        "Fetching %s:%s" % (cat.cName, subcat.scName),
+                        status_cur / status_max * 100,
+                    )
                 except AttributeError:
-                    LOG.debug('Category %r subcat %r has no name',
-                              cat.cName, subcat.scid)
+                    LOG.debug(
+                        "Category %r subcat %r has no name", cat.cName, subcat.scid
+                    )
                     pass
 
         for agency in county.agencyList:
@@ -163,25 +165,25 @@ class RadioReferenceRadio(base.NetworkResultRadio):
                 status_max += len(cat.subcats)
             for cat in agency.cats:
                 for subcat in cat.subcats:
-                    result = self._client.service.getSubcatFreqs(subcat.scid,
-                                                                 self._auth)
+                    result = self._client.service.getSubcatFreqs(
+                        subcat.scid, self._auth
+                    )
                     self._freqs += result
                     status_cur += 1
                     try:
                         sc_name = subcat.scName
                     except AttributeError:
-                        sc_name = 'Unknown Category'
+                        sc_name = "Unknown Category"
 
                     status.send_status(
-                        'Fetching agency %s %s:%s' % (agency.aid,
-                                                      cat.cName,
-                                                      sc_name),
-                        status_cur / status_max * 100)
+                        "Fetching agency %s %s:%s" % (agency.aid, cat.cName, sc_name),
+                        status_cur / status_max * 100,
+                    )
         status.send_end()
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
-        rf.memory_bounds = (0, len(self._freqs)-1)
+        rf.memory_bounds = (0, len(self._freqs) - 1)
         rf.has_bank = False
         rf.has_ctone = False
         rf.has_comment = True
@@ -226,8 +228,10 @@ class RadioReferenceRadio(base.NetworkResultRadio):
         try:
             mem.mode = self._get_mode(freq.mode)
         except KeyError:
-            LOG.debug('Mode %s (%s) is unsupported' % (
-                freq.mode, self._modes[int(str(freq.mode))]))
+            LOG.debug(
+                "Mode %s (%s) is unsupported"
+                % (freq.mode, self._modes[int(str(freq.mode))])
+            )
             # skip memory if mode is unsupported
             mem.empty = True
             return mem
@@ -252,11 +256,14 @@ def main():
         [COUNTRY - 2 LETTER] [US ZIP(USA) OR COUNTY ID(CANADA)]
     """
     import sys
+
     rrr = RadioReferenceRadio(None)
-    rrr.set_params(username=sys.argv[1],
-                   password=sys.argv[2],
-                   country=sys.argv[3],
-                   zipcounty=sys.argv[4])
+    rrr.set_params(
+        username=sys.argv[1],
+        password=sys.argv[2],
+        country=sys.argv[3],
+        zipcounty=sys.argv[4],
+    )
     rrr.do_fetch()
     print(rrr.get_raw_memory(0))
     print(rrr.get_memory(0))

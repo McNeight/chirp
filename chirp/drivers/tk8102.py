@@ -73,18 +73,20 @@ struct {
 
 # These are 4+index
 KEYS = [
-    'Emergency',
-    'Key Lock',
-    'Monitor',
-    'Scan On/Off',
-    'Talk Around',
-    'Temporary Delete',
-    'None',
+    "Emergency",
+    "Key Lock",
+    "Monitor",
+    "Scan On/Off",
+    "Talk Around",
+    "Temporary Delete",
+    "None",
 ]
-SCAN_RESUME = ['Selected', 'Selected+Talkback']
-SCAN_TIME = ['%.1f' % (v * 0.5) for v in range(11)]
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=5),
-                chirp_common.PowerLevel("High", watts=50)]
+SCAN_RESUME = ["Selected", "Selected+Talkback"]
+SCAN_TIME = ["%.1f" % (v * 0.5) for v in range(11)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("High", watts=50),
+]
 MODES = ["NFM", "FM"]
 PTTID = ["", "BOT", "EOT", "Both"]
 SIGNAL = ["", "DTMF"]
@@ -106,8 +108,9 @@ def recv(radio, readdata=True):
         data = radio.pipe.read(length)
         # LOG.debug("     P<R: %s" % util.hexprint(hdr + data))
         if len(data) != length:
-            raise errors.RadioError("Radio sent %i bytes (expected %i)" % (
-                    len(data), length))
+            raise errors.RadioError(
+                "Radio sent %i bytes (expected %i)" % (len(data), length)
+            )
     else:
         data = bytes(b"")
     radio.pipe.write(b"\x06")
@@ -118,18 +121,19 @@ def do_ident(radio):
     send(radio, b"PROGRAM")
     ack = radio.pipe.read(1)
     if ack != bytes(b"\x06"):
-        LOG.debug('Response was %r, expected 0x06' % ack)
+        LOG.debug("Response was %r, expected 0x06" % ack)
         raise errors.RadioError("Radio refused program mode")
     radio.pipe.write(b"\x02")
     ident = radio.pipe.read(8)
     try:
         modelstr = ident[1:5].decode()
     except UnicodeDecodeError:
-        LOG.debug('Model string was %r' % ident)
-        modelstr = '?'
+        LOG.debug("Model string was %r" % ident)
+        modelstr = "?"
     if modelstr != radio.MODEL.split("-")[1]:
-        raise errors.RadioError("Incorrect model: TK-%s, expected %s" % (
-                modelstr, radio.MODEL))
+        raise errors.RadioError(
+            "Incorrect model: TK-%s, expected %s" % (modelstr, radio.MODEL)
+        )
     LOG.info("Model: %s" % util.hexprint(ident))
     radio.pipe.write(b"\x06")
     ack = radio.pipe.read(1)
@@ -163,8 +167,7 @@ def do_download(radio):
 
     radio.pipe.write(b"\x45")
 
-    data = (b"\x45\x58\x33\x34\x30\x32\xff\xff" + (b"\xff" * 8) +
-            data)
+    data = b"\x45\x58\x33\x34\x30\x32\xff\xff" + (b"\xff" * 8) + data
     return memmap.MemoryMapBytes(data)
 
 
@@ -179,7 +182,7 @@ def do_upload(radio):
     mmap = radio._mmap.get_byte_compatible()
     for addr in range(0, 0x0400, 8):
         eaddr = addr + 16
-        send(radio, make_frame(b"W", addr, 8, mmap[eaddr:eaddr + 8]))
+        send(radio, make_frame(b"W", addr, 8, mmap[eaddr : eaddr + 8]))
         ack = radio.pipe.read(1)
         if ack != bytes(b"\x06"):
             raise errors.RadioError("Radio refused block at %04x" % addr)
@@ -196,13 +199,15 @@ def do_upload(radio):
 
 class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
     """Kenwood TK-x102"""
+
     VENDOR = "Kenwood"
     MODEL = "TK-x102"
     BAUD_RATE = 9600
 
     _memsize = 0x410
     _tone_model = kenwood_tone.KenwoodToneModel(
-        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000)
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000
+    )
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -212,7 +217,7 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
         rf.has_tuning_step = False
         rf.has_name = False
         rf.has_rx_dtcs = True
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_modes = MODES
         rf.valid_cross_modes = [
             "Tone->Tone",
@@ -221,7 +226,8 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_skips = ["", "S"]
         rf.valid_bands = [self._range]
@@ -259,7 +265,7 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[:4] == "\xFF\xFF\xFF\xFF":
+        if _mem.get_raw(asbytes=False)[:4] == "\xff\xff\xff\xff":
             mem.empty = True
             return mem
 
@@ -281,23 +287,26 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
 
         mem.extra = RadioSettingGroup("all", "All Settings")
 
-        bcl = RadioSetting("bcl", "Busy Channel Lockout",
-                           RadioSettingValueBoolean(bool(_mem.bcl)))
+        bcl = RadioSetting(
+            "bcl", "Busy Channel Lockout", RadioSettingValueBoolean(bool(_mem.bcl))
+        )
         mem.extra.append(bcl)
 
-        beat = RadioSetting("beatshift", "Beat Shift",
-                            RadioSettingValueBoolean(bool(_mem.beatshift)))
+        beat = RadioSetting(
+            "beatshift", "Beat Shift", RadioSettingValueBoolean(bool(_mem.beatshift))
+        )
         mem.extra.append(beat)
 
-        pttid = RadioSetting("pttid", "PTT ID",
-                             RadioSettingValueList(PTTID,
-                                                   current_index=_mem.pttid))
+        pttid = RadioSetting(
+            "pttid", "PTT ID", RadioSettingValueList(PTTID, current_index=_mem.pttid)
+        )
         mem.extra.append(pttid)
 
         signal = RadioSetting(
-            "signaling", "Signaling",
-            RadioSettingValueList(
-                SIGNAL, current_index=_mem.signaling & 0x01))
+            "signaling",
+            "Signaling",
+            RadioSettingValueList(SIGNAL, current_index=_mem.signaling & 0x01),
+        )
         mem.extra.append(signal)
 
         return mem
@@ -306,7 +315,7 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw("\xff" * 16)
             return
 
         _mem.unknown3[0] = 0x07
@@ -343,57 +352,70 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
         def _f(val):
             string = ""
             for char in str(val):
-                if char == "\xFF":
+                if char == "\xff":
                     break
                 string += char
             return string
 
-        line1 = RadioSetting("messages.line1", "Message Line 1",
-                             RadioSettingValueString(0, 32,
-                                                     _f(_mem.messages.line1),
-                                                     autopad=False))
+        line1 = RadioSetting(
+            "messages.line1",
+            "Message Line 1",
+            RadioSettingValueString(0, 32, _f(_mem.messages.line1), autopad=False),
+        )
         basic.append(line1)
 
-        line2 = RadioSetting("messages.line2", "Message Line 2",
-                             RadioSettingValueString(0, 32,
-                                                     _f(_mem.messages.line2),
-                                                     autopad=False))
+        line2 = RadioSetting(
+            "messages.line2",
+            "Message Line 2",
+            RadioSettingValueString(0, 32, _f(_mem.messages.line2), autopad=False),
+        )
         basic.append(line2)
 
         skey = RadioSetting(
-            "settings.speakerkey", "Speaker Key",
+            "settings.speakerkey",
+            "Speaker Key",
             RadioSettingValueList(
-                KEYS, current_index=int(_mem.settings.speakerkey) - 4))
+                KEYS, current_index=int(_mem.settings.speakerkey) - 4
+            ),
+        )
         basic.append(skey)
 
         ckey = RadioSetting(
-            "settings.circlekey", "Circle Key",
-            RadioSettingValueList(
-                KEYS, current_index=int(_mem.settings.circlekey) - 4))
+            "settings.circlekey",
+            "Circle Key",
+            RadioSettingValueList(KEYS, current_index=int(_mem.settings.circlekey) - 4),
+        )
         basic.append(ckey)
 
         scanresume = RadioSetting(
-            "settings2.scanresume", "Scan Resume",
-            RadioSettingValueList(SCAN_RESUME,
-                                  current_index=_mem.settings2.scanresume))
+            "settings2.scanresume",
+            "Scan Resume",
+            RadioSettingValueList(SCAN_RESUME, current_index=_mem.settings2.scanresume),
+        )
         scan.append(scanresume)
 
         offhookscan = RadioSetting(
-            "settings2.offhookscan", "Off-Hook Scan",
-            RadioSettingValueBoolean(bool(_mem.settings2.offhookscan)))
+            "settings2.offhookscan",
+            "Off-Hook Scan",
+            RadioSettingValueBoolean(bool(_mem.settings2.offhookscan)),
+        )
         scan.append(offhookscan)
 
         dropout = RadioSetting(
-            "settings2.dropoutdelay", "Drop-out Delay Time",
+            "settings2.dropoutdelay",
+            "Drop-out Delay Time",
             RadioSettingValueList(
-                SCAN_TIME, current_index=int(_mem.settings2.dropoutdelay)))
+                SCAN_TIME, current_index=int(_mem.settings2.dropoutdelay)
+            ),
+        )
 
         scan.append(dropout)
 
         txdwell = RadioSetting(
-            "settings2.txdwell", "TX Dwell Time",
-            RadioSettingValueList(
-                SCAN_TIME, current_index=int(_mem.settings2.txdwell)))
+            "settings2.txdwell",
+            "TX Dwell Time",
+            RadioSettingValueList(SCAN_TIME, current_index=int(_mem.settings2.txdwell)),
+        )
         scan.append(txdwell)
 
         return top
@@ -414,8 +436,8 @@ class KenwoodTKx102Radio(chirp_common.CloneModeRadio):
                 setting = element.get_name()
 
             if "line" in setting:
-                value = str(element.value).ljust(32, "\xFF")
-            elif 'key' in setting:
+                value = str(element.value).ljust(32, "\xff")
+            elif "key" in setting:
                 value = int(element.value) + 4
             else:
                 value = element.value

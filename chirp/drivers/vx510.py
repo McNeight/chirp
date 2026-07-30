@@ -54,20 +54,27 @@ char imgname[10];
 """
 
 STEPS = [5.0, 6.25]
-CHARSET = "".join([chr(x) for x in range(ord("0"), ord("9")+1)] +
-                  [chr(x) for x in range(ord("A"), ord("Z")+1)]) + \
-                      r"<=>*+-\/_ "
+CHARSET = (
+    "".join(
+        [chr(x) for x in range(ord("0"), ord("9") + 1)]
+        + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    )
+    + r"<=>*+-\/_ "
+)
 TONES = list(chirp_common.TONES)
 TONES.remove(165.5)
 TONES.remove(171.3)
 TONES.remove(177.3)
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=5.00),
-                chirp_common.PowerLevel("Low", watts=1.0)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=5.00),
+    chirp_common.PowerLevel("Low", watts=1.0),
+]
 
 
 # @directory.register
 class VX510Radio(yaesu_clone.YaesuCloneModeRadio):
     """Vertex VX-510V"""
+
     BAUD_RATE = 9600
     VENDOR = "Vertex Standard"
     MODEL = "VX-510V"
@@ -93,8 +100,15 @@ class VX510Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.has_rx_dtcs = True
         rf.has_dtcs_polarity = False
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.memory_bounds = (1, 32)
@@ -109,19 +123,19 @@ class VX510Radio(yaesu_clone.YaesuCloneModeRadio):
         self._memobj = bitwise.parse(MEM_FORMAT % 0xA, self._mmap)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def get_memory(self, number):
         mem = chirp_common.Memory()
         mem.number = number
 
-        _mem = self._memobj.memory[number-1]
+        _mem = self._memobj.memory[number - 1]
 
         mem.empty = _mem.empty
         mem.freq = chirp_common.fix_rounded_step(int(_mem.freq_rx) * 1000)
 
         for i in range(0, 4):
-            index = (_mem.name >> (i*6)) & 0x3F
+            index = (_mem.name >> (i * 6)) & 0x3F
             mem.name += CHARSET[index]
 
         freq_tx = chirp_common.fix_rounded_step(int(_mem.freq_tx) * 1000)
@@ -163,11 +177,9 @@ class VX510Radio(yaesu_clone.YaesuCloneModeRadio):
 
         if tmode_tx == "Tone" and not tmode_rx:
             mem.tmode = "Tone"
-        elif tmode_tx == tmode_rx and tmode_tx == "Tone" and \
-                mem.rtone == mem.ctone:
+        elif tmode_tx == tmode_rx and tmode_tx == "Tone" and mem.rtone == mem.ctone:
             mem.tmode = "TSQL"
-        elif tmode_tx == tmode_rx and tmode_tx == "DTCS" and \
-                mem.dtcs == mem.rx_dtcs:
+        elif tmode_tx == tmode_rx and tmode_tx == "DTCS" and mem.dtcs == mem.rx_dtcs:
             mem.tmode = "DTCS"
         elif tmode_rx or tmode_tx:
             mem.tmode = "Cross"
@@ -185,6 +197,7 @@ class VX510Radio(yaesu_clone.YaesuCloneModeRadio):
 # @directory.register
 class VX510File(VX510Radio, chirp_common.FileBackedRadio):
     """Vertex CE-21 File"""
+
     VENDOR = "Vertex Standard"
     MODEL = "CE-21 File"
 

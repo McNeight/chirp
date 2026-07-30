@@ -18,9 +18,14 @@ import logging
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -87,15 +92,15 @@ LIST_SPEAKERSW = ["Base", "Mic", "Dual"]
 LIST_TOT = ["Off"] + ["%s" % x for x in range(15, 195, 15)]
 
 SPECIALS = {
-        "RPTR15": -8,
-        "RPTR16": -7,
-        "RPTR17": -6,
-        "RPTR18": -5,
-        "RPTR19": -4,
-        "RPTR20": -3,
-        "RPTR21": -2,
-        "RPTR22": -1
-        }
+    "RPTR15": -8,
+    "RPTR16": -7,
+    "RPTR17": -6,
+    "RPTR18": -5,
+    "RPTR19": -4,
+    "RPTR20": -3,
+    "RPTR21": -2,
+    "RPTR22": -1,
+}
 
 
 def _enter_programming_mode(radio):
@@ -153,7 +158,7 @@ def _exit_programming_mode(radio):
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"R" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -175,8 +180,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -189,8 +194,7 @@ def _write_block(radio, block_addr, block_size):
         if ack != CMD_ACK:
             raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -241,14 +245,17 @@ def do_upload(radio):
 @directory.register
 class RA86Radio(chirp_common.CloneModeRadio):
     """RETEVIS RA86"""
+
     VENDOR = "Retevis"
     MODEL = "RA86"
     BAUD_RATE = 115200
     BLOCK_SIZE = 0x10
     CMD_EXIT = b"b"
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=20.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=20.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     VALID_BANDS = [(400000000, 470000000)]
 
@@ -286,7 +293,8 @@ class RA86Radio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_dtcs_codes = self.DTCS_CODES
         rf.has_tuning_step = False
         rf.has_bank = False
@@ -334,7 +342,7 @@ class RA86Radio(chirp_common.CloneModeRadio):
         elif mode == "TSQL":
             memtone.set_value(chirp_common.TONES.index(tone) + 1)
         elif mode == "DTCS":
-            if pol == 'R':
+            if pol == "R":
                 memtone.set_value(self.DTCS_CODES.index(tone) + 0x33 + 0x69)
             else:
                 memtone.set_value(self.DTCS_CODES.index(tone) + 0x33)
@@ -343,11 +351,11 @@ class RA86Radio(chirp_common.CloneModeRadio):
 
     def _get_memobjs(self, number):
         if isinstance(number, str):
-            return (getattr(self._memobj, number.lower()))
+            return getattr(self._memobj, number.lower())
         elif number < 0:
             for k, v in SPECIALS.items():
                 if number == v:
-                    return (getattr(self._memobj, k.lower()))
+                    return getattr(self._memobj, k.lower())
         else:
             if number < 15:
                 return self._memobj.lochannels[number - 1]
@@ -374,19 +382,19 @@ class RA86Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
 
-        if _mem.get_raw() == (b"\xFF" * 16):
+        if _mem.get_raw() == (b"\xff" * 16):
             LOG.debug("Initializing empty memory")
             _mem.set_raw(b"\x00" * 16)
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq)
         # tx freq can be blank
-        if _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -394,8 +402,9 @@ class RA86Radio(chirp_common.CloneModeRadio):
             # TX freq set
             offset = (int(_mem.txfreq)) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.txfreq)):
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.txfreq)
+                ):
                     mem.duplex = "split"
                     mem.offset = int(_mem.txfreq)
                 elif offset < 0:
@@ -425,7 +434,7 @@ class RA86Radio(chirp_common.CloneModeRadio):
         _mem = self._get_memobjs(mem.number)
 
         if mem.empty:
-            _mem.fill_raw(b"\xFF")
+            _mem.fill_raw(b"\xff")
 
             return
 
@@ -434,18 +443,19 @@ class RA86Radio(chirp_common.CloneModeRadio):
         _mem.rxfreq = mem.freq
 
         if mem.duplex == "off":
-            _mem.txfreq.fill_raw(b"\xFF")
+            _mem.txfreq.fill_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset
         elif mem.duplex == "+":
-            _mem.txfreq = (mem.freq + mem.offset)
+            _mem.txfreq = mem.freq + mem.offset
         elif mem.duplex == "-":
-            _mem.txfreq = (mem.freq - mem.offset)
+            _mem.txfreq = mem.freq - mem.offset
         else:
             _mem.txfreq = mem.freq
 
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self.encode_tone(_mem.txtone, txmode, txtone, txpol)
         self.encode_tone(_mem.rxtone, rxmode, rxtone, rxpol)
 
@@ -457,7 +467,7 @@ class RA86Radio(chirp_common.CloneModeRadio):
         _mem.unknown0 = 0
         _mem.unknown1 = 0
         _mem.unknown2 = 0
-        _mem.unknown3 = b"\x92\x1B\xC4"
+        _mem.unknown3 = b"\x92\x1b\xc4"
 
     def get_settings(self):
         _mem = self._memobj
@@ -468,94 +478,110 @@ class RA86Radio(chirp_common.CloneModeRadio):
             val = 0x00
         else:
             val = _mem.settings.vox
-        rs = RadioSetting("settings.vox", "VOX",
-                          RadioSettingValueList(
-                              LIST_OFF1TO9,
-                              current_index=val))
+        rs = RadioSetting(
+            "settings.vox",
+            "VOX",
+            RadioSettingValueList(LIST_OFF1TO9, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.keytone", "Key Tone",
-                          RadioSettingValueBoolean(_mem.settings.keytone))
+        rs = RadioSetting(
+            "settings.keytone",
+            "Key Tone",
+            RadioSettingValueBoolean(_mem.settings.keytone),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.roger", "Roger Beep",
-                          RadioSettingValueBoolean(_mem.settings.roger))
+        rs = RadioSetting(
+            "settings.roger",
+            "Roger Beep",
+            RadioSettingValueBoolean(_mem.settings.roger),
+        )
         basic.append(rs)
 
         if _mem.settings.calltone > 4:
             val = 1
         else:
             val = _mem.settings.calltone + 1
-        rs = RadioSetting("settings.calltone", "Call Tone",
-                          RadioSettingValueInteger(1, 5, val))
+        rs = RadioSetting(
+            "settings.calltone", "Call Tone", RadioSettingValueInteger(1, 5, val)
+        )
         basic.append(rs)
 
         if _mem.settings.brightness > 2:
             val = 1
         else:
             val = _mem.settings.brightness + 1
-        rs = RadioSetting("settings.brightness", "Brightness",
-                          RadioSettingValueInteger(1, 3, val))
+        rs = RadioSetting(
+            "settings.brightness", "Brightness", RadioSettingValueInteger(1, 3, val)
+        )
         basic.append(rs)
 
         if _mem.settings.backlight > 4:
             val = 2
         else:
             val = _mem.settings.backlight
-        rs = RadioSetting("settings.backlight", "Back Light",
-                          RadioSettingValueInteger(0, 4, val))
+        rs = RadioSetting(
+            "settings.backlight", "Back Light", RadioSettingValueInteger(0, 4, val)
+        )
         basic.append(rs)
 
         if _mem.settings.squelch >= len(LIST_OFF1TO9):
             val = 0x05
         else:
             val = _mem.settings.squelch
-        rs = RadioSetting("settings.squelch", "Squelch",
-                          RadioSettingValueList(
-                              LIST_OFF1TO9,
-                              current_index=val))
+        rs = RadioSetting(
+            "settings.squelch",
+            "Squelch",
+            RadioSettingValueList(LIST_OFF1TO9, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.tot >= len(LIST_TOT):
             val = 0x0C
         else:
             val = _mem.settings.tot
-        rs = RadioSetting("settings.tot", "TOT",
-                          RadioSettingValueList(
-                              LIST_TOT,
-                              current_index=val))
+        rs = RadioSetting(
+            "settings.tot", "TOT", RadioSettingValueList(LIST_TOT, current_index=val)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.repeat", "Repeater",
-                          RadioSettingValueBoolean(_mem.settings.repeat))
+        rs = RadioSetting(
+            "settings.repeat",
+            "Repeater",
+            RadioSettingValueBoolean(_mem.settings.repeat),
+        )
         basic.append(rs)
 
         if _mem.settings.sleeptime >= len(LIST_SLEEPTIME):
             val = 0x02
         else:
             val = _mem.settings.sleeptime
-        rs = RadioSetting("settings.sleeptime", "Sleep Time",
-                          RadioSettingValueList(
-                              LIST_SLEEPTIME,
-                              current_index=val))
+        rs = RadioSetting(
+            "settings.sleeptime",
+            "Sleep Time",
+            RadioSettingValueList(LIST_SLEEPTIME, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.speakersw >= len(LIST_SPEAKERSW):
             val = 0x02
         else:
             val = _mem.settings.speakersw
-        rs = RadioSetting("settings.speakersw", "Speaker Select",
-                          RadioSettingValueList(
-                              LIST_SPEAKERSW,
-                              current_index=val))
+        rs = RadioSetting(
+            "settings.speakersw",
+            "Speaker Select",
+            RadioSettingValueList(LIST_SPEAKERSW, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.micgain > 2:
             val = 1
         else:
             val = _mem.settings.micgain + 1
-        rs = RadioSetting("settings.micgain", "Mic Gain",
-                          RadioSettingValueInteger(1, 5, val))
+        rs = RadioSetting(
+            "settings.micgain", "Mic Gain", RadioSettingValueInteger(1, 5, val)
+        )
         basic.append(rs)
 
         return top

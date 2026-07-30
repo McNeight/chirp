@@ -24,18 +24,18 @@ class TestBaseMapping(base.BaseTest):
     CLS = chirp_common.MemoryMapping
 
     def test_mapping(self):
-        model = chirp_common.MappingModel(None, 'Foo')
-        mapping = self.CLS(model, 1, 'Foo')
-        self.assertEqual(str(mapping), 'Foo')
-        self.assertEqual(mapping.get_name(), 'Foo')
+        model = chirp_common.MappingModel(None, "Foo")
+        mapping = self.CLS(model, 1, "Foo")
+        self.assertEqual(str(mapping), "Foo")
+        self.assertEqual(mapping.get_name(), "Foo")
         self.assertEqual(mapping.get_index(), 1)
-        self.assertEqual(repr(mapping), '%s-1' % self.CLS.__name__)
+        self.assertEqual(repr(mapping), "%s-1" % self.CLS.__name__)
         self.assertEqual(mapping._model, model)
 
     def test_mapping_eq(self):
-        mapping1 = self.CLS(None, 1, 'Foo')
-        mapping2 = self.CLS(None, 1, 'Bar')
-        mapping3 = self.CLS(None, 2, 'Foo')
+        mapping1 = self.CLS(None, 1, "Foo")
+        mapping2 = self.CLS(None, 1, "Bar")
+        mapping3 = self.CLS(None, 2, "Foo")
 
         self.assertEqual(mapping1, mapping2)
         self.assertNotEqual(mapping1, mapping3)
@@ -53,27 +53,27 @@ class _TestBaseClass(base.BaseTest):
         self.model = self.CLS(*self.ARGS)
 
     def _test_base(self, method, *args):
-        self.assertRaises(NotImplementedError,
-                          getattr(self.model, method), *args)
+        self.assertRaises(NotImplementedError, getattr(self.model, method), *args)
 
 
 class TestBaseMappingModel(_TestBaseClass):
     CLS = chirp_common.MappingModel
-    ARGS = tuple([None, 'Foo'])
+    ARGS = tuple([None, "Foo"])
 
     def test_base_class(self):
-        methods = [('get_num_mappings', ()),
-                   ('get_mappings', ()),
-                   ('add_memory_to_mapping', (None, None)),
-                   ('remove_memory_from_mapping', (None, None)),
-                   ('get_mapping_memories', (None,)),
-                   ('get_memory_mappings', (None,)),
-                   ]
+        methods = [
+            ("get_num_mappings", ()),
+            ("get_mappings", ()),
+            ("add_memory_to_mapping", (None, None)),
+            ("remove_memory_from_mapping", (None, None)),
+            ("get_mapping_memories", (None,)),
+            ("get_memory_mappings", (None,)),
+        ]
         for method, args in methods:
             self._test_base(method, *args)
 
     def test_get_name(self):
-        self.assertEqual(self.model.get_name(), 'Foo')
+        self.assertEqual(self.model.get_name(), "Foo")
 
 
 class TestBaseBankModel(TestBaseMappingModel):
@@ -81,27 +81,28 @@ class TestBaseBankModel(TestBaseMappingModel):
     CLS = chirp_common.BankModel
 
     def test_get_name(self):
-        self.assertEqual(self.model.get_name(), 'Banks')
+        self.assertEqual(self.model.get_name(), "Banks")
 
 
 class TestBaseMappingModelIndexInterface(_TestBaseClass):
     CLS = chirp_common.MappingModelIndexInterface
 
     def test_base_class(self):
-        methods = [('get_index_bounds', ()),
-                   ('get_memory_index', (None, None)),
-                   ('set_memory_index', (None, None, None)),
-                   ('get_next_mapping_index', (None,)),
-                   ]
+        methods = [
+            ("get_index_bounds", ()),
+            ("get_memory_index", (None, None)),
+            ("set_memory_index", (None, None, None)),
+            ("get_next_mapping_index", (None,)),
+        ]
         for method, args in methods:
             self._test_base(method, *args)
 
 
 class TestIcomBanks(TestBaseMapping):
     def test_icom_bank(self):
-        bank = icf.IcomBank(None, 1, 'Foo')
+        bank = icf.IcomBank(None, 1, "Foo")
         # IcomBank has an index attribute used by IcomBankModel
-        self.assertTrue(hasattr(bank, 'index'))
+        self.assertTrue(hasattr(bank, "index"))
 
 
 class TestIcomBankModel(base.BaseTest):
@@ -139,8 +140,13 @@ class TestIcomBankModel(base.BaseTest):
 
         self._radio = FakeRadio(None)
         self._model = self.CLS(self._radio)
-        for a in ('_set_bank', '_get_bank', '_set_bank_index',
-                  '_get_bank_index', 'get_memory'):
+        for a in (
+            "_set_bank",
+            "_get_bank",
+            "_set_bank_index",
+            "_get_bank_index",
+            "get_memory",
+        ):
             m = mock.patch.object(self._radio, a)
             m.start()
             self.mocks.append(m)
@@ -155,7 +161,7 @@ class TestIcomBankModel(base.BaseTest):
         for bank in banks:
             index = chr(ord("A") + i)
             self.assertEqual(bank.get_index(), index)
-            self.assertEqual(bank.get_name(), 'BANK-%s' % index)
+            self.assertEqual(bank.get_name(), "BANK-%s" % index)
             self.assertEqual(bank.index, i)
             i += 1
 
@@ -183,13 +189,11 @@ class TestIcomBankModel(base.BaseTest):
 
     def test_remove_memory_from_mapping_wrong_bank(self):
         mem, bank = self._setup_test_remove_memory_from_mapping(3)
-        self.assertRaises(Exception,
-                          self._model.remove_memory_from_mapping, mem, bank)
+        self.assertRaises(Exception, self._model.remove_memory_from_mapping, mem, bank)
 
     def test_remove_memory_from_mapping_no_bank(self):
         mem, bank = self._setup_test_remove_memory_from_mapping(None)
-        self.assertRaises(Exception,
-                          self._model.remove_memory_from_mapping, mem, bank)
+        self.assertRaises(Exception, self._model.remove_memory_from_mapping, mem, bank)
 
     def test_get_mapping_memories(self):
         banks = self._model.get_mappings()
@@ -197,18 +201,17 @@ class TestIcomBankModel(base.BaseTest):
         _get_bank = []
         for i in range(1, 10):
             should_include = bool(i % 2)
-            _get_bank.append(
-                should_include and banks[1].index or None)
+            _get_bank.append(should_include and banks[1].index or None)
             if should_include:
                 expected.append(i)
         self._radio._get_bank.side_effect = _get_bank
         self._radio.get_memory.side_effect = expected
         members = self._model.get_mapping_memories(banks[1])
         self.assertEqual(members, expected)
-        self._radio.get_memory.assert_has_calls([
-            mock.call(i) for i in range(1, 10) if i % 2])
-        self._radio._get_bank.assert_has_calls([
-            mock.call(i) for i in range(1, 10)])
+        self._radio.get_memory.assert_has_calls(
+            [mock.call(i) for i in range(1, 10) if i % 2]
+        )
+        self._radio._get_bank.assert_has_calls([mock.call(i) for i in range(1, 10)])
 
     def test_get_memory_mappings(self):
         banks = self._model.get_mappings()
@@ -219,8 +222,9 @@ class TestIcomBankModel(base.BaseTest):
         self._radio._get_bank.side_effect = [2, None]
         self.assertEqual(self._model.get_memory_mappings(mem1)[0], banks[2])
         self.assertEqual(self._model.get_memory_mappings(mem2), [])
-        self._radio._get_bank.assert_has_calls([
-            mock.call(mem1.number), mock.call(mem2.number)])
+        self._radio._get_bank.assert_has_calls(
+            [mock.call(mem1.number), mock.call(mem2.number)]
+        )
 
 
 class TestIcomIndexedBankModel(TestIcomBankModel):
@@ -245,7 +249,7 @@ class TestIcomIndexedBankModel(TestIcomBankModel):
         mem = chirp_common.Memory()
         mem.number = 5
         banks = self._model.get_mappings()
-        with mock.patch.object(self._model, 'get_memory_mappings') as m:
+        with mock.patch.object(self._model, "get_memory_mappings") as m:
             m.return_value = [banks[3]]
             self._model.set_memory_index(mem, banks[3], 1)
             m.assert_called_once_with(mem)
@@ -255,20 +259,20 @@ class TestIcomIndexedBankModel(TestIcomBankModel):
         mem = chirp_common.Memory()
         mem.number = 5
         banks = self._model.get_mappings()
-        with mock.patch.object(self._model, 'get_memory_mappings') as m:
+        with mock.patch.object(self._model, "get_memory_mappings") as m:
             m.return_value = [banks[4]]
-            self.assertRaises(Exception,
-                              self._model.set_memory_index, mem, banks[3], 1)
+            self.assertRaises(Exception, self._model.set_memory_index, mem, banks[3], 1)
             m.assert_called_once_with(mem)
 
     def test_set_memory_index_bad_index(self):
         mem = chirp_common.Memory()
         mem.number = 5
         banks = self._model.get_mappings()
-        with mock.patch.object(self._model, 'get_memory_mappings') as m:
+        with mock.patch.object(self._model, "get_memory_mappings") as m:
             m.return_value = [banks[3]]
-            self.assertRaises(Exception,
-                              self._model.set_memory_index, mem, banks[3], 99)
+            self.assertRaises(
+                Exception, self._model.set_memory_index, mem, banks[3], 99
+            )
             m.assert_called_once_with(mem)
 
     def test_get_next_mapping_index(self):

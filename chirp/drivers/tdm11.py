@@ -107,9 +107,9 @@ struct {
 #                           (default value 0x80)
 
 
-CMD_ACK = b'A'
-GET_RADIO_ID = b'\x52\x10\x03\x10'
-NULL_PASSWORD = b'\xff\xff\xff\xff\xff\xff'
+CMD_ACK = b"A"
+GET_RADIO_ID = b"\x52\x10\x03\x10"
+NULL_PASSWORD = b"\xff\xff\xff\xff\xff\xff"
 TIMEOUT = 0.5  # base serial timeout in seconds
 TXPOWER_HIGH = 0x01
 TXPOWER_LOW = 0x00
@@ -127,16 +127,23 @@ def get_default_features(self):
     rf.has_name = False
     rf.valid_name_length = 0
     rf.valid_characters = self._valid_chars
-    rf.valid_skips = ['', 'S']
-    rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-    rf.valid_cross_modes = ['Tone->Tone', 'Tone->DTCS', 'DTCS->Tone',
-                            '->Tone', '->DTCS', 'DTCS->', 'DTCS->DTCS']
+    rf.valid_skips = ["", "S"]
+    rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+    rf.valid_cross_modes = [
+        "Tone->Tone",
+        "Tone->DTCS",
+        "DTCS->Tone",
+        "->Tone",
+        "->DTCS",
+        "DTCS->",
+        "DTCS->DTCS",
+    ]
     rf.valid_power_levels = self._power_levels
-    rf.valid_duplexes = ['', '-', '+', 'split', 'off']
-    rf.valid_modes = ['FM', 'NFM']  # 25 kHz, 12.5 kHz.
+    rf.valid_duplexes = ["", "-", "+", "split", "off"]
+    rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
     rf.valid_dtcs_codes = chirp_common.DTCS_CODES
     rf.memory_bounds = (1, self._upper)
-    rf.valid_tuning_steps = [2.5, 5., 6.25, 8.33, 10., 12.5, 20., 25., 50.]
+    rf.valid_tuning_steps = [2.5, 5.0, 6.25, 8.33, 10.0, 12.5, 20.0, 25.0, 50.0]
     rf.valid_bands = self.VALID_BANDS
     return rf
 
@@ -146,7 +153,7 @@ def _enter_programming_mode(radio, write=False):
     serial.timeout = TIMEOUT
 
     if not _test_magic(radio):
-        raise errors.RadioError('Radio didn\'t accept Program Mode')
+        raise errors.RadioError("Radio didn't accept Program Mode")
 
     try:
         # if we get an ACK here the radio programming function
@@ -157,12 +164,13 @@ def _enter_programming_mode(radio, write=False):
         if not ack:
             raise errors.RadioNoResponse()
         if ack == CMD_ACK:
-            LOG.info('Radio Programming function is NOT '
-                     'password protected')
+            LOG.info("Radio Programming function is NOT " "password protected")
         else:
-            msg = 'The radio Programming function is '\
-                'password protected. Use the factory CPS to '\
-                'remove the password to continue.'
+            msg = (
+                "The radio Programming function is "
+                "password protected. Use the factory CPS to "
+                "remove the password to continue."
+            )
             raise ValueError(msg)
 
     except errors.RadioError:
@@ -170,7 +178,7 @@ def _enter_programming_mode(radio, write=False):
     except ValueError as ex:
         raise errors.RadioError(ex)
     except Exception:
-        raise errors.RadioError('Error communicating with radio')
+        raise errors.RadioError("Error communicating with radio")
 
     # if uploading to the radio we have to ask it for its fingerprint first
     if write:
@@ -181,15 +189,14 @@ def _enter_programming_mode(radio, write=False):
             if not ack:
                 raise errors.RadioNoResponse()
             if len(ack) != 0x11:
-                raise errors.RadioError('Error communicating with radio')
+                raise errors.RadioError("Error communicating with radio")
             ack2 = _get_checksum(ack[:-1], 0, 0x10)
 
             if ack[:-1] in radio._fingerprint and ack[-1] == ack2:
                 LOG.info("Radio fingerprint 0x%s match" % ack[:-1].hex())
             else:
-                LOG.error("Radio fingerprint 0x%s Mis-match" %
-                          radio.ack[:-1].hex())
-                msg = 'Radio Model mismatch'
+                LOG.error("Radio fingerprint 0x%s Mis-match" % radio.ack[:-1].hex())
+                msg = "Radio Model mismatch"
                 raise ValueError(msg)
 
         except errors.RadioError:
@@ -203,9 +210,9 @@ def _exit_programming_mode(radio):
     serial.timeout = TIMEOUT
 
     try:
-        serial.write(b'E')
+        serial.write(b"E")
     except Exception:
-        raise errors.RadioError('Radio refused to exit programming mode')
+        raise errors.RadioError("Radio refused to exit programming mode")
 
 
 def _test_magic(radio, tries=5):
@@ -221,23 +228,18 @@ def _test_magic(radio, tries=5):
             if ack:
                 saw_response = True
             if ack == CMD_ACK:
-                LOG.info('Radio ack\'ed magic %s '
-                         'during detection' %
-                         radio._magic)
+                LOG.info("Radio ack'ed magic %s " "during detection" % radio._magic)
                 rv = True
                 break
         else:
-            LOG.info('Radio didn\'t ack magic %s '
-                     'during detection' %
-                     radio._magic)
+            LOG.info("Radio didn't ack magic %s " "during detection" % radio._magic)
             if not saw_response:
                 raise errors.RadioNoResponse()
             rv = False
     except errors.RadioError:
         raise
     except Exception:
-        raise errors.RadioError('Failed to detect radio after %d try/tries'
-                                % i)
+        raise errors.RadioError("Failed to detect radio after %d try/tries" % i)
 
     return rv
 
@@ -246,15 +248,15 @@ def _get_checksum(data, addr, len):
     checksum = 0
     for index in range(0, len):
         checksum += data[index + addr]
-    return checksum & 0xff  # checksum is only low order byte
+    return checksum & 0xFF  # checksum is only low order byte
 
 
 def _read_block(radio, block_addr, size):
     serial = radio.pipe
     serial.timeout = TIMEOUT
 
-    cmd = struct.pack('<cHb', b'R', block_addr, size)
-    expectedresponse = b''
+    cmd = struct.pack("<cHb", b"R", block_addr, size)
+    expectedresponse = b""
 
     try:
         serial.write(cmd)
@@ -262,19 +264,17 @@ def _read_block(radio, block_addr, size):
         if not response:
             raise errors.RadioNoResponse()
         if len(response) != size:
-            raise errors.RadioError('Failed to read block at %04x' %
-                                    block_addr)
+            raise errors.RadioError("Failed to read block at %04x" % block_addr)
         expectedresponse = serial.read(1)  # read 1 byte checksum
         checksum = _get_checksum(response, 0, size)
         if checksum != expectedresponse[0]:
-            raise errors.RadioError('Checksum error reading block %04x.' %
-                                    (block_addr))
+            raise errors.RadioError("Checksum error reading block %04x." % (block_addr))
         block_data = response
 
     except errors.RadioError:
         raise
     except Exception:
-        raise errors.RadioError('Failed to read block at %04x' % block_addr)
+        raise errors.RadioError("Failed to read block at %04x" % block_addr)
 
     return block_data
 
@@ -283,48 +283,47 @@ def _write_block(radio, block_addr, size):
     serial = radio.pipe
     serial.timeout = TIMEOUT
 
-    cmd = struct.pack('<cH', b'W', block_addr)
-    data = radio.get_mmap()[block_addr:block_addr + size]
+    cmd = struct.pack("<cH", b"W", block_addr)
+    data = radio.get_mmap()[block_addr : block_addr + size]
     checksum = _get_checksum(data, 0, size)
 
     try:
         serial.write(cmd + data + bytes([checksum]))
         ack = serial.read(1)
         if ack != CMD_ACK:
-            raise Exception('No ACK')
+            raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError('Failed to send block '
-                                'to radio at %04x' % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
-    LOG.info('Downloading...')
+    LOG.info("Downloading...")
     # already done by detect_from_serial()
     # _enter_programming_mode(radio)
 
-    data = b''
+    data = b""
     status = chirp_common.Status()
-    status.msg = 'Cloning from radio'
+    status.msg = "Cloning from radio"
     status.max = radio._memsize
 
     for addr in range(0, radio._memsize, radio.BLOCK_SIZE):
         status.cur = addr
         radio.status_fn(status)
-        radio.pipe.log('Reading from address: 0x%04x' % addr)
+        radio.pipe.log("Reading from address: 0x%04x" % addr)
         block = _read_block(radio, addr, radio.BLOCK_SIZE)
         data += block
 
-    radio.pipe.log('Downloaded 0x%04x bytes from radio' % len(data))
+    radio.pipe.log("Downloaded 0x%04x bytes from radio" % len(data))
 
     return memmap.MemoryMapBytes(data)
 
 
 def do_upload(radio):
-    LOG.info('Uploading...')
+    LOG.info("Uploading...")
     _enter_programming_mode(radio, write=True)
 
     status = chirp_common.Status()
-    status.msg = 'Uploading to radio'
+    status.msg = "Uploading to radio"
     status.max = radio._memsize
     bytesup = 0
 
@@ -332,11 +331,11 @@ def do_upload(radio):
         for addr in range(start_addr, end_addr, radio.BLOCK_SIZE_UP):
             status.cur = addr
             radio.status_fn(status)
-            radio.pipe.log('Writing to address:   0x%04x' % addr)
+            radio.pipe.log("Writing to address:   0x%04x" % addr)
             _write_block(radio, addr, radio.BLOCK_SIZE_UP)
             bytesup += radio.BLOCK_SIZE_UP
 
-    radio.pipe.log('Uploaded 0x%04x bytes to radio' % bytesup)
+    radio.pipe.log("Uploaded 0x%04x bytes to radio" % bytesup)
 
 
 @directory.register
@@ -364,50 +363,51 @@ class TDM11_22(chirp_common.CloneModeRadio):
     #           Chan disp w/bluetooth icon, Red LED solid
     #           after Bluetooth paring, Yellow LED solid
     """TIDRADIO TD-M11 22 FRS"""
-    VENDOR = 'TIDRADIO'
-    MODEL = 'TD-M11'
-    VARIANT = '22 FRS'  # USA FRS/GMRS
+    VENDOR = "TIDRADIO"
+    MODEL = "TD-M11"
+    VARIANT = "22 FRS"  # USA FRS/GMRS
     BAUD_RATE = 9600
-    FORMATS = [directory.register_format('%s %s' %
-                                         (VENDOR, MODEL), '*.mdt')]
+    FORMATS = [directory.register_format("%s %s" % (VENDOR, MODEL), "*.mdt")]
     BLOCK_SIZE = 0x10
     BLOCK_SIZE_UP = 0x10
-    VALID_BANDS = [(136000000, 174000000), (200000000, 260000000),
-                   (350000000, 390000000), (400000000, 520000000),
-                   ]
+    VALID_BANDS = [
+        (136000000, 174000000),
+        (200000000, 260000000),
+        (350000000, 390000000),
+        (400000000, 520000000),
+    ]
     _power_levels = [
-        chirp_common.PowerLevel('Low', watts=0.50),
-        chirp_common.PowerLevel('High', watts=2.00)
+        chirp_common.PowerLevel("Low", watts=0.50),
+        chirp_common.PowerLevel("High", watts=2.00),
     ]
 
     _upper = 22
-    _mem_params = (_upper)
+    _mem_params = _upper
     _memsize = 0x0450  # Including calibration data
     _ranges = [(0x0000, _memsize)]
 
-    _magic = b'STD-M11-'  # Firmware v0.9.4
+    _magic = b"STD-M11-"  # Firmware v0.9.4
     _fingerprint = [
-        b'\x00\x40\x00\x52\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
-        ]
-    _mdt_file_header = b'TD-M11-22CLIENT'
+        b"\x00\x40\x00\x52\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    ]
+    _mdt_file_header = b"TD-M11-22CLIENT"
     _mdt_offset = len(_mdt_file_header)  # offset of data in OEM .mdt file
     _valid_chars = chirp_common.CHARSET_ALPHANUMERIC
     _steps = [5.0, 6.25, 12.5, 25.0]
     # mem extra lists
-    _bcl_list = ['Off', 'Carrier', 'QT/DTQ']
-    _jumpfreq_list = ['Normal', 'Special']
-    _compand_list = ['Off', 'On']
-    _scramble_list = ['Off'] + ['Scramble %d' % x for x in range(1, 9)]
+    _bcl_list = ["Off", "Carrier", "QT/DTQ"]
+    _jumpfreq_list = ["Normal", "Special"]
+    _compand_list = ["Off", "On"]
+    _scramble_list = ["Off"] + ["Scramble %d" % x for x in range(1, 9)]
     # settings lists
-    _voice_list = ['Off', 'Chinese', 'English']
-    _tot_list = ['Off'] + ['%ds' % x for x in range(15, 315, 15)]
-    _voxlevel_list = ['Off'] + ['%d' % x for x in range(1, 10)]
-    _squelchlevel_list = ['%d' % x for x in range(0, 10)]
-    _sleepmode_list = ['Off'] + ['1:%d' % x for x in range(1, 11)]
-    _sidekey_list = ['None', 'Monitor', 'Scan',
-                     'Alarm', 'Bluetooth', 'Weather']
-    _channel_list = ['%d' % x for x in range(1, _upper + 1)]
-    _wxchannel_list = ['WX %d' % x for x in range(1, 12)]
+    _voice_list = ["Off", "Chinese", "English"]
+    _tot_list = ["Off"] + ["%ds" % x for x in range(15, 315, 15)]
+    _voxlevel_list = ["Off"] + ["%d" % x for x in range(1, 10)]
+    _squelchlevel_list = ["%d" % x for x in range(0, 10)]
+    _sleepmode_list = ["Off"] + ["1:%d" % x for x in range(1, 11)]
+    _sidekey_list = ["None", "Monitor", "Scan", "Alarm", "Bluetooth", "Weather"]
+    _channel_list = ["%d" % x for x in range(1, _upper + 1)]
+    _wxchannel_list = ["WX %d" % x for x in range(1, 12)]
     _freqband_list = []
 
     @classmethod
@@ -427,7 +427,7 @@ class TDM11_22(chirp_common.CloneModeRadio):
                 raise
         else:  # for
             if saw_response:
-                raise errors.RadioError('Unexpected response from radio')
+                raise errors.RadioError("Unexpected response from radio")
             raise errors.RadioNoResponse()
 
     def sync_in(self):
@@ -440,9 +440,8 @@ class TDM11_22(chirp_common.CloneModeRadio):
         except Exception as ex:
             # If anything unexpected happens, make sure we log the problem
             # and raise a RadioError
-            LOG.exception('Unexpected error during download: %s' % ex)
-            raise errors.RadioError('Unexpected error during download: %s'
-                                    % ex)
+            LOG.exception("Unexpected error during download: %s" % ex)
+            raise errors.RadioError("Unexpected error during download: %s" % ex)
         finally:
             _exit_programming_mode(self)
 
@@ -455,8 +454,7 @@ class TDM11_22(chirp_common.CloneModeRadio):
             _time = self._memobj.progtime
             _time.time = self._encode_current_time()
         except Exception:
-            LOG.warning('image file too short, can\'t update '
-                        'program-time timestamp')
+            LOG.warning("image file too short, can't update " "program-time timestamp")
 
         try:
             do_upload(self)
@@ -466,72 +464,73 @@ class TDM11_22(chirp_common.CloneModeRadio):
         except Exception as ex:
             # If anything unexpected happens, make sure we log the problem
             # and raise a RadioError
-            LOG.exception('Unexpected error during upload: %s' % ex)
-            raise errors.RadioError('Unexpected error during upload: %s'
-                                    % ex)
+            LOG.exception("Unexpected error during upload: %s" % ex)
+            raise errors.RadioError("Unexpected error during upload: %s" % ex)
         finally:
             _exit_programming_mode(self)
 
     def load_mmap(self, filename):
-        if filename.lower().endswith('.mdt'):
-            with open(filename, 'rb') as f:
+        if filename.lower().endswith(".mdt"):
+            with open(filename, "rb") as f:
 
                 if f.read(len(self._mdt_file_header)) != self._mdt_file_header:
                     raise errors.ImageDetectFailed("Unknown file header")
 
                 self._mmap = memmap.MemoryMapBytes(f.read(self._memsize))
-                LOG.info('Loaded TD-M11 .mdt file %s at offset 0x%04x' %
-                         (filename, self._mdt_offset))
+                LOG.info(
+                    "Loaded TD-M11 .mdt file %s at offset 0x%04x"
+                    % (filename, self._mdt_offset)
+                )
             self.process_mmap()
         else:
             chirp_common.CloneModeRadio.load_mmap(self, filename)
 
     def save_mmap(self, filename):
-        if filename.lower().endswith('.mdt'):
-            with open(filename, 'wb') as f:
+        if filename.lower().endswith(".mdt"):
+            with open(filename, "wb") as f:
                 f.write(self._mdt_file_header)
                 f.write(self._mmap.get_packed())
-                LOG.info('Wrote TD-M11 .mdt file % s' % filename)
+                LOG.info("Wrote TD-M11 .mdt file % s" % filename)
         else:
             chirp_common.CloneModeRadio.save_mmap(self, filename)
 
     def _decode_tone(self, val):
         if val == 16665 or val == 0:
-            return '', None, None
+            return "", None, None
         elif val >= 12000:
-            return 'DTCS', val - 12000, 'R'
+            return "DTCS", val - 12000, "R"
         elif val >= 8000:
-            return 'DTCS', val - 8000, 'N'
+            return "DTCS", val - 8000, "N"
         else:
-            return 'Tone', val / 10.0, None
+            return "Tone", val / 10.0, None
 
     def _encode_tone(self, memval, mode, value, pol):
-        if mode == '':
-            memval.fill_raw(b'\xff')
-        elif mode == 'Tone':
+        if mode == "":
+            memval.fill_raw(b"\xff")
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
-            flag = 0x80 if pol == 'N' else 0xC0
+        elif mode == "DTCS":
+            flag = 0x80 if pol == "N" else 0xC0
             memval.set_value(value)
             memval[1].set_bits(flag)
         else:
-            raise Exception('Internal error: invalid mode ''%s''' % mode)
+            raise Exception("Internal error: invalid mode " "%s" "" % mode)
 
     def _decode_freqband(self, band):
         try:
-            s = '%g-%g Mhz' % (
+            s = "%g-%g Mhz" % (
                 float(str(band[1])[-2:] + str(band[0])[-2:]) / 10,
-                float(str(band[3])[-2:] + str(band[2])[-2:]) / 10
+                float(str(band[3])[-2:] + str(band[2])[-2:]) / 10,
             )
         except IndexError:
-            s = '(unknown)'
+            s = "(unknown)"
 
         return s
 
     def _encode_current_time(self):
         now = datetime.now()
         time = [0] * 6
-        time[0] = now.year & 0xff
+        time[0] = now.year & 0xFF
         time[1] = now.year >> 8
         time[2] = now.month
         time[3] = now.day
@@ -542,36 +541,35 @@ class TDM11_22(chirp_common.CloneModeRadio):
     def get_settings(self):
         _settings = self._memobj.settings
         _time = self._memobj.progtime
-        basic = RadioSettingGroup('basic', 'Settings')
+        basic = RadioSettingGroup("basic", "Settings")
         group = RadioSettings(basic)
 
         # format raw firmware ver for display
         def _fw(version):
-            if bytes(version) == b'\xff\xff\xff':
-                return '(none)'
+            if bytes(version) == b"\xff\xff\xff":
+                return "(none)"
 
-            ver = 'v'
+            ver = "v"
             try:
                 for i in version:
-                    ver += '%d' % i + '.'
-                LOG.info('Firmware version: %s' % ver[:-1])
+                    ver += "%d" % i + "."
+                LOG.info("Firmware version: %s" % ver[:-1])
                 return ver[:-1]
             except IndexError:
-                return '(none)'
+                return "(none)"
 
         # Firmware version, display only
         rs = RadioSettingValueString(0, 6, _fw(_settings.firmware))
         rs.set_mutable(False)
-        rset = RadioSetting('settings.firmware', 'Firmware Version', rs)
-        rset.set_doc('Radio Firmware Version (read only)')
+        rset = RadioSetting("settings.firmware", "Firmware Version", rs)
+        rset.set_doc("Radio Firmware Version (read only)")
         basic.append(rset)
 
         # Freq band, display only
-        rs = RadioSettingValueString(0, 32,
-                                     self._decode_freqband(_settings.freqband))
+        rs = RadioSettingValueString(0, 32, self._decode_freqband(_settings.freqband))
         rs.set_mutable(False)
-        rset = RadioSetting('settings.freqband', 'Frequency Band', rs)
-        rset.set_doc('Radio frequency band (read only)')
+        rset = RadioSetting("settings.freqband", "Frequency Band", rs)
+        rset.set_doc("Radio frequency band (read only)")
         basic.append(rset)
 
         # format raw date/time for display
@@ -582,81 +580,74 @@ class TDM11_22(chirp_common.CloneModeRadio):
                 d = time[3]
                 h = time[4]
                 mi = time[5]
-                s = '%04d-%02d-%02d  %02d:%02d' % (y, mo, d, h, mi)
+                s = "%04d-%02d-%02d  %02d:%02d" % (y, mo, d, h, mi)
             except IndexError:
-                s = '(none)'
+                s = "(none)"
             return s
 
         # Program time, display only
-        rs = RadioSettingValueString(0, 17,
-                                     _decode_time(_time.time))
+        rs = RadioSettingValueString(0, 17, _decode_time(_time.time))
         rs.set_mutable(False)
-        rset = RadioSetting('progtime.time', 'Program Time', rs)
-        rset.set_doc('Date/Time radio was last programmed (read only)')
+        rset = RadioSetting("progtime.time", "Program Time", rs)
+        rset.set_doc("Date/Time radio was last programmed (read only)")
         basic.append(rset)
 
         # Voice prompts
-        rs = RadioSettingValueList(self._voice_list,
-                                   current_index=_settings.voice)
-        rset = MemSetting('settings.voice', 'Voice Prompts', rs)
-        rset.set_doc('Radio Voice Prompts spoken language')
+        rs = RadioSettingValueList(self._voice_list, current_index=_settings.voice)
+        rset = MemSetting("settings.voice", "Voice Prompts", rs)
+        rset.set_doc("Radio Voice Prompts spoken language")
         basic.append(rset)
 
         # TOT
-        rs = RadioSettingValueList(self._tot_list,
-                                   current_index=_settings.tot)
-        rset = MemSetting('settings.tot', 'Time Out Timer', rs)
-        rset.set_doc('Radio TX Time Out Timer value')
+        rs = RadioSettingValueList(self._tot_list, current_index=_settings.tot)
+        rset = MemSetting("settings.tot", "Time Out Timer", rs)
+        rset.set_doc("Radio TX Time Out Timer value")
         basic.append(rset)
 
         # VOX level
-        rs = RadioSettingValueList(self._voxlevel_list,
-                                   current_index=_settings.vox)
-        rset = MemSetting('settings.vox', 'VOX Level', rs)
-        rset.set_doc('Radio VOX Level senesitivity value')
+        rs = RadioSettingValueList(self._voxlevel_list, current_index=_settings.vox)
+        rset = MemSetting("settings.vox", "VOX Level", rs)
+        rset.set_doc("Radio VOX Level senesitivity value")
         basic.append(rset)
 
         # Squelch level
-        rs = RadioSettingValueList(self._squelchlevel_list,
-                                   current_index=_settings.squelch)
-        rset = MemSetting('settings.squelch', 'Squelch Level', rs)
-        rset.set_doc('Radio Squelch Level value')
+        rs = RadioSettingValueList(
+            self._squelchlevel_list, current_index=_settings.squelch
+        )
+        rset = MemSetting("settings.squelch", "Squelch Level", rs)
+        rset.set_doc("Radio Squelch Level value")
         basic.append(rset)
 
         # Sleep mode
-        rs = RadioSettingValueList(self._sleepmode_list,
-                                   current_index=_settings.sleep)
-        rset = MemSetting('settings.sleep', 'Sleep Mode', rs)
-        rset.set_doc('Radio Sleep Mode power saving ratio value')
+        rs = RadioSettingValueList(self._sleepmode_list, current_index=_settings.sleep)
+        rset = MemSetting("settings.sleep", "Sleep Mode", rs)
+        rset.set_doc("Radio Sleep Mode power saving ratio value")
         basic.append(rset)
 
         # Sidekey 1
-        rs = RadioSettingValueList(self._sidekey_list,
-                                   current_index=_settings.sidekey1)
-        rset = MemSetting('settings.sidekey1', 'Sidekey 1 Long Pess', rs)
-        rset.set_doc('Radio Sidekey 1 Long Press assigned action value')
+        rs = RadioSettingValueList(self._sidekey_list, current_index=_settings.sidekey1)
+        rset = MemSetting("settings.sidekey1", "Sidekey 1 Long Pess", rs)
+        rset.set_doc("Radio Sidekey 1 Long Press assigned action value")
         basic.append(rset)
 
         # Sidekey 2
-        rs = RadioSettingValueList(self._sidekey_list,
-                                   current_index=_settings.sidekey2)
-        rset = MemSetting('settings.sidekey2', 'Sidekey 2 Long Press', rs)
-        rset.set_doc('Radio Sidekey 2 Long Press assigned action value')
+        rs = RadioSettingValueList(self._sidekey_list, current_index=_settings.sidekey2)
+        rset = MemSetting("settings.sidekey2", "Sidekey 2 Long Press", rs)
+        rset.set_doc("Radio Sidekey 2 Long Press assigned action value")
         basic.append(rset)
 
         # Selected default channel (setting not in factory CPS)
-        rs = RadioSettingValueList(self._channel_list,
-                                   current_index=_settings.channel)
-        rset = MemSetting('settings.channel', 'Default Channel', rs)
-        rset.set_doc('Radio Channel that is selected by Default at power-on')
+        rs = RadioSettingValueList(self._channel_list, current_index=_settings.channel)
+        rset = MemSetting("settings.channel", "Default Channel", rs)
+        rset.set_doc("Radio Channel that is selected by Default at power-on")
         basic.append(rset)
 
         # Selected default WX channel (setting not in factory CPS)
-        rs = RadioSettingValueList(self._wxchannel_list,
-                                   current_index=_settings.wxchannel)
-        rset = MemSetting('settings.wxchannel', 'Default WX Channel', rs)
-        rset.set_doc('NOAA Weather Channel that is '
-                     'selected by Default at power-on')
+        rs = RadioSettingValueList(
+            self._wxchannel_list, current_index=_settings.wxchannel
+        )
+        rset = MemSetting("settings.wxchannel", "Default WX Channel", rs)
+        rset.set_doc("NOAA Weather Channel that is " "selected by Default at power-on")
         basic.append(rset)
 
         return group
@@ -664,34 +655,34 @@ class TDM11_22(chirp_common.CloneModeRadio):
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('This driver is a BETA version ONLY for the TIDRADIO '
-             'TD-M11 22 running Firmware v0.9.4\n'
-             '\n'
-             'Please save an unedited copy of your first successful\n'
-             'download to a CHIRP Radio Images(*.img) file.\n\n'
-             'PROCEED AT YOUR OWN RISK!'
-             )
-        rp.pre_download = (dedent("""\
+        rp.experimental = (
+            "This driver is a BETA version ONLY for the TIDRADIO "
+            "TD-M11 22 running Firmware v0.9.4\n"
+            "\n"
+            "Please save an unedited copy of your first successful\n"
+            "download to a CHIRP Radio Images(*.img) file.\n\n"
+            "PROCEED AT YOUR OWN RISK!"
+        )
+        rp.pre_download = dedent("""\
             1. Turn radio off.
             2. Connect cable to mic/spkr connector.
             3. Make sure connector is firmly connected.
             4. Turn radio on (volume may need to be set at 100%).
             5. Ensure that the radio is tuned to channel with no activity.
-            6. Click OK to download image from device."""))
-        rp.pre_upload = (dedent("""\
+            6. Click OK to download image from device.""")
+        rp.pre_upload = dedent("""\
             1. Turn radio off.
             2. Connect cable to mic/spkr connector.
             3. Make sure connector is firmly connected.
             4. Turn radio on (volume may need to be set at 100%).
             5. Ensure that the radio is tuned to channel with no activity.
-            6. Click OK to upload image to device."""))
+            6. Click OK to upload image to device.""")
         return rp
 
     def get_features(self):
         rf = get_default_features(self)
         rf.valid_bands = self.VALID_BANDS
-        rf.valid_modes = ['FM', 'NFM']  # 25kHz, 12.5kHz
+        rf.valid_modes = ["FM", "NFM"]  # 25kHz, 12.5kHz
         rf.valid_tuning_steps = self._steps
         rf.has_name = False
         return rf
@@ -709,7 +700,7 @@ class TDM11_22(chirp_common.CloneModeRadio):
         # Memory number
         mem.number = number
 
-        if _mem.get_raw()[:1] == b'\xff':
+        if _mem.get_raw()[:1] == b"\xff":
             mem.empty = True
             return mem
 
@@ -718,24 +709,25 @@ class TDM11_22(chirp_common.CloneModeRadio):
         if mem.freq == 0:
             mem.empty = True
         # tx freq can be blank
-        if _mem.txfreq.get_raw() == b'\xff\xff\xff\xff':
+        if _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             # TX freq not set
             mem.offset = 0
-            mem.duplex = 'off'
+            mem.duplex = "off"
         else:
             # TX freq set
             offset = (int(_mem.txfreq) * 10) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.txfreq) * 10):
-                    mem.duplex = 'split'
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.txfreq) * 10
+                ):
+                    mem.duplex = "split"
                     mem.offset = int(_mem.txfreq) * 10
                 elif offset < 0:
                     mem.offset = abs(offset)
-                    mem.duplex = '-'
+                    mem.duplex = "-"
                 elif offset > 0:
                     mem.offset = offset
-                    mem.duplex = '+'
+                    mem.duplex = "+"
             else:
                 mem.offset = 0
 
@@ -745,46 +737,42 @@ class TDM11_22(chirp_common.CloneModeRadio):
         chirp_common.split_tone_decode(mem, txtone, rxtone)
 
         if not _mem.scan:
-            mem.skip = 'S'
+            mem.skip = "S"
 
         try:
             mem.power = self._power_levels[_mem.txpower]
         except IndexError:
-            LOG.error('Channel %d: get_memory: unhandled power level: 0x%02x' %
-                      (mem.number, _mem.txpower))
+            LOG.error(
+                "Channel %d: get_memory: unhandled power level: 0x%02x"
+                % (mem.number, _mem.txpower)
+            )
 
-        mem.mode = _mem.narrow and 'NFM' or 'FM'
+        mem.mode = _mem.narrow and "NFM" or "FM"
 
-        mem.extra = RadioSettingGroup('Extra', 'extra')
+        mem.extra = RadioSettingGroup("Extra", "extra")
 
         # BCL (Busy Channel Lockout)
-        rs = RadioSettingValueList(self._bcl_list,
-                                   current_index=_mem.bcl)
-        rset = RadioSetting('bcl', 'BCL', rs)
-        rset.set_doc('Busy Channel Lockout')
+        rs = RadioSettingValueList(self._bcl_list, current_index=_mem.bcl)
+        rset = RadioSetting("bcl", "BCL", rs)
+        rset.set_doc("Busy Channel Lockout")
         mem.extra.append(rset)
 
         # Jump Freq
-        rs = RadioSettingValueList(
-            self._jumpfreq_list,
-            current_index=_mem.jumpfreq)
-        rset = RadioSetting('jumpfreq', 'Jump Freq', rs)
-        rset.set_doc('Frequency Jumping/hopping')
+        rs = RadioSettingValueList(self._jumpfreq_list, current_index=_mem.jumpfreq)
+        rset = RadioSetting("jumpfreq", "Jump Freq", rs)
+        rset.set_doc("Frequency Jumping/hopping")
         mem.extra.append(rset)
 
         # Compand
-        rs = RadioSettingValueList(
-            self._compand_list,
-            current_index=_mem.compand)
-        rset = RadioSetting('compand', 'Compand', rs)
-        rset.set_doc('Audio Compander')
+        rs = RadioSettingValueList(self._compand_list, current_index=_mem.compand)
+        rset = RadioSetting("compand", "Compand", rs)
+        rset.set_doc("Audio Compander")
         mem.extra.append(rset)
 
         # Scramble
-        rs = RadioSettingValueList(self._scramble_list,
-                                   current_index=_mem.scramble)
-        rset = RadioSetting('scramble', 'Scramble', rs)
-        rset.set_doc('Voice Scrambler')
+        rs = RadioSettingValueList(self._scramble_list, current_index=_mem.scramble)
+        rset = RadioSetting("scramble", "Scramble", rs)
+        rset.set_doc("Voice Scrambler")
         mem.extra.append(rset)
 
         return mem
@@ -793,20 +781,20 @@ class TDM11_22(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.fill_raw(b'\xff')
+            _mem.fill_raw(b"\xff")
             return
 
-        _mem.fill_raw(b'\x00')
+        _mem.fill_raw(b"\x00")
 
         _mem.rxfreq = mem.freq / 10
 
-        if mem.duplex == 'off':
-            _mem.txfreq.fill_raw(b'\xff')
-        elif mem.duplex == 'split':
+        if mem.duplex == "off":
+            _mem.txfreq.fill_raw(b"\xff")
+        elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
-        elif mem.duplex == '+':
+        elif mem.duplex == "+":
             _mem.txfreq = (mem.freq + mem.offset) / 10
-        elif mem.duplex == '-':
+        elif mem.duplex == "-":
             _mem.txfreq = (mem.freq - mem.offset) / 10
         else:
             _mem.txfreq = mem.freq / 10
@@ -815,20 +803,23 @@ class TDM11_22(chirp_common.CloneModeRadio):
         self._encode_tone(_mem.txtone, *txtone)
         self._encode_tone(_mem.rxtone, *rxtone)
 
-        _mem.scan = mem.skip != 'S'
-        _mem.narrow = mem.mode == 'NFM'
+        _mem.scan = mem.skip != "S"
+        _mem.narrow = mem.mode == "NFM"
 
         try:
             _mem.txpower = self._power_levels.index(mem.power)
         except ValueError:
-            LOG.error('Channel %d: set_memory: unhandled power level: %s' %
-                      (mem.number, mem.power))
+            LOG.error(
+                "Channel %d: set_memory: unhandled power level: %s"
+                % (mem.number, mem.power)
+            )
 
         try:
             _mem.narrow = self.get_features().valid_modes.index(mem.mode)
         except IndexError:
-            LOG.error('Channel %d: set_memory: unhandled mode: %s' %
-                      (mem.number, mem.mode))
+            LOG.error(
+                "Channel %d: set_memory: unhandled mode: %s" % (mem.number, mem.mode)
+            )
 
         for setting in mem.extra:
             setattr(_mem, setting.get_name(), setting.value)
@@ -851,8 +842,9 @@ class TDM11_22(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if filename.lower().endswith('.mdt') and \
-                filedata.startswith(cls._mdt_file_header):
+        if filename.lower().endswith(".mdt") and filedata.startswith(
+            cls._mdt_file_header
+        ):
             return True
         else:
             return False
@@ -867,40 +859,43 @@ class TDM11_16(TDM11_22):
     # on Firmware v1.0.3
     # ==========
     """TIDRADIO TD-M11 16 PMR"""
-    VENDOR = 'TIDRADIO'
-    MODEL = 'TD-M11'
-    VARIANT = '16 PMR'
+    VENDOR = "TIDRADIO"
+    MODEL = "TD-M11"
+    VARIANT = "16 PMR"
 
     # same freq range as ODMaster allows
-    VALID_BANDS = [(136000000, 174000000), (400000000, 520000000),]
+    VALID_BANDS = [
+        (136000000, 174000000),
+        (400000000, 520000000),
+    ]
     _power_levels = [
-        chirp_common.PowerLevel('Low', watts=0.50),
-        chirp_common.PowerLevel('High', watts=2.00)
+        chirp_common.PowerLevel("Low", watts=0.50),
+        chirp_common.PowerLevel("High", watts=2.00),
     ]
 
     _upper = 16
-    _mem_params = (_upper)
+    _mem_params = _upper
 
-    _magic = b'STD-M12\xff'  # Firmware v1.0.3
+    _magic = b"STD-M12\xff"  # Firmware v1.0.3
     _fingerprint = [
-        b'\x00\x40\x00\x52\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
-        ]
-    _mdt_file_header = b'TD-M11CLIENT'
+        b"\x00\x40\x00\x52\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    ]
+    _mdt_file_header = b"TD-M11CLIENT"
     _mdt_offset = len(_mdt_file_header)  # offset of data in OEM .mdt file
     _steps = [5.0, 6.25, 12.5]
-    _channel_list = ['%d' % x for x in range(1, _upper + 1)]
+    _channel_list = ["%d" % x for x in range(1, _upper + 1)]
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('This driver is a BETA version ONLY for the TIDRADIO '
-             'TD-M11 16 PMR running Firmware v0.9.5 or v1.0.3\n'
-             '\n'
-             'Please save an unedited copy of your first successful\n'
-             'download to a CHIRP Radio Images(*.img) file.\n\n'
-             'PROCEED AT YOUR OWN RISK!'
-             )
+        rp.experimental = (
+            "This driver is a BETA version ONLY for the TIDRADIO "
+            "TD-M11 16 PMR running Firmware v0.9.5 or v1.0.3\n"
+            "\n"
+            "Please save an unedited copy of your first successful\n"
+            "download to a CHIRP Radio Images(*.img) file.\n\n"
+            "PROCEED AT YOUR OWN RISK!"
+        )
         return rp
 
 
@@ -914,8 +909,8 @@ class TDM11_16_1(TDM11_16):
     # on Firmware v0.9.5
     # ==========
     """TIDRADIO TD-M11 16 PMR"""
-    VENDOR = 'TIDRADIO'
-    MODEL = 'TD-M11'
-    VARIANT = '16 PMR v0.9.5'
+    VENDOR = "TIDRADIO"
+    MODEL = "TD-M11"
+    VARIANT = "16 PMR v0.9.5"
 
-    _magic = b'STD-M11\xff'  # Firmware v0.9.5
+    _magic = b"STD-M11\xff"  # Firmware v0.9.5

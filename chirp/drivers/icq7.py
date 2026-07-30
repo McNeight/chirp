@@ -18,10 +18,14 @@ import logging
 from chirp.drivers import icf
 from chirp import chirp_common, directory, bitwise
 from chirp.chirp_common import to_GHz
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-                RadioSettingValueBoolean, RadioSettingValueList, \
-                RadioSettingValueInteger, RadioSettings
-
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueInteger,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -98,6 +102,7 @@ D_SEL_LIST = ["100 kHz", "1 MHz", "10 MHz"]
 @directory.register
 class ICQ7Radio(icf.IcomCloneModeRadio):
     """Icom IC-Q7A"""
+
     VENDOR = "Icom"
     MODEL = "IC-Q7A"
 
@@ -115,9 +120,11 @@ class ICQ7Radio(icf.IcomCloneModeRadio):
         rf.valid_tmodes = list(TMODES)
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_tuning_steps = list(STEPS)
-        rf.valid_bands = [(1000000,   823995000),
-                          (849000000, 868995000),
-                          (894000000, 1309995000)]
+        rf.valid_bands = [
+            (1000000, 823995000),
+            (849000000, 868995000),
+            (894000000, 1309995000),
+        ]
         rf.valid_skips = ["", "S", "P"]
         rf.has_dtcs = False
         rf.has_dtcs_polarity = False
@@ -129,13 +136,11 @@ class ICQ7Radio(icf.IcomCloneModeRadio):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return (repr(self._memobj.memory[number]) +
-                repr(self._memobj.flags[number]))
+        return repr(self._memobj.memory[number]) + repr(self._memobj.flags[number])
 
     def validate_memory(self, mem):
-        if mem.freq < 30000000 and mem.mode != 'AM':
-            return [chirp_common.ValidationError(
-                'Only AM is allowed below 30 MHz')]
+        if mem.freq < 30000000 and mem.mode != "AM":
+            return [chirp_common.ValidationError("Only AM is allowed below 30 MHz")]
         return icf.IcomCloneModeRadio.validate_memory(self, mem)
 
     def get_memory(self, number):
@@ -211,104 +216,137 @@ class ICQ7Radio(icf.IcomCloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic Settings")
         group = RadioSettings(basic)
 
-        rs = RadioSetting("ch", "Channel Indication Mode",
-                          RadioSettingValueBoolean(_settings.ch))
+        rs = RadioSetting(
+            "ch", "Channel Indication Mode", RadioSettingValueBoolean(_settings.ch)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("expand", "Expanded Settings Mode",
-                          RadioSettingValueBoolean(_settings.expand))
+        rs = RadioSetting(
+            "expand",
+            "Expanded Settings Mode",
+            RadioSettingValueBoolean(_settings.expand),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Beep Tones",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting(
+            "beep", "Beep Tones", RadioSettingValueBoolean(_settings.beep)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("autorp", "Auto Repeater Function",
-                          RadioSettingValueList(
-                              AUTORP_LIST, current_index=_settings.autorp))
+        rs = RadioSetting(
+            "autorp",
+            "Auto Repeater Function",
+            RadioSettingValueList(AUTORP_LIST, current_index=_settings.autorp),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ritfunct", "RIT Runction",
-                          RadioSettingValueBoolean(_settings.ritfunct))
+        rs = RadioSetting(
+            "ritfunct", "RIT Runction", RadioSettingValueBoolean(_settings.ritfunct)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("rit", "RIT Shift (kHz)",
-                          RadioSettingValueInteger(-7, 7, _settings.rit))
+        rs = RadioSetting(
+            "rit", "RIT Shift (kHz)", RadioSettingValueInteger(-7, 7, _settings.rit)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("lock", "Lock",
-                          RadioSettingValueBoolean(_settings.lock))
+        rs = RadioSetting("lock", "Lock", RadioSettingValueBoolean(_settings.lock))
         basic.append(rs)
 
-        rs = RadioSetting("lockgroup", "Lock Group",
-                          RadioSettingValueList(
-                              LOCKGROUP_LIST,
-                              current_index=_settings.lockgroup))
+        rs = RadioSetting(
+            "lockgroup",
+            "Lock Group",
+            RadioSettingValueList(LOCKGROUP_LIST, current_index=_settings.lockgroup),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("squelch", "Squelch",
-                          RadioSettingValueList(
-                              SQUELCH_LIST, current_index=_settings.squelch))
+        rs = RadioSetting(
+            "squelch",
+            "Squelch",
+            RadioSettingValueList(SQUELCH_LIST, current_index=_settings.squelch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("monitor", "Monitor Switch Function",
-                          RadioSettingValueList(
-                              MONITOR_LIST,
-                              current_index=_settings.monitor))
+        rs = RadioSetting(
+            "monitor",
+            "Monitor Switch Function",
+            RadioSettingValueList(MONITOR_LIST, current_index=_settings.monitor),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("light", "Display Backlighting",
-                          RadioSettingValueList(
-                              LIGHT_LIST, current_index=_settings.light))
+        rs = RadioSetting(
+            "light",
+            "Display Backlighting",
+            RadioSettingValueList(LIGHT_LIST, current_index=_settings.light),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("priority", "Priority Watch Operation",
-                          RadioSettingValueList(
-                              PRIORITY_LIST,
-                              current_index=_settings.priority))
+        rs = RadioSetting(
+            "priority",
+            "Priority Watch Operation",
+            RadioSettingValueList(PRIORITY_LIST, current_index=_settings.priority),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("p_scan", "Frequency Skip Function",
-                          RadioSettingValueBoolean(_settings.p_scan))
+        rs = RadioSetting(
+            "p_scan",
+            "Frequency Skip Function",
+            RadioSettingValueBoolean(_settings.p_scan),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("bnk_scan", "Memory Bank Scan Selection",
-                          RadioSettingValueList(
-                              BANKSCAN_LIST,
-                              current_index=_settings.bnk_scan))
+        rs = RadioSetting(
+            "bnk_scan",
+            "Memory Bank Scan Selection",
+            RadioSettingValueList(BANKSCAN_LIST, current_index=_settings.bnk_scan),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("edge", "Band Edge Scan Selection",
-                          RadioSettingValueList(
-                              EDGE_LIST, current_index=_settings.edge))
+        rs = RadioSetting(
+            "edge",
+            "Band Edge Scan Selection",
+            RadioSettingValueList(EDGE_LIST, current_index=_settings.edge),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("pause", "Scan Pause Time",
-                          RadioSettingValueList(
-                              PAUSE_LIST, current_index=_settings.pause))
+        rs = RadioSetting(
+            "pause",
+            "Scan Pause Time",
+            RadioSettingValueList(PAUSE_LIST, current_index=_settings.pause),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("resume", "Scan Resume Time",
-                          RadioSettingValueList(
-                              RESUME_LIST, current_index=_settings.resume))
+        rs = RadioSetting(
+            "resume",
+            "Scan Resume Time",
+            RadioSettingValueList(RESUME_LIST, current_index=_settings.resume),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("p_save", "Power Saver",
-                          RadioSettingValueBoolean(_settings.p_save))
+        rs = RadioSetting(
+            "p_save", "Power Saver", RadioSettingValueBoolean(_settings.p_save)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ap_off", "Auto Power-off Function",
-                          RadioSettingValueList(
-                              APOFF_LIST, current_index=_settings.ap_off))
+        rs = RadioSetting(
+            "ap_off",
+            "Auto Power-off Function",
+            RadioSettingValueList(APOFF_LIST, current_index=_settings.ap_off),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("speed", "Dial Speed Acceleration",
-                          RadioSettingValueBoolean(_settings.speed))
+        rs = RadioSetting(
+            "speed",
+            "Dial Speed Acceleration",
+            RadioSettingValueBoolean(_settings.speed),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("d_sel", "Dial Select Step",
-                          RadioSettingValueList(
-                              D_SEL_LIST, current_index=_settings.d_sel))
+        rs = RadioSetting(
+            "d_sel",
+            "Dial Select Step",
+            RadioSettingValueList(D_SEL_LIST, current_index=_settings.d_sel),
+        )
         basic.append(rs)
 
         return group

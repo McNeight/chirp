@@ -7,27 +7,31 @@ from chirp import errors
 
 LOG = logging.getLogger(__name__)
 HEADERS = {
-    'User-Agent': 'CHIRP/%s Python %i.%i.%i %s' % (
+    "User-Agent": "CHIRP/%s Python %i.%i.%i %s"
+    % (
         CHIRP_VERSION,
-        sys.version_info.major, sys.version_info.minor, sys.version_info.micro,
-        sys.platform),
+        sys.version_info.major,
+        sys.version_info.minor,
+        sys.version_info.micro,
+        sys.platform,
+    ),
 }
 
 
 class QueryStatus:
     def send_status(self, status, percent):
-        LOG.info('QueryStatus[%i%%]: %s' % (percent, status))
+        LOG.info("QueryStatus[%i%%]: %s" % (percent, status))
 
     def send_end(self):
-        LOG.info('QueryStatus: END')
+        LOG.info("QueryStatus: END")
 
     def send_fail(self, reason):
-        LOG.error('QueryStatus Failed: %s' % reason)
+        LOG.error("QueryStatus Failed: %s" % reason)
 
 
 class NetworkResultRadio(chirp_common.NetworkSourceRadio):
-    VENDOR = 'Query'
-    MODEL = 'Result'
+    VENDOR = "Query"
+    MODEL = "Result"
 
     def __init__(self):
         self._memories = []
@@ -36,7 +40,7 @@ class NetworkResultRadio(chirp_common.NetworkSourceRadio):
         pass
 
     def get_label(self):
-        return 'QueryResult'
+        return "QueryResult"
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -55,7 +59,7 @@ class NetworkResultRadio(chirp_common.NetworkSourceRadio):
         return self._memories[number]
 
     def set_memory(self, memory):
-        raise errors.RadioError('Network source is immutable')
+        raise errors.RadioError("Network source is immutable")
 
     def validate_memory(self, memory):
-        return ['Network source is immutable']
+        return ["Network source is immutable"]

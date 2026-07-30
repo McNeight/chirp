@@ -18,9 +18,14 @@ import logging
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -180,13 +185,20 @@ VOICE_LIST3 = ["Off", "English", "Chinese"]
 VOICE_LIST4 = ["Chinese", "English"]
 SCANMODE_LIST = ["Carrier", "Time"]
 VOXLEVEL_LIST = ["Off", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-VOXDELAY_LIST = ["0.5 seconds", "1.0 seconds", "1.5 seconds",
-                 "2.0 seconds", "2.5 seconds", "3.0 seconds"]
+VOXDELAY_LIST = [
+    "0.5 seconds",
+    "1.0 seconds",
+    "1.5 seconds",
+    "2.0 seconds",
+    "2.5 seconds",
+    "3.0 seconds",
+]
 SIDEKEY19_LIST = ["Off", "Scan", "Emergency Alarm"]
 SIDEKEY2_LIST = SIDEKEY19_LIST + ["Display Battery"]
 SIDEKEY29_LIST = ["Off", "Scan", "VOX", "Busy Lock", "Emergency Alarm"]
 
-SIDEKEY85SHORT_LIST = ["Off",
+SIDEKEY85SHORT_LIST = [
+    "Off",
                        "Noise Cansellation On",
                        "Continuous Monitor",
                        "High/Low Power",
@@ -194,8 +206,10 @@ SIDEKEY85SHORT_LIST = ["Off",
                        "Show Battery",
                        "Scan",
                        "VOX",
-                       "Busy Channel Lock"]
-SIDEKEY85LONG_LIST = ["Off",
+    "Busy Channel Lock",
+]
+SIDEKEY85LONG_LIST = [
+    "Off",
                       "Noise Cansellation On",
                       "Continuous Monitor",
                       "Monitor Momentary",
@@ -204,49 +218,88 @@ SIDEKEY85LONG_LIST = ["Off",
                       "Show Battery",
                       "Scan",
                       "VOX",
-                      "Busy Channel Lock"]
+    "Busy Channel Lock",
+]
 SPECCODE_LIST = ["SpeCode 1", "SpeCode 2"]
-SIDEKEY75_LIST = ["Off",
-                  "Monitor Momentary",
-                  "Scan",
-                  "VOX",
-                  "Monitor",
-                  "Announciation"]
-SIDEKEY47_LIST = ["Monitor Momentary",
-                  "Channel Lock",
-                  "Scan",
-                  "VOX"]
-SIDEKEYV8A_LIST = ["Off",
-                   "Monitor",
-                   "High/Low Power",
-                   "Alarm"]
+SIDEKEY75_LIST = ["Off", "Monitor Momentary", "Scan", "VOX", "Monitor", "Announciation"]
+SIDEKEY47_LIST = ["Monitor Momentary", "Channel Lock", "Scan", "VOX"]
+SIDEKEYV8A_LIST = ["Off", "Monitor", "High/Low Power", "Alarm"]
 SIDEKEY87_LIST = ["Scan", "Emergency Alarm"]
-SIDEKEYH777H_LIST = ["Off",
-                     "VOX",
-                     "SCAN",
-                     "Monitor"]
+SIDEKEYH777H_LIST = ["Off", "VOX", "SCAN", "Monitor"]
 
-FRS_FREQS1 = [462562500, 462587500, 462612500, 462637500, 462662500,
-              462687500, 462712500]
-FRS_FREQS2 = [467562500, 467587500, 467612500, 467637500, 467662500,
-              467687500, 467712500]
-FRS_FREQS3 = [462550000, 462575000, 462600000, 462625000, 462650000,
-              462675000, 462700000, 462725000]
+FRS_FREQS1 = [
+    462562500,
+    462587500,
+    462612500,
+    462637500,
+    462662500,
+    462687500,
+    462712500,
+]
+FRS_FREQS2 = [
+    467562500,
+    467587500,
+    467612500,
+    467637500,
+    467662500,
+    467687500,
+    467712500,
+]
+FRS_FREQS3 = [
+    462550000,
+    462575000,
+    462600000,
+    462625000,
+    462650000,
+    462675000,
+    462700000,
+    462725000,
+]
 FRS_FREQS = FRS_FREQS1 + FRS_FREQS2 + FRS_FREQS3
 
-FRS16_FREQS = [462562500, 462587500, 462612500, 462637500,
-               462662500, 462625000, 462725000, 462687500,
-               462712500, 462550000, 462575000, 462600000,
-               462650000, 462675000, 462700000, 462725000]
+FRS16_FREQS = [
+    462562500,
+    462587500,
+    462612500,
+    462637500,
+    462662500,
+    462625000,
+    462725000,
+    462687500,
+    462712500,
+    462550000,
+    462575000,
+    462600000,
+    462650000,
+    462675000,
+    462700000,
+    462725000,
+]
 
 GMRS_FREQS = FRS_FREQS1 + FRS_FREQS2 + FRS_FREQS3 * 2
 
 MURS_FREQS = [151820000, 151880000, 151940000, 154570000, 154600000]
 
-PMR_FREQS1 = [446006250, 446018750, 446031250, 446043750, 446056250,
-              446068750, 446081250, 446093750]
-PMR_FREQS2 = [446106250, 446118750, 446131250, 446143750, 446156250,
-              446168750, 446181250, 446193750]
+PMR_FREQS1 = [
+    446006250,
+    446018750,
+    446031250,
+    446043750,
+    446056250,
+    446068750,
+    446081250,
+    446093750,
+]
+PMR_FREQS2 = [
+    446106250,
+    446118750,
+    446131250,
+    446143750,
+    446156250,
+    446168750,
+    446181250,
+    446193750,
+]
 PMR_FREQS = PMR_FREQS1 + PMR_FREQS2
 
 
@@ -293,7 +346,7 @@ def _t18_enter_programming_mode(radio):
         raise errors.RadioError("Error communicating with radio")
 
     if radio.MODEL == "RT647":
-        if ack != b"\xF0":
+        if ack != b"\xf0":
             raise errors.RadioError("Radio refused to enter programming mode")
     else:
         if ack != CMD_ACK:
@@ -313,7 +366,7 @@ def _t18_exit_programming_mode(radio):
 def _t18_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -345,7 +398,7 @@ def _t18_read_block(radio, block_addr, block_size):
 def _t18_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
     data = radio.get_mmap()[block_addr:block_addr + block_size]
 
     LOG.debug("Writing Data:")
@@ -358,8 +411,7 @@ def _t18_write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -420,6 +472,7 @@ def model_match(cls, data):
 @directory.register
 class T18Radio(chirp_common.CloneModeRadio):
     """radtel T18"""
+
     VENDOR = "Radtel"
     MODEL = "T18"
     BAUD_RATE = 9600
@@ -429,16 +482,24 @@ class T18Radio(chirp_common.CloneModeRadio):
 
     VALID_BANDS = [(400000000, 470000000)]
 
-    TIMEOUTTIMER_LIST = ["Off", "30 seconds", "60 seconds", "90 seconds",
-                         "120 seconds", "150 seconds", "180 seconds",
-                         "210 seconds", "240 seconds", "270 seconds",
-                         "300 seconds"]
+    TIMEOUTTIMER_LIST = [
+        "Off",
+        "30 seconds",
+        "60 seconds",
+        "90 seconds",
+        "120 seconds",
+        "150 seconds",
+        "180 seconds",
+        "210 seconds",
+        "240 seconds",
+        "270 seconds",
+        "300 seconds",
+    ]
 
     _magic = b"1ROGRAM"
     _fingerprint = [b"SMP558" + b"\x00\x00"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = _frs16 = _murs = _pmr = _gmrs = False
     _echo = False
     _reserved = False
@@ -455,9 +516,7 @@ class T18Radio(chirp_common.CloneModeRadio):
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        if self.MODEL != "T18" and \
-                self.MODEL != "RB618" and \
-                self.MODEL != "RT647":
+        if self.MODEL != "T18" and self.MODEL != "RB618" and self.MODEL != "RT647":
             rf.valid_power_levels = self.POWER_LEVELS
         rf.can_odd_split = True
         rf.has_rx_dtcs = True
@@ -470,7 +529,8 @@ class T18Radio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.has_tuning_step = False
         rf.has_bank = False
         rf.has_name = False
@@ -496,22 +556,22 @@ class T18Radio(chirp_common.CloneModeRadio):
     def _decode_tone(self, val):
         val = int(val)
         if val == 16665:
-            return '', None, None
+            return "", None, None
         elif val >= 12000:
-            return 'DTCS', val - 12000, 'R'
+            return "DTCS", val - 12000, "R"
         elif val >= 8000:
-            return 'DTCS', val - 8000, 'N'
+            return "DTCS", val - 8000, "N"
         else:
-            return 'Tone', val / 10.0, None
+            return "Tone", val / 10.0, None
 
     def _encode_tone(self, memval, mode, value, pol):
-        if mode == '':
+        if mode == "":
             memval[0].set_raw(0xFF)
             memval[1].set_raw(0xFF)
-        elif mode == 'Tone':
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
-            flag = 0x80 if pol == 'N' else 0xC0
+        elif mode == "DTCS":
+            flag = 0x80 if pol == "N" else 0xC0
             memval.set_value(value)
             memval[1].set_bits(flag)
         else:
@@ -534,12 +594,12 @@ class T18Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
 
-        if _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
             mem.offset = 0
         elif int(_mem.rxfreq) == int(_mem.txfreq):
@@ -561,28 +621,40 @@ class T18Radio(chirp_common.CloneModeRadio):
             mem.power = self.POWER_LEVELS[1 - _mem.highpower]
 
         mem.extra = RadioSettingGroup("Extra", "extra")
-        rs = RadioSetting("bcl", "Busy Channel Lockout",
-                          RadioSettingValueBoolean(not _mem.bcl))
+        rs = RadioSetting(
+            "bcl", "Busy Channel Lockout", RadioSettingValueBoolean(not _mem.bcl)
+        )
         rs.set_doc(
             "Prevents transmitting on this channel while another station is "
             "already using it. Pressing PTT on a busy channel sounds an "
             "alert tone instead of keying the transmitter.")
         mem.extra.append(rs)
-        if self.MODEL != "RB18" and self.MODEL != "RB618" and \
-                self.MODEL != "FRS-B1" and self.MODEL != "BF-V8A" and \
-                self.MODEL != "RB29" and self.MODEL != "RB629" and \
-                self.MODEL != "BF-T20FRS":
-            if self.MODEL not in ["RB87",
-                                  "RT47V"]:
-                rs = RadioSetting("scramble", "Scramble",
-                                  RadioSettingValueBoolean(not _mem.scramble))
+        if (
+            self.MODEL != "RB18"
+            and self.MODEL != "RB618"
+            and self.MODEL != "FRS-B1"
+            and self.MODEL != "BF-V8A"
+            and self.MODEL != "RB29"
+            and self.MODEL != "RB629"
+            and self.MODEL != "BF-T20FRS"
+        ):
+            if self.MODEL not in ["RB87", "RT47V"]:
+                rs = RadioSetting(
+                    "scramble", "Scramble", RadioSettingValueBoolean(not _mem.scramble)
+                )
                 mem.extra.append(rs)
-            rs = RadioSetting("compander", "Compander",
-                              RadioSettingValueBoolean(not _mem.compander))
+            rs = RadioSetting(
+                "compander", "Compander", RadioSettingValueBoolean(not _mem.compander)
+            )
             mem.extra.append(rs)
-            if self.MODEL != "RT47V" and self.MODEL != "T8" and \
-                    self.MODEL != "RB17" and self.MODEL != "RB617" and \
-                    self.MODEL != "RB75" and self.MODEL != "RB19P":
+            if (
+                self.MODEL != "RT47V"
+                and self.MODEL != "T8"
+                and self.MODEL != "RB17"
+                and self.MODEL != "RB617"
+                and self.MODEL != "RB75"
+                and self.MODEL != "RB19P"
+            ):
                 if self.MODEL == "RB87":
                     rs = RadioSettingValueBoolean(not _mem.speccode)
                     rset = RadioSetting("speccode", "PTT-ID", rs)
@@ -599,13 +671,12 @@ class T18Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 22:
                     FRS_FREQ = FRS_FREQS[mem.number - 1]
                     mem.freq = FRS_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 if mem.number >= 8 and mem.number <= 14:
                     mem.power = self.POWER_LEVELS[1]
-                    immutable = ["empty", "freq", "duplex", "offset", "mode",
-                                 "power"]
+                    immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
                 else:
                     immutable = ["empty", "freq", "duplex", "offset", "mode"]
         elif self._frs16:
@@ -613,7 +684,7 @@ class T18Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 16:
                     FRS_FREQ = FRS16_FREQS[mem.number - 1]
                     mem.freq = FRS_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 immutable = ["empty", "freq", "duplex", "offset", "mode"]
@@ -622,7 +693,7 @@ class T18Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 5:
                     MURS_FREQ = MURS_FREQS[mem.number - 1]
                     mem.freq = MURS_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 if mem.number <= 3:
                     mem.mode = "NFM"
@@ -634,12 +705,11 @@ class T18Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 16:
                     PMR_FREQ = PMR_FREQS[mem.number - 1]
                     mem.freq = PMR_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 mem.power = self.POWER_LEVELS[1]
-                immutable = ["empty", "freq", "duplex", "offset", "mode",
-                             "power"]
+                immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
         elif self._gmrs:
             if mem.freq in GMRS_FREQS:
                 if mem.number >= 1 and mem.number <= 30:
@@ -647,21 +717,21 @@ class T18Radio(chirp_common.CloneModeRadio):
                     mem.freq = GMRS_FREQ
                     immutable = ["freq"]
                 if mem.number >= 1 and mem.number <= 7:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     immutable += ["duplex", "offset"]
                 elif mem.number >= 8 and mem.number <= 14:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     mem.mode = "NFM"
                     mem.power = self.POWER_LEVELS[1]
                     immutable += ["duplex", "offset", "mode", "power"]
                 elif mem.number >= 15 and mem.number <= 22:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     immutable += ["duplex", "offset"]
                 elif mem.number >= 23 and mem.number <= 30:
-                    mem.duplex = '+'
+                    mem.duplex = "+"
                     mem.offset = 5000000
                     immutable += ["duplex", "offset"]
 
@@ -678,26 +748,26 @@ class T18Radio(chirp_common.CloneModeRadio):
 
         if mem.empty:
             if self._reserved:
-                _mem.set_raw(b"\xFF" * 13 + _rsvd)
+                _mem.set_raw(b"\xff" * 13 + _rsvd)
             else:
-                _mem.set_raw(b"\xFF" * (_mem.size() // 8))
+                _mem.set_raw(b"\xff" * (_mem.size() // 8))
 
             return
 
         if self._reserved:
             _mem.set_raw(b"\x00" * 13 + _rsvd)
         elif self.MODEL == "BF-V8A" or self.MODEL == "BF-T20FRS":
-            _mem.set_raw(b"\x00" * 12 + b"\x09\xFF\xFF\xFF")
+            _mem.set_raw(b"\x00" * 12 + b"\x09\xff\xff\xff")
         elif self.MODEL == "RB29" or self.MODEL == "RB629":
-            _mem.set_raw(b"\x00" * 12 + b"\xF7\xFF\xFF\xFF")
+            _mem.set_raw(b"\x00" * 12 + b"\xf7\xff\xff\xff")
         else:
-            _mem.set_raw(b"\x00" * 12 + b"\xF9\xFF\xFF\xFF")
+            _mem.set_raw(b"\x00" * 12 + b"\xf9\xff\xff\xff")
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw(b"\xFF")
+                _mem.txfreq[i].set_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -714,7 +784,7 @@ class T18Radio(chirp_common.CloneModeRadio):
         if self.MODEL != "T18" and self.MODEL != "RB18":
             _mem.highpower = mem.power == self.POWER_LEVELS[0]
 
-        _mem.narrow = 'N' in mem.mode
+        _mem.narrow = "N" in mem.mode
         _mem.skip = mem.skip == "S"
 
         _mem.unknown2 = 1
@@ -725,15 +795,20 @@ class T18Radio(chirp_common.CloneModeRadio):
 
     def get_settings(self):
         _settings = self._memobj.settings
-        if self.MODEL == "FRS-B1" or self.MODEL == "BF-V8A" or \
-                self.MODEL == "BF-T20FRS":
+        if (
+            self.MODEL == "FRS-B1"
+            or self.MODEL == "BF-V8A"
+            or self.MODEL == "BF-T20FRS"
+        ):
             _settings2 = self._memobj.settings2
         basic = RadioSettingGroup("basic", "Basic Settings")
         top = RadioSettings(basic)
 
-        rs = RadioSetting("squelchlevel", "Squelch level",
-                          RadioSettingValueInteger(
-                              0, 9, _settings.squelchlevel))
+        rs = RadioSetting(
+            "squelchlevel",
+            "Squelch level",
+            RadioSettingValueInteger(0, 9, _settings.squelchlevel),
+        )
         rs.set_doc(
             "Sets how strong a received signal must be before the speaker "
             "unmutes. 0 leaves the squelch open so you hear noise all the "
@@ -742,10 +817,13 @@ class T18Radio(chirp_common.CloneModeRadio):
             "it if distant stations are being cut off.")
         basic.append(rs)
 
-        rs = RadioSetting("timeouttimer", "Timeout timer",
+        rs = RadioSetting(
+            "timeouttimer",
+            "Timeout timer",
                           RadioSettingValueList(
-                              self.TIMEOUTTIMER_LIST,
-                              current_index=_settings.timeouttimer))
+                self.TIMEOUTTIMER_LIST, current_index=_settings.timeouttimer
+            ),
+        )
         rs.set_doc(
             "Limits how long a single transmission may last. When the time "
             "runs out the radio stops transmitting until PTT is released, "
@@ -754,13 +832,16 @@ class T18Radio(chirp_common.CloneModeRadio):
         basic.append(rs)
 
         if self.MODEL == "RB18" or self.MODEL == "RB618":
-            rs = RadioSetting("scan", "Scan",
-                              RadioSettingValueBoolean(_settings.scan))
+            rs = RadioSetting("scan", "Scan", RadioSettingValueBoolean(_settings.scan))
             basic.append(rs)
-        elif self.MODEL == "FRS-B1" or self.MODEL == "BF-V8A" or \
-                self.MODEL == "BF-T20FRS":
-            rs = RadioSetting("settings2.scan", "Scan",
-                              RadioSettingValueBoolean(_settings2.scan))
+        elif (
+            self.MODEL == "FRS-B1"
+            or self.MODEL == "BF-V8A"
+            or self.MODEL == "BF-T20FRS"
+        ):
+            rs = RadioSetting(
+                "settings2.scan", "Scan", RadioSettingValueBoolean(_settings2.scan)
+            )
             rs.set_doc(
                 "Enables channel scanning. The radio steps through the "
                 "programmed channels, stops on the first one it finds busy "
@@ -770,51 +851,70 @@ class T18Radio(chirp_common.CloneModeRadio):
                 "start.")
             basic.append(rs)
         else:
-            rs = RadioSetting("scanmode", "Scan mode",
-                              RadioSettingValueList(
-                                  SCANMODE_LIST,
-                                  current_index=_settings.scanmode))
+            rs = RadioSetting(
+                "scanmode",
+                "Scan mode",
+                RadioSettingValueList(SCANMODE_LIST, current_index=_settings.scanmode),
+            )
             basic.append(rs)
 
         if self.MODEL == "RT20":
-            rs = RadioSetting("voiceprompt", "Voice prompts",
-                              RadioSettingValueList(
-                                  VOICE_LIST4,
-                                  current_index=_settings.voiceprompt))
+            rs = RadioSetting(
+                "voiceprompt",
+                "Voice prompts",
+                RadioSettingValueList(VOICE_LIST4, current_index=_settings.voiceprompt),
+            )
             basic.append(rs)
         elif self.MODEL == "RT22S":
-            rs = RadioSetting("voiceprompt", "Voice prompts",
-                              RadioSettingValueBoolean(_settings.voiceprompt))
+            rs = RadioSetting(
+                "voiceprompt",
+                "Voice prompts",
+                RadioSettingValueBoolean(_settings.voiceprompt),
+            )
             basic.append(rs)
         elif self.MODEL == "RB18" or self.MODEL == "RB618":
-            rs = RadioSetting("voice", "Voice prompts",
-                              RadioSettingValueBoolean(_settings.voice))
+            rs = RadioSetting(
+                "voice", "Voice prompts", RadioSettingValueBoolean(_settings.voice)
+            )
             basic.append(rs)
-        elif self.MODEL == "FRS-B1" or self.MODEL == "BF-V8A" or \
-                self.MODEL == "BF-T20FRS":
-            rs = RadioSetting("settings2.voicesw", "Voice prompts",
-                              RadioSettingValueBoolean(_settings2.voicesw))
+        elif (
+            self.MODEL == "FRS-B1"
+            or self.MODEL == "BF-V8A"
+            or self.MODEL == "BF-T20FRS"
+        ):
+            rs = RadioSetting(
+                "settings2.voicesw",
+                "Voice prompts",
+                RadioSettingValueBoolean(_settings2.voicesw),
+            )
             rs.set_doc(
                 "Announces the channel number and other operations out loud "
                 "as you use the radio. Useful on a radio without a display, "
                 "but it can be intrusive in quiet surroundings.")
             basic.append(rs)
         elif self.MODEL == "RT15":
-            rs = RadioSetting("voiceprompt", "Voice prompts",
-                              RadioSettingValueList(
-                                  VOICE_LIST3,
-                                  current_index=_settings.voiceprompt))
+            rs = RadioSetting(
+                "voiceprompt",
+                "Voice prompts",
+                RadioSettingValueList(VOICE_LIST3, current_index=_settings.voiceprompt),
+            )
             basic.append(rs)
         else:
             if self.MODEL != "RB87":
-                rs = RadioSetting("voiceprompt", "Voice prompts",
+                rs = RadioSetting(
+                    "voiceprompt",
+                    "Voice prompts",
                                   RadioSettingValueList(
-                                      VOICE_LIST,
-                                      current_index=_settings.voiceprompt))
+                        VOICE_LIST, current_index=_settings.voiceprompt
+                    ),
+                )
                 basic.append(rs)
 
-        rs = RadioSetting("batterysaver", "Battery saver",
-                          RadioSettingValueBoolean(_settings.batterysaver))
+        rs = RadioSetting(
+            "batterysaver",
+            "Battery saver",
+            RadioSettingValueBoolean(_settings.batterysaver),
+        )
         rs.set_doc(
             "Cuts standby power consumption by dozing the receiver once no "
             "signal has been received for a few seconds. It considerably "
@@ -822,209 +922,258 @@ class T18Radio(chirp_common.CloneModeRadio):
             "first moment of an incoming transmission.")
         basic.append(rs)
 
-        if self.MODEL not in ["RB29",
-                              "RB75",
-                              "RB87",
-                              "RB629",
-                              "RT15"
-                              ]:
-            rs = RadioSetting("beep", "Beep",
-                              RadioSettingValueBoolean(_settings.beep))
+        if self.MODEL not in ["RB29", "RB75", "RB87", "RB629", "RT15"]:
+            rs = RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
             rs.set_doc(
                 "Sounds a short confirmation tone as you operate the radio. "
                 "Turn it off when the radio has to be used discreetly.")
             basic.append(rs)
 
-        if self.MODEL == "RB19" or self.MODEL == "RB19P" \
-                or self.MODEL == "RB619":
-            rs = RadioSetting("vox", "VOX",
-                              RadioSettingValueBoolean(_settings.vox))
+        if self.MODEL == "RB19" or self.MODEL == "RB19P" or self.MODEL == "RB619":
+            rs = RadioSetting("vox", "VOX", RadioSettingValueBoolean(_settings.vox))
             basic.append(rs)
 
         if self.MODEL == "RB87":
-            rs = RadioSetting("beep", "VOX",
-                              RadioSettingValueBoolean(_settings.beep))
+            rs = RadioSetting("beep", "VOX", RadioSettingValueBoolean(_settings.beep))
             basic.append(rs)
 
-        if self.MODEL != "RB18" and self.MODEL != "RB618" \
-                and self.MODEL != "FRS-B1" \
-                and self.MODEL != "BF-V8A" \
-                and self.MODEL != "BF-T20FRS":
-            rs = RadioSetting("voxlevel", "Vox level",
-                              RadioSettingValueList(
-                                  VOXLEVEL_LIST,
-                                  current_index=_settings.voxlevel))
+        if (
+            self.MODEL != "RB18"
+            and self.MODEL != "RB618"
+            and self.MODEL != "FRS-B1"
+            and self.MODEL != "BF-V8A"
+            and self.MODEL != "BF-T20FRS"
+        ):
+            rs = RadioSetting(
+                "voxlevel",
+                "Vox level",
+                RadioSettingValueList(VOXLEVEL_LIST, current_index=_settings.voxlevel),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("voxdelay", "VOX delay",
-                              RadioSettingValueList(
-                                  VOXDELAY_LIST,
-                                  current_index=_settings.voxdelay))
+            rs = RadioSetting(
+                "voxdelay",
+                "VOX delay",
+                RadioSettingValueList(VOXDELAY_LIST, current_index=_settings.voxdelay),
+            )
             basic.append(rs)
 
         if self.MODEL == "RT22S":
-            rs = RadioSetting("sidekey2", "Side Key 2(Long)",
-                              RadioSettingValueList(
-                                  SIDEKEY2_LIST,
-                                  current_index=_settings.sidekey2))
+            rs = RadioSetting(
+                "sidekey2",
+                "Side Key 2(Long)",
+                RadioSettingValueList(SIDEKEY2_LIST, current_index=_settings.sidekey2),
+            )
             basic.append(rs)
 
         if self.MODEL == "RB18" or self.MODEL == "RB618":
-            rs = RadioSetting("language", "Language",
-                              RadioSettingValueList(
-                                  VOICE_LIST2,
-                                  current_index=_settings.language))
+            rs = RadioSetting(
+                "language",
+                "Language",
+                RadioSettingValueList(VOICE_LIST2, current_index=_settings.language),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("tail", "Tail",
-                              RadioSettingValueBoolean(_settings.tail))
+            rs = RadioSetting("tail", "Tail", RadioSettingValueBoolean(_settings.tail))
             basic.append(rs)
 
-            rs = RadioSetting("hivoltnotx", "High voltage no TX",
-                              RadioSettingValueBoolean(_settings.hivoltnotx))
+            rs = RadioSetting(
+                "hivoltnotx",
+                "High voltage no TX",
+                RadioSettingValueBoolean(_settings.hivoltnotx),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("lovoltnotx", "Low voltage no TX",
-                              RadioSettingValueBoolean(_settings.lovoltnotx))
+            rs = RadioSetting(
+                "lovoltnotx",
+                "Low voltage no TX",
+                RadioSettingValueBoolean(_settings.lovoltnotx),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("vox", "VOX",
-                              RadioSettingValueBoolean(_settings.vox))
+            rs = RadioSetting("vox", "VOX", RadioSettingValueBoolean(_settings.vox))
             basic.append(rs)
 
             if _settings.vox_level > 4:
                 val = 1
             else:
                 val = _settings.vox_level + 1
-            rs = RadioSetting("vox_level", "VOX level",
-                              RadioSettingValueInteger(1, 5, val))
+            rs = RadioSetting(
+                "vox_level", "VOX level", RadioSettingValueInteger(1, 5, val)
+            )
             basic.append(rs)
 
-            rs = RadioSetting("rogerbeep", "Roger beep",
-                              RadioSettingValueBoolean(_settings.rogerbeep))
+            rs = RadioSetting(
+                "rogerbeep", "Roger beep", RadioSettingValueBoolean(_settings.rogerbeep)
+            )
             basic.append(rs)
 
         if self.MODEL == "RB85":
-            rs = RadioSetting("speccode", "SpecCode Select",
-                              RadioSettingValueList(
-                                  SPECCODE_LIST,
-                                  current_index=_settings.speccode))
+            rs = RadioSetting(
+                "speccode",
+                "SpecCode Select",
+                RadioSettingValueList(SPECCODE_LIST, current_index=_settings.speccode),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2", "Side Key 1(Short)",
+            rs = RadioSetting(
+                "sidekey2",
+                "Side Key 1(Short)",
                               RadioSettingValueList(
-                                  SIDEKEY85SHORT_LIST,
-                                  current_index=_settings.sidekey2))
+                    SIDEKEY85SHORT_LIST, current_index=_settings.sidekey2
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey1L", "Side Key 1(Long)",
+            rs = RadioSetting(
+                "sidekey1L",
+                "Side Key 1(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY85LONG_LIST,
-                                  current_index=_settings.sidekey1L))
+                    SIDEKEY85LONG_LIST, current_index=_settings.sidekey1L
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2S", "Side Key 2(Short)",
+            rs = RadioSetting(
+                "sidekey2S",
+                "Side Key 2(Short)",
                               RadioSettingValueList(
-                                  SIDEKEY85SHORT_LIST,
-                                  current_index=_settings.sidekey2S))
+                    SIDEKEY85SHORT_LIST, current_index=_settings.sidekey2S
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2L", "Side Key 2(Long)",
+            rs = RadioSetting(
+                "sidekey2L",
+                "Side Key 2(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY85LONG_LIST,
-                                  current_index=_settings.sidekey2L))
+                    SIDEKEY85LONG_LIST, current_index=_settings.sidekey2L
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("power10w", "Power 10W",
-                              RadioSettingValueBoolean(_settings.power10w))
+            rs = RadioSetting(
+                "power10w", "Power 10W", RadioSettingValueBoolean(_settings.power10w)
+            )
             basic.append(rs)
 
         if self.MODEL == "RB75":
-            rs = RadioSetting("sidekey2", "Side Key 1(Short)",
-                              RadioSettingValueList(
-                                  SIDEKEY75_LIST,
-                                  current_index=_settings.sidekey2))
+            rs = RadioSetting(
+                "sidekey2",
+                "Side Key 1(Short)",
+                RadioSettingValueList(SIDEKEY75_LIST, current_index=_settings.sidekey2),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey1L", "Side Key 1(Long)",
+            rs = RadioSetting(
+                "sidekey1L",
+                "Side Key 1(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY75_LIST,
-                                  current_index=_settings.sidekey1L))
+                    SIDEKEY75_LIST, current_index=_settings.sidekey1L
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2S", "Side Key 2(Short)",
+            rs = RadioSetting(
+                "sidekey2S",
+                "Side Key 2(Short)",
                               RadioSettingValueList(
-                                  SIDEKEY75_LIST,
-                                  current_index=_settings.sidekey2S))
+                    SIDEKEY75_LIST, current_index=_settings.sidekey2S
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2L", "Side Key 2(Long)",
+            rs = RadioSetting(
+                "sidekey2L",
+                "Side Key 2(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY75_LIST,
-                                  current_index=_settings.sidekey2L))
+                    SIDEKEY75_LIST, current_index=_settings.sidekey2L
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("power10w", "Low Voltage Stop TX",
-                              RadioSettingValueBoolean(_settings.power10w))
+            rs = RadioSetting(
+                "power10w",
+                "Low Voltage Stop TX",
+                RadioSettingValueBoolean(_settings.power10w),
+            )
             basic.append(rs)
 
         if self.MODEL == "RB87":
-            rs = RadioSetting("sidekey2", "Side Key 1(Long)",
-                              RadioSettingValueList(
-                                  SIDEKEY87_LIST,
-                                  current_index=_settings.sidekey2))
+            rs = RadioSetting(
+                "sidekey2",
+                "Side Key 1(Long)",
+                RadioSettingValueList(SIDEKEY87_LIST, current_index=_settings.sidekey2),
+            )
             basic.append(rs)
 
         if self.MODEL == "FRS-B1":
-            rs = RadioSetting("settings2.hivoltnotx",
+            rs = RadioSetting(
+                "settings2.hivoltnotx",
                               "High Voltage Inhibit TX",
-                              RadioSettingValueBoolean(_settings2.hivoltnotx))
+                RadioSettingValueBoolean(_settings2.hivoltnotx),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("settings2.lovoltnotx", "Low Voltage Inhibit TX",
-                              RadioSettingValueBoolean(_settings2.lovoltnotx))
+            rs = RadioSetting(
+                "settings2.lovoltnotx",
+                "Low Voltage Inhibit TX",
+                RadioSettingValueBoolean(_settings2.lovoltnotx),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("settings2.vox", "Vox",
-                              RadioSettingValueBoolean(_settings2.vox))
+            rs = RadioSetting(
+                "settings2.vox", "Vox", RadioSettingValueBoolean(_settings2.vox)
+            )
             basic.append(rs)
 
-            rs = RadioSetting("settings2.voxnotxonrx", "Rx Disable VOX",
-                              RadioSettingValueBoolean(_settings2.voxnotxonrx))
+            rs = RadioSetting(
+                "settings2.voxnotxonrx",
+                "Rx Disable VOX",
+                RadioSettingValueBoolean(_settings2.voxnotxonrx),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("settings2.voxgain", "Vox Gain",
-                              RadioSettingValueInteger(
-                                  1, 5, _settings2.voxgain))
+            rs = RadioSetting(
+                "settings2.voxgain",
+                "Vox Gain",
+                RadioSettingValueInteger(1, 5, _settings2.voxgain),
+            )
             basic.append(rs)
 
-        if self.MODEL == "RB19" or self.MODEL == "RB19P" \
-                or self.MODEL == "RB619":
-            rs = RadioSetting("sidekey2", "Left Navigation Button(Long)",
+        if self.MODEL == "RB19" or self.MODEL == "RB19P" or self.MODEL == "RB619":
+            rs = RadioSetting(
+                "sidekey2",
+                "Left Navigation Button(Long)",
+                RadioSettingValueList(SIDEKEY19_LIST, current_index=_settings.sidekey2),
+            )
+            basic.append(rs)
+
+        if self.MODEL == "RT47" or self.MODEL == "RT47V" or self.MODEL == "RT647":
+            rs = RadioSetting(
+                "sidekey2",
+                "Side Key 1(Long)",
+                RadioSettingValueList(SIDEKEY47_LIST, current_index=_settings.sidekey2),
+            )
+            basic.append(rs)
+
+            rs = RadioSetting(
+                "sidekey2S",
+                "Side Key 2(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY19_LIST,
-                                  current_index=_settings.sidekey2))
-            basic.append(rs)
-
-        if self.MODEL == "RT47" or self.MODEL == "RT47V" or \
-                self.MODEL == "RT647":
-            rs = RadioSetting("sidekey2", "Side Key 1(Long)",
-                              RadioSettingValueList(
-                                  SIDEKEY47_LIST,
-                                  current_index=_settings.sidekey2))
-            basic.append(rs)
-
-            rs = RadioSetting("sidekey2S", "Side Key 2(Long)",
-                              RadioSettingValueList(
-                                  SIDEKEY47_LIST,
-                                  current_index=_settings.sidekey2S))
+                    SIDEKEY47_LIST, current_index=_settings.sidekey2S
+                ),
+            )
             basic.append(rs)
 
         if self.MODEL == "BF-V8A" or self.MODEL == "BF-T20FRS":
-            rs = RadioSetting("sidekey2", "Side key",
+            rs = RadioSetting(
+                "sidekey2",
+                "Side key",
                               RadioSettingValueList(
-                                  SIDEKEYV8A_LIST,
-                                  current_index=_settings.sidekey2))
+                    SIDEKEYV8A_LIST, current_index=_settings.sidekey2
+                ),
+            )
             rs.set_doc(
                 "Chooses what the programmable key does: Monitor opens the "
                 "squelch so that signals too weak to break it can still be "
@@ -1032,58 +1181,75 @@ class T18Radio(chirp_common.CloneModeRadio):
                 "Alarm triggers the emergency alarm.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.rxemergency", "RX emergency",
-                              RadioSettingValueBoolean(_settings2.rxemergency))
+            rs = RadioSetting(
+                "settings2.rxemergency",
+                "RX emergency",
+                RadioSettingValueBoolean(_settings2.rxemergency),
+            )
             rs.set_doc(
                 "Lets this radio respond to an emergency alarm sent by "
                 "another radio on the same channel instead of ignoring it.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.voiceselect", "Language",
+            rs = RadioSetting(
+                "settings2.voiceselect",
+                "Language",
                               RadioSettingValueList(
-                                  VOICE_LIST2,
-                                  current_index=_settings2.voiceselect))
+                    VOICE_LIST2, current_index=_settings2.voiceselect
+                ),
+            )
             rs.set_doc(
                 "Selects the language the spoken voice prompts use. It has "
                 "no effect unless Voice prompts are enabled.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.hivoltnotx",
+            rs = RadioSetting(
+                "settings2.hivoltnotx",
                               "High voltage inhibit TX",
-                              RadioSettingValueBoolean(_settings2.hivoltnotx))
+                RadioSettingValueBoolean(_settings2.hivoltnotx),
+            )
             rs.set_doc(
                 "Blocks transmitting while the battery voltage is above the "
                 "safe range, which protects the radio when an out-of-spec "
                 "battery or charger is fitted.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.lovoltnotx", "Low voltage inhibit TX",
-                              RadioSettingValueBoolean(_settings2.lovoltnotx))
+            rs = RadioSetting(
+                "settings2.lovoltnotx",
+                "Low voltage inhibit TX",
+                RadioSettingValueBoolean(_settings2.lovoltnotx),
+            )
             rs.set_doc(
                 "Blocks transmitting once the battery is nearly flat. "
                 "Transmitting draws far more current than receiving, so "
                 "this keeps the remaining charge available for listening.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.vox", "VOX",
-                              RadioSettingValueBoolean(_settings2.vox))
+            rs = RadioSetting(
+                "settings2.vox", "VOX", RadioSettingValueBoolean(_settings2.vox)
+            )
             rs.set_doc(
                 "Voice operated transmit. The radio starts transmitting "
                 "when you speak towards the microphone, so hands-free "
                 "conversation is possible without pressing PTT.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.voxnotxonrx", "RX disable VOX",
-                              RadioSettingValueBoolean(_settings2.voxnotxonrx))
+            rs = RadioSetting(
+                "settings2.voxnotxonrx",
+                "RX disable VOX",
+                RadioSettingValueBoolean(_settings2.voxnotxonrx),
+            )
             rs.set_doc(
                 "Suspends VOX while a signal is being received, so that "
                 "your own voice does not key the transmitter on top of the "
                 "station you are listening to.")
             basic.append(rs)
 
-            rs = RadioSetting("settings2.voxgain", "Vox Gain",
-                              RadioSettingValueInteger(
-                                  1, 5, _settings2.voxgain))
+            rs = RadioSetting(
+                "settings2.voxgain",
+                "Vox Gain",
+                RadioSettingValueInteger(1, 5, _settings2.voxgain),
+            )
             rs.set_doc(
                 "Sets the VOX sensitivity, on a scale of 1 to 5. Too "
                 "sensitive a setting keys the transmitter on the noise "
@@ -1092,39 +1258,52 @@ class T18Radio(chirp_common.CloneModeRadio):
             basic.append(rs)
 
         if self.MODEL == "RB29" or self.MODEL == "RB629":
-            rs = RadioSetting("codesw", "Code Switch",
-                              RadioSettingValueBoolean(_settings.codesw))
+            rs = RadioSetting(
+                "codesw", "Code Switch", RadioSettingValueBoolean(_settings.codesw)
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2S", "Side Key(Short)",
+            rs = RadioSetting(
+                "sidekey2S",
+                "Side Key(Short)",
                               RadioSettingValueList(
-                                  SIDEKEY29_LIST,
-                                  current_index=_settings.sidekey2S))
+                    SIDEKEY29_LIST, current_index=_settings.sidekey2S
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2L", "Side Key(Long)",
+            rs = RadioSetting(
+                "sidekey2L",
+                "Side Key(Long)",
                               RadioSettingValueList(
-                                  SIDEKEY29_LIST,
-                                  current_index=_settings.sidekey2L))
+                    SIDEKEY29_LIST, current_index=_settings.sidekey2L
+                ),
+            )
             basic.append(rs)
 
         if self.MODEL == "H777H_FRS" or self.MODEL == "H777H_PMR":
-            rs = RadioSetting("codesw", "Code Switch",
-                              RadioSettingValueBoolean(_settings.codesw))
+            rs = RadioSetting(
+                "codesw", "Code Switch", RadioSettingValueBoolean(_settings.codesw)
+            )
             basic.append(rs)
 
-            rs = RadioSetting("speccode", "VOX",
-                              RadioSettingValueBoolean(_settings.speccode))
+            rs = RadioSetting(
+                "speccode", "VOX", RadioSettingValueBoolean(_settings.speccode)
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2L", "Side Key 2(Long)",
+            rs = RadioSetting(
+                "sidekey2L",
+                "Side Key 2(Long)",
                               RadioSettingValueList(
-                                  SIDEKEYH777H_LIST,
-                                  current_index=_settings.sidekey2L))
+                    SIDEKEYH777H_LIST, current_index=_settings.sidekey2L
+                ),
+            )
             basic.append(rs)
 
-            rs = RadioSetting("sidekey2", "Roger",
-                              RadioSettingValueBoolean(_settings.sidekey2))
+            rs = RadioSetting(
+                "sidekey2", "Roger", RadioSettingValueBoolean(_settings.sidekey2)
+            )
             basic.append(rs)
 
         return top
@@ -1184,36 +1363,40 @@ class T18Radio(chirp_common.CloneModeRadio):
 @directory.register
 class RT20Radio(T18Radio):
     """RETEVIS RT20"""
+
     VENDOR = "Retevis"
     MODEL = "RT20"
     ACK_BLOCK = True
     BLOCK_SIZE = 0x08
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low",  watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"8AOGRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
 
 
 @directory.register
 class RT22SRadio(T18Radio):
     """RETEVIS RT22S"""
+
     VENDOR = "Retevis"
     MODEL = "RT22S"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low",  watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"9COGRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 22
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = True
     _pmr = False
 
@@ -1221,19 +1404,21 @@ class RT22SRadio(T18Radio):
 @directory.register
 class RB18Radio(T18Radio):
     """RETEVIS RB18"""
+
     VENDOR = "Retevis"
     MODEL = "RB18"
     BLOCK_SIZE = 0x10
     CMD_EXIT = b"E"
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low",  watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"PROGRAL"
-    _fingerprint = [b"P3107" + b"\xF7"]
+    _fingerprint = [b"P3107" + b"\xf7"]
     _upper = 22
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = True
     _pmr = False
 
@@ -1243,8 +1428,7 @@ class RB18Radio(T18Radio):
     _memsize = 0x0660
 
     def process_mmap(self):
-        self._memobj = bitwise.parse(MEM_FORMAT_RB18 %
-                                     self._mem_params, self._mmap)
+        self._memobj = bitwise.parse(MEM_FORMAT_RB18 % self._mem_params, self._mmap)
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -1256,12 +1440,12 @@ class RB18Radio(T18Radio):
 @directory.register
 class RB618Radio(RB18Radio):
     """RETEVIS RB618"""
+
     VENDOR = "Retevis"
     MODEL = "RB618"
 
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = False
     _pmr = True
 
@@ -1269,19 +1453,21 @@ class RB618Radio(RB18Radio):
 @directory.register
 class RT68Radio(T18Radio):
     """RETEVIS RT68"""
+
     VENDOR = "Retevis"
     MODEL = "RT68"
     ACK_BLOCK = False
     CMD_EXIT = b""
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low",  watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"83OGRAM"
     _fingerprint = [b"\x06\x00\x00\x00\x00\x00\x00\x00"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs16 = True
     _pmr = False
 
@@ -1295,6 +1481,7 @@ class RT68Radio(T18Radio):
 @directory.register
 class RT668Radio(RT68Radio):
     """RETEVIS RT668"""
+
     VENDOR = "Retevis"
     MODEL = "RT668"
 
@@ -1305,6 +1492,7 @@ class RT668Radio(RT68Radio):
 @directory.register
 class RB17Radio(RT68Radio):
     """RETEVIS RB17"""
+
     VENDOR = "Retevis"
     MODEL = "RB17"
 
@@ -1319,6 +1507,7 @@ class RB17Radio(RT68Radio):
 @directory.register
 class RB617Radio(RB17Radio):
     """RETEVIS RB617"""
+
     VENDOR = "Retevis"
     MODEL = "RB617"
 
@@ -1330,6 +1519,7 @@ class RB617Radio(RB17Radio):
 @directory.register
 class RB17VRadio(RB17Radio):
     """RETEVIS RB17V"""
+
     VENDOR = "Retevis"
     MODEL = "RB17V"
 
@@ -1345,12 +1535,15 @@ class RB17VRadio(RB17Radio):
 @directory.register
 class RB85Radio(T18Radio):
     """Retevis RB85"""
+
     VENDOR = "Retevis"
     MODEL = "RB85"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=10.00),
-                    chirp_common.PowerLevel("Low", watts=5.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=10.00),
+        chirp_common.PowerLevel("Low", watts=5.00),
+    ]
 
     _magic = b"H19GRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
@@ -1359,108 +1552,120 @@ class RB85Radio(T18Radio):
 @directory.register
 class RB75Radio(T18Radio):
     """Retevis RB75"""
+
     VENDOR = "Retevis"
     MODEL = "RB75"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=5.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"KVOGRAM"
     _fingerprint = [b"SMP558" + b"\x00"]
     _upper = 30
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _gmrs = False  # sold as GMRS radio but supports full band TX/RX
 
 
 @directory.register
 class FRSB1Radio(T18Radio):
     """BTECH FRS-B1"""
+
     VENDOR = "BTECH"
     MODEL = "FRS-B1"
     ACK_BLOCK = True
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"PROGRAM"
-    _fingerprint = [b"P3107" + b"\xF7\x00"]
+    _fingerprint = [b"P3107" + b"\xf7\x00"]
     _upper = 22
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = True
 
 
 @directory.register
 class RB19Radio(T18Radio):
     """Retevis RB19"""
+
     VENDOR = "Retevis"
     MODEL = "RB19"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"9COGRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 22
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = True
 
 
 @directory.register
 class RB19PRadio(T18Radio):
     """Retevis RB19P"""
+
     VENDOR = "Retevis"
     MODEL = "RB19P"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=3.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=3.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"70OGRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 30
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _gmrs = True
 
 
 @directory.register
 class RB619Radio(T18Radio):
     """Retevis RB619"""
+
     VENDOR = "Retevis"
     MODEL = "RB619"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=0.500),
-                    chirp_common.PowerLevel("Low", watts=0.499)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=0.500),
+        chirp_common.PowerLevel("Low", watts=0.499),
+    ]
 
     _magic = b"9COGRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _pmr = True
 
 
 @directory.register
 class RT47Radio(T18Radio):
     """Retevis RT47"""
+
     VENDOR = "Retevis"
     MODEL = "RT47"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.000),
-                    chirp_common.PowerLevel("Low", watts=0.500)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.000),
+        chirp_common.PowerLevel("Low", watts=0.500),
+    ]
 
     _magic = b"47OGRAM"
     _fingerprint = [b"\x06\x00\x00\x00\x00\x00\x00\x00"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs16 = True
     _echo = True
 
@@ -1468,14 +1673,14 @@ class RT47Radio(T18Radio):
 @directory.register
 class RT47VRadio(RT47Radio):
     """Retevis RT47V"""
+
     VENDOR = "Retevis"
     MODEL = "RT47V"
 
     VALID_BANDS = [(136000000, 174000000)]
 
     _upper = 5
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs16 = False
     _murs = True
 
@@ -1483,6 +1688,7 @@ class RT47VRadio(RT47Radio):
 @directory.register
 class RT647Radio(RT47Radio):
     """Retevis RT647"""
+
     VENDOR = "Retevis"
     MODEL = "RT647"
 
@@ -1493,47 +1699,54 @@ class RT647Radio(RT47Radio):
 @directory.register
 class BFV8ARadio(T18Radio):
     """Baofeng BF-V8A"""
+
     VENDOR = "Baofeng"
     MODEL = "BF-V8A"
     ACK_BLOCK = True
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.000),
-                    chirp_common.PowerLevel("Low", watts=0.500)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.000),
+        chirp_common.PowerLevel("Low", watts=0.500),
+    ]
 
     _magic = b"PROGRAM"
-    _fingerprint = [b"P3107" + b"\xF7\x00\x00"]
+    _fingerprint = [b"P3107" + b"\xf7\x00\x00"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _echo = False
 
 
 @directory.register
 class RB29Radio(T18Radio):
     """Retevis RB29"""
+
     VENDOR = "Retevis"
     MODEL = "RB29"
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"S19GRAM"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs16 = True
 
 
 @directory.register
 class RB629Radio(RB29Radio):
     """Retevis RB29"""
+
     VENDOR = "Retevis"
     MODEL = "RB629"
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=0.500),
-                    chirp_common.PowerLevel("Low", watts=0.499)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=0.500),
+        chirp_common.PowerLevel("Low", watts=0.499),
+    ]
 
     _frs16 = False
     _pmr = True
@@ -1542,20 +1755,24 @@ class RB629Radio(RB29Radio):
 @directory.register
 class RT15Radio(T18Radio):
     """RETEVIS RT15"""
+
     VENDOR = "Retevis"
     MODEL = "RT15"
     ACK_BLOCK = False
     CMD_EXIT = b"b"
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low",  watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"KAOGRAM"
-    _fingerprint = [b"\x06\x00\x00\x00\x00\x00\x00\x00",
-                    b"\x06\x03\xE8\x08\xFF\xFF\xFF\xFF"]
+    _fingerprint = [
+        b"\x06\x00\x00\x00\x00\x00\x00\x00",
+        b"\x06\x03\xe8\x08\xff\xff\xff\xff",
+    ]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs16 = False  # sold as FRS radio but supports full band TX/RX
 
     @classmethod
@@ -1568,38 +1785,42 @@ class RT15Radio(T18Radio):
 @directory.register
 class RB87Radio(T18Radio):
     """RETEVIS RB87"""
+
     VENDOR = "Retevis"
     MODEL = "RB87"
     ACK_BLOCK = False
     CMD_EXIT = b""
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=5.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"C8OGRAN"
     _fingerprint = [b"SMP558"]
     _upper = 30
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _gmrs = True
 
 
 @directory.register
 class BFT20FRSRadio(T18Radio):
     """Baofeng BF-T20FRS"""
+
     VENDOR = "Baofeng"
     MODEL = "BF-T20FRS"
     ACK_BLOCK = True
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.000),
-                    chirp_common.PowerLevel("Low", watts=0.500)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.000),
+        chirp_common.PowerLevel("Low", watts=0.500),
+    ]
 
     _magic = b"PROGRAM"
-    _fingerprint = [b"P3107" + b"\xF7\x00\x00"]
+    _fingerprint = [b"P3107" + b"\xf7\x00\x00"]
     _upper = 22
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _frs = False  # sold as FRS radio but supports full band TX/RX
 
     _ranges = [
@@ -1609,28 +1830,36 @@ class BFT20FRSRadio(T18Radio):
     _memsize = 0x03F0
 
     def process_mmap(self):
-        self._memobj = bitwise.parse(MEM_FORMAT_T20FRS %
-                                     self._mem_params, self._mmap)
+        self._memobj = bitwise.parse(MEM_FORMAT_T20FRS % self._mem_params, self._mmap)
 
 
 @directory.register
 class H777HFRSRadio(T18Radio):
     """Retevis H777H FRS"""
+
     VENDOR = "Retevis"
     MODEL = "H777H_FRS"  # SKU: A9104J
     ACK_BLOCK = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.000),
-                    chirp_common.PowerLevel("Low", watts=0.500)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.000),
+        chirp_common.PowerLevel("Low", watts=0.500),
+    ]
 
-    TIMEOUTTIMER_LIST = ["Off", "30 seconds", "60 seconds", "90 seconds",
-                         "120 seconds", "150 seconds", "180 seconds"]
+    TIMEOUTTIMER_LIST = [
+        "Off",
+        "30 seconds",
+        "60 seconds",
+        "90 seconds",
+        "120 seconds",
+        "150 seconds",
+        "180 seconds",
+    ]
 
     _magic = b"C701RAD"
     _fingerprint = [b"SMP558" + b"\x02"]
     _upper = 16
-    _mem_params = (_upper  # number of channels
-                   )
+    _mem_params = _upper  # number of channels
     _reserved = True
     _frs16 = True
     _pmr = False
@@ -1639,11 +1868,14 @@ class H777HFRSRadio(T18Radio):
 @directory.register
 class H777HPMRRadio(H777HFRSRadio):
     """Retevis H777H PMR"""
+
     VENDOR = "Retevis"
     MODEL = "H777H_PMR"  # SKU: A9104K
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=0.500),
-                    chirp_common.PowerLevel("Low", watts=0.500)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=0.500),
+        chirp_common.PowerLevel("Low", watts=0.500),
+    ]
 
     _frs16 = False
     _pmr = True

@@ -40,7 +40,7 @@ class FT2Bank(chirp_common.NamedBank):  # Like FT1D except for name in ASCII
         _bank = self._model._radio._memobj.bank_info[self.index]
         name = ""
         for i in _bank.name:
-            if i == 0xff:
+            if i == 0xFF:
                 break
             name += chr(i & 0xFF)
         return name.rstrip()
@@ -52,7 +52,8 @@ class FT2Bank(chirp_common.NamedBank):  # Like FT1D except for name in ASCII
 
 class FT2BankModel(ft1d.FT1BankModel):  # Just need this one to launch FT2Bank
     """A FT1D bank model"""
-    def __init__(self, radio, name='Banks'):
+
+    def __init__(self, radio, name="Banks"):
         super(FT2BankModel, self).__init__(radio, name)
 
         _banks = self._radio._memobj.bank_info
@@ -66,6 +67,7 @@ class FT2BankModel(ft1d.FT1BankModel):  # Just need this one to launch FT2Bank
 @directory.register
 class FT2D(ft1d.FT1Radio):
     """Yaesu FT-2D"""
+
     BAUD_RATE = 38400
     VENDOR = "Yaesu"
     MODEL = "FT2D"  # Yaesu doesn't use a hyphen in its documents
@@ -75,13 +77,13 @@ class FT2D(ft1d.FT1Radio):
     _has_vibrate = True
     MAX_MEM_SLOTS = 900
     _mem_params = {
-         "memnum": 900,            # size of memories array
-         "flgnum": 900,            # size of flags array
-         "dtmadd": 0x94A,          # address of DTMF strings
-         }
-    _adms_ext = '.ft2d'
+        "memnum": 900,  # size of memories array
+        "flgnum": 900,  # size of flags array
+        "dtmadd": 0x94A,  # address of DTMF strings
+    }
+    _adms_ext = ".ft2d"
     _APRS_HIGH_SPEED_MAX = 90
-    FORMATS = [directory.register_format('FT2D ADMS-8', '*.ft2d')]
+    FORMATS = [directory.register_format("FT2D ADMS-8", "*.ft2d")]
 
     @classmethod
     def get_prompts(cls):
@@ -90,17 +92,19 @@ class FT2D(ft1d.FT1Radio):
             "1. Turn radio off.\n"
             "2. Connect cable to DATA terminal.\n"
             "3. Press and hold [DISP] key while turning on radio\n"
-            "     (\"CLONE\" will appear on radio LCD).\n"
+            '     ("CLONE" will appear on radio LCD).\n'
             "4. <b>After clicking OK here in Chirp</b>,\n"
-            "     press the [Send] screen button.\n")
+            "     press the [Send] screen button.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA terminal.\n"
             "3. Press and hold in [DISP] key while turning on radio\n"
-            "     (\"CLONE\" will appear on radio LCD).\n"
+            '     ("CLONE" will appear on radio LCD).\n'
             "4. Press [RECEIVE] screen button\n"
-            "     (\"-WAIT-\" will appear on radio LCD).\n"
-            "5. Finally, press OK button below.\n")
+            '     ("-WAIT-" will appear on radio LCD).\n'
+            "5. Finally, press OK button below.\n"
+        )
         return rp
 
     def get_features(self):  # AFAICT only TMODES & memory bounds are different
@@ -109,14 +113,14 @@ class FT2D(ft1d.FT1Radio):
         rf.memory_bounds = (1, self.MAX_MEM_SLOTS)
         return rf
 
-    def get_bank_model(self):   # here only to launch the bank model
+    def get_bank_model(self):  # here only to launch the bank model
         return FT2BankModel(self)
 
     def _decode_label(self, mem):
-        return str(mem.label).rstrip("\xFF")
+        return str(mem.label).rstrip("\xff")
 
     def _encode_label(self, mem):
-        label = mem.name.rstrip().encode('ascii', 'ignore')
+        label = mem.name.rstrip().encode("ascii", "ignore")
         return self._add_ff_pad(label, 16)
 
     def _decode_opening_message(self, opening_message):
@@ -126,10 +130,12 @@ class FT2D(ft1d.FT1Radio):
                 break
             msg += chr(int(i))
         val = RadioSettingValueString(0, 16, msg)
-        rs = RadioSetting("opening_message.message.padded_yaesu",
-                          "Opening Message", val)
-        rs.set_apply_callback(self._apply_opening_message,
-                              opening_message.message.padded_yaesu)
+        rs = RadioSetting(
+            "opening_message.message.padded_yaesu", "Opening Message", val
+        )
+        rs.set_apply_callback(
+            self._apply_opening_message, opening_message.message.padded_yaesu
+        )
         return rs
 
     def _apply_opening_message(self, setting, obj):
@@ -143,6 +149,7 @@ class FT2D(ft1d.FT1Radio):
 @directory.register
 class FT2Dv2(FT2D):
     """Yaesu FT-2D v2 firmware"""
+
     VARIANT = "Rv2"
 
     _model = b"AH60G"
@@ -151,41 +158,42 @@ class FT2Dv2(FT2D):
 @directory.register
 class FT3D(FT2D):
     """Yaesu FT-3D"""
+
     MODEL = "FT3D"
     VARIANT = "R"
 
     _model = b"AH72M"
-    FORMATS = [directory.register_format('FT3D ADMS-11', '*.ft3d')]
+    FORMATS = [directory.register_format("FT3D ADMS-11", "*.ft3d")]
 
     def load_mmap(self, filename):
-        if filename.lower().endswith('.ft3d'):
-            with open(filename, 'rb') as f:
+        if filename.lower().endswith(".ft3d"):
+            with open(filename, "rb") as f:
                 self._adms_header = f.read(0x18C)
-                if b'ADMS11, Version=1.0.0.0' not in self._adms_header:
+                if b"ADMS11, Version=1.0.0.0" not in self._adms_header:
                     raise errors.ImageDetectFailed(
-                        'Unsupported version found in ADMS file')
-                LOG.debug('ADMS Header:\n%s',
-                          util.hexprint(self._adms_header))
+                        "Unsupported version found in ADMS file"
+                    )
+                LOG.debug("ADMS Header:\n%s", util.hexprint(self._adms_header))
                 self._mmap = memmap.MemoryMapBytes(f.read())
-                LOG.info('Loaded ADMS-11 file at offset 0x18C')
+                LOG.info("Loaded ADMS-11 file at offset 0x18C")
             self.process_mmap()
         else:
             chirp_common.CloneModeRadio.load_mmap(self, filename)
 
     def save_mmap(self, filename):
-        if filename.lower().endswith('.ft3d'):
-            if not hasattr(self, '_adms_header'):
-                raise Exception('Unable to save .img to .ft3d')
-            with open(filename, 'wb') as f:
+        if filename.lower().endswith(".ft3d"):
+            if not hasattr(self, "_adms_header"):
+                raise Exception("Unable to save .img to .ft3d")
+            with open(filename, "wb") as f:
                 f.write(self._adms_header)
                 f.write(self._mmap.get_packed())
-                LOG.info('Wrote ADMS-11 file')
+                LOG.info("Wrote ADMS-11 file")
         else:
             chirp_common.CloneModeRadio.save_mmap(self, filename)
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if filename.endswith('.ft3d'):
+        if filename.endswith(".ft3d"):
             return True
         else:
             return super().match_model(filedata, filename)

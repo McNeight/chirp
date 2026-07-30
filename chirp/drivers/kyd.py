@@ -20,9 +20,14 @@ import logging
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
 from chirp import kenwood_tone
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -63,8 +68,10 @@ u8 skipflags[2];  // SCAN_ADD
 
 CMD_ACK = "\x06"
 
-NC630A_POWER_LEVELS = [chirp_common.PowerLevel("Low",  watts=1.00),
-                       chirp_common.PowerLevel("High", watts=5.00)]
+NC630A_POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1.00),
+    chirp_common.PowerLevel("High", watts=5.00),
+]
 
 NC630A_DTCS = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
@@ -113,7 +120,7 @@ def _nc630a_enter_programming_mode(radio):
 def _nc630a_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", 'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", "R", block_addr, block_size)
     expectedresponse = "W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -139,8 +146,8 @@ def _nc630a_read_block(radio, block_addr, block_size):
 def _nc630a_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", 'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", "W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -150,8 +157,7 @@ def _nc630a_write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -203,6 +209,7 @@ class MT700Alias(chirp_common.Alias):
 @directory.register
 class NC630aRadio(chirp_common.CloneModeRadio):
     """KYD NC-630A"""
+
     VENDOR = "KYD"
     MODEL = "NC-630A"
     ALIASES = [MT700Alias]
@@ -210,13 +217,14 @@ class NC630aRadio(chirp_common.CloneModeRadio):
     NEEDS_COMPAT_SERIAL = True
 
     _ranges = [
-               (0x0000, 0x0330),
-              ]
+        (0x0000, 0x0330),
+    ]
     _memsize = 0x03C8
     _block_size = 0x08
     _fileid = b"P32073"
     _tone_model = kenwood_tone.KenwoodToneModel(
-        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000)
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000
+    )
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -230,13 +238,20 @@ class NC630aRadio(chirp_common.CloneModeRadio):
         rf.has_name = False
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = NC630A_POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["NFM", "FM"]  # 12.5 kHz, 25 kHz.
         rf.memory_bounds = (1, 16)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
         rf.valid_bands = [(400000000, 520000000)]
         rf.valid_dtcs_codes = NC630A_DTCS
 
@@ -256,8 +271,8 @@ class NC630aRadio(chirp_common.CloneModeRadio):
         return repr(self._memobj.memory[number - 1])
 
     def get_memory(self, number):
-        bitpos = (1 << ((number - 1) % 8))
-        bytepos = ((number - 1) / 8)
+        bitpos = 1 << ((number - 1) % 8)
+        bytepos = (number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -274,7 +289,7 @@ class NC630aRadio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -282,7 +297,7 @@ class NC630aRadio(chirp_common.CloneModeRadio):
         if int(_mem.rxfreq) == int(_mem.txfreq):
             mem.duplex = ""
             mem.offset = 0
-        elif _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        elif _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
         else:
             mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
@@ -299,16 +314,18 @@ class NC630aRadio(chirp_common.CloneModeRadio):
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("bcl", "Busy Channel Lockout",
-                          RadioSettingValueList(
-                              BCL_LIST, current_index=_mem.bcl))
+        rs = RadioSetting(
+            "bcl",
+            "Busy Channel Lockout",
+            RadioSettingValueList(BCL_LIST, current_index=_mem.bcl),
+        )
         mem.extra.append(rs)
 
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << ((mem.number - 1) % 8))
-        bytepos = ((mem.number - 1) / 8)
+        bitpos = 1 << ((mem.number - 1) % 8)
+        bytepos = (mem.number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -316,15 +333,15 @@ class NC630aRadio(chirp_common.CloneModeRadio):
         _skp = self._memobj.skipflags[bytepos]
 
         if mem.empty:
-            _mem.fill_raw(b"\xFF")
+            _mem.fill_raw(b"\xff")
             return
 
-        _mem.set_raw(b"\x00" * 14 + b"\xFF" * 2)
+        _mem.set_raw(b"\x00" * 14 + b"\xff" * 2)
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
-            _mem.txfreq.fill_raw(b"\xFF")
+            _mem.txfreq.fill_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -354,44 +371,54 @@ class NC630aRadio(chirp_common.CloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic Settings")
         top = RadioSettings(basic)
 
-        rs = RadioSetting("tot", "Time-out timer",
-                          RadioSettingValueList(
-                              TIMEOUTTIMER_LIST,
-                              current_index=_settings.tot))
+        rs = RadioSetting(
+            "tot",
+            "Time-out timer",
+            RadioSettingValueList(TIMEOUTTIMER_LIST, current_index=_settings.tot),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("totalert", "TOT Pre-alert",
-                          RadioSettingValueList(
-                              TOTALERT_LIST,
-                              current_index=_settings.totalert))
+        rs = RadioSetting(
+            "totalert",
+            "TOT Pre-alert",
+            RadioSettingValueList(TOTALERT_LIST, current_index=_settings.totalert),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX Gain",
-                          RadioSettingValueList(
-                              VOX_LIST, current_index=_settings.vox))
+        rs = RadioSetting(
+            "vox",
+            "VOX Gain",
+            RadioSettingValueList(VOX_LIST, current_index=_settings.vox),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("voice", "Voice Annumciation",
-                          RadioSettingValueList(
-                              VOICE_LIST, current_index=_settings.voice))
+        rs = RadioSetting(
+            "voice",
+            "Voice Annumciation",
+            RadioSettingValueList(VOICE_LIST, current_index=_settings.voice),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, _settings.squelch))
+        rs = RadioSetting(
+            "squelch",
+            "Squelch Level",
+            RadioSettingValueInteger(0, 9, _settings.squelch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("voxdelay", "VOX Delay",
-                          RadioSettingValueList(
-                              VOXDELAY_LIST,
-                              current_index=_settings.voxdelay))
+        rs = RadioSetting(
+            "voxdelay",
+            "VOX Delay",
+            RadioSettingValueList(VOXDELAY_LIST, current_index=_settings.voxdelay),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Beep",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
         basic.append(rs)
 
-        rs = RadioSetting("save", "Battery Saver",
-                          RadioSettingValueBoolean(_settings.save))
+        rs = RadioSetting(
+            "save", "Battery Saver", RadioSettingValueBoolean(_settings.save)
+        )
         basic.append(rs)
 
         return top

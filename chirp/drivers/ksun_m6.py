@@ -16,8 +16,12 @@
 
 from chirp import chirp_common, directory, memmap, bitwise, errors
 from chirp.settings import (
-    RadioSetting, RadioSettings, RadioSettingGroup,
-    RadioSettingValueBoolean, RadioSettingValueInteger, RadioSettingValueList
+    RadioSetting,
+    RadioSettings,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
 )
 import struct
 
@@ -66,18 +70,83 @@ SCRAMBLER_LIST = ["off", "1", "2", "3", "4", "5", "6", "7", "8"]
 LED_LIST = ["Low", "Medium", "High"]
 BAT_SAVE_LIST = ["off", "1:1", "1:2", "1:3", "1:4"]
 TONE_LIST = ["Tone", "DTCS_N", "DTCS_I", ""]
-LED_TIMEOUT_LIST = ["Continuous", "5", "10", "15", "20", "25", "30",
-                    "35", "40", "45", "50", "55", "60"]
-LOCK_TIMEOUT_LIST = ["off", "5", "10", "15", "20", "25", "30",
-                     "35", "40", "45", "50", "55", "60"]
-TOT_LIST = ["off", "15", "30", "45", "60", "75", "90",
-            "105", "120", "135", "150", "165", "180", "195",
-            "210", "225", "240", "255", "270", "285",
-            "300", "315", "330", "345", "360", "375", "390",
-            "405", "420", "435", "450", "465", "480", "495",
-            "510", "525", "540", "555", "570", "585", "600"]
-POWER_LIST = [chirp_common.PowerLevel("High", watts=2.00),
-              chirp_common.PowerLevel("Low",  watts=0.50)]
+LED_TIMEOUT_LIST = [
+    "Continuous",
+    "5",
+    "10",
+    "15",
+    "20",
+    "25",
+    "30",
+    "35",
+    "40",
+    "45",
+    "50",
+    "55",
+    "60",
+]
+LOCK_TIMEOUT_LIST = [
+    "off",
+    "5",
+    "10",
+    "15",
+    "20",
+    "25",
+    "30",
+    "35",
+    "40",
+    "45",
+    "50",
+    "55",
+    "60",
+]
+TOT_LIST = [
+    "off",
+    "15",
+    "30",
+    "45",
+    "60",
+    "75",
+    "90",
+    "105",
+    "120",
+    "135",
+    "150",
+    "165",
+    "180",
+    "195",
+    "210",
+    "225",
+    "240",
+    "255",
+    "270",
+    "285",
+    "300",
+    "315",
+    "330",
+    "345",
+    "360",
+    "375",
+    "390",
+    "405",
+    "420",
+    "435",
+    "450",
+    "465",
+    "480",
+    "495",
+    "510",
+    "525",
+    "540",
+    "555",
+    "570",
+    "585",
+    "600",
+]
+POWER_LIST = [
+    chirp_common.PowerLevel("High", watts=2.00),
+    chirp_common.PowerLevel("Low", watts=0.50),
+]
 
 
 def _checksum(data):
@@ -127,12 +196,12 @@ def _read_block(radio, block_addr):
         res_len = len(cmd) + radio.BLOCK_SIZE + 1
         res = serial.read(res_len)
 
-        if len(res) != res_len or res[:len(cmd)] != cmd:
+        if len(res) != res_len or res[: len(cmd)] != cmd:
             raise Exception("unexpected reply!")
         if res[-1] != _checksum(res[:-1]):
             raise Exception("block failed checksum!")
 
-        block_data = res[len(cmd):-1]
+        block_data = res[len(cmd) : -1]
     except Exception as e:
         msg = "Failed to read block at %04x: %s" % (block_addr, str(e))
         raise errors.RadioError(msg)
@@ -178,9 +247,9 @@ def do_download(radio):
     verify_model(radio)
 
     data = b""
-    for addr in range(radio.START_ADDR,
-                      radio.START_ADDR + radio._memsize,
-                      radio.BLOCK_SIZE):
+    for addr in range(
+        radio.START_ADDR, radio.START_ADDR + radio._memsize, radio.BLOCK_SIZE
+    ):
         status.cur = addr
         radio.status_fn(status)
 
@@ -203,7 +272,7 @@ def do_upload(radio):
         status.cur = addr
         radio.status_fn(status)
 
-        block = mmap[addr:addr + radio.BLOCK_SIZE]
+        block = mmap[addr : addr + radio.BLOCK_SIZE]
         _write_block(radio, radio.START_ADDR + addr, block)
 
     exit_programming_mode(radio)
@@ -233,7 +302,7 @@ def triplet_to_mem(tone):
         mem_code = int(code * 10)
     elif mode == "DTCS":
         mem_tone = "DTCS_N" if polarity == "N" else "DTCS_I"
-        mem_code = int('%i' % code, 8)
+        mem_code = int("%i" % code, 8)
     else:
         mem_tone = ""
         mem_code = 0
@@ -265,8 +334,15 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
         rf.has_rx_dtcs = True
         rf.valid_duplexes = ["", "split", "off"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "DTCS->", "->DTCS", "Tone->DTCS",
-                                "DTCS->Tone", "->Tone", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->",
+            "->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "DTCS->DTCS",
+        ]
 
         rf.has_tuning_step = False
         rf.has_nostep_tuning = True
@@ -293,14 +369,12 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
         basic.append(rs)
 
         led_timeout = settings.led_timeout
-        rsv = RadioSettingValueList(LED_TIMEOUT_LIST,
-                                    current_index=led_timeout)
+        rsv = RadioSettingValueList(LED_TIMEOUT_LIST, current_index=led_timeout)
         rs = RadioSetting("led_timeout", "LED timeout", rsv)
         basic.append(rs)
 
         lock_timeout = settings.lock_timeout
-        rsv = RadioSettingValueList(LOCK_TIMEOUT_LIST,
-                                    current_index=lock_timeout)
+        rsv = RadioSettingValueList(LOCK_TIMEOUT_LIST, current_index=lock_timeout)
         rs = RadioSetting("lock_timeout", "Key Lock timeout", rsv)
         basic.append(rs)
 
@@ -339,12 +413,13 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
         _settings.voice = VOICE_LIST.index(settings["voice"].value.get_value())
         _settings.led = LED_LIST.index(settings["led"].value.get_value())
         _settings.led_timeout = LED_TIMEOUT_LIST.index(
-            settings["led_timeout"].value.get_value())
+            settings["led_timeout"].value.get_value()
+        )
         _settings.lock_timeout = LOCK_TIMEOUT_LIST.index(
-            settings["lock_timeout"].value.get_value())
+            settings["lock_timeout"].value.get_value()
+        )
         _settings.tot = TOT_LIST.index(settings["tot"].value.get_value())
-        _settings.bat_save = BAT_SAVE_LIST.index(
-            settings["bat_save"].value.get_value())
+        _settings.bat_save = BAT_SAVE_LIST.index(settings["bat_save"].value.get_value())
         _settings.sq = settings["sq"].value.get_value()
         _settings.vox = settings["vox"].value.get_value()
         _settings.beep = settings["beep"].value.get_value()
@@ -366,12 +441,12 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
     # Return a raw representation of the memory object, which
     # is very helpful for development
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     # Extract a high-level memory object from the low-level memory map
     # This is called to populate a memory in the UI
     def get_memory(self, number):
-        _mem = self._memobj.memory[number-1]
+        _mem = self._memobj.memory[number - 1]
 
         mem = chirp_common.Memory()
         mem.number = number
@@ -379,10 +454,8 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
         if _mem.freq.get_raw() == bytes([255] * 5):
             mem.empty = True
         else:
-            rx_freq = ((_mem.freq[0] << 12)
-                       + (_mem.freq[1] << 4) + (_mem.freq[2] >> 4))
-            tx_freq = (((_mem.freq[2] & 0xF) << 16)
-                       + (_mem.freq[3] << 8) + _mem.freq[4])
+            rx_freq = (_mem.freq[0] << 12) + (_mem.freq[1] << 4) + (_mem.freq[2] >> 4)
+            tx_freq = ((_mem.freq[2] & 0xF) << 16) + (_mem.freq[3] << 8) + _mem.freq[4]
 
             mem.freq = rx_freq * 1000000 // 2000
             mem.offset = tx_freq * 1000000 // 2000
@@ -395,7 +468,8 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
             chirp_common.split_tone_decode(
                 mem,
                 mem_to_triplet(_mem.tx_tone, _mem.tx_code),
-                mem_to_triplet(_mem.rx_tone, _mem.rx_code))
+                mem_to_triplet(_mem.rx_tone, _mem.rx_code),
+            )
 
         mem.mode = "NFM" if not mem.empty and _mem.nfm else "FM"
         mem.power = POWER_LIST[int(not mem.empty and _mem.low_pwr)]
@@ -423,7 +497,7 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
     # Store details about a high-level memory to the memory map
     # This is called when a user edits a memory in the UI
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
+        _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
             _mem.fill_raw(b"\xff")
@@ -437,19 +511,19 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
             rx_freq = round(rx_freq / 1000000 * 2000)
             tx_freq = round(tx_freq / 1000000 * 2000)
 
-            _mem.freq[0] = (rx_freq >> 12) & 0xff
-            _mem.freq[1] = (rx_freq >> 4) & 0xff
-            _mem.freq[2] = ((rx_freq << 4) & 0xf0) | ((tx_freq >> 16) & 0x0f)
-            _mem.freq[3] = (tx_freq >> 8) & 0xff
-            _mem.freq[4] = (tx_freq) & 0xff
+            _mem.freq[0] = (rx_freq >> 12) & 0xFF
+            _mem.freq[1] = (rx_freq >> 4) & 0xFF
+            _mem.freq[2] = ((rx_freq << 4) & 0xF0) | ((tx_freq >> 16) & 0x0F)
+            _mem.freq[3] = (tx_freq >> 8) & 0xFF
+            _mem.freq[4] = (tx_freq) & 0xFF
 
             tx_tone, rx_tone = chirp_common.split_tone_encode(mem)
             _mem.tx_tone, _mem.tx_code = triplet_to_mem(tx_tone)
             _mem.rx_tone, _mem.rx_code = triplet_to_mem(rx_tone)
 
-            _mem.no_tx = (mem.duplex == "off")
-            _mem.nfm = (mem.mode == "NFM")
-            _mem.skip = (mem.skip == "S")
+            _mem.no_tx = mem.duplex == "off"
+            _mem.nfm = mem.mode == "NFM"
+            _mem.skip = mem.skip == "S"
 
             if mem.power in POWER_LIST:
                 _mem.low_pwr = POWER_LIST.index(mem.power)
@@ -468,6 +542,7 @@ class KSunM6Radio(chirp_common.CloneModeRadio):
 
             if "scrambler" in mem.extra:
                 _mem.scrambler = SCRAMBLER_LIST.index(
-                    mem.extra["scrambler"].value.get_value())
+                    mem.extra["scrambler"].value.get_value()
+                )
             else:
                 _mem.scrambler = 0

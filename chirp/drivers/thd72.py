@@ -203,12 +203,16 @@ DEFAULT_PROG_VFO = (
 )
 
 D72_FILE_HEADER = (
-    b'MCP-4A\xFF\xFFV1.04\xFF\xFF\xFF' +
-    b'TH-D72' + (b'\xFF' * 10) +
-    b'\x31' + (b'\xFF' * 15) +
-    b'\xFF' * (5 * 16) +
-    b'AMB0' + (b'\xFF' * 12) +
-    b'\xFF' * (7 * 16))
+    b"MCP-4A\xff\xffV1.04\xff\xff\xff"
+    + b"TH-D72"
+    + (b"\xff" * 10)
+    + b"\x31"
+    + (b"\xff" * 15)
+    + b"\xff" * (5 * 16)
+    + b"AMB0"
+    + (b"\xff" * 12)
+    + b"\xff" * (7 * 16)
+)
 
 
 def get_prog_vfo(frequency):
@@ -225,7 +229,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
     VENDOR = "Kenwood"
     MODEL = "TH-D72 (clone mode)"
     HARDWARE_FLOW = sys.platform == "darwin"  # only OS X driver needs hw flow
-    FORMATS = [directory.register_format('Kenwood MCP4A', '*.mc4')]
+    FORMATS = [directory.register_format("Kenwood MCP4A", "*.mc4")]
 
     mem_upper_limit = 1022
     _memsize = 65536
@@ -235,9 +239,19 @@ class THD72Radio(chirp_common.CloneModeRadio):
     _LCD_CONTRAST = ["Level %d" % x for x in range(1, 16)]
     _LAMP_CONTROL = ["Manual", "Auto"]
     _LAMP_TIMER = ["Seconds %d" % x for x in range(2, 11)]
-    _BATTERY_SAVER = ["OFF", "0.03 Seconds", "0.2 Seconds", "0.4 Seconds",
-                      "0.6 Seconds", "0.8 Seconds", "1 Seconds", "2 Seconds",
-                      "3 Seconds", "4 Seconds", "5 Seconds"]
+    _BATTERY_SAVER = [
+        "OFF",
+        "0.03 Seconds",
+        "0.2 Seconds",
+        "0.4 Seconds",
+        "0.6 Seconds",
+        "0.8 Seconds",
+        "1 Seconds",
+        "2 Seconds",
+        "3 Seconds",
+        "4 Seconds",
+        "5 Seconds",
+    ]
     _APO = ["OFF", "15 Minutes", "30 Minutes", "60 Minutes"]
     _AUDIO_BALANCE = ["Center", "A +50%", "A +100%", "B +50%", "B +100%"]
     _KEY_BEEP = ["OFF", "Radio & GPS", "Radio Only", "GPS Only"]
@@ -245,8 +259,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
     def get_features(self):
         rf = chirp_common.RadioFeatures()
         rf.memory_bounds = (0, 999)
-        rf.valid_bands = [(118000000, 174000000),
-                          (320000000, 524000000)]
+        rf.valid_bands = [(118000000, 174000000), (320000000, 524000000)]
         rf.has_cross = True
         rf.can_odd_split = True
         rf.has_dtcs_polarity = False
@@ -297,16 +310,16 @@ class THD72Radio(chirp_common.CloneModeRadio):
 
     def get_channel_name(self, number):
         if number < 999:
-            name = str(self._memobj.channel_name[number].name) + '\xff'
+            name = str(self._memobj.channel_name[number].name) + "\xff"
         elif number >= 1020 and number < 1030:
             number -= 1020
-            name = str(self._memobj.wx_name[number].name) + '\xff'
+            name = str(self._memobj.wx_name[number].name) + "\xff"
         else:
-            return ''
-        return name[:name.index('\xff')].rstrip()
+            return ""
+        return name[: name.index("\xff")].rstrip()
 
     def set_channel_name(self, number, name):
-        name = name[:8] + '\xff' * 8
+        name = name[:8] + "\xff" * 8
         if number < 999:
             self._memobj.channel_name[number].name = name[:8]
             self.add_dirty_block(self._memobj.channel_name[number])
@@ -316,20 +329,17 @@ class THD72Radio(chirp_common.CloneModeRadio):
             self.add_dirty_block(self._memobj.wx_name[number])
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number]) + \
-            repr(self._memobj.flag[number])
+        return repr(self._memobj.memory[number]) + repr(self._memobj.flag[number])
 
     def get_memory(self, number):
         if isinstance(number, str):
             try:
                 number = THD72_SPECIAL[number]
             except KeyError:
-                raise errors.InvalidMemoryLocation("Unknown channel %s" %
-                                                   number)
+                raise errors.InvalidMemoryLocation("Unknown channel %s" % number)
 
         if number < 0 or number > (max(THD72_SPECIAL.values()) + 1):
-            raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and 999")
+            raise errors.InvalidMemoryLocation("Number must be between 0 and 999")
 
         _mem = self._memobj.memory[number]
         flag = self._memobj.flag[number]
@@ -339,7 +349,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
 
         if number > 999:
             mem.extd_number = THD72_SPECIAL_REV[number]
-        if flag.disabled == 0xf:
+        if flag.disabled == 0xF:
             mem.empty = True
             return mem
 
@@ -361,8 +371,15 @@ class THD72Radio(chirp_common.CloneModeRadio):
             mem.cross_mode = chirp_common.CROSS_MODES[0]
             mem.immutable = ["number", "bank", "extd_number", "cross_mode"]
             if number >= 1020 and number < 1030:
-                mem.immutable += ["freq", "offset", "tone", "mode",
-                                  "tmode", "ctone", "skip"]  # FIXME: ALL
+                mem.immutable += [
+                    "freq",
+                    "offset",
+                    "tone",
+                    "mode",
+                    "tmode",
+                    "ctone",
+                    "skip",
+                ]  # FIXME: ALL
             else:
                 mem.immutable += ["name"]
 
@@ -371,8 +388,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
     def set_memory(self, mem):
         LOG.debug("set_memory(%d)" % mem.number)
         if mem.number < 0 or mem.number > (max(THD72_SPECIAL.values()) + 1):
-            raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and 999")
+            raise errors.InvalidMemoryLocation("Number must be between 0 and 999")
 
         # weather channels can only change name, nothing else
         if mem.number >= 1020 and mem.number < 1030:
@@ -383,9 +399,9 @@ class THD72Radio(chirp_common.CloneModeRadio):
         self.add_dirty_block(self._memobj.flag[mem.number])
 
         # only delete non-WX channels
-        was_empty = flag.disabled == 0xf
+        was_empty = flag.disabled == 0xF
         if mem.empty:
-            flag.disabled = 0xf
+            flag.disabled = 0xF
             return
         flag.disabled = 0
 
@@ -409,9 +425,10 @@ class THD72Radio(chirp_common.CloneModeRadio):
         _mem.mode = MODES_REV[mem.mode]
         _mem.tune_step = TUNE_STEPS.index(mem.tuning_step)
 
-        if mem.duplex == 'split':
+        if mem.duplex == "split":
             _mem.split_tune_step = TUNE_STEPS.index(
-                chirp_common.required_step(mem.offset))
+                chirp_common.required_step(mem.offset)
+            )
         else:
             _mem.split_tune_step = _mem.tune_step
 
@@ -456,7 +473,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
     def write_block(self, block, map):
         self.pipe.write(struct.pack("<cBHB", b"W", 0, block, 0))
         base = block * 256
-        self.pipe.write(map[base:base + 256])
+        self.pipe.write(map[base : base + 256])
 
         ack = self.pipe.read(1)
 
@@ -487,7 +504,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
         count = 0
         for i in allblocks:
             if i not in blocks:
-                data += 256 * b'\xff'
+                data += 256 * b"\xff"
                 continue
             data += self.read_block(i)
             count += 1
@@ -561,13 +578,16 @@ class THD72Radio(chirp_common.CloneModeRadio):
         raise errors.RadioError("Unexpected response to ID command")
 
     def initialize(self, mmap):
-        mmap.set_raw("\x00\xc8\xb3\x08\x00\x01\x00\x08"
-                     "\x08\x00\xc0\x27\x09\x00\x00\x00")
+        mmap.set_raw(
+            "\x00\xc8\xb3\x08\x00\x01\x00\x08" "\x08\x00\xc0\x27\x09\x00\x00\x00"
+        )
 
     def _get_settings(self):
-        top = RadioSettings(self._get_display_settings(),
-                            self._get_audio_settings(),
-                            self._get_battery_settings())
+        top = RadioSettings(
+            self._get_display_settings(),
+            self._get_audio_settings(),
+            self._get_battery_settings(),
+        )
         return top
 
     def set_settings(self, settings):
@@ -601,12 +621,16 @@ class THD72Radio(chirp_common.CloneModeRadio):
 
                 try:
                     old_val = getattr(obj, setting)
-                    LOG.debug("Setting %s(%r) <= %s" % (
-                        element.get_name(), old_val, element.value))
+                    LOG.debug(
+                        "Setting %s(%r) <= %s"
+                        % (element.get_name(), old_val, element.value)
+                    )
                     setattr(obj, setting, element.value)
                 except AttributeError as e:
-                    LOG.error("Setting %s is not in the memory map: %s" %
-                              (element.get_name(), e))
+                    LOG.error(
+                        "Setting %s is not in the memory map: %s"
+                        % (element.get_name(), e)
+                    )
             except Exception:
                 LOG.debug(element.get_name())
                 raise
@@ -616,6 +640,7 @@ class THD72Radio(chirp_common.CloneModeRadio):
             return self._get_settings()
         except:
             import traceback
+
             LOG.error("Failed to parse settings: %s", traceback.format_exc())
             return None
 
@@ -644,32 +669,30 @@ class THD72Radio(chirp_common.CloneModeRadio):
         display_settings = self._memobj.settings
 
         val = RadioSettingValueString(
-            0, 8, str(display_settings.power_on_msg).rstrip("\xFF"))
+            0, 8, str(display_settings.power_on_msg).rstrip("\xff")
+        )
         rs = RadioSetting("display.power_on_msg", "Power on message", val)
         rs.set_apply_callback(self.apply_power_on_msg, display_settings)
         menu.append(rs)
 
         val = RadioSettingValueList(
-            self._LCD_CONTRAST,
-            current_index=display_settings.contrast - 1)
-        rs = RadioSetting("display.contrast", "LCD Contrast",
-                          val)
+            self._LCD_CONTRAST, current_index=display_settings.contrast - 1
+        )
+        rs = RadioSetting("display.contrast", "LCD Contrast", val)
         rs.set_apply_callback(self.apply_lcd_contrast, display_settings)
         menu.append(rs)
 
         val = RadioSettingValueList(
-            self._LAMP_CONTROL,
-            current_index=display_settings.lamp_control)
-        rs = RadioSetting("display.lamp_control", "Lamp Control",
-                          val)
+            self._LAMP_CONTROL, current_index=display_settings.lamp_control
+        )
+        rs = RadioSetting("display.lamp_control", "Lamp Control", val)
         rs.set_apply_callback(self.apply_lamp_control, display_settings)
         menu.append(rs)
 
         val = RadioSettingValueList(
-            self._LAMP_TIMER,
-            current_index=display_settings.lamp_timer - 2)
-        rs = RadioSetting("display.lamp_timer", "Lamp Timer",
-                          val)
+            self._LAMP_TIMER, current_index=display_settings.lamp_timer - 2
+        )
+        rs = RadioSetting("display.lamp_timer", "Lamp Timer", val)
         rs.set_apply_callback(self.apply_lamp_timer, display_settings)
         menu.append(rs)
 
@@ -690,18 +713,14 @@ class THD72Radio(chirp_common.CloneModeRadio):
         battery_settings = self._memobj.settings
 
         val = RadioSettingValueList(
-            self._BATTERY_SAVER,
-            current_index=battery_settings.battery_saver)
-        rs = RadioSetting("battery.battery_saver", "Battery Saver",
-                          val)
+            self._BATTERY_SAVER, current_index=battery_settings.battery_saver
+        )
+        rs = RadioSetting("battery.battery_saver", "Battery Saver", val)
         rs.set_apply_callback(self.apply_battery_saver, battery_settings)
         menu.append(rs)
 
-        val = RadioSettingValueList(
-            self._APO,
-            current_index=battery_settings.APO)
-        rs = RadioSetting("battery.APO", "Auto Power Off",
-                          val)
+        val = RadioSettingValueList(self._APO, current_index=battery_settings.APO)
+        rs = RadioSetting("battery.APO", "Auto Power Off", val)
         rs.set_apply_callback(self.apply_APO, battery_settings)
         menu.append(rs)
 
@@ -722,18 +741,16 @@ class THD72Radio(chirp_common.CloneModeRadio):
         audio_settings = self._memobj.settings
 
         val = RadioSettingValueList(
-            self._AUDIO_BALANCE,
-            current_index=audio_settings.balance)
-        rs = RadioSetting("audio.balance", "Balance",
-                          val)
+            self._AUDIO_BALANCE, current_index=audio_settings.balance
+        )
+        rs = RadioSetting("audio.balance", "Balance", val)
         rs.set_apply_callback(self.apply_balance, audio_settings)
         menu.append(rs)
 
         val = RadioSettingValueList(
-            self._KEY_BEEP,
-            current_index=audio_settings.key_beep)
-        rs = RadioSetting("audio.key_beep", "Key Beep",
-                          val)
+            self._KEY_BEEP, current_index=audio_settings.key_beep
+        )
+        rs = RadioSetting("audio.key_beep", "Key Beep", val)
         rs.set_apply_callback(self.apply_key_beep, audio_settings)
         menu.append(rs)
 
@@ -741,37 +758,37 @@ class THD72Radio(chirp_common.CloneModeRadio):
 
     @staticmethod
     def _add_ff_pad(val, length):
-        return val.ljust(length, "\xFF")[:length]
+        return val.ljust(length, "\xff")[:length]
 
     @classmethod
     def _strip_ff_pads(cls, messages):
         result = []
         for msg_text in messages:
-            result.append(str(msg_text).rstrip("\xFF"))
+            result.append(str(msg_text).rstrip("\xff"))
         return result
 
     def load_mmap(self, filename):
-        if filename.lower().endswith('.mc4'):
-            with open(filename, 'rb') as f:
+        if filename.lower().endswith(".mc4"):
+            with open(filename, "rb") as f:
                 f.seek(0x100)
                 self._mmap = memmap.MemoryMapBytes(f.read())
-                LOG.info('Loaded MCP file at offset 0x100')
+                LOG.info("Loaded MCP file at offset 0x100")
             self.process_mmap()
         else:
             chirp_common.CloneModeRadio.load_mmap(self, filename)
 
     def save_mmap(self, filename):
-        if filename.lower().endswith('.mc4'):
-            with open(filename, 'wb') as f:
+        if filename.lower().endswith(".mc4"):
+            with open(filename, "wb") as f:
                 f.write(D72_FILE_HEADER)
                 f.write(self._mmap.get_packed())
-                LOG.info('Wrote MCP file')
+                LOG.info("Wrote MCP file")
         else:
             chirp_common.CloneModeRadio.save_mmap(self, filename)
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if filename.endswith('.mc4'):
+        if filename.endswith(".mc4"):
             return True
         else:
             return super(THD72Radio, cls).match_model(filedata, filename)

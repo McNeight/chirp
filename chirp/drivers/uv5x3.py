@@ -19,21 +19,28 @@ import logging
 from chirp.drivers import baofeng_common as bfc
 from chirp import chirp_common, directory
 from chirp import bitwise
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettingValueFloat, RadioSettings, \
-    InvalidValueError, InternalError
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+    InvalidValueError,
+    InternalError,
+)
 
 LOG = logging.getLogger(__name__)
 
 # #### MAGICS #########################################################
 
 # BTECH UV-5X3 magic string
-MSTRING_UV5X3 = b"\x50\x0D\x0C\x20\x16\x03\x28"
+MSTRING_UV5X3 = b"\x50\x0d\x0c\x20\x16\x03\x28"
 
 # MTC UV-5R-3 magic string
-MSTRING_UV5R3 = b"\x50\x0D\x0C\x20\x17\x09\x19"
+MSTRING_UV5R3 = b"\x50\x0d\x0c\x20\x17\x09\x19"
 
 # #### ID strings #####################################################
 
@@ -96,41 +103,47 @@ def model_match(cls, data):
 @directory.register
 class UV5X3(bfc.BaofengCommonHT):
     """BTech UV-5X3"""
+
     VENDOR = "BTECH"
     MODEL = "UV-5X3"
 
-    _fileid = [UV5X3_fp3,
-               UV5X3_fp2,
-               UV5X3_fp1]
+    _fileid = [UV5X3_fp3, UV5X3_fp2, UV5X3_fp1]
 
-    _magic = [MSTRING_UV5X3, ]
+    _magic = [
+        MSTRING_UV5X3,
+    ]
     _magic_response_length = 14
     _fw_ver_start = 0x1EF0
     _recv_block_size = 0x40
     _mem_size = 0x2000
     _ack_block = True
 
-    _ranges = [(0x0000, 0x0DF0),
-               (0x0E00, 0x1800),
-               (0x1E00, 0x1E70),
-               (0x1EE0, 0x1EF0),
-               (0x1F60, 0x1F70),
-               (0x1F80, 0x1F90),
-               (0x1FA0, 0x1FB0),
-               (0x1FE0, 0x2000)]
+    _ranges = [
+        (0x0000, 0x0DF0),
+        (0x0E00, 0x1800),
+        (0x1E00, 0x1E70),
+        (0x1EE0, 0x1EF0),
+        (0x1F60, 0x1F70),
+        (0x1F80, 0x1F90),
+        (0x1FA0, 0x1FB0),
+        (0x1FE0, 0x2000),
+    ]
     _send_block_size = 0x10
 
     MODES = ["FM", "NFM"]
-    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-        "!@#$%^&*()+-=[]:\";'<>?,./"
+    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "!@#$%^&*()+-=[]:\";'<>?,./"
     LENGTH_NAME = 7
     SKIP_VALUES = ["", "S"]
     DTCS_CODES = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                    chirp_common.PowerLevel("Low", watts=1.00)]
-    VALID_BANDS = [(130000000, 180000000),
-                   (220000000, 226000000),
-                   (400000000, 521000000)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=5.00),
+        chirp_common.PowerLevel("Low", watts=1.00),
+    ]
+    VALID_BANDS = [
+        (130000000, 180000000),
+        (220000000, 226000000),
+        (400000000, 521000000),
+    ]
     PTTID_LIST = LIST_PTTID
     SCODE_LIST = LIST_SCODE
 
@@ -409,22 +422,24 @@ class UV5X3(bfc.BaofengCommonHT):
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('Please save an unedited copy of your first successful\n'
-             'download to a CHIRP Radio Images(*.img) file.'
-             )
+        rp.experimental = (
+            "Please save an unedited copy of your first successful\n"
+            "download to a CHIRP Radio Images(*.img) file."
+        )
         rp.pre_download = _(
             "Follow these instructions to download your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the download of your radio data\n")
+            "4 - Do the download of your radio data\n"
+        )
         rp.pre_upload = _(
             "Follow this instructions to upload your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the upload of your radio data\n")
+            "4 - Do the upload of your radio data\n"
+        )
         return rp
 
     def process_mmap(self):
@@ -442,210 +457,263 @@ class UV5X3(bfc.BaofengCommonHT):
         dtmfe = RadioSettingGroup("dtmfe", "DTMF Encode Settings")
         dtmfd = RadioSettingGroup("dtmfd", "DTMF Decode Settings")
         service = RadioSettingGroup("service", "Service Settings")
-        top = RadioSettings(basic, advanced, other, work, fm_preset, dtmfe,
-                            dtmfd, service)
+        top = RadioSettings(
+            basic, advanced, other, work, fm_preset, dtmfe, dtmfd, service
+        )
 
         # Basic settings
         if _mem.settings.squelch > 0x09:
             val = 0x00
         else:
             val = _mem.settings.squelch
-        rs = RadioSetting("settings.squelch", "Squelch",
-                          RadioSettingValueList(
-                              LIST_OFF1TO9, current_index=val))
+        rs = RadioSetting(
+            "settings.squelch",
+            "Squelch",
+            RadioSettingValueList(LIST_OFF1TO9, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.save > 0x04:
             val = 0x00
         else:
             val = _mem.settings.save
-        rs = RadioSetting("settings.save", "Battery Saver",
-                          RadioSettingValueList(
-                              LIST_SAVE, current_index=val))
+        rs = RadioSetting(
+            "settings.save",
+            "Battery Saver",
+            RadioSettingValueList(LIST_SAVE, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.vox > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.vox
-        rs = RadioSetting("settings.vox", "Vox",
-                          RadioSettingValueList(
-                              LIST_OFF1TO10, current_index=val))
+        rs = RadioSetting(
+            "settings.vox",
+            "Vox",
+            RadioSettingValueList(LIST_OFF1TO10, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.abr > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.abr
-        rs = RadioSetting("settings.abr", "Backlight Timeout",
-                          RadioSettingValueList(
-                              LIST_OFF1TO10, current_index=val))
+        rs = RadioSetting(
+            "settings.abr",
+            "Backlight Timeout",
+            RadioSettingValueList(LIST_OFF1TO10, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.tdr", "Dual Watch",
-                          RadioSettingValueBoolean(_mem.settings.tdr))
+        rs = RadioSetting(
+            "settings.tdr", "Dual Watch", RadioSettingValueBoolean(_mem.settings.tdr)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.beep", "Beep",
-                          RadioSettingValueBoolean(_mem.settings.beep))
+        rs = RadioSetting(
+            "settings.beep", "Beep", RadioSettingValueBoolean(_mem.settings.beep)
+        )
         basic.append(rs)
 
         if _mem.settings.timeout > 0x27:
             val = 0x03
         else:
             val = _mem.settings.timeout
-        rs = RadioSetting("settings.timeout", "Timeout Timer",
-                          RadioSettingValueList(
-                              LIST_TIMEOUT, current_index=val))
+        rs = RadioSetting(
+            "settings.timeout",
+            "Timeout Timer",
+            RadioSettingValueList(LIST_TIMEOUT, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.voice > 0x02:
             val = 0x01
         else:
             val = _mem.settings.voice
-        rs = RadioSetting("settings.voice", "Voice Prompt",
-                          RadioSettingValueList(
-                              LIST_VOICE, current_index=val))
+        rs = RadioSetting(
+            "settings.voice",
+            "Voice Prompt",
+            RadioSettingValueList(LIST_VOICE, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.dtmfst", "DTMF Sidetone",
-            RadioSettingValueList(
-                LIST_DTMFST, current_index=_mem.settings.dtmfst))
+            "settings.dtmfst",
+            "DTMF Sidetone",
+            RadioSettingValueList(LIST_DTMFST, current_index=_mem.settings.dtmfst),
+        )
         basic.append(rs)
 
         if _mem.settings.screv > 0x02:
             val = 0x01
         else:
             val = _mem.settings.screv
-        rs = RadioSetting("settings.screv", "Scan Resume",
-                          RadioSettingValueList(
-                              LIST_RESUME, current_index=val))
+        rs = RadioSetting(
+            "settings.screv",
+            "Scan Resume",
+            RadioSettingValueList(LIST_RESUME, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.pttid", "When to send PTT ID",
-            RadioSettingValueList(
-                LIST_PTTID, current_index=_mem.settings.pttid))
+            "settings.pttid",
+            "When to send PTT ID",
+            RadioSettingValueList(LIST_PTTID, current_index=_mem.settings.pttid),
+        )
         basic.append(rs)
 
         if _mem.settings.pttlt > 0x1E:
             val = 0x05
         else:
             val = _mem.settings.pttlt
-        rs = RadioSetting("pttlt", "PTT ID Delay",
-                          RadioSettingValueInteger(0, 50, val))
+        rs = RadioSetting("pttlt", "PTT ID Delay", RadioSettingValueInteger(0, 50, val))
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.mdfa", "Display Mode (A)",
-            RadioSettingValueList(
-                LIST_MODE, current_index=_mem.settings.mdfa))
+            "settings.mdfa",
+            "Display Mode (A)",
+            RadioSettingValueList(LIST_MODE, current_index=_mem.settings.mdfa),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.mdfb", "Display Mode (B)",
-            RadioSettingValueList(
-                LIST_MODE, current_index=_mem.settings.mdfb))
+            "settings.mdfb",
+            "Display Mode (B)",
+            RadioSettingValueList(LIST_MODE, current_index=_mem.settings.mdfb),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.sync", "Sync A & B",
-                          RadioSettingValueBoolean(_mem.settings.sync))
+        rs = RadioSetting(
+            "settings.sync", "Sync A & B", RadioSettingValueBoolean(_mem.settings.sync)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.wtled", "Standby LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.wtled))
+        rs = RadioSetting(
+            "settings.wtled",
+            "Standby LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.wtled),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.rxled", "RX LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.rxled))
+        rs = RadioSetting(
+            "settings.rxled",
+            "RX LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.rxled),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.txled", "TX LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.txled))
+        rs = RadioSetting(
+            "settings.txled",
+            "TX LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.txled),
+        )
         basic.append(rs)
 
         if _mem.settings.almod > 0x02:
             val = 0x00
         else:
             val = _mem.settings.almod
-        rs = RadioSetting("settings.almod", "Alarm Mode",
-                          RadioSettingValueList(
-                              LIST_ALMOD, current_index=val))
+        rs = RadioSetting(
+            "settings.almod",
+            "Alarm Mode",
+            RadioSettingValueList(LIST_ALMOD, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.tdrab > 0x02:
             val = 0x00
         else:
             val = _mem.settings.tdrab
-        rs = RadioSetting("settings.tdrab", "Dual Watch TX Priority",
-                          RadioSettingValueList(
-                              LIST_OFFAB, current_index=val))
+        rs = RadioSetting(
+            "settings.tdrab",
+            "Dual Watch TX Priority",
+            RadioSettingValueList(LIST_OFFAB, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.ste", "Squelch Tail Eliminate (HT to HT)",
-                          RadioSettingValueBoolean(_mem.settings.ste))
+        rs = RadioSetting(
+            "settings.ste",
+            "Squelch Tail Eliminate (HT to HT)",
+            RadioSettingValueBoolean(_mem.settings.ste),
+        )
         basic.append(rs)
 
         if _mem.settings.rpste > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.rpste
-        rs = RadioSetting("settings.rpste",
-                          "Squelch Tail Eliminate (repeater)",
-                          RadioSettingValueList(
-                              LIST_RPSTE, current_index=val))
+        rs = RadioSetting(
+            "settings.rpste",
+            "Squelch Tail Eliminate (repeater)",
+            RadioSettingValueList(LIST_RPSTE, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.rptrl > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.rptrl
-        rs = RadioSetting("settings.rptrl", "STE Repeater Delay",
-                          RadioSettingValueList(
-                              LIST_STEDELAY, current_index=val))
+        rs = RadioSetting(
+            "settings.rptrl",
+            "STE Repeater Delay",
+            RadioSettingValueList(LIST_STEDELAY, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.ponmsg", "Power-On Message",
-            RadioSettingValueList(
-                LIST_PONMSG, current_index=_mem.settings.ponmsg))
+            "settings.ponmsg",
+            "Power-On Message",
+            RadioSettingValueList(LIST_PONMSG, current_index=_mem.settings.ponmsg),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.roger", "Roger Beep",
-                          RadioSettingValueBoolean(_mem.settings.roger))
+        rs = RadioSetting(
+            "settings.roger",
+            "Roger Beep",
+            RadioSettingValueBoolean(_mem.settings.roger),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.dani", "Decode ANI",
-                          RadioSettingValueBoolean(_mem.settings.dani))
+        rs = RadioSetting(
+            "settings.dani", "Decode ANI", RadioSettingValueBoolean(_mem.settings.dani)
+        )
         basic.append(rs)
 
         if _mem.settings.dtmfg > 0x3C:
             val = 0x14
         else:
             val = _mem.settings.dtmfg
-        rs = RadioSetting("settings.dtmfg", "DTMF Gain",
-                          RadioSettingValueInteger(0, 60, val))
+        rs = RadioSetting(
+            "settings.dtmfg", "DTMF Gain", RadioSettingValueInteger(0, 60, val)
+        )
         basic.append(rs)
 
         # Advanced settings
-        rs = RadioSetting("settings.reset", "RESET Menu",
-                          RadioSettingValueBoolean(_mem.settings.reset))
+        rs = RadioSetting(
+            "settings.reset",
+            "RESET Menu",
+            RadioSettingValueBoolean(_mem.settings.reset),
+        )
         advanced.append(rs)
 
-        rs = RadioSetting("settings.menu", "All Menus",
-                          RadioSettingValueBoolean(_mem.settings.menu))
+        rs = RadioSetting(
+            "settings.menu", "All Menus", RadioSettingValueBoolean(_mem.settings.menu)
+        )
         advanced.append(rs)
 
-        rs = RadioSetting("settings.fmradio", "Broadcast FM Radio",
-                          RadioSettingValueBoolean(_mem.settings.fmradio))
+        rs = RadioSetting(
+            "settings.fmradio",
+            "Broadcast FM Radio",
+            RadioSettingValueBoolean(_mem.settings.fmradio),
+        )
         advanced.append(rs)
 
-        rs = RadioSetting("settings.alarm", "Alarm Sound",
-                          RadioSettingValueBoolean(_mem.settings.alarm))
+        rs = RadioSetting(
+            "settings.alarm",
+            "Alarm Sound",
+            RadioSettingValueBoolean(_mem.settings.alarm),
+        )
         advanced.append(rs)
 
         # Other settings
@@ -680,13 +748,17 @@ class UV5X3(bfc.BaofengCommonHT):
         other.append(rs)
 
         _msg = _mem.poweron_msg
-        rs = RadioSetting("poweron_msg.line1", "Power-On Message 1",
-                          RadioSettingValueString(
-                              0, 7, _filter(_msg.line1)))
+        rs = RadioSetting(
+            "poweron_msg.line1",
+            "Power-On Message 1",
+            RadioSettingValueString(0, 7, _filter(_msg.line1)),
+        )
         other.append(rs)
-        rs = RadioSetting("poweron_msg.line2", "Power-On Message 2",
-                          RadioSettingValueString(
-                              0, 7, _filter(_msg.line2)))
+        rs = RadioSetting(
+            "poweron_msg.line2",
+            "Power-On Message 2",
+            RadioSettingValueString(0, 7, _filter(_msg.line2)),
+        )
         other.append(rs)
 
         if str(_mem.firmware_msg.line1) == ("UVVG302" or "5R31709"):
@@ -699,16 +771,22 @@ class UV5X3(bfc.BaofengCommonHT):
             val = lower
         else:
             val = int(_mem.limits.vhf.lower)
-        rs = RadioSetting("limits.vhf.lower", "VHF Lower Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.vhf.lower",
+            "VHF Lower Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         if int(_mem.limits.vhf.upper) > upper:
             val = upper
         else:
             val = int(_mem.limits.vhf.upper)
-        rs = RadioSetting("limits.vhf.upper", "VHF Upper Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.vhf.upper",
+            "VHF Upper Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         if str(_mem.firmware_msg.line1) == "UVVG302":
@@ -724,16 +802,22 @@ class UV5X3(bfc.BaofengCommonHT):
             val = lower
         else:
             val = int(_mem.limits.vhf2.lower)
-        rs = RadioSetting("limits.vhf2.lower", "VHF2 Lower Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.vhf2.lower",
+            "VHF2 Lower Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         if int(_mem.limits.vhf2.upper) > upper:
             val = upper
         else:
             val = int(_mem.limits.vhf2.upper)
-        rs = RadioSetting("limits.vhf2.upper", "VHF2 Upper Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.vhf2.upper",
+            "VHF2 Upper Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         if str(_mem.firmware_msg.line1) == "UVVG302":
@@ -746,42 +830,58 @@ class UV5X3(bfc.BaofengCommonHT):
             val = lower
         else:
             val = int(_mem.limits.uhf.lower)
-        rs = RadioSetting("limits.uhf.lower", "UHF Lower Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.uhf.lower",
+            "UHF Lower Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         if int(_mem.limits.uhf.upper) > upper:
             val = upper
         else:
             val = int(_mem.limits.uhf.upper)
-        rs = RadioSetting("limits.uhf.upper", "UHF Upper Limit (MHz)",
-                          RadioSettingValueInteger(lower, upper, val))
+        rs = RadioSetting(
+            "limits.uhf.upper",
+            "UHF Upper Limit (MHz)",
+            RadioSettingValueInteger(lower, upper, val),
+        )
         other.append(rs)
 
         # Work mode settings
-        rs = RadioSetting("settings.displayab", "Display",
-                          RadioSettingValueList(
-                              LIST_AB, current_index=_mem.settings.displayab))
+        rs = RadioSetting(
+            "settings.displayab",
+            "Display",
+            RadioSettingValueList(LIST_AB, current_index=_mem.settings.displayab),
+        )
         work.append(rs)
 
-        rs = RadioSetting("settings.workmode", "VFO/MR Mode",
-                          RadioSettingValueList(
-                              LIST_WORKMODE,
-                              current_index=_mem.settings.workmode))
+        rs = RadioSetting(
+            "settings.workmode",
+            "VFO/MR Mode",
+            RadioSettingValueList(LIST_WORKMODE, current_index=_mem.settings.workmode),
+        )
         work.append(rs)
 
-        rs = RadioSetting("settings.keylock", "Keypad Lock",
-                          RadioSettingValueBoolean(_mem.settings.keylock))
+        rs = RadioSetting(
+            "settings.keylock",
+            "Keypad Lock",
+            RadioSettingValueBoolean(_mem.settings.keylock),
+        )
         work.append(rs)
 
-        rs = RadioSetting("wmchannel.mrcha", "MR A Channel",
-                          RadioSettingValueInteger(0, 127,
-                                                   _mem.wmchannel.mrcha))
+        rs = RadioSetting(
+            "wmchannel.mrcha",
+            "MR A Channel",
+            RadioSettingValueInteger(0, 127, _mem.wmchannel.mrcha),
+        )
         work.append(rs)
 
-        rs = RadioSetting("wmchannel.mrchb", "MR B Channel",
-                          RadioSettingValueInteger(0, 127,
-                                                   _mem.wmchannel.mrchb))
+        rs = RadioSetting(
+            "wmchannel.mrchb",
+            "MR B Channel",
+            RadioSettingValueInteger(0, 127, _mem.wmchannel.mrchb),
+        )
         work.append(rs)
 
         def my_validate(value):
@@ -792,17 +892,15 @@ class UV5X3(bfc.BaofengCommonHT):
             _uhf_lower = int(_mem.limits.uhf.lower)
             _uhf_upper = int(_mem.limits.uhf.upper)
             value = chirp_common.parse_freq(value)
-            msg = ("Can't be less than %i.0000")
+            msg = "Can't be less than %i.0000"
             if value > 99000000 and value < _vhf_lower * 1000000:
                 raise InvalidValueError(msg % (_vhf_lower))
-            msg = ("Can't be between %i.9975-%i.0000")
-            if (_vhf_upper + 1) * 1000000 <= value and \
-                    value < _vhf2_lower * 1000000:
+            msg = "Can't be between %i.9975-%i.0000"
+            if (_vhf_upper + 1) * 1000000 <= value and value < _vhf2_lower * 1000000:
                 raise InvalidValueError(msg % (_vhf_upper, _vhf2_lower))
-            if (_vhf2_upper + 1) * 1000000 <= value and \
-                    value < _uhf_lower * 1000000:
+            if (_vhf2_upper + 1) * 1000000 <= value and value < _uhf_lower * 1000000:
                 raise InvalidValueError(msg % (_vhf2_upper, _uhf_lower))
-            msg = ("Can't be greater than %i.9975")
+            msg = "Can't be greater than %i.9975"
             if value > 99000000 and value >= (_uhf_upper + 1) * 1000000:
                 raise InvalidValueError(msg % (_uhf_upper))
             return chirp_common.format_freq(value)
@@ -811,9 +909,8 @@ class UV5X3(bfc.BaofengCommonHT):
             _vhf_lower = int(_mem.limits.vhf.lower)
             _vhf_upper = int(_mem.limits.vhf.upper)
             value = chirp_common.parse_freq(value)
-            msg = ("Must be between %i.0000-%i.9975")
-            if (_vhf_upper + 1) * 1000000 <= value or \
-                    value < _vhf_lower * 1000000:
+            msg = "Must be between %i.0000-%i.9975"
+            if (_vhf_upper + 1) * 1000000 <= value or value < _vhf_lower * 1000000:
                 raise InvalidValueError(msg % (_vhf_lower, _vhf_upper))
             return chirp_common.format_freq(value)
 
@@ -821,9 +918,8 @@ class UV5X3(bfc.BaofengCommonHT):
             _vhf2_lower = int(_mem.limits.vhf2.lower)
             _vhf2_upper = int(_mem.limits.vhf2.upper)
             value = chirp_common.parse_freq(value)
-            msg = ("Must be between %i.0000-%i.9975")
-            if (_vhf2_upper + 1) * 1000000 <= value or \
-                    value < _vhf2_lower * 1000000:
+            msg = "Must be between %i.0000-%i.9975"
+            if (_vhf2_upper + 1) * 1000000 <= value or value < _vhf2_lower * 1000000:
                 raise InvalidValueError(msg % (_vhf2_lower, _vhf2_upper))
             return chirp_common.format_freq(value)
 
@@ -831,9 +927,8 @@ class UV5X3(bfc.BaofengCommonHT):
             _uhf_lower = int(_mem.limits.uhf.lower)
             _uhf_upper = int(_mem.limits.uhf.upper)
             value = chirp_common.parse_freq(value)
-            msg = ("Must be between %i.0000-%i.9975")
-            if (_uhf_upper + 1) * 1000000 <= value or \
-                    value < _uhf_lower * 1000000:
+            msg = "Must be between %i.0000-%i.9975"
+            if (_uhf_upper + 1) * 1000000 <= value or value < _uhf_lower * 1000000:
                 raise InvalidValueError(msg % (_uhf_lower, _uhf_upper))
             return chirp_common.format_freq(value)
 
@@ -843,17 +938,13 @@ class UV5X3(bfc.BaofengCommonHT):
                 obj.freq[i] = value % 10
                 value /= 10
 
-        val1a = RadioSettingValueString(0, 10,
-                                        bfc.bcd_decode_freq(
-                                            _mem.vfo.a.freq))
+        val1a = RadioSettingValueString(0, 10, bfc.bcd_decode_freq(_mem.vfo.a.freq))
         val1a.set_validate_callback(my_validate)
         rs = RadioSetting("vfo.a.freq", "VFO A Frequency", val1a)
         rs.set_apply_callback(apply_freq, _mem.vfo.a)
         work.append(rs)
 
-        val1b = RadioSettingValueString(0, 10,
-                                        bfc.bcd_decode_freq(
-                                            _mem.vfo.b.freq))
+        val1b = RadioSettingValueString(0, 10, bfc.bcd_decode_freq(_mem.vfo.b.freq))
         val1b.set_validate_callback(my_validate)
         rs = RadioSetting("vfo.b.freq", "VFO B Frequency", val1b)
         rs.set_apply_callback(apply_freq, _mem.vfo.b)
@@ -862,7 +953,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfoa.vhf.freq)
         except InternalError:
-            LOG.debug('Failed to decode VFO A VHF (Saved)')
+            LOG.debug("Failed to decode VFO A VHF (Saved)")
             val = "000.000000"
         val1a = RadioSettingValueString(0, 10, val)
         val1a.set_validate_callback(my_vhf_validate)
@@ -873,7 +964,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfob.vhf.freq)
         except InternalError:
-            LOG.debug('Failed to decode VFO B VHF (Saved)')
+            LOG.debug("Failed to decode VFO B VHF (Saved)")
             val = "000.000000"
         val1b = RadioSettingValueString(0, 10, val)
         val1b.set_validate_callback(my_vhf_validate)
@@ -884,7 +975,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfoa.vhf2.freq)
         except InternalError:
-            LOG.debug('Failed to decode VFO A VHF2 (Saved)')
+            LOG.debug("Failed to decode VFO A VHF2 (Saved)")
             val = "000.000000"
         val1a = RadioSettingValueString(0, 10, val)
         val1a.set_validate_callback(my_vhf2_validate)
@@ -895,7 +986,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfob.vhf2.freq)
         except settings.InternalError:
-            LOG.debug('Failed to decode VFO B VHF2 (Saved)')
+            LOG.debug("Failed to decode VFO B VHF2 (Saved)")
             val = "000.000000"
         val1b = RadioSettingValueString(0, 10, val)
         val1b.set_validate_callback(my_vhf2_validate)
@@ -906,7 +997,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfoa.uhf.freq)
         except InternalError:
-            LOG.debug('Failed to decode VFO A UHF (Saved)')
+            LOG.debug("Failed to decode VFO A UHF (Saved)")
             val = "000.000000"
         val1a = RadioSettingValueString(0, 10, val)
         val1a.set_validate_callback(my_uhf_validate)
@@ -917,7 +1008,7 @@ class UV5X3(bfc.BaofengCommonHT):
         try:
             val = bfc.bcd_decode_freq(_mem.subvfob.uhf.freq)
         except InternalError:
-            LOG.debug('Failed to decode VFO B UHF (Saved)')
+            LOG.debug("Failed to decode VFO B UHF (Saved)")
             val = "000.000000"
         val1b = RadioSettingValueString(0, 10, val)
         val1b.set_validate_callback(my_uhf_validate)
@@ -925,14 +1016,18 @@ class UV5X3(bfc.BaofengCommonHT):
         rs.set_apply_callback(apply_freq, _mem.subvfob.uhf)
         work.append(rs)
 
-        rs = RadioSetting("vfo.a.sftd", "VFO A Shift",
-                          RadioSettingValueList(
-                              LIST_SHIFTD, current_index=_mem.vfo.a.sftd))
+        rs = RadioSetting(
+            "vfo.a.sftd",
+            "VFO A Shift",
+            RadioSettingValueList(LIST_SHIFTD, current_index=_mem.vfo.a.sftd),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.b.sftd", "VFO B Shift",
-                          RadioSettingValueList(
-                              LIST_SHIFTD, current_index=_mem.vfo.b.sftd))
+        rs = RadioSetting(
+            "vfo.b.sftd",
+            "VFO B Shift",
+            RadioSettingValueList(LIST_SHIFTD, current_index=_mem.vfo.b.sftd),
+        )
         work.append(rs)
 
         def convert_bytes_to_offset(bytes):
@@ -948,62 +1043,72 @@ class UV5X3(bfc.BaofengCommonHT):
                 value /= 10
 
         val1a = RadioSettingValueString(
-                    0, 10, convert_bytes_to_offset(_mem.vfo.a.offset))
-        rs = RadioSetting("vfo.a.offset",
-                          "VFO A Offset", val1a)
+            0, 10, convert_bytes_to_offset(_mem.vfo.a.offset)
+        )
+        rs = RadioSetting("vfo.a.offset", "VFO A Offset", val1a)
         rs.set_apply_callback(apply_offset, _mem.vfo.a)
         work.append(rs)
 
         val1b = RadioSettingValueString(
-                    0, 10, convert_bytes_to_offset(_mem.vfo.b.offset))
-        rs = RadioSetting("vfo.b.offset",
-                          "VFO B Offset", val1b)
+            0, 10, convert_bytes_to_offset(_mem.vfo.b.offset)
+        )
+        rs = RadioSetting("vfo.b.offset", "VFO B Offset", val1b)
         rs.set_apply_callback(apply_offset, _mem.vfo.b)
         work.append(rs)
 
-        rs = RadioSetting("vfo.a.txpower", "VFO A Power",
-                          RadioSettingValueList(
-                              LIST_TXPOWER,
-                              current_index=_mem.vfo.a.txpower))
+        rs = RadioSetting(
+            "vfo.a.txpower",
+            "VFO A Power",
+            RadioSettingValueList(LIST_TXPOWER, current_index=_mem.vfo.a.txpower),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.b.txpower", "VFO B Power",
-                          RadioSettingValueList(
-                              LIST_TXPOWER,
-                              current_index=_mem.vfo.b.txpower))
+        rs = RadioSetting(
+            "vfo.b.txpower",
+            "VFO B Power",
+            RadioSettingValueList(LIST_TXPOWER, current_index=_mem.vfo.b.txpower),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.a.widenarr", "VFO A Bandwidth",
-                          RadioSettingValueList(
-                              LIST_BANDWIDTH,
-                              current_index=_mem.vfo.a.widenarr))
+        rs = RadioSetting(
+            "vfo.a.widenarr",
+            "VFO A Bandwidth",
+            RadioSettingValueList(LIST_BANDWIDTH, current_index=_mem.vfo.a.widenarr),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.b.widenarr", "VFO B Bandwidth",
-                          RadioSettingValueList(
-                              LIST_BANDWIDTH,
-                              current_index=_mem.vfo.b.widenarr))
+        rs = RadioSetting(
+            "vfo.b.widenarr",
+            "VFO B Bandwidth",
+            RadioSettingValueList(LIST_BANDWIDTH, current_index=_mem.vfo.b.widenarr),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.a.scode", "VFO A S-CODE",
-                          RadioSettingValueList(
-                              LIST_SCODE,
-                              current_index=_mem.vfo.a.scode))
+        rs = RadioSetting(
+            "vfo.a.scode",
+            "VFO A S-CODE",
+            RadioSettingValueList(LIST_SCODE, current_index=_mem.vfo.a.scode),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.b.scode", "VFO B S-CODE",
-                          RadioSettingValueList(
-                              LIST_SCODE,
-                              current_index=_mem.vfo.b.scode))
+        rs = RadioSetting(
+            "vfo.b.scode",
+            "VFO B S-CODE",
+            RadioSettingValueList(LIST_SCODE, current_index=_mem.vfo.b.scode),
+        )
         work.append(rs)
 
-        rs = RadioSetting("vfo.a.step", "VFO A Tuning Step",
-                          RadioSettingValueList(
-                              LIST_STEP, current_index=_mem.vfo.a.step))
+        rs = RadioSetting(
+            "vfo.a.step",
+            "VFO A Tuning Step",
+            RadioSettingValueList(LIST_STEP, current_index=_mem.vfo.a.step),
+        )
         work.append(rs)
-        rs = RadioSetting("vfo.b.step", "VFO B Tuning Step",
-                          RadioSettingValueList(
-                              LIST_STEP, current_index=_mem.vfo.b.step))
+        rs = RadioSetting(
+            "vfo.b.step",
+            "VFO B Tuning Step",
+            RadioSettingValueList(LIST_STEP, current_index=_mem.vfo.b.step),
+        )
         work.append(rs)
 
         # broadcast FM settings
@@ -1014,8 +1119,11 @@ class UV5X3(bfc.BaofengCommonHT):
             preset = _fm_presets / 10.0
         else:
             preset = 76.0
-        rs = RadioSetting("fm_presets", "FM Preset(MHz)",
-                          RadioSettingValueFloat(65, 108.0, preset, 0.1, 1))
+        rs = RadioSetting(
+            "fm_presets",
+            "FM Preset(MHz)",
+            RadioSettingValueFloat(65, 108.0, preset, 0.1, 1),
+        )
         fm_preset.append(rs)
 
         # DTMF encode settings
@@ -1024,8 +1132,7 @@ class UV5X3(bfc.BaofengCommonHT):
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             val = RadioSettingValueString(0, 16, _code, False)
             val.set_charset(DTMF_CHARS)
-            rs = RadioSetting("pttid/%i.code" % i,
-                              "Signal Code %i" % (i + 1), val)
+            rs = RadioSetting("pttid/%i.code" % i, "Signal Code %i" % (i + 1), val)
 
             def apply_code(setting, obj):
                 code = []
@@ -1035,6 +1142,7 @@ class UV5X3(bfc.BaofengCommonHT):
                     except IndexError:
                         code.append(0xFF)
                 obj.code = code
+
             rs.set_apply_callback(apply_code, self._memobj.pttid[i])
             dtmfe.append(rs)
 
@@ -1042,18 +1150,22 @@ class UV5X3(bfc.BaofengCommonHT):
             val = 0x03
         else:
             val = _mem.ani.dtmfon
-        rs = RadioSetting("ani.dtmfon", "DTMF Speed (on)",
-                          RadioSettingValueList(LIST_DTMFSPEED,
-                                                current_index=val))
+        rs = RadioSetting(
+            "ani.dtmfon",
+            "DTMF Speed (on)",
+            RadioSettingValueList(LIST_DTMFSPEED, current_index=val),
+        )
         dtmfe.append(rs)
 
         if _mem.ani.dtmfoff > 0xC3:
             val = 0x03
         else:
             val = _mem.ani.dtmfoff
-        rs = RadioSetting("ani.dtmfoff", "DTMF Speed (off)",
-                          RadioSettingValueList(LIST_DTMFSPEED,
-                                                current_index=val))
+        rs = RadioSetting(
+            "ani.dtmfoff",
+            "DTMF Speed (off)",
+            RadioSettingValueList(LIST_DTMFSPEED, current_index=val),
+        )
         dtmfe.append(rs)
 
         _codeobj = self._memobj.ani.code
@@ -1070,17 +1182,23 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.code = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfe.append(rs)
 
-        rs = RadioSetting("ani.aniid", "When to send ANI ID",
-                          RadioSettingValueList(LIST_PTTID,
-                                                current_index=_mem.ani.aniid))
+        rs = RadioSetting(
+            "ani.aniid",
+            "When to send ANI ID",
+            RadioSettingValueList(LIST_PTTID, current_index=_mem.ani.aniid),
+        )
         dtmfe.append(rs)
 
         # DTMF decode settings
-        rs = RadioSetting("ani.mastervice", "Master and Vice ID",
-                          RadioSettingValueBoolean(_mem.ani.mastervice))
+        rs = RadioSetting(
+            "ani.mastervice",
+            "Master and Vice ID",
+            RadioSettingValueBoolean(_mem.ani.mastervice),
+        )
         dtmfd.append(rs)
 
         _codeobj = _mem.ani.masterid
@@ -1097,27 +1215,37 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.masterid = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.minspection", "Master Inspection",
-                          RadioSettingValueBoolean(_mem.ani.minspection))
+        rs = RadioSetting(
+            "ani.minspection",
+            "Master Inspection",
+            RadioSettingValueBoolean(_mem.ani.minspection),
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.mmonitor", "Master Monitor",
-                          RadioSettingValueBoolean(_mem.ani.mmonitor))
+        rs = RadioSetting(
+            "ani.mmonitor",
+            "Master Monitor",
+            RadioSettingValueBoolean(_mem.ani.mmonitor),
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.mstun", "Master Stun",
-                          RadioSettingValueBoolean(_mem.ani.mstun))
+        rs = RadioSetting(
+            "ani.mstun", "Master Stun", RadioSettingValueBoolean(_mem.ani.mstun)
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.mkill", "Master Kill",
-                          RadioSettingValueBoolean(_mem.ani.mkill))
+        rs = RadioSetting(
+            "ani.mkill", "Master Kill", RadioSettingValueBoolean(_mem.ani.mkill)
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.mrevive", "Master Revive",
-                          RadioSettingValueBoolean(_mem.ani.mrevive))
+        rs = RadioSetting(
+            "ani.mrevive", "Master Revive", RadioSettingValueBoolean(_mem.ani.mrevive)
+        )
         dtmfd.append(rs)
 
         _codeobj = _mem.ani.viceid
@@ -1134,27 +1262,35 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.viceid = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.vinspection", "Vice Inspection",
-                          RadioSettingValueBoolean(_mem.ani.vinspection))
+        rs = RadioSetting(
+            "ani.vinspection",
+            "Vice Inspection",
+            RadioSettingValueBoolean(_mem.ani.vinspection),
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.vmonitor", "Vice Monitor",
-                          RadioSettingValueBoolean(_mem.ani.vmonitor))
+        rs = RadioSetting(
+            "ani.vmonitor", "Vice Monitor", RadioSettingValueBoolean(_mem.ani.vmonitor)
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.vstun", "Vice Stun",
-                          RadioSettingValueBoolean(_mem.ani.vstun))
+        rs = RadioSetting(
+            "ani.vstun", "Vice Stun", RadioSettingValueBoolean(_mem.ani.vstun)
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.vkill", "Vice Kill",
-                          RadioSettingValueBoolean(_mem.ani.vkill))
+        rs = RadioSetting(
+            "ani.vkill", "Vice Kill", RadioSettingValueBoolean(_mem.ani.vkill)
+        )
         dtmfd.append(rs)
 
-        rs = RadioSetting("ani.vrevive", "Vice Revive",
-                          RadioSettingValueBoolean(_mem.ani.vrevive))
+        rs = RadioSetting(
+            "ani.vrevive", "Vice Revive", RadioSettingValueBoolean(_mem.ani.vrevive)
+        )
         dtmfd.append(rs)
 
         _codeobj = _mem.ani.inspection
@@ -1171,6 +1307,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.inspection = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1188,6 +1325,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.monitor = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1205,6 +1343,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.alarmcode = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1222,6 +1361,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.stun = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1239,6 +1379,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.kill = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1256,6 +1397,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 except IndexError:
                     code.append(0xFF)
             obj.revive = code
+
         rs.set_apply_callback(apply_code, self._memobj.ani)
         dtmfd.append(rs)
 
@@ -1270,9 +1412,11 @@ class UV5X3(bfc.BaofengCommonHT):
             idx = LIST_DTMF_SPECIAL_VALUES.index(_mem.ani.groupcode)
         else:
             idx = LIST_DTMF_SPECIAL_VALUES.index(0x0B)
-        rs = RadioSetting("ani.groupcode", "Group Code",
-                          RadioSettingValueList(LIST_DTMF_SPECIAL_DIGITS,
-                                                current_index=idx))
+        rs = RadioSetting(
+            "ani.groupcode",
+            "Group Code",
+            RadioSettingValueList(LIST_DTMF_SPECIAL_DIGITS, current_index=idx),
+        )
         rs.set_apply_callback(apply_dmtf_listvalue, _mem.ani.groupcode)
         dtmfd.append(rs)
 
@@ -1280,9 +1424,11 @@ class UV5X3(bfc.BaofengCommonHT):
             idx = LIST_DTMF_SPECIAL_VALUES.index(_mem.ani.spacecode)
         else:
             idx = LIST_DTMF_SPECIAL_VALUES.index(0x0C)
-        rs = RadioSetting("ani.spacecode", "Space Code",
-                          RadioSettingValueList(LIST_DTMF_SPECIAL_DIGITS,
-                                                current_index=idx))
+        rs = RadioSetting(
+            "ani.spacecode",
+            "Space Code",
+            RadioSettingValueList(LIST_DTMF_SPECIAL_DIGITS, current_index=idx),
+        )
         rs.set_apply_callback(apply_dmtf_listvalue, _mem.ani.spacecode)
         dtmfd.append(rs)
 
@@ -1290,18 +1436,22 @@ class UV5X3(bfc.BaofengCommonHT):
             val = 0x4F
         else:
             val = _mem.ani.resettime
-        rs = RadioSetting("ani.resettime", "Reset Time",
-                          RadioSettingValueList(LIST_RESETTIME,
-                                                current_index=val))
+        rs = RadioSetting(
+            "ani.resettime",
+            "Reset Time",
+            RadioSettingValueList(LIST_RESETTIME, current_index=val),
+        )
         dtmfd.append(rs)
 
         if _mem.ani.delayproctime > 0x27:
             val = 0x04
         else:
             val = _mem.ani.delayproctime
-        rs = RadioSetting("ani.delayproctime", "Delay Processing Time",
-                          RadioSettingValueList(LIST_DELAYPROCTIME,
-                                                current_index=val))
+        rs = RadioSetting(
+            "ani.delayproctime",
+            "Delay Processing Time",
+            RadioSettingValueList(LIST_DELAYPROCTIME, current_index=val),
+        )
         dtmfd.append(rs)
 
         # Service settings
@@ -1317,9 +1467,7 @@ class UV5X3(bfc.BaofengCommonHT):
                 elif band == "uhf":
                     _obj = self._memobj.squelch.uhf
                     _name = "UHF"
-                val = RadioSettingValueInteger(0, 123,
-                                               getattr(_obj, "sql%i" % (
-                                                       index)))
+                val = RadioSettingValueInteger(0, 123, getattr(_obj, "sql%i" % (index)))
                 if index == 0:
                     val.set_mutable(False)
                 name = "%s Squelch %i" % (_name, index)
@@ -1351,10 +1499,16 @@ class MTCUV5R3Radio(UV5X3):
     VENDOR = "MTC"
     MODEL = "UV-5R-3"
 
-    _fileid = [UV5R3_fp1, ]
+    _fileid = [
+        UV5R3_fp1,
+    ]
 
-    _magic = [MSTRING_UV5R3, ]
+    _magic = [
+        MSTRING_UV5R3,
+    ]
 
-    VALID_BANDS = [(136000000, 174000000),
-                   (200000000, 260000000),
-                   (400000000, 521000000)]
+    VALID_BANDS = [
+        (136000000, 174000000),
+        (200000000, 260000000),
+        (400000000, 521000000),
+    ]

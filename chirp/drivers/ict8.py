@@ -61,6 +61,7 @@ def _set_freq(bcd_array, freq):
 @directory.register
 class ICT8ARadio(icf.IcomCloneModeRadio):
     """Icom IC-T8A"""
+
     VENDOR = "Icom"
     MODEL = "IC-T8A"
 
@@ -74,9 +75,11 @@ class ICT8ARadio(icf.IcomCloneModeRadio):
         rf = chirp_common.RadioFeatures()
         rf.valid_tmodes = TMODES
         rf.valid_duplexes = DUPLEX
-        rf.valid_bands = [(50000000, 54000000),
-                          (118000000, 174000000),
-                          (400000000, 470000000)]
+        rf.valid_bands = [
+            (50000000, 54000000),
+            (118000000, 174000000),
+            (400000000, 470000000),
+        ]
         rf.valid_skips = ["", "S"]
         rf.valid_modes = ["FM"]
         rf.memory_bounds = (0, 99)
@@ -94,9 +97,11 @@ class ICT8ARadio(icf.IcomCloneModeRadio):
         self._memobj = bitwise.parse(mem_format, self._mmap)
 
     def get_raw_memory(self, number):
-        return (str(self._memobj.memory[number]) +
-                str(self._memobj.names[number]) +
-                str(self._memobj.flags[number]))
+        return (
+            str(self._memobj.memory[number])
+            + str(self._memobj.names[number])
+            + str(self._memobj.flags[number])
+        )
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number]
@@ -117,8 +122,8 @@ class ICT8ARadio(icf.IcomCloneModeRadio):
         mem.duplex = DUPLEX[_flg.duplex]
         mem.tmode = TMODES[_flg.tmode]
         mem.skip = _flg.skip and "S" or ""
-        if _name.name.get_raw(asbytes=False) != "\xFF\xFF\xFF\xFF":
-            mem.name = str(_name.name).rstrip().rstrip('\x00')
+        if _name.name.get_raw(asbytes=False) != "\xff\xff\xff\xff":
+            mem.name = str(_name.name).rstrip().rstrip("\x00")
 
         return mem
 
@@ -145,4 +150,4 @@ class ICT8ARadio(icf.IcomCloneModeRadio):
         if mem.name:
             _name.name = mem.name.ljust(4)
         else:
-            _name.name = "\xFF\xFF\xFF\xFF"
+            _name.name = "\xff\xff\xff\xff"

@@ -23,13 +23,13 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
-CMD_ACK = b'\x06'
+CMD_ACK = b"\x06"
 
 
 @directory.register
-class BJ9900Radio(chirp_common.CloneModeRadio,
-                  chirp_common.ExperimentalRadio):
+class BJ9900Radio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Baojie BJ-9900"""
+
     VENDOR = "Baojie"
     MODEL = "BJ-9900"
     VARIANT = ""
@@ -38,18 +38,29 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
     DUPLEX = ["", "-", "+", "split"]
     MODES = ["NFM", "FM"]
     TMODES = ["", "Tone", "TSQL", "DTCS", "Cross"]
-    CROSS_MODES = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                   "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+    CROSS_MODES = [
+        "Tone->Tone",
+        "Tone->DTCS",
+        "DTCS->Tone",
+        "->Tone",
+        "->DTCS",
+        "DTCS->",
+        "DTCS->DTCS",
+    ]
     STEPS = [5.0, 6.25, 10.0, 12.5, 25.0]
-    VALID_BANDS = [(109000000, 136000000), (136000000, 174000000),
-                   (400000000, 470000000)]
+    VALID_BANDS = [
+        (109000000, 136000000),
+        (136000000, 174000000),
+        (400000000, 470000000),
+    ]
 
-    CHARSET = list(chirp_common.CHARSET_ALPHANUMERIC + '-')
+    CHARSET = list(chirp_common.CHARSET_ALPHANUMERIC + "-")
     CHARSET.remove(" ")
 
     POWER_LEVELS = [
-            chirp_common.PowerLevel("Low", watts=20.00),
-            chirp_common.PowerLevel("High", watts=40.00)]
+        chirp_common.PowerLevel("Low", watts=20.00),
+        chirp_common.PowerLevel("High", watts=40.00),
+    ]
 
     _memsize = 0x18F1
 
@@ -68,7 +79,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         (0x200, 0x22F, 0x30),
         (0x240, 0x26F, 0x30),
         (0x270, 0x2A0, 0x31),
-        ]
+    ]
 
     MEM_FORMAT = """
         #seekto 0x%X;
@@ -103,13 +114,15 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
             "2. Remove front head.\n"
             "3. Connect data cable to radio, use the same connector where\n"
             "     head was connected to, <b>not the mic connector</b>.\n"
-            "4. Click OK.\n")
+            "4. Click OK.\n"
+        )
         rp.experimental = _(
-         'This is experimental support for BJ-9900 '
-         'which is still under development.\n'
-         'Please ensure you have a good backup with OEM software.\n'
-         'Also please send in bug and enhancement requests!\n'
-         'You have been warned. Proceed at your own risk!')
+            "This is experimental support for BJ-9900 "
+            "which is still under development.\n"
+            "Please ensure you have a good backup with OEM software.\n"
+            "Also please send in bug and enhancement requests!\n"
+            "You have been warned. Proceed at your own risk!"
+        )
         return rp
 
     def _read(self, addr, blocksize):
@@ -121,8 +134,9 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         LOG.debug("received " + util.hexprint(block))
         if len(block) != blocksize:
             raise errors.RadioError(
-                ("Unable to read block at addr %04X expected"
-                 " %i got %i bytes") % (addr, blocksize, len(block)))
+                ("Unable to read block at addr %04X expected" " %i got %i bytes")
+                % (addr, blocksize, len(block))
+            )
         return block
 
     def _clone_in(self):
@@ -143,7 +157,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         # This driver will accept any amount of garbage, and fails tests
         # as a result. This assertion appears correct based on the file
         # data matching below. However, untested as of 2024-Feb.
-        assert data[-2:] == b'\r\n', 'Unrecognized radio image'
+        assert data[-2:] == b"\r\n", "Unrecognized radio image"
 
         return memmap.MemoryMapBytes(data)
 
@@ -155,8 +169,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         data = self.pipe.read(1)
         LOG.debug("received " + util.hexprint(data))
         if data != CMD_ACK:
-            raise errors.RadioError(
-                "Radio refused to accept block 0x%04x" % addr)
+            raise errors.RadioError("Radio refused to accept block 0x%04x" % addr)
 
     def _clone_out(self):
         start = time.time()
@@ -167,7 +180,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
         pos = 0
         for addr_from, addr_to, blocksize in self._blocks:
             for addr in range(addr_from, addr_to, blocksize):
-                self._write(addr, self._mmap[pos:(pos + blocksize)])
+                self._write(addr, self._mmap[pos : (pos + blocksize)])
                 pos += blocksize
                 status.cur = pos
                 self.status_fn(status)
@@ -193,14 +206,15 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
 
     def process_mmap(self):
         if len(self._mmap) == self._datsize:
-            self._mmap = memmap.MemoryMapBytes([
+            self._mmap = memmap.MemoryMapBytes(
+                [
                     chr(int(self._mmap.get(i, 2), 16))
                     for i in range(0, self._datsize, 2)
                     if self._mmap.get(i, 2) != b"\r\n"
-                    ])
+                ]
+            )
         try:
-            self._memobj = bitwise.parse(
-                self.MEM_FORMAT % self._memstart, self._mmap)
+            self._memobj = bitwise.parse(self.MEM_FORMAT % self._memstart, self._mmap)
         except AttributeError:
             # main variant have no _memstart attribute
             return
@@ -306,7 +320,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
             _mem.is_txdigtone = 1
             _mem.txtone = mem.dtcs
 
-        if (mem.power):
+        if mem.power:
             _mem.power = self.POWER_LEVELS.index(mem.power)
         _mem.wide = self.MODES.index(mem.mode)
 
@@ -342,7 +356,7 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
             mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
             mem.offset = abs(int(_mem.rxfreq) - int(_mem.txfreq)) * 10
 
-        mem.name = str(_mem.name)[:_mem.namelen]
+        mem.name = str(_mem.name)[: _mem.namelen]
 
         dtcs_pol = ["N", "N"]
 
@@ -391,17 +405,20 @@ class BJ9900Radio(chirp_common.CloneModeRadio,
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize or \
-            (len(filedata) == cls._datsize and filedata[-4:] == b"\r\n\r\n")
+        return len(filedata) == cls._memsize or (
+            len(filedata) == cls._datsize and filedata[-4:] == b"\r\n\r\n"
+        )
 
 
 class BJ9900RadioLeft(BJ9900Radio):
     """Baojie BJ-9900 Left VFO subdevice"""
+
     VARIANT = "Left"
     _memstart = 0x0
 
 
 class BJ9900RadioRight(BJ9900Radio):
     """Baojie BJ-9900 Right VFO subdevice"""
+
     VARIANT = "Right"
     _memstart = 0xC00

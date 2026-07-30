@@ -87,6 +87,7 @@ MEM_LOC_SIZE = 48
 
 class IC2820Bank(icf.IcomNamedBank):
     """An IC2820 bank"""
+
     def get_name(self):
         _banks = self._model._radio._memobj.bank_names
         return str(_banks[self.index].name).rstrip()
@@ -97,8 +98,7 @@ class IC2820Bank(icf.IcomNamedBank):
 
 
 def _get_special():
-    special = {"C0": 500 + 20,
-               "C1": 500 + 21}
+    special = {"C0": 500 + 20, "C1": 500 + 21}
 
     for i in range(0, 10):
         ida = "%iA" % i
@@ -123,6 +123,7 @@ def _wipe_memory(mem, char):
 @directory.register
 class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom IC-2820"""
+
     VENDOR = "Icom"
     MODEL = "IC-2820H"
 
@@ -130,12 +131,13 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     _memsize = 44224
     _endframe = "Icom Inc\x2e68"
 
-    _ranges = [(0x0000, 0x6960, 32),
-               (0x6960, 0x6980, 16),
-               (0x6980, 0x7160, 32),
-               (0x7160, 0x7180, 16),
-               (0x7180, 0xACC0, 32),
-               ]
+    _ranges = [
+        (0x0000, 0x6960, 32),
+        (0x6960, 0x6980, 16),
+        (0x6980, 0x7160, 32),
+        (0x7160, 0x7180, 16),
+        (0x7180, 0xACC0, 32),
+    ]
 
     _num_banks = 26
     _bank_class = IC2820Bank
@@ -176,7 +178,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         rf.has_bank_names = True
         rf.requires_call_lists = False
         rf.memory_bounds = (0, 499)
-        rf.valid_modes = [x for x in MODES if '?' not in x]
+        rf.valid_modes = [x for x in MODES if "?" not in x]
         rf.valid_tmodes = list(TMODES)
         rf.valid_duplexes = list(set(DUPLEX))
         rf.valid_tuning_steps = list(chirp_common.TUNING_STEPS)
@@ -194,13 +196,13 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     def get_memory(self, number):
         number = _resolve_memory_number(number)
 
-        bitpos = (1 << (number % 8))
+        bitpos = 1 << (number % 8)
         bytepos = number / 8
 
         _mem = self._memobj.memory[number]
         _used = self._memobj.used_flags[bytepos]
 
-        is_used = ((_used & bitpos) == 0)
+        is_used = (_used & bitpos) == 0
 
         if is_used and MODES[_mem.mode] == "DV":
             mem = chirp_common.DVMemory()
@@ -244,7 +246,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << (mem.number % 8))
+        bitpos = 1 << (mem.number % 8)
         bytepos = mem.number / 8
 
         _mem = self._memobj.memory[mem.number]
@@ -266,7 +268,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         if mem.empty:
             _used |= bitpos
-            _wipe_memory(_mem, "\xFF")
+            _wipe_memory(_mem, "\xff")
             if mem.number < 500:
                 self._set_bank(mem.number, None)
             return
@@ -300,7 +302,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = []
 
         for i in range(*self.URCALL_LIMIT):
-            calls.append(str(_calls[i-1].call))
+            calls.append(str(_calls[i - 1].call))
 
         return calls
 
@@ -309,7 +311,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = []
 
         for i in range(*self.RPTCALL_LIMIT):
-            calls.append(str(_calls[i-1].call))
+            calls.append(str(_calls[i - 1].call))
 
         return calls
 
@@ -318,7 +320,7 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = []
 
         for i in range(*self.MYCALL_LIMIT):
-            calls.append(str(_calls[i-1].call))
+            calls.append(str(_calls[i - 1].call))
 
         return calls
 
@@ -327,30 +329,30 @@ class IC2820Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         for i in range(*self.URCALL_LIMIT):
             try:
-                call = calls[i-1]
+                call = calls[i - 1]
             except IndexError:
                 call = " " * 8
 
-            _calls[i-1].call = call.ljust(8)[:8]
+            _calls[i - 1].call = call.ljust(8)[:8]
 
     def set_repeater_call_list(self, calls):
         _calls = self._memobj.rptcall
 
         for i in range(*self.RPTCALL_LIMIT):
             try:
-                call = calls[i-1]
+                call = calls[i - 1]
             except IndexError:
                 call = " " * 8
 
-            _calls[i-1].call = call.ljust(8)[:8]
+            _calls[i - 1].call = call.ljust(8)[:8]
 
     def set_mycall_list(self, calls):
         _calls = self._memobj.mycall
 
         for i in range(*self.MYCALL_LIMIT):
             try:
-                call = calls[i-1]
+                call = calls[i - 1]
             except IndexError:
                 call = " " * 8
 
-            _calls[i-1].call = call.ljust(8)[:8]
+            _calls[i - 1].call = call.ljust(8)[:8]

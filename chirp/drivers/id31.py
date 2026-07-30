@@ -95,14 +95,28 @@ struct {
 TMODES = ["", "Tone", "TSQL", "TSQL", "DTCS", "DTCS", "TSQL-R", "DTCS-R"]
 DUPLEX = ["", "-", "+"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
-TUNING_STEPS = [5.0, 6.25, 0, 0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0,
-                100.0, 125.0, 200.0]
-DSQL_MODES = ['', 'DSQL', 'CSQL']
+TUNING_STEPS = [
+    5.0,
+    6.25,
+    0,
+    0,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+    125.0,
+    200.0,
+]
+DSQL_MODES = ["", "DSQL", "CSQL"]
 
 
 def _decode_call(_call):
     # Why Icom, why?
-    return ''.join(chr(x) for x in icf.warp_byte_size(_call, 7, 8))
+    return "".join(chr(x) for x in icf.warp_byte_size(_call, 7, 8))
 
 
 def _encode_call(call):
@@ -144,11 +158,12 @@ def _set_freq(_mem, freq, offset):
         oflag = 0x00000000
 
     _mem.freq = (freq // mult) | flag | oflag
-    _mem.offset = (offset // omult)
+    _mem.offset = offset // omult
 
 
 class ID31Bank(icf.IcomBank):
     """A ID-31 Bank"""
+
     def get_name(self):
         _banks = self._model._radio._memobj.bank_names
         return str(_banks[self.index].name).rstrip()
@@ -161,18 +176,19 @@ class ID31Bank(icf.IcomBank):
 @directory.register
 class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom ID-31"""
+
     MODEL = "ID-31A"
 
     _memsize = 0x15500
     _model = "\x33\x22\x00\x01"
-    _endframe = "Icom Inc\x2E\x41\x38"
+    _endframe = "Icom Inc\x2e\x41\x38"
     _num_banks = 26
     _bank_class = ID31Bank
     _can_hispeed = True
 
     _icf_data = {
-        'MapRev': 1,
-        'EtcData': 0x000005,
+        "MapRev": 1,
+        "EtcData": 0x000005,
     }
 
     _ranges = [(0x00000, 0x15500, 32)]
@@ -225,23 +241,25 @@ class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         return repr(self._memobj.memory[number])
 
     def _get_mem_extra(self, _mem, mem):
-        extra = settings.RadioSettingGroup('extra', 'Extra')
+        extra = settings.RadioSettingGroup("extra", "Extra")
         rs = settings.RadioSetting(
-            'dsql', 'DSQL Mode',
+            "dsql",
+            "DSQL Mode",
             settings.RadioSettingValueList(
-                DSQL_MODES, current_index=int(_mem.dsql_mode)))
+                DSQL_MODES, current_index=int(_mem.dsql_mode)
+            ),
+        )
         extra.append(rs)
         return extra
 
     def _set_mem_extra(self, _mem, mem):
         try:
-            _mem.dsql_mode = DSQL_MODES.index(str(mem.extra['dsql'].value))
+            _mem.dsql_mode = DSQL_MODES.index(str(mem.extra["dsql"].value))
         except (KeyError, TypeError):
             # No settings or dsql is not provided
             pass
         except ValueError:
-            LOG.error('Invalid extra.dsql_mode: %r' % str(
-                mem.extra['dsql'].value))
+            LOG.error("Invalid extra.dsql_mode: %r" % str(mem.extra["dsql"].value))
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number]
@@ -249,7 +267,7 @@ class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _skp = self._memobj.skip_flags[number / 8]
         _psk = self._memobj.pskp_flags[number / 8]
 
-        bit = (1 << (number % 8))
+        bit = 1 << (number % 8)
 
         if self.MODES[int(_mem.mode)] == "DV":
             mem = chirp_common.DVMemory()
@@ -293,7 +311,7 @@ class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _skp = self._memobj.skip_flags[memory.number / 8]
         _psk = self._memobj.pskp_flags[memory.number / 8]
 
-        bit = (1 << (memory.number % 8))
+        bit = 1 << (memory.number % 8)
 
         if memory.empty:
             _usd |= bit
@@ -313,8 +331,9 @@ class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _mem.dtcs = chirp_common.DTCS_CODES.index(memory.dtcs)
         _mem.dtcs_polarity = DTCS_POLARITY.index(memory.dtcs_polarity)
         _mem.tune_step = TUNING_STEPS.index(memory.tuning_step)
-        _mem.mode = next(i for i, mode in list(self.MODES.items())
-                         if mode == memory.mode)
+        _mem.mode = next(
+            i for i, mode in list(self.MODES.items()) if mode == memory.mode
+        )
 
         if isinstance(memory, chirp_common.DVMemory):
             _mem.urcall = _encode_call(memory.dv_urcall.ljust(8))
@@ -322,10 +341,10 @@ class ID31Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             _mem.rpt2call = _encode_call(memory.dv_rpt2call.ljust(8))
             _mem.digcode = memory.dv_code
         elif memory.mode == "DV":
-            LOG.debug('Converting Memory to DVMemory with default values')
-            _mem.urcall = _encode_call('CQCQCQ'.ljust(8))
-            _mem.rpt1call = _encode_call(' ' * 8)
-            _mem.rpt2call = _encode_call(' ' * 8)
+            LOG.debug("Converting Memory to DVMemory with default values")
+            _mem.urcall = _encode_call("CQCQCQ".ljust(8))
+            _mem.rpt1call = _encode_call(" " * 8)
+            _mem.rpt2call = _encode_call(" " * 8)
             _mem.digcode = 0
 
         if memory.skip == "S":

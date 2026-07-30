@@ -14,18 +14,18 @@ LOG = logging.getLogger(__name__)
 
 
 class FakeLiveRadio(chirp_common.LiveRadio):
-    VENDOR = 'CHIRP'
-    MODEL = 'Fake Live Radio'
+    VENDOR = "CHIRP"
+    MODEL = "Fake Live Radio"
 
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
-        self.settings = {'knob': 5}
+        self.settings = {"knob": 5}
         self.memories = []
         for i in range(1, 12):
-            m = chirp_common.Memory(i, empty=i > 5, name='channel %i' % i)
+            m = chirp_common.Memory(i, empty=i > 5, name="channel %i" % i)
             m.freq = 146520000
             self.memories.append(m)
-        self.memories[-1].extd_number = 'Special'
+        self.memories[-1].extd_number = "Special"
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -36,29 +36,30 @@ class FakeLiveRadio(chirp_common.LiveRadio):
         rf.has_bank = True
         rf.valid_name_length = 8
         rf.valid_characters = chirp_common.CHARSET_ASCII
-        rf.valid_special_chans = ['Special']
+        rf.valid_special_chans = ["Special"]
         return rf
 
     def get_memory(self, number):
-        if number == 'Special':
+        if number == "Special":
             number = len(self.memories)
         m = self.memories[number - 1]
         if isinstance(m, chirp_common.Memory) and m.number != number:
-            LOG.error('fake driver found %i instead of %i',
-                      m.number, number)
+            LOG.error("fake driver found %i instead of %i", m.number, number)
         return m
 
     def set_memory(self, mem):
-        LOG.info('Set memory %s' % mem)
+        LOG.info("Set memory %s" % mem)
         self.memories[mem.number - 1] = mem.dupe()
 
     def get_settings(self):
-        g = settings.RadioSettingGroup('top', 'Some Settings')
+        g = settings.RadioSettingGroup("top", "Some Settings")
         g.append(
             settings.RadioSetting(
-                'knob', 'A knob',
-                settings.RadioSettingValueInteger(0, 10,
-                                                  self.settings['knob'])))
+                "knob",
+                "A knob",
+                settings.RadioSettingValueInteger(0, 10, self.settings["knob"]),
+            )
+        )
         return settings.RadioSettings(g)
 
     def set_settings(self, rs):
@@ -70,7 +71,7 @@ class FakeLiveRadio(chirp_common.LiveRadio):
 
 
 class FakeLiveSlowRadio(FakeLiveRadio):
-    VARIANT = 'Slow'
+    VARIANT = "Slow"
 
     def get_memory(self, number):
         time.sleep(0.5)
@@ -90,7 +91,7 @@ class FakeLiveSlowRadio(FakeLiveRadio):
 
 
 class FakeLiveRadioWithErrors(FakeLiveRadio):
-    VARIANT = 'Errors'
+    VARIANT = "Errors"
 
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
@@ -100,50 +101,49 @@ class FakeLiveRadioWithErrors(FakeLiveRadio):
     def get_memory(self, number):
         m = super().get_memory(number)
         if isinstance(m, type):
-            raise m('Error getting %i' % number)
+            raise m("Error getting %i" % number)
         else:
             return m
 
     def set_memory(self, mem):
         if not mem.empty and mem.freq < 145000000:
-            raise errors.RadioError('Out of range')
+            raise errors.RadioError("Out of range")
         else:
             return super().set_memory(mem)
 
 
 class FakeCloneFail(chirp_common.CloneModeRadio):
-    VENDOR = 'CHIRP'
-    MODEL = 'Fake Clone Radio'
-    VARIANT = 'Errors'
+    VENDOR = "CHIRP"
+    MODEL = "Fake Clone Radio"
+    VARIANT = "Errors"
 
     def sync_in(self):
         s = chirp_common.Status()
         s.max = 100
         s.cur = 10
-        s.msg = 'Gonna fail...'
+        s.msg = "Gonna fail..."
         self.status_fn(s)
-        raise errors.RadioError('This always fails')
+        raise errors.RadioError("This always fails")
 
 
 class FakeKenwoodSerial:
     def __init__(self, *a, **k):
-        self._rbuf = b''
+        self._rbuf = b""
 
     def write(self, buffer):
-        LOG.debug('Write: %r' % buffer)
-        if buffer.startswith(b'ID'):
-            self._rbuf += b'ID TH-F7\r'
-        elif buffer.startswith(b'MR 0,001'):
-            self._rbuf += \
-                b'MR 0,001,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0\r'
-        elif buffer.startswith(b'MNA 001\r'):
-            self._rbuf += b'MNA 001,Foo\r'
-        elif buffer.startswith(b'MNA 0'):
+        LOG.debug("Write: %r" % buffer)
+        if buffer.startswith(b"ID"):
+            self._rbuf += b"ID TH-F7\r"
+        elif buffer.startswith(b"MR 0,001"):
+            self._rbuf += b"MR 0,001,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0\r"
+        elif buffer.startswith(b"MNA 001\r"):
+            self._rbuf += b"MNA 001,Foo\r"
+        elif buffer.startswith(b"MNA 0"):
             self._rbuf += buffer
-        elif buffer.startswith(b'MW 0'):
-            self._rbuf += b'MW\r'
+        elif buffer.startswith(b"MW 0"):
+            self._rbuf += b"MW\r"
         else:
-            self._rbuf += b'N\r'
+            self._rbuf += b"N\r"
 
     def read(self, n):
         ret = self._rbuf[:n]
@@ -155,46 +155,49 @@ class FakeKenwoodSerial:
 # these radios
 class FakeUV17Serial:
     def get_radio(self):
-        baofeng_uv17 = importlib.import_module('chirp.drivers.baofeng_uv17')
+        baofeng_uv17 = importlib.import_module("chirp.drivers.baofeng_uv17")
         self.rclass = baofeng_uv17.UV17
 
     def __init__(self, *a, **k):
-        self._sbuf = b''
+        self._sbuf = b""
         self.get_radio()
-        imgfn = os.path.join(os.path.dirname(__file__), '..', '..',
-                             'tests', 'images',
-                             '%s_%s.img' % (self.rclass.VENDOR,
-                                            self.rclass.MODEL))
-        LOG.debug('Opening %s' % imgfn)
+        imgfn = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "tests",
+            "images",
+            "%s_%s.img" % (self.rclass.VENDOR, self.rclass.MODEL),
+        )
+        LOG.debug("Opening %s" % imgfn)
         try:
-            with open(imgfn, 'rb') as f:
+            with open(imgfn, "rb") as f:
                 self._img = f.read()
-            LOG.debug('Loaded image size 0x%x', len(self._img))
+            LOG.debug("Loaded image size 0x%x", len(self._img))
         except FileNotFoundError:
-            LOG.error('Unable to open image, fixture will not work')
-            self._img = b''
+            LOG.error("Unable to open image, fixture will not work")
+            self._img = b""
 
     def write(self, buffer):
-        baofeng_uv17Pro = importlib.import_module(
-            'chirp.drivers.baofeng_uv17Pro')
+        baofeng_uv17Pro = importlib.import_module("chirp.drivers.baofeng_uv17Pro")
         if buffer == self.rclass._magic:
-            LOG.debug('Sent first magic')
+            LOG.debug("Sent first magic")
             self._sbuf += self.rclass._fingerprint
-        elif buffer.startswith(b'R'):
-            LOG.debug('Got: %s' % util.hexprint(buffer))
-            cmd, addr, blen = struct.unpack('>cHb', buffer)
-            resp = struct.pack('>cHb', b'W', addr, blen)
-            block = self._img[addr:addr + blen] or (b'\x00' * blen)
-            LOG.debug('Sending block length 0x%x', len(block))
+        elif buffer.startswith(b"R"):
+            LOG.debug("Got: %s" % util.hexprint(buffer))
+            cmd, addr, blen = struct.unpack(">cHb", buffer)
+            resp = struct.pack(">cHb", b"W", addr, blen)
+            block = self._img[addr : addr + blen] or (b"\x00" * blen)
+            LOG.debug("Sending block length 0x%x", len(block))
             self._sbuf += resp + baofeng_uv17Pro._crypt(1, block)
         else:
             for magic, rlen in self.rclass._magics:
                 if buffer == magic:
-                    LOG.debug('Sent magic %r' % magic)
-                    self._sbuf += b' ' * rlen
+                    LOG.debug("Sent magic %r" % magic)
+                    self._sbuf += b" " * rlen
                     return
-            LOG.debug('Unrecognized ident string %r' % buffer)
-            self._sbuf += b'\x15' * 32
+            LOG.debug("Unrecognized ident string %r" % buffer)
+            self._sbuf += b"\x15" * 32
 
     def read(self, length):
         chunk = self._sbuf[:length]
@@ -207,8 +210,7 @@ class FakeUV17Serial:
 
 class FakeUV17ProSerial(FakeUV17Serial):
     def get_radio(self):
-        baofeng_uv17Pro = importlib.import_module(
-            'chirp.drivers.baofeng_uv17Pro')
+        baofeng_uv17Pro = importlib.import_module("chirp.drivers.baofeng_uv17Pro")
         self.rclass = baofeng_uv17Pro.UV17Pro
 
 

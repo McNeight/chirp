@@ -19,10 +19,16 @@ import time
 
 from chirp import chirp_common, directory, memmap, errors, util, bitwise
 from chirp import checksum
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettings, RadioSettingValueMap
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettings,
+    RadioSettingValueMap,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -86,7 +92,7 @@ struct {
   u8 unknown20[4];          // x8c-x8f
   // --
   u8 unknown21[4];          // x90-x93
-  char poweronmesg[8];      // x94-x9b power on mesg 8 bytes, off is "\xFF" * 8
+  char poweronmesg[8];      // x94-x9b power on mesg 8 bytes, off is "\xff" * 8
   u8 unknown22[4];          // x9c-x9f
   // --
   u8 unknown23[7];          // xa0-xa6
@@ -266,12 +272,14 @@ BLOCKS = MEM_SIZE // BLOCK_SIZE
 MEM_BLOCKS = list(range(0, BLOCKS))
 
 # define and empty block of data, as it will be used a lot in this code
-EMPTY_BLOCK = b"\xFF" * 256
+EMPTY_BLOCK = b"\xff" * 256
 
 ACK_CMD = b"\x06"
 
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1),
-                chirp_common.PowerLevel("High", watts=5)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1),
+    chirp_common.PowerLevel("High", watts=5),
+]
 
 MODES = ["NFM", "FM"]  # 12.5 / 25 kHz
 VALID_CHARS = chirp_common.CHARSET_UPPER_NUMERIC + r"_-*()/\-+=)"
@@ -298,35 +306,35 @@ debug = False
 
 KEYS = {
     0x33: "Display character",
-    0x35: "Home Channel",                   # Possible portable only, check it
+    0x35: "Home Channel",  # Possible portable only, check it
     0x37: "CH down",
     0x38: "CH up",
     0x39: "Key lock",
-    0x3a: "Lamp",                           # Portable only
-    0x3b: "Public address",
-    0x3c: "Reverse",                        # Just in updated firmwares (768G)
-    0x3d: "Horn alert",
-    0x3e: "Selectable QT",                  # Just in updated firmwares (768G)
-    0x3f: "2-tone encode",
+    0x3A: "Lamp",  # Portable only
+    0x3B: "Public address",
+    0x3C: "Reverse",  # Just in updated firmwares (768G)
+    0x3D: "Horn alert",
+    0x3E: "Selectable QT",  # Just in updated firmwares (768G)
+    0x3F: "2-tone encode",
     0x40: "Monitor A: open momentary",
     0x41: "Monitor B: Open Toggle",
     0x42: "Monitor C: Carrier momentary",
     0x43: "Monitor D: Carrier toggle",
     0x44: "Operator selectable tone",
     0x45: "Redial",
-    0x46: "RF Power Low",                   # portable only ?
+    0x46: "RF Power Low",  # portable only ?
     0x47: "Scan",
     0x48: "Scan del/add",
-    0x4a: "GROUP down",
-    0x4b: "GROUP up",
+    0x4A: "GROUP down",
+    0x4B: "GROUP up",
     # 0x4e: "Tone off (Experimental)",       # undocumented !!!!
-    0x4f: "None",
+    0x4F: "None",
     0x50: "VOL down",
     0x51: "VOL up",
     0x52: "Talk around",
-    0x5d: "AUX",
-    0xa1: "Channel Up/Down"                 # Knob for portables only
-    }
+    0x5D: "AUX",
+    0xA1: "Channel Up/Down",  # Knob for portables only
+}
 KEY_MAP = [(v, k) for k, v in KEYS.items()]
 
 
@@ -335,7 +343,7 @@ def _raw_recv(radio, amount):
     try:
         data = radio.pipe.read(amount)
     except Exception as e:
-        LOG.exception('Failed read: %s', e)
+        LOG.exception("Failed read: %s", e)
         raise errors.RadioError("Error reading data from radio")
 
     # DEBUG
@@ -350,7 +358,7 @@ def _raw_send(radio, data):
     try:
         radio.pipe.write(data)
     except Exception as e:
-        LOG.exception('Failed write: %s', e)
+        LOG.exception("Failed write: %s", e)
         raise errors.RadioError("Error sending data to radio")
 
     # DEBUG
@@ -393,14 +401,13 @@ def _check_write_ack(r, ack, addr):
     # Explicit BAD checksum
     if ack == b"\x15":
         _close_radio(r)
-        raise errors.RadioError(
-            "Bad checksum in block %02x write" % addr)
+        raise errors.RadioError("Bad checksum in block %02x write" % addr)
 
     # everything else
     _close_radio(r)
     raise errors.RadioError(
-        "Problem with the ack to block %02x write, ack %03i" %
-        (addr, int(ack)))
+        "Problem with the ack to block %02x write, ack %03i" % (addr, int(ack))
+    )
 
 
 def _recv(radio):
@@ -411,16 +418,16 @@ def _recv(radio):
     # then the block is all \xFF
     if not cmd:
         raise errors.RadioNoResponse()
-    elif cmd == b'Z':
+    elif cmd == b"Z":
         # Empty "zero" block
         _raw_recv(radio, 1)
         _handshake(radio, "after zero block")
-        return b'\xff' * 256
-    elif cmd != b'W':
-        LOG.error('Got non-W command:')
+        return b"\xff" * 256
+    elif cmd != b"W":
+        LOG.error("Got non-W command:")
         rxdata = _raw_recv(radio, BLOCK_SIZE + 1)
         LOG.error(util.hexprint(rxdata))
-        raise errors.RadioError('Received unexpected response from radio')
+        raise errors.RadioError("Received unexpected response from radio")
     else:
         rxdata = _raw_recv(radio, BLOCK_SIZE + 1)
         rcs = rxdata[-1]
@@ -430,8 +437,8 @@ def _recv(radio):
         if rcs != ccs:
             _close_radio(radio)
             raise errors.RadioError(
-                "Block Checksum Error! real %02x, calculated %02x" %
-                (rcs, ccs))
+                "Block Checksum Error! real %02x, calculated %02x" % (rcs, ccs)
+            )
 
         _handshake(radio, "after checksum")
         return data
@@ -482,8 +489,9 @@ def _open_radio(radio, status):
         LOG.debug(util.hexprint(rid))
 
         raise errors.RadioError(
-            "Incorrect model ID, got %s, it not contains %s" %
-            (rid.strip(b"\xff"), radio.TYPE))
+            "Incorrect model ID, got %s, it not contains %s"
+            % (rid.strip(b"\xff"), radio.TYPE)
+        )
 
     # DEBUG
     LOG.debug("Full ident string is:")
@@ -497,7 +505,7 @@ def _open_radio(radio, status):
 
 
 def do_download(radio):
-    """ The download function """
+    """The download function"""
     # UI progress
     status = chirp_common.Status()
     data = b""
@@ -536,7 +544,7 @@ def do_download(radio):
 
 
 def do_upload(radio):
-    """ The upload function """
+    """The upload function"""
     # UI progress
     status = chirp_common.Status()
     data = b""
@@ -558,7 +566,7 @@ def do_upload(radio):
     raddr = 0
     for addr in MEM_BLOCKS:
         # this is the data block to write
-        data = radio.get_mmap()[raddr:raddr+BLOCK_SIZE]
+        data = radio.get_mmap()[raddr : raddr + BLOCK_SIZE]
 
         # The blocks from x59-x5F are NOT programmable
         # The blocks from x11-x1F are written only if not empty
@@ -578,7 +586,7 @@ def do_upload(radio):
                 continue
 
         if data == EMPTY_BLOCK:
-            frame = _make_frame(b"Z", addr) + b"\xFF"
+            frame = _make_frame(b"Z", addr) + b"\xff"
         else:
             cs = checksum.checksum_8bit(data)
             frame = _make_frame(b"W", addr) + data + bytes([cs])
@@ -614,6 +622,7 @@ def model_match(cls, data):
 
 class Kenwood60GBankModel(chirp_common.BankModel):
     """Testing the bank model on Kenwood"""
+
     channelAlwaysHasBank = True
 
     def get_num_mappings(self):
@@ -633,8 +642,9 @@ class Kenwood60GBankModel(chirp_common.BankModel):
 
     def remove_memory_from_mapping(self, memory, bank):
         if self._radio._get_bank(memory.number) != bank.index:
-            raise Exception("Memory %i not in bank %s. Cannot remove." %
-                            (memory.number, bank))
+            raise Exception(
+                "Memory %i not in bank %s. Cannot remove." % (memory.number, bank)
+            )
 
         # We can't "Remove" it for good
         # the Kenwood paradigm doesn't allow it
@@ -655,14 +665,15 @@ class Kenwood60GBankModel(chirp_common.BankModel):
 
 class memBank(chirp_common.Bank):
     """A bank model for Kenwood"""
+
     # Integral index of the bank (not to be confused with per-memory
     # bank indexes
     index = 0
 
 
-class Kenwood_Series_60G(chirp_common.CloneModeRadio,
-                         chirp_common.ExperimentalRadio):
+class Kenwood_Series_60G(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Kenwood Series 60G Radios base class"""
+
     VENDOR = "Kenwood"
     BAUD_RATE = 9600
     _memsize = MEM_SIZE
@@ -675,25 +686,26 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
     _kind = ""
     VARIANT = ""
     MODEL = ""
-    RO_BLOCKS = list(range(0x10, 0x1F)) + list(range(0x59, 0x5f))
+    RO_BLOCKS = list(range(0x10, 0x1F)) + list(range(0x59, 0x5F))
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            'This driver is experimental: Use at your own risk! '
+        rp.experimental = "This driver is experimental: Use at your own risk! "
         rp.pre_download = _(
             "Follow these instructions to download your radio:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio (unlock it if password protected)\n"
-            "4 - Click OK to start\n")
+            "4 - Click OK to start\n"
+        )
         rp.pre_upload = _(
             "Follow these instructions to upload your radio:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio (unlock it if password protected)\n"
-            "4 - Click OK to start\n")
+            "4 - Click OK to start\n"
+        )
         return rp
 
     def get_features(self):
@@ -712,7 +724,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         rf.has_cross = True
         rf.valid_modes = MODES
         rf.valid_duplexes = ["", "-", "+", "off"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_cross_modes = [
             "Tone->Tone",
             "DTCS->",
@@ -720,7 +732,8 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_characters = VALID_CHARS
         rf.valid_skips = SKIP_VALUES
@@ -772,14 +785,15 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
                 k = 1
                 raise errors.InvalidValueError(
                     "Invalid bank value '%s', bad data in the image? "
-                    "Trying to fix this, review your bank data!" % k)
+                    "Trying to fix this, review your bank data!" % k
+                )
             c = 1
             for i in v:
                 fdata += bytes([k, c, k - 1, i])
                 c = c + 1
 
         # fill to match a full 256 bytes block
-        fdata += (len(fdata) % 256) * b"\xFF"
+        fdata += (len(fdata) % 256) * b"\xff"
 
         # updating the data in the memmap [x300]
         self._fill(0x300, fdata)
@@ -794,7 +808,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             bdata += line
 
         # fill to match a full 256 bytes block
-        bdata += (256 - (len(bdata)) % 256) * b"\xFF"
+        bdata += (256 - (len(bdata)) % 256) * b"\xff"
 
         # fill to match the whole area
         bdata += (16 - len(bdata) // 256) * EMPTY_BLOCK
@@ -804,8 +818,9 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
         # DTMF id for each channel, 5 bytes lbcd at x7000
         # ############## TODO ###################
-        fldata = b"\x00\xf0\xff\xff\xff" * self._chs_progs + \
-            b"\xff" * (5 * (self._upper - self._chs_progs))
+        fldata = b"\x00\xf0\xff\xff\xff" * self._chs_progs + b"\xff" * (
+            5 * (self._upper - self._chs_progs)
+        )
 
         # write it
         # updating the data in the memmap [x7000]
@@ -824,8 +839,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             # ham bands, even if they are outside the OEM ranges.
             # By experimentation we found that 4% at the edges is in most
             # cases safe and will cover the near ham bands in full
-            self._range = [int(low * 1000000 * 0.96),
-                           int(high * 1000000 * 1.04)]
+            self._range = [int(low * 1000000 * 0.96), int(high * 1000000 * 1.04)]
 
             # setting the bank data in the features, 8 & 16 CH don't have banks
             if self._upper < 32:
@@ -842,7 +856,8 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             LOG.debug("Wrong Kenwood radio, ID or unknown variant")
             LOG.debug(util.hexprint(rid))
             raise errors.RadioError(
-                "Wrong Kenwood radio, ID or unknown variant, see LOG output.")
+                "Wrong Kenwood radio, ID or unknown variant, see LOG output."
+            )
 
     def sync_in(self):
         """Do a download of the radio eeprom"""
@@ -854,7 +869,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
         # chirp signature on the eprom ;-)
         sign = b"Chirp"
-        self._fill(0xbb, sign)
+        self._fill(0xBB, sign)
         if self._memobj is None:
             self.process_mmap()
 
@@ -887,22 +902,22 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
         val = int(val)
         if val == 65535:
-            return '', None, None
+            return "", None, None
         elif val >= 0x2800:
             code = int("%03o" % (val & 0x07FF))
             pol = (val & 0x8000) and "R" or "N"
-            return 'DTCS', code, pol
+            return "DTCS", code, pol
         else:
             a = val / 10.0
-            return 'Tone', a, None
+            return "Tone", a, None
 
     def _encode_tone(self, memval, mode, value, pol):
         """Parse the tone data to encode from UI to mem"""
-        if mode == '':
+        if mode == "":
             memval.set_raw("\xff\xff")
-        elif mode == 'Tone':
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
+        elif mode == "DTCS":
             val = int("%i" % value, 8) + 0x2800
             if pol == "R":
                 val += 0xA000
@@ -914,7 +929,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         """Get the channel scan status from the 16 bytes array on the eeprom
         then from the bits on the byte, return '' or 'S' as needed"""
         result = "S"
-        byte = int(chan/8)
+        byte = int(chan / 8)
         bit = chan % 8
         res = self._memobj.settings.add[byte] & (pow(2, bit))
         if res > 0:
@@ -924,7 +939,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
     def _set_scan(self, chan, value):
         """Set the channel scan status from UI to the mem_map"""
-        byte = int(chan/8)
+        byte = int(chan / 8)
         bit = chan % 8
 
         # get the actual value to see if I need to change anything
@@ -946,14 +961,14 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         mem.number = number
 
         # A "blank" rxfreq is the indication of an empty memory
-        if _mem.rxfreq[0].get_raw(asbytes=False) == '\xFF':
+        if _mem.rxfreq[0].get_raw(asbytes=False) == "\xff":
             mem.empty = True
             return mem
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.get_raw(asbytes=False)[16] == "\xFF":
+        if _mem.get_raw(asbytes=False)[16] == "\xff":
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -970,7 +985,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
                 mem.offset = 0
 
         # name TAG of the channel
-        mem.name = str(_mem.name).rstrip(' \xff')
+        mem.name = str(_mem.name).rstrip(" \xff")
 
         # power
         mem.power = POWER_LEVELS[_mem.power]
@@ -996,31 +1011,35 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         if b > 127 or b == 0:
             _mem.bank = b = 1
 
-        bank = RadioSetting("bank", "Bank",
-                            RadioSettingValueInteger(1, 128, b))
+        bank = RadioSetting("bank", "Bank", RadioSettingValueInteger(1, 128, b))
         mem.extra.append(bank)
 
         # validate bnumb
         if int(_mem.bnumb) > 127:
             _mem.bank = mem.number
 
-        bnumb = RadioSetting("bnumb", "Bank index",
-                             RadioSettingValueInteger(0, 127, _mem.bnumb))
+        bnumb = RadioSetting(
+            "bnumb", "Bank index", RadioSettingValueInteger(0, 127, _mem.bnumb)
+        )
         mem.extra.append(bnumb)
 
-        bs = RadioSetting("beat_shift", "Beat shift",
-                          RadioSettingValueBoolean(
-                              not bool(_mem.beat_shift)))
+        bs = RadioSetting(
+            "beat_shift",
+            "Beat shift",
+            RadioSettingValueBoolean(not bool(_mem.beat_shift)),
+        )
         mem.extra.append(bs)
 
-        cp = RadioSetting("compander", "Compander",
-                          RadioSettingValueBoolean(
-                              not bool(_mem.compander)))
+        cp = RadioSetting(
+            "compander", "Compander", RadioSettingValueBoolean(not bool(_mem.compander))
+        )
         mem.extra.append(cp)
 
-        bl = RadioSetting("busy_lock", "Busy Channel lock",
-                          RadioSettingValueBoolean(
-                              not bool(_mem.busy_lock)))
+        bl = RadioSetting(
+            "busy_lock",
+            "Busy Channel lock",
+            RadioSettingValueBoolean(not bool(_mem.busy_lock)),
+        )
         mem.extra.append(bl)
 
         return mem
@@ -1034,7 +1053,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 48)
+            _mem.set_raw("\xff" * 48)
             return
 
         # frequency
@@ -1042,7 +1061,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
         # this are a mystery yet, but so far there is no impact
         # with this default values for new channels
-        if int(_mem.rx_unkw) == 0xff:
+        if int(_mem.rx_unkw) == 0xFF:
             _mem.rx_unkw = 0x35
             _mem.tx_unkw = 0x32
 
@@ -1053,13 +1072,14 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             _mem.txfreq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for byte in _mem.txfreq:
-                byte.set_raw("\xFF")
+                byte.set_raw("\xff")
         else:
             _mem.txfreq = mem.freq / 10
 
         # tone data
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self._encode_tone(_mem.tx_tone, txmode, txtone, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxtone, rxpol)
 
@@ -1080,7 +1100,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         self._set_scan(mem.number - 1, mem.skip)
 
         # bank and number in the channel
-        if int(_mem.bnumb) == 0xff:
+        if int(_mem.bnumb) == 0xFF:
             _mem.bnumb = mem.number - 1
             _mem.bank = 1
 
@@ -1132,77 +1152,107 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         top = RadioSettings(basic, dealer, fkeys)
 
         # Basic
-        tot = RadioSetting("settings.tot", "Time Out Timer (TOT)",
-                           RadioSettingValueList(
-                               TOT, current_index=TOT.index('%i' % sett.tot)))
+        tot = RadioSetting(
+            "settings.tot",
+            "Time Out Timer (TOT)",
+            RadioSettingValueList(TOT, current_index=TOT.index("%i" % sett.tot)),
+        )
         basic.append(tot)
 
-        totalert = RadioSetting("settings.tot_alert", "TOT pre alert",
-                                RadioSettingValueList(
-                                    TOT_PRE, current_index=sett.tot_alert))
+        totalert = RadioSetting(
+            "settings.tot_alert",
+            "TOT pre alert",
+            RadioSettingValueList(TOT_PRE, current_index=sett.tot_alert),
+        )
         basic.append(totalert)
 
-        totrekey = RadioSetting("settings.tot_rekey", "TOT re-key time",
-                                RadioSettingValueList(
-                                    TOT_REKEY, current_index=sett.tot_rekey))
+        totrekey = RadioSetting(
+            "settings.tot_rekey",
+            "TOT re-key time",
+            RadioSettingValueList(TOT_REKEY, current_index=sett.tot_rekey),
+        )
         basic.append(totrekey)
 
-        totreset = RadioSetting("settings.tot_reset", "TOT reset time",
-                                RadioSettingValueList(
-                                    TOT_RESET, current_index=sett.tot_reset))
+        totreset = RadioSetting(
+            "settings.tot_reset",
+            "TOT reset time",
+            RadioSettingValueList(TOT_RESET, current_index=sett.tot_reset),
+        )
         basic.append(totreset)
 
         # this feature is for mobile only
         if self.TYPE[0] == "M":
-            minvol = RadioSetting("settings.min_vol", "Minimum volume",
-                                  RadioSettingValueList(
-                                      VOL, current_index=sett.min_vol))
+            minvol = RadioSetting(
+                "settings.min_vol",
+                "Minimum volume",
+                RadioSettingValueList(VOL, current_index=sett.min_vol),
+            )
             basic.append(minvol)
 
             tv = int(sett.tone_vol)
             if tv == 255:
                 tv = 32
-            tvol = RadioSetting("settings.tone_vol", "Minimum tone volume",
-                                RadioSettingValueList(TVOL, current_index=tv))
+            tvol = RadioSetting(
+                "settings.tone_vol",
+                "Minimum tone volume",
+                RadioSettingValueList(TVOL, current_index=tv),
+            )
             basic.append(tvol)
 
-        sql = RadioSetting("settings.sql_level", "SQL Ref Level",
-                           RadioSettingValueList(
-                               SQL, current_index=sett.sql_level))
+        sql = RadioSetting(
+            "settings.sql_level",
+            "SQL Ref Level",
+            RadioSettingValueList(SQL, current_index=sett.sql_level),
+        )
         basic.append(sql)
 
         # c2t = RadioSetting("settings.c2t", "Clear to Transpond",
         #                    RadioSettingValueBoolean(not sett.c2t))
         # basic.append(c2t)
 
-        ptone = RadioSetting("settings.poweron_tone", "Power On tone",
-                             RadioSettingValueBoolean(sett.poweron_tone))
+        ptone = RadioSetting(
+            "settings.poweron_tone",
+            "Power On tone",
+            RadioSettingValueBoolean(sett.poweron_tone),
+        )
         basic.append(ptone)
 
-        ctone = RadioSetting("settings.control_tone", "Control (key) tone",
-                             RadioSettingValueBoolean(sett.control_tone))
+        ctone = RadioSetting(
+            "settings.control_tone",
+            "Control (key) tone",
+            RadioSettingValueBoolean(sett.control_tone),
+        )
         basic.append(ctone)
 
-        wtone = RadioSetting("settings.warn_tone", "Warning tone",
-                             RadioSettingValueBoolean(sett.warn_tone))
+        wtone = RadioSetting(
+            "settings.warn_tone",
+            "Warning tone",
+            RadioSettingValueBoolean(sett.warn_tone),
+        )
         basic.append(wtone)
 
         # Save Battery only for portables?
         if self.TYPE[0] == "P":
             bs = int(sett.battery_save) == 0x32 and True or False
-            bsave = RadioSetting("settings.battery_save", "Battery Saver",
-                                 RadioSettingValueBoolean(bs))
+            bsave = RadioSetting(
+                "settings.battery_save", "Battery Saver", RadioSettingValueBoolean(bs)
+            )
             basic.append(bsave)
 
         ponm = str(sett.poweronmesg).strip("\xff")
-        pom = RadioSetting("settings.poweronmesg", "Power on message",
-                           RadioSettingValueString(0, 8, ponm, False))
+        pom = RadioSetting(
+            "settings.poweronmesg",
+            "Power on message",
+            RadioSettingValueString(0, 8, ponm, False),
+        )
         basic.append(pom)
 
-        offhook = RadioSetting('settings.off_hook_decode', 'Off-hook decode',
-                               RadioSettingValueBoolean(
-                                   not sett.off_hook_decode))
-        offhook.set_doc('Squelch mode active when mic is off-hook')
+        offhook = RadioSetting(
+            "settings.off_hook_decode",
+            "Off-hook decode",
+            RadioSettingValueBoolean(not sett.off_hook_decode),
+        )
+        offhook.set_doc("Squelch mode active when mic is off-hook")
         basic.append(offhook)
 
         # dealer
@@ -1227,57 +1277,77 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         dealer.append(sver)
 
         l1 = str(mess.line1).strip(" \xff")
-        line1 = RadioSetting("message.line1", "Comment 1",
-                             RadioSettingValueString(0, 32, l1))
+        line1 = RadioSetting(
+            "message.line1", "Comment 1", RadioSettingValueString(0, 32, l1)
+        )
         dealer.append(line1)
 
         l2 = str(mess.line2).strip(" \xff")
-        line2 = RadioSetting("message.line2", "Comment 2",
-                             RadioSettingValueString(0, 32, l2))
+        line2 = RadioSetting(
+            "message.line2", "Comment 2", RadioSettingValueString(0, 32, l2)
+        )
         dealer.append(line2)
 
-        sprog = RadioSetting("settings.self_prog", "Self program",
-                             RadioSettingValueBoolean(sett.self_prog))
+        sprog = RadioSetting(
+            "settings.self_prog",
+            "Self program",
+            RadioSettingValueBoolean(sett.self_prog),
+        )
         dealer.append(sprog)
 
-        clone = RadioSetting("settings.clone", "Allow clone",
-                             RadioSettingValueBoolean(sett.clone))
+        clone = RadioSetting(
+            "settings.clone", "Allow clone", RadioSettingValueBoolean(sett.clone)
+        )
         dealer.append(clone)
 
-        panel = RadioSetting("settings.panel_test", "Panel Test",
-                             RadioSettingValueBoolean(sett.panel_test))
+        panel = RadioSetting(
+            "settings.panel_test",
+            "Panel Test",
+            RadioSettingValueBoolean(sett.panel_test),
+        )
         dealer.append(panel)
 
-        fmw = RadioSetting("settings.firmware_prog", "Firmware program",
-                           RadioSettingValueBoolean(sett.firmware_prog))
+        fmw = RadioSetting(
+            "settings.firmware_prog",
+            "Firmware program",
+            RadioSettingValueBoolean(sett.firmware_prog),
+        )
         dealer.append(fmw)
 
         # front keys
         # The Mobile only parameters are wrapped here
         if self.TYPE[0] == "M":
-            vu = RadioSetting("keys.kVOL_UP", "VOL UP",
-                              RadioSettingValueMap(KEY_MAP,
-                                                   int(keys.kVOL_UP)))
+            vu = RadioSetting(
+                "keys.kVOL_UP",
+                "VOL UP",
+                RadioSettingValueMap(KEY_MAP, int(keys.kVOL_UP)),
+            )
             fkeys.append(vu)
 
-            vd = RadioSetting("keys.kVOL_DOWN", "VOL DOWN",
-                              RadioSettingValueMap(KEY_MAP,
-                                                   int(keys.kVOL_DOWN)))
+            vd = RadioSetting(
+                "keys.kVOL_DOWN",
+                "VOL DOWN",
+                RadioSettingValueMap(KEY_MAP, int(keys.kVOL_DOWN)),
+            )
             fkeys.append(vd)
 
-            chu = RadioSetting("keys.kCH_UP", "CH UP",
-                               RadioSettingValueMap(KEY_MAP,
-                                                    int(keys.kCH_UP)))
+            chu = RadioSetting(
+                "keys.kCH_UP", "CH UP", RadioSettingValueMap(KEY_MAP, int(keys.kCH_UP))
+            )
             fkeys.append(chu)
 
-            chd = RadioSetting("keys.kCH_DOWN", "CH DOWN",
-                               RadioSettingValueMap(KEY_MAP,
-                                                    int(keys.kCH_DOWN)))
+            chd = RadioSetting(
+                "keys.kCH_DOWN",
+                "CH DOWN",
+                RadioSettingValueMap(KEY_MAP, int(keys.kCH_DOWN)),
+            )
             fkeys.append(chd)
 
-            foot = RadioSetting("keys.kFOOT", "Foot switch",
-                                RadioSettingValueMap(KEY_MAP,
-                                                     int(keys.kFOOT)))
+            foot = RadioSetting(
+                "keys.kFOOT",
+                "Foot switch",
+                RadioSettingValueMap(KEY_MAP, int(keys.kFOOT)),
+            )
             fkeys.append(foot)
 
         # this is the common buttons for all
@@ -1288,36 +1358,38 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             if self.TYPE[0] == b"P":
                 scn_name = "Open Circle"
 
-            scn = RadioSetting("keys.kSCN", scn_name,
-                               RadioSettingValueMap(KEY_MAP,
-                                                    int(keys.kSCN)))
+            scn = RadioSetting(
+                "keys.kSCN", scn_name, RadioSettingValueMap(KEY_MAP, int(keys.kSCN))
+            )
             fkeys.append(scn)
 
             a_name = "A"
             if self.TYPE[0] == b"P":
                 a_name = "Closed circle"
 
-            a = RadioSetting("keys.kA", a_name,
-                             RadioSettingValueMap(KEY_MAP,
-                                                  int(keys.kA)))
+            a = RadioSetting(
+                "keys.kA", a_name, RadioSettingValueMap(KEY_MAP, int(keys.kA))
+            )
             fkeys.append(a)
 
             da_name = "D/A"
             if self.TYPE[0] == b"P":
                 da_name = "< key"
 
-            da = RadioSetting("keys.kDA", da_name,
-                              RadioSettingValueMap(KEY_MAP,
-                                                   int(keys.kDA)))
+            da = RadioSetting(
+                "keys.kDA", da_name, RadioSettingValueMap(KEY_MAP, int(keys.kDA))
+            )
             fkeys.append(da)
 
             gu_name = "Triangle up"
             if self.TYPE[0] == b"P":
                 gu_name = "Side 1"
 
-            gu = RadioSetting("keys.kGROUP_UP", gu_name,
-                              RadioSettingValueMap(KEY_MAP,
-                                                   int(keys.kGROUP_UP)))
+            gu = RadioSetting(
+                "keys.kGROUP_UP",
+                gu_name,
+                RadioSettingValueMap(KEY_MAP, int(keys.kGROUP_UP)),
+            )
             fkeys.append(gu)
 
         # Side keys on portables
@@ -1325,18 +1397,20 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
         if self.TYPE[0] == b"P":
             gd_name = "> key"
 
-        gd = RadioSetting("keys.kGROUP_DOWN", gd_name,
-                          RadioSettingValueMap(KEY_MAP,
-                                               int(keys.kGROUP_DOWN)))
+        gd = RadioSetting(
+            "keys.kGROUP_DOWN",
+            gd_name,
+            RadioSettingValueMap(KEY_MAP, int(keys.kGROUP_DOWN)),
+        )
         fkeys.append(gd)
 
         mon_name = "MON"
         if self.TYPE[0] == b"P":
             mon_name = "Side 2"
 
-        mon = RadioSetting("keys.kMON", mon_name,
-                           RadioSettingValueMap(KEY_MAP,
-                                                int(keys.kMON)))
+        mon = RadioSetting(
+            "keys.kMON", mon_name, RadioSettingValueMap(KEY_MAP, int(keys.kMON))
+        )
         fkeys.append(mon)
 
         return top
@@ -1365,8 +1439,15 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
                 value = element.value
 
                 # integers case + special case
-                if setting in ["tot", "tot_alert", "min_vol", "tone_vol",
-                               "sql_level", "tot_rekey", "tot_reset"]:
+                if setting in [
+                    "tot",
+                    "tot_alert",
+                    "min_vol",
+                    "tone_vol",
+                    "sql_level",
+                    "tot_rekey",
+                    "tot_reset",
+                ]:
                     # catching the "off" values as zero
                     try:
                         value = int(value)
@@ -1378,18 +1459,26 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
                         value = value * 15
                         # off is special
                         if value == 0:
-                            value = 0x4b0
+                            value = 0x4B0
 
                     # Caso tone_vol
                     if setting == "tone_vol":
                         # off is special
                         if value == 32:
-                            value = 0xff
+                            value = 0xFF
 
                 # Bool types + inverted
-                if setting in ["c2t", "poweron_tone", "control_tone",
-                               "warn_tone", "battery_save", "self_prog",
-                               "clone", "panel_test", "off_hook_decode"]:
+                if setting in [
+                    "c2t",
+                    "poweron_tone",
+                    "control_tone",
+                    "warn_tone",
+                    "battery_save",
+                    "self_prog",
+                    "clone",
+                    "panel_test",
+                    "off_hook_decode",
+                ]:
                     value = bool(value)
 
                     # this cases are inverted
@@ -1401,7 +1490,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
                         if bool(value) is True:
                             value = 0x32
                         else:
-                            value = 0xff
+                            value = 0xFF
 
                 # String cases
                 if setting in ["poweronmesg", "line1", "line2"]:
@@ -1420,8 +1509,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 
                 # case keys, with special config
                 if inter == "keys":
-                    value = list(KEYS.keys())[list(KEYS.values()).index(
-                            str(value))]
+                    value = list(KEYS.keys())[list(KEYS.values()).index(str(value))]
 
             # Apply al configs done
             setattr(obj, setting, value)
@@ -1454,7 +1542,7 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
             mem = self._memobj.memory[loc - 1]
             mem.bank = b + 1
         except Exception as e:
-            LOG.warning('Failed to set bank: %s', e)
+            LOG.warning("Failed to set bank: %s", e)
             msg = "You can't have a channel without a bank, click another bank"
             raise errors.InvalidDataError(msg)
 
@@ -1482,124 +1570,132 @@ class Kenwood_Series_60G(chirp_common.CloneModeRadio,
 @directory.register
 class TK868G_Radios(Kenwood_Series_60G):
     """Kenwood TK-868G Radio M/C"""
+
     MODEL = "TK-868G"
     TYPE = b"M8680"
     VARIANTS = {
-        b"M8680\x18\xff":    (8, 400, 490, "M"),
-        b"M8680;\xff":       (128, 350, 390, "C1"),
-        b"M86808\xff":       (128, 400, 430, "C2"),
-        b"M86806\xff":       (128, 450, 490, "C3"),
-        }
+        b"M8680\x18\xff": (8, 400, 490, "M"),
+        b"M8680;\xff": (128, 350, 390, "C1"),
+        b"M86808\xff": (128, 400, 430, "C2"),
+        b"M86806\xff": (128, 450, 490, "C3"),
+    }
 
 
 @directory.register
 class TK862G_Radios(Kenwood_Series_60G):
     """Kenwood TK-862G Radio K/E/(N)E"""
+
     MODEL = "TK-862G"
     TYPE = b"M8620"
     VARIANTS = {
-        b"M8620\x06\xff":    (8, 450, 490, "K"),
-        b"M8620\x07\xff":    (8, 485, 512, "K2"),
-        b"M8620&\xff":       (8, 440, 470, "E"),
-        b"M8620V\xff":       (8, 440, 470, "(N)E"),
-        }
+        b"M8620\x06\xff": (8, 450, 490, "K"),
+        b"M8620\x07\xff": (8, 485, 512, "K2"),
+        b"M8620&\xff": (8, 440, 470, "E"),
+        b"M8620V\xff": (8, 440, 470, "(N)E"),
+    }
 
 
 @directory.register
 class TK860G_Radios(Kenwood_Series_60G):
     """Kenwood TK-860G Radio K"""
+
     MODEL = "TK-860G"
     TYPE = b"M8600"
     VARIANTS = {
-        b"M8600\x08\xff":    (128, 400, 430, "K"),
-        b"M8600\x06\xff":    (128, 450, 490, "K1"),
-        b"M8600\x07\xff":    (128, 485, 512, "K2"),
-        b"M8600\x18\xff":    (128, 400, 430, "M"),
-        b"M8600\x16\xff":    (128, 450, 490, "M1"),
-        b"M8600\x17\xff":    (128, 485, 520, "M2"),
-        }
+        b"M8600\x08\xff": (128, 400, 430, "K"),
+        b"M8600\x06\xff": (128, 450, 490, "K1"),
+        b"M8600\x07\xff": (128, 485, 512, "K2"),
+        b"M8600\x18\xff": (128, 400, 430, "M"),
+        b"M8600\x16\xff": (128, 450, 490, "M1"),
+        b"M8600\x17\xff": (128, 485, 520, "M2"),
+    }
 
 
 @directory.register
 class TK768G_Radios(Kenwood_Series_60G):
     """Kenwood TK-768G Radios [M/C]"""
+
     MODEL = "TK-768G"
     TYPE = b"M7680"
     # Note that 8 CH don't have banks
     VARIANTS = {
         b"M7680\x15\xff": (8, 136, 162, "M2"),
         b"M7680\x14\xff": (8, 148, 174, "M"),
-        b"M76805\xff":    (128, 136, 162, "C2"),
-        b"M76804\xff":    (128, 148, 174, "C"),
-        }
+        b"M76805\xff": (128, 136, 162, "C2"),
+        b"M76804\xff": (128, 148, 174, "C"),
+    }
 
 
 @directory.register
 class TK762G_Radios(Kenwood_Series_60G):
     """Kenwood TK-762G Radios [K/E/NE]"""
+
     MODEL = "TK-762G"
     TYPE = b"M7620"
     # Note that 8 CH don't have banks
     VARIANTS = {
         b"M7620\x05\xff": (8, 136, 162, "K2"),
         b"M7620\x04\xff": (8, 148, 172, "K"),
-        b"M7620$\xff":    (8, 148, 172, "E"),
-        b"M7620T\xff":    (8, 148, 172, "NE"),
-        }
+        b"M7620$\xff": (8, 148, 172, "E"),
+        b"M7620T\xff": (8, 148, 172, "NE"),
+    }
 
 
 @directory.register
 class TK760G_Radios(Kenwood_Series_60G):
     """Kenwood TK-760G Radios [K/M/(N)E]"""
+
     MODEL = "TK-760G"
     TYPE = b"M7600"
     VARIANTS = {
         b"M7600\x05\xff": (128, 136, 162, "K2"),
         b"M7600\x04\xff": (128, 148, 174, "K"),
         b"M7600\x14\xff": (128, 148, 174, "M"),
-        b"M7600T\xff":    (128, 148, 174, "NE")
-        }
+        b"M7600T\xff": (128, 148, 174, "NE"),
+    }
 
 
 @directory.register
 class TK388G_Radios(Kenwood_Series_60G):
     """Kenwood TK-388 Radio [K/E/M/NE]"""
+
     MODEL = "TK-388G"
     TYPE = b"P3880"
-    VARIANTS = {
-        b"P3880\x1b\xff": (128, 350, 370, "M")
-        }
+    VARIANTS = {b"P3880\x1b\xff": (128, 350, 370, "M")}
 
 
 @directory.register
 class TK378G_Radios(Kenwood_Series_60G):
     """Kenwood TK-378 Radio [K/E/M/NE]"""
+
     MODEL = "TK-378G"
     TYPE = b"P3780"
     VARIANTS = {
         b"P3780\x16\xff": (16, 450, 470, "M"),
         b"P3780\x17\xff": (16, 400, 420, "M1"),
         b"P3780\x36\xff": (128, 490, 512, "C"),
-        b"P3780\x39\xff": (128, 403, 430, "C1")
-        }
+        b"P3780\x39\xff": (128, 403, 430, "C1"),
+    }
 
 
 @directory.register
 class TK372G_Radios(Kenwood_Series_60G):
     """Kenwood TK-372G Radio [K/K2/K3/K4]"""
+
     MODEL = "TK-372G"
     TYPE = b"P3720"
     VARIANTS = {
         b"P3720\x06\xfb": (32, 450, 470, "K"),
         b"P3720\x07\xfb": (32, 470, 490, "K2"),
         b"P3720\x08\xfb": (32, 490, 512, "K3"),
-        b"P3720\x09\xfb": (32, 403, 430, "K4")
-        }
+        b"P3720\x09\xfb": (32, 403, 430, "K4"),
+    }
 
 
 @directory.register
 class TK370G_Radios(Kenwood_Series_60G):
     """Kenwood TK-370G Radio [K/E/M/NE]"""
+
     MODEL = "TK-370G"
     TYPE = b"P3700"
     VARIANTS = {
@@ -1612,13 +1708,14 @@ class TK370G_Radios(Kenwood_Series_60G):
         b"P3700\x18\xff": (128, 490, 520, "M2"),
         b"P3700\x19\xff": (128, 403, 430, "M3"),
         b"P3700&\xff": (128, 440, 470, "E"),
-        b"P3700V\xff": (128, 440, 470, "NE")
-        }
+        b"P3700V\xff": (128, 440, 470, "NE"),
+    }
 
 
 @directory.register
 class TK360G_Radios(Kenwood_Series_60G):
     """Kenwood TK-360 Radio [K/E/M/NE]"""
+
     MODEL = "TK-360G"
     TYPE = b"P3600"
     VARIANTS = {
@@ -1632,65 +1729,69 @@ class TK360G_Radios(Kenwood_Series_60G):
         b"P3600\x17\xff": (8, 470, 490, "M1"),
         b"P3600\x19\xff": (8, 403, 430, "M2"),
         b"P3600V\xff": (8, 440, 470, "NE"),
-        b"P3600Y\xff": (8, 403, 430, "NE1")
-        }
+        b"P3600Y\xff": (8, 403, 430, "NE1"),
+    }
 
 
 @directory.register
 class TK278G_Radios(Kenwood_Series_60G):
     """Kenwood TK-278G Radio C/C1/M/M1"""
+
     MODEL = "TK-278G"
     TYPE = b"P2780"
     # Note that 16 CH don't have banks
     VARIANTS = {
-        b"P27805\xff":    (128, 136, 150, "C1"),
-        b"P27804\xff":    (128, 150, 174, "C"),
-        b"P2780\x15\xff": (16,  136, 150, "M1"),
-        b"P2780\x14\xff": (16,  150, 174, "M")
-        }
+        b"P27805\xff": (128, 136, 150, "C1"),
+        b"P27804\xff": (128, 150, 174, "C"),
+        b"P2780\x15\xff": (16, 136, 150, "M1"),
+        b"P2780\x14\xff": (16, 150, 174, "M"),
+    }
 
 
 @directory.register
 class TK272G_Radios(Kenwood_Series_60G):
     """Kenwood TK-272G Radio K/K1"""
+
     MODEL = "TK-272G"
     TYPE = b"P2720"
     VARIANTS = {
         # NOTE: This is technically 136-150 MHz, but the radio supports
         # the full range for RX at least
         b"P2720\x05\xfb": (32, 136, 174, "K1"),
-        b"P2720\x04\xfb": (32, 150, 174, "K")
-        }
+        b"P2720\x04\xfb": (32, 150, 174, "K"),
+    }
 
 
 @directory.register
 class TK270G_Radios(Kenwood_Series_60G):
     """Kenwood TK-270G Radio K/K1/M/E/NE/NT"""
+
     MODEL = "TK-270G"
     TYPE = b"P2700"
     VARIANTS = {
-        b"P2700T\xff":    (128, 146, 174, "NE/NT"),
-        b"P2700$\xff":    (128, 146, 174, "E"),
+        b"P2700T\xff": (128, 146, 174, "NE/NT"),
+        b"P2700$\xff": (128, 146, 174, "E"),
         b"P2700\x14\xff": (128, 150, 174, "M"),
         b"P2700\x05\xff": (128, 136, 150, "K1"),
-        b"P2700\x04\xff": (128, 150, 174, "K")
-        }
+        b"P2700\x04\xff": (128, 150, 174, "K"),
+    }
 
 
 @directory.register
 class TK260G_Radios(Kenwood_Series_60G):
     """Kenwood TK-260G Radio K/K1/M/E/NE/NT"""
+
     MODEL = "TK-260G"
     _hasbanks = False
     TYPE = b"P2600"
-    RO_BLOCKS = list(range(0x10, 0x1F)) + list(range(0x52, 0x5f))
+    RO_BLOCKS = list(range(0x10, 0x1F)) + list(range(0x52, 0x5F))
     VARIANTS = {
-        b"P2600U\xff":    (8, 136, 150, "N1"),
-        b"P2600T\xff":    (8, 146, 174, "N"),
-        b"P2600$\xff":    (8, 150, 174, "E"),
+        b"P2600U\xff": (8, 136, 150, "N1"),
+        b"P2600T\xff": (8, 146, 174, "N"),
+        b"P2600$\xff": (8, 150, 174, "E"),
         b"P2600\x14\xff": (8, 150, 174, "M"),
         b"P2600\x05\xff": (8, 136, 150, "K1"),
         b"P2600\x04\xff": (8, 150, 174, "K"),
         # See issue #12227 for discussion of this odd variant
         b"p2600\x24\xfb": (8, 150, 174, "E?"),
-        }
+    }

@@ -49,18 +49,15 @@ class ChirpRadioInfo(common.ChirpEditor, common.ChirpSyncEditor):
         for key in self._features._valid_map.keys():
             value = getattr(self._features, key)
             if isinstance(value, list):
-                value = ','.join(str(v) or _('(none)') for v in value)
-            p = wx.propgrid.StringProperty(
-                key, key,
-                value=str(value))
+                value = ",".join(str(v) or _("(none)") for v in value)
+            p = wx.propgrid.StringProperty(key, key, value=str(value))
             p.Enable(False)
             pg.Append(p)
 
         pg.Sort()
 
     def _add_driver(self):
-        pg = wx.propgrid.PropertyGrid(
-            self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        pg = wx.propgrid.PropertyGrid(self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
         pg.EnableScrolling(True, True)
         accessibility.enable_propgrid_a11y(pg, _('Radio Info: Driver'))
         self._group_control.AddPage(pg, _('Driver'))
@@ -70,12 +67,10 @@ class ChirpRadioInfo(common.ChirpEditor, common.ChirpSyncEditor):
         except AttributeError:
             rclass = self._radio.__class__
 
-        p = wx.propgrid.StringProperty('class', 'class',
-                                       rclass.__name__)
+        p = wx.propgrid.StringProperty("class", "class", rclass.__name__)
         p.Enable(False)
         pg.Append(p)
-        p = wx.propgrid.StringProperty('module', 'module',
-                                       rclass.__module__)
+        p = wx.propgrid.StringProperty("module", "module", rclass.__module__)
         p.Enable(False)
         pg.Append(p)
         pg.Sort()
@@ -86,25 +81,25 @@ class ChirpRadioInfo(common.ChirpEditor, common.ChirpSyncEditor):
         if not isinstance(self._radio, icf.IcomCloneModeRadio):
             return
 
-        pg = wx.propgrid.PropertyGrid(
-            self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        pg = wx.propgrid.PropertyGrid(self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
         pg.EnableScrolling(True, True)
         accessibility.enable_propgrid_a11y(pg, _('Radio Info: Icom'))
         self._group_control.AddPage(pg, 'Icom')
 
         attrs = dict(self._radio._icf_data)
-        attrs.update({
-            'modelid': ''.join('%02x' % util.byte_to_int(b)
-                               for b in self._radio._model),
-            'endframe': self._radio._endframe,
-            'raw': self._radio._raw_frames,
-            'memsize': '0x%X' % self._radio._memsize,
-        })
+        attrs.update(
+            {
+                "modelid": "".join(
+                    "%02x" % util.byte_to_int(b) for b in self._radio._model
+                ),
+                "endframe": self._radio._endframe,
+                "raw": self._radio._raw_frames,
+                "memsize": "0x%X" % self._radio._memsize,
+            }
+        )
 
         for key, value in attrs.items():
-            p = wx.propgrid.StringProperty(
-                key, key,
-                value=str(value))
+            p = wx.propgrid.StringProperty(key, key, value=str(value))
             p.Enable(False)
             pg.Append(p)
 
@@ -114,15 +109,13 @@ class ChirpRadioInfo(common.ChirpEditor, common.ChirpSyncEditor):
         if not self._radio.metadata:
             return
 
-        pg = wx.propgrid.PropertyGrid(
-            self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        pg = wx.propgrid.PropertyGrid(self, style=wx.propgrid.PG_SPLITTER_AUTO_CENTER)
         pg.EnableScrolling(True, True)
         accessibility.enable_propgrid_a11y(pg, _('Radio Info: Image Metadata'))
         self._group_control.AddPage(pg, 'Image Metadata')
         # Don't show the icom fields which are displayed elsewhere, and
         # don't dump the whole mem_extra blob in here
-        exclude = ('modelid', 'endframe', 'raw', 'memsize',
-                   'mem_extra')
+        exclude = ("modelid", "endframe", "raw", "memsize", "mem_extra")
         for key, value in self._radio.metadata.items():
             if key in exclude:
                 continue

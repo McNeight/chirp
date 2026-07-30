@@ -5,8 +5,8 @@ from chirp import chirp_common
 import lark
 from tests.unit import base
 
-sys.modules['wx'] = wx = mock.MagicMock()
-sys.modules['wx.adv'] = wx = mock.MagicMock()
+sys.modules["wx"] = wx = mock.MagicMock()
+sys.modules["wx.adv"] = wx = mock.MagicMock()
 
 from chirp.wxui import memquery  # noqa
 
@@ -23,12 +23,13 @@ class TestMemquery(base.BaseTest):
         return mems
 
     def test_query_parse(self):
-        query = ('name="foo" OR name IN ["mem800", "baz"] OR '
-                 '(mode="FM" AND freq<144,147.1>) OR '
-                 'name~"7$"')
+        query = (
+            'name="foo" OR name IN ["mem800", "baz"] OR '
+            '(mode="FM" AND freq<144,147.1>) OR '
+            'name~"7$"'
+        )
         parser = lark.Lark(memquery.LANG)
         transformer = memquery.Interpreter(self._get_sample_memories())
         filtered = transformer.transform(parser.parse(query)).children[0]
         self.assertEqual(3, len(filtered), filtered)
-        self.assertEqual([145, 146, 800],
-                         sorted([x.freq // 1000000 for x in filtered]))
+        self.assertEqual([145, 146, 800], sorted([x.freq // 1000000 for x in filtered]))

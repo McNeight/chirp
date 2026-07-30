@@ -18,13 +18,18 @@ import logging
 
 from chirp import chirp_common, directory, memmap, checksum
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
-from chirp.drivers.iradio_common import enter_programming_mode, \
-    exit_programming_mode
+from chirp.drivers.iradio_common import enter_programming_mode, exit_programming_mode
 
 LOG = logging.getLogger(__name__)
 
@@ -161,41 +166,77 @@ CMD_ACK = b"\x06"
 
 DTCS_CODES = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
-_STEP_LIST = [0.25, 1.25, 2.5, 5., 6.25, 10., 12.5, 25., 50., 100., 500.,
-              1000., 5000.]
+_STEP_LIST = [
+    0.25,
+    1.25,
+    2.5,
+    5.0,
+    6.25,
+    10.0,
+    12.5,
+    25.0,
+    50.0,
+    100.0,
+    500.0,
+    1000.0,
+    5000.0,
+]
 
 LIST_AB = ["A", "B"]
 LIST_BCL = ["Off", "Carrier", "CTC/DCS"]
 LIST_DELAY = ["%s ms" % x for x in range(0, 2100, 100)]
 LIST_DIRECTION = ["Up", "Down"]
-LIST_FREQSTEP = ["0.25K", "1.25K", "2.5K", "5K", "6.25K", "10K", "12.5K",
-                 "20K", "25K", "50K", "100K", "500K", "1M", "5M"]
+LIST_FREQSTEP = [
+    "0.25K",
+    "1.25K",
+    "2.5K",
+    "5K",
+    "6.25K",
+    "10K",
+    "12.5K",
+    "20K",
+    "25K",
+    "50K",
+    "100K",
+    "500K",
+    "1M",
+    "5M",
+]
 LIST_INTERVAL = ["%s ms" % x for x in range(30, 210, 10)]
 LIST_MUTETYPE = ["Off", "-", "23b", "24b"]
 LIST_ROGER = ["Off", "Roger 1", "Roger 2", "Send ID"]
 LIST_SENDM = ["Off", "TX Start", "TX End", "Start and End"]
 LIST_SENDS = ["DTMF %s" % x for x in range(1, 17)]
-LIST_SKEY = ["None", "Monitor", "Frequency Detect", "Talkaround",
-             "Quick CH", "Local Alarm", "Remote Alarm", "Weather CH",
-             "Send Tone", "Roger Beep"]
+LIST_SKEY = [
+    "None",
+    "Monitor",
+    "Frequency Detect",
+    "Talkaround",
+    "Quick CH",
+    "Local Alarm",
+    "Remote Alarm",
+    "Weather CH",
+    "Send Tone",
+    "Roger Beep",
+]
 LIST_REPEATER = ["Off", "Talkaround", "Frequency Reversal"]
 LIST_TIMER = ["Off", "5 seconds", "10 seconds"] + [
-              "%s seconds" % x for x in range(15, 615, 15)]
+    "%s seconds" % x for x in range(15, 615, 15)
+]
 LIST_TXPRI = ["Edit", "Busy"]
 LIST_WORKMODE = ["Frequency", "Channel"]
 
 TXALLOW_CHOICES = ["RX Only", "TX/RX"]
 TXALLOW_VALUES = [0xFF, 0x00]
 
-VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-    "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
+VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
 DTMF_CHARS = list("0123456789ABCD*#")
 
 
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">BH", ord(b'R'), block_addr + radio.READ_OFFSET)
+    cmd = struct.pack(">BH", ord(b"R"), block_addr + radio.READ_OFFSET)
 
     ccs = bytes([checksum.checksum_8bit(cmd)])
 
@@ -235,7 +276,7 @@ def _write_block(radio, block_addr, block_size):
 
     data = radio.get_mmap()[start_addr:end_addr]
 
-    cmd = struct.pack(">BH", ord(b'I'), block_addr)
+    cmd = struct.pack(">BH", ord(b"I"), block_addr)
 
     cs = bytes([checksum.checksum_8bit(cmd + data)])
     data += cs
@@ -248,8 +289,7 @@ def _write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -303,6 +343,7 @@ def do_upload(radio):
 
 class IradioUV5118plus(chirp_common.CloneModeRadio):
     """IRADIO UV5118plus"""
+
     VENDOR = "Iradio"
     MODEL = "UV-5118plus"
     NAME_LENGTH = 10
@@ -310,18 +351,22 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
     BLOCK_SIZE = 0x80
     magic_enter = b"58" + b"\x05\x10\x82"
-    magic_exit = b"58" + b"\x05\xEE\x60"
+    magic_exit = b"58" + b"\x05\xee\x60"
 
-    VALID_BANDS = [(108000000, 136000000),  # RX only (Air Band)
-                   (136000000, 174000000),  # TX/RX (VHF)
-                   (174000000, 240000000),  # TX/RX
-                   (240000000, 320000000),  # TX/RX
-                   (320000000, 400000000),  # TX/RX
-                   (400000000, 480000000),  # TX/RX (UHF)
-                   (480000000, 560000000)]  # TX/RX
+    VALID_BANDS = [
+        (108000000, 136000000),  # RX only (Air Band)
+        (136000000, 174000000),  # TX/RX (VHF)
+        (174000000, 240000000),  # TX/RX
+        (240000000, 320000000),  # TX/RX
+        (320000000, 400000000),  # TX/RX
+        (400000000, 480000000),  # TX/RX (UHF)
+        (480000000, 560000000),
+    ]  # TX/RX
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     # Radio's write address starts at 0x0000
     # Radio's write address ends at 0x0140
@@ -332,8 +377,8 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
     READ_OFFSET = 0x7820
 
     _ranges = [
-               (0x0000, 0x0140),
-              ]
+        (0x0000, 0x0140),
+    ]
     _memsize = 0xA000  # 0x0140 * 0x80
 
     _upper = 999
@@ -352,8 +397,15 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         rf.valid_characters = chirp_common.CHARSET_ASCII
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split"]
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
@@ -377,9 +429,8 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -392,9 +443,8 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
@@ -410,33 +460,33 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         #    code in octal-------^^^^^^^^^^^
 
         if toneval == 0x3000:
-            return '', None, None
+            return "", None, None
         elif toneval & 0x1000:
             # DTCS N
-            code = int('%o' % (toneval & 0x1FF))
-            return 'DTCS', code, 'N'
+            code = int("%o" % (toneval & 0x1FF))
+            return "DTCS", code, "N"
         elif toneval & 0x2000:
             # DTCS R
-            code = int('%o' % (toneval & 0x1FF))
-            return 'DTCS', code, 'R'
+            code = int("%o" % (toneval & 0x1FF))
+            return "DTCS", code, "R"
         else:
-            return 'Tone', toneval / 10.0, None
+            return "Tone", toneval / 10.0, None
 
     @staticmethod
     def _encode_tone(mode, val, pol):
         if not mode:
             return 0x3000
-        elif mode == 'Tone':
+        elif mode == "Tone":
             return int(val * 10)
-        elif mode == 'DTCS':
-            code = int('%i' % val, 8)
-            if pol == 'N':
+        elif mode == "DTCS":
+            code = int("%i" % val, 8)
+            if pol == "N":
                 code |= 0x1800
-            if pol == 'R':
+            if pol == "R":
                 code |= 0x2800
             return code
         else:
-            raise errors.RadioError('Unsupported tone mode %r' % mode)
+            raise errors.RadioError("Unsupported tone mode %r" % mode)
 
     def get_memory(self, number):
         mem = chirp_common.Memory()
@@ -450,7 +500,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -460,8 +510,9 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         # TX freq set
         offset = (int(_mem.txfreq) * 10) - mem.freq
         if offset != 0:
-            if chirp_common.is_split(self.get_features().valid_bands,
-                                     mem.freq, int(_mem.txfreq) * 10):
+            if chirp_common.is_split(
+                self.get_features().valid_bands, mem.freq, int(_mem.txfreq) * 10
+            ):
                 mem.duplex = "split"
                 mem.offset = int(_mem.txfreq) * 10
             elif offset < 0:
@@ -473,7 +524,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         else:
             mem.offset = 0
 
-        mem.name = str(_mem.name).rstrip(" ").replace("\xFF", " ")
+        mem.name = str(_mem.name).rstrip(" ").replace("\xff", " ")
 
         mem.mode = _mem.isnarrow and "NFM" or "FM"
 
@@ -482,9 +533,9 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         else:
             _mem.is_airband = False
 
-        chirp_common.split_tone_decode(mem,
-                                       self._decode_tone(_mem.tx_tone),
-                                       self._decode_tone(_mem.rx_tone))
+        chirp_common.split_tone_decode(
+            mem, self._decode_tone(_mem.tx_tone), self._decode_tone(_mem.rx_tone)
+        )
 
         mem.power = self.POWER_LEVELS[_mem.lowpower]
 
@@ -503,12 +554,12 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
         rs = RadioSettingValueInteger(0, 16777215, _mem.mutecode)
         rset = RadioSetting("mutecode", "Mute Code", rs)
-        rset.set_doc('Value between 0-16777215')
+        rset.set_doc("Value between 0-16777215")
         mem.extra.append(rset)
 
         rs = RadioSettingValueInteger(0, 8, _mem.scno)
         rset = RadioSetting("scno", "SC No.", rs)
-        rset.set_doc('Value between 0-8')
+        rset.set_doc("Value between 0-8")
         mem.extra.append(rset)
 
         return mem
@@ -519,11 +570,17 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 22 + "\x20" * 10)
+            _mem.set_raw("\xff" * 22 + "\x20" * 10)
             return
 
-        _mem.set_raw("\xFF" * 4 + "\x00\x30" + "\xFF" * 4 + "\x00\x30" +
-                     "\x00" * 10 + "\x20" * 10)
+        _mem.set_raw(
+            "\xff" * 4
+            + "\x00\x30"
+            + "\xff" * 4
+            + "\x00\x30"
+            + "\x00" * 10
+            + "\x20" * 10
+        )
 
         _mem.rxfreq = mem.freq / 10
 
@@ -536,7 +593,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         else:
             _mem.txfreq = mem.freq / 10
 
-        _mem.name = mem.name.rstrip('\xFF').ljust(10, '\x20')
+        _mem.name = mem.name.rstrip("\xff").ljust(10, "\x20")
 
         _mem.scan = mem.skip != "S"
         _mem.isnarrow = mem.mode == "NFM"
@@ -566,13 +623,12 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
         # Menu 21 - Personal ID
         _codeobj = _settings.personalid
-        _code = str(_codeobj).rstrip('\x20')
+        _code = str(_codeobj).rstrip("\x20")
         rs = RadioSettingValueString(0, 16, _code, True)
         rset = RadioSetting("personalid", "Personal ID", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(LIST_WORKMODE,
-                                   current_index=_settings.workmode)
+        rs = RadioSettingValueList(LIST_WORKMODE, current_index=_settings.workmode)
         rset = RadioSetting("workmode", "Work Mode", rs)
         basic.append(rset)
 
@@ -587,14 +643,12 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 07 - Roger Beep
-        rs = RadioSettingValueList(LIST_ROGER,
-                                   current_index=_settings.rogerbeep)
+        rs = RadioSettingValueList(LIST_ROGER, current_index=_settings.rogerbeep)
         rset = RadioSetting("rogerbeep", "Roger Beep", rs)
         basic.append(rset)
 
         # Menu 09 - TX Priority
-        rs = RadioSettingValueList(LIST_TXPRI,
-                                   current_index=_settings.txpriority)
+        rs = RadioSettingValueList(LIST_TXPRI, current_index=_settings.txpriority)
         rset = RadioSetting("txpriority", "TX Priority", rs)
         basic.append(rset)
 
@@ -660,7 +714,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         def myset_freq(setting, obj, atrb, mult):
-            """ Callback to set frequency by applying multiplier"""
+            """Callback to set frequency by applying multiplier"""
             value = int(float(str(setting.value)) * mult)
             setattr(obj, atrb, value)
             return
@@ -681,8 +735,9 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 21 - Scan DIR
-        rs = RadioSettingValueList(LIST_DIRECTION,
-                                   current_index=_settings.scandirection)
+        rs = RadioSettingValueList(
+            LIST_DIRECTION, current_index=_settings.scandirection
+        )
         rset = RadioSetting("scandirection", "Scan Direction", rs)
         basic.append(rset)
 
@@ -729,8 +784,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         rset = RadioSetting("dualstandby", "Dual Standby", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(LIST_AB,
-                                   current_index=_settings.standbyarea)
+        rs = RadioSettingValueList(LIST_AB, current_index=_settings.standbyarea)
         rset = RadioSetting("standbyarea", "Standby Area", rs)
         basic.append(rset)
 
@@ -777,14 +831,12 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         dtmf.append(rset)
 
         # Menu 42 - DTMF Mode
-        rs = RadioSettingValueList(LIST_SENDM,
-                                   current_index=_dtmf.sendmode)
+        rs = RadioSettingValueList(LIST_SENDM, current_index=_dtmf.sendmode)
         rset = RadioSetting("dtmf.sendmode", "Send Mode", rs)
         dtmf.append(rset)
 
         # Menu 43 - DTMF Select
-        rs = RadioSettingValueList(LIST_SENDS,
-                                   current_index=_dtmf.sendselect)
+        rs = RadioSettingValueList(LIST_SENDS, current_index=_dtmf.sendselect)
         rset = RadioSetting("dtmf.sendselect", "Send Select", rs)
         dtmf.append(rset)
 
@@ -805,11 +857,10 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 
         for i in range(0, 16):
             _codeobj = self._memobj.dtmfcode[i].code
-            _code = str(_codeobj).rstrip('\xFF')
+            _code = str(_codeobj).rstrip("\xff")
             rs = RadioSettingValueString(0, 14, _code, False)
             rs.set_charset(DTMF_CHARS)
-            rset = RadioSetting("dtmfcode/%i.code" % i,
-                                "Code %i" % (i + 1), rs)
+            rset = RadioSetting("dtmfcode/%i.code" % i, "Code %i" % (i + 1), rs)
 
             def apply_code(setting, obj, length):
                 code = ""
@@ -820,15 +871,15 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
                         code += ""
                 obj.code_len = len(str(code))
                 obj.code = code.ljust(length, chr(255))
+
             rset.set_apply_callback(apply_code, self._memobj.dtmfcode[i], 14)
             dtmf.append(rset)
 
         _codeobj = _dtmf2.kill
-        _code = str(_codeobj).rstrip('\xFF')
+        _code = str(_codeobj).rstrip("\xff")
         rs = RadioSettingValueString(0, 14, _code, False)
         rs.set_charset(DTMF_CHARS)
-        rset = RadioSetting("dtmf2.kill",
-                            "Remotely Kill", rs)
+        rset = RadioSetting("dtmf2.kill", "Remotely Kill", rs)
 
         def apply_code(setting, obj, length):
             code = ""
@@ -839,15 +890,15 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
                     code += ""
             obj.kill_len = len(str(code))
             obj.kill = code.ljust(length, chr(255))
+
         rset.set_apply_callback(apply_code, _dtmf2, 14)
         dtmf.append(rset)
 
         _codeobj = _dtmf2.stun
-        _code = str(_codeobj).rstrip('\xFF')
+        _code = str(_codeobj).rstrip("\xff")
         rs = RadioSettingValueString(0, 14, _code, False)
         rs.set_charset(DTMF_CHARS)
-        rset = RadioSetting("dtmf2.stun",
-                            "Remotely Stun", rs)
+        rset = RadioSetting("dtmf2.stun", "Remotely Stun", rs)
 
         def apply_code(setting, obj, length):
             code = ""
@@ -858,15 +909,15 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
                     code += ""
             obj.stun_len = len(str(code))
             obj.stun = code.ljust(length, chr(255))
+
         rset.set_apply_callback(apply_code, _dtmf2, 14)
         dtmf.append(rset)
 
         _codeobj = _dtmf2.wakeup
-        _code = str(_codeobj).rstrip('\xFF')
+        _code = str(_codeobj).rstrip("\xff")
         rs = RadioSettingValueString(0, 14, _code, False)
         rs.set_charset(DTMF_CHARS)
-        rset = RadioSetting("dtmf2.wakeup",
-                            "Wake Up", rs)
+        rset = RadioSetting("dtmf2.wakeup", "Wake Up", rs)
 
         def apply_code(setting, obj, length):
             code = ""
@@ -877,13 +928,14 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
                     code += ""
             obj.wakeup_len = len(str(code))
             obj.wakeup = code.ljust(length, chr(255))
+
         rset.set_apply_callback(apply_code, _dtmf2, 14)
         dtmf.append(rset)
 
         # Startup Settings
 
         _codeobj = _settings.startuplabel
-        _code = str(_codeobj).rstrip('\x20')
+        _code = str(_codeobj).rstrip("\x20")
         rs = RadioSettingValueString(0, 32, _code, True)
         rset = RadioSetting("startuplabel", "Startup Label", rs)
         startup.append(rset)
@@ -921,8 +973,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
         # TX Allow Settings
 
         def apply_txallow_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(
-                      setting.value) + " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = TXALLOW_CHOICES.index(val)
             val = TXALLOW_VALUES[index]
@@ -934,8 +985,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
             idx = TXALLOW_VALUES.index(0xFF)
         rs = RadioSettingValueList(TXALLOW_CHOICES, current_index=idx)
         rset = RadioSetting("range174_240", "174-240 MHz", rs)
-        rset.set_apply_callback(apply_txallow_listvalue,
-                                _settings.range174_240)
+        rset.set_apply_callback(apply_txallow_listvalue, _settings.range174_240)
         txallow.append(rset)
 
         if _settings.range240_320 in TXALLOW_VALUES:
@@ -944,8 +994,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
             idx = TXALLOW_VALUES.index(0xFF)
         rs = RadioSettingValueList(TXALLOW_CHOICES, current_index=idx)
         rset = RadioSetting("range240_320", "240-320 MHz", rs)
-        rset.set_apply_callback(apply_txallow_listvalue,
-                                _settings.range240_320)
+        rset.set_apply_callback(apply_txallow_listvalue, _settings.range240_320)
         txallow.append(rset)
 
         if _settings.range320_400 in TXALLOW_VALUES:
@@ -954,8 +1003,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
             idx = TXALLOW_VALUES.index(0xFF)
         rs = RadioSettingValueList(TXALLOW_CHOICES, current_index=idx)
         rset = RadioSetting("range320_400", "320-400 MHz", rs)
-        rset.set_apply_callback(apply_txallow_listvalue,
-                                _settings.range320_400)
+        rset.set_apply_callback(apply_txallow_listvalue, _settings.range320_400)
         txallow.append(rset)
 
         if _settings.range480_560 in TXALLOW_VALUES:
@@ -964,8 +1012,7 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
             idx = TXALLOW_VALUES.index(0xFF)
         rs = RadioSettingValueList(TXALLOW_CHOICES, current_index=idx)
         rset = RadioSetting("range480_560", "480-560 MHz", rs)
-        rset.set_apply_callback(apply_txallow_listvalue,
-                                _settings.range480_560)
+        rset.set_apply_callback(apply_txallow_listvalue, _settings.range480_560)
         txallow.append(rset)
 
         return top
@@ -996,13 +1043,14 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
                     if element.has_apply_callback():
                         LOG.debug("Using apply callback")
                         element.run_apply_callback()
-                    elif setting in ["areaach",
-                                     "areabch",
-                                     "quickch1",
-                                     "quickch2",
-                                     "quickch3",
-                                     "quickch4"
-                                     ]:
+                    elif setting in [
+                        "areaach",
+                        "areabch",
+                        "quickch1",
+                        "quickch2",
+                        "quickch3",
+                        "quickch4",
+                    ]:
                         setattr(obj, setting, int(element.value) - 1)
                     elif element.value.get_mutable():
                         LOG.debug("Setting %s = %s" % (setting, element.value))
@@ -1021,5 +1069,6 @@ class IradioUV5118plus(chirp_common.CloneModeRadio):
 @directory.register
 class RuyageUV58PlusRadio(IradioUV5118plus):
     """Ruyage UV58Plus"""
+
     VENDOR = "Ruyage"
     MODEL = "UV58Plus"

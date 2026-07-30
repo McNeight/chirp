@@ -18,8 +18,12 @@
 from chirp import chirp_common, bitwise, directory
 from chirp.drivers.wouxun import do_download, do_upload
 
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+)
 
 from chirp.drivers.th_uv3r import TYTUV3RRadio, tyt_uv3r_prep, THUV3R_CHARSET
 
@@ -70,14 +74,15 @@ class TYTUV3R25Radio(TYTUV3RRadio):
     MODEL = "TH-UV3R-25"
     _memsize = 2864
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.80)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.80),
+    ]
 
     def get_features(self):
         rf = super(TYTUV3R25Radio, self).get_features()
 
-        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0, 37.50,
-                                 50.0, 100.0]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0, 37.50, 50.0, 100.0]
         rf.valid_power_levels = self.POWER_LEVELS
         return rf
 
@@ -132,22 +137,24 @@ class TYTUV3R25Radio(TYTUV3RRadio):
 
         mem.extra = RadioSettingGroup("extra", "Extra Settings")
 
-        rs = RadioSetting("bclo_n", "Busy Channel Lockout",
-                          RadioSettingValueBoolean(not _mem.bclo_n))
+        rs = RadioSetting(
+            "bclo_n", "Busy Channel Lockout", RadioSettingValueBoolean(not _mem.bclo_n)
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("vox_n", "VOX",
-                          RadioSettingValueBoolean(not _mem.vox_n))
+        rs = RadioSetting("vox_n", "VOX", RadioSettingValueBoolean(not _mem.vox_n))
         mem.extra.append(rs)
 
-        rs = RadioSetting("tail", "Squelch Tail Elimination",
-                          RadioSettingValueBoolean(_mem.tail))
+        rs = RadioSetting(
+            "tail", "Squelch Tail Elimination", RadioSettingValueBoolean(_mem.tail)
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("voice_mode", "Voice Mode",
-                          RadioSettingValueList(
-                              VOICE_MODE_LIST,
-                              current_index=_mem.voice_mode-1))
+        rs = RadioSetting(
+            "voice_mode",
+            "Voice Mode",
+            RadioSettingValueList(VOICE_MODE_LIST, current_index=_mem.voice_mode - 1),
+        )
         mem.extra.append(rs)
 
         return mem
@@ -159,7 +166,7 @@ class TYTUV3R25Radio(TYTUV3RRadio):
 
         if mem.empty:
             self._memobj.emptyflags[byte] |= bit
-            _mem.set_raw("\xFF" * 20)
+            _mem.set_raw("\xff" * 20)
             return
 
         self._memobj.emptyflags[byte] &= ~bit
@@ -197,9 +204,9 @@ class TYTUV3R25Radio(TYTUV3RRadio):
             _mem.power_high = 0
 
         for element in mem.extra:
-            if element.get_name() == 'voice_mode':
+            if element.get_name() == "voice_mode":
                 setattr(_mem, element.get_name(), int(element.value) + 1)
-            elif element.get_name().endswith('_n'):
+            elif element.get_name().endswith("_n"):
                 setattr(_mem, element.get_name(), 1 - int(element.value))
             else:
                 setattr(_mem, element.get_name(), element.value)

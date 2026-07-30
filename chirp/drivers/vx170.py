@@ -85,15 +85,18 @@ struct {
 @directory.register
 class VX170Radio(ft7800.FTx800Radio):
     """Yaesu VX-170"""
+
     MODEL = "VX-170"
     _model = "AH022$"
     _memsize = 6057
     _block_lengths = [8, 6048, 1]
     _block_size = 32
 
-    POWER_LEVELS_VHF = [chirp_common.PowerLevel("Hi", watts=5.00),
-                        chirp_common.PowerLevel("Med", watts=2.00),
-                        chirp_common.PowerLevel("Lo", watts=0.50)]
+    POWER_LEVELS_VHF = [
+        chirp_common.PowerLevel("Hi", watts=5.00),
+        chirp_common.PowerLevel("Med", watts=2.00),
+        chirp_common.PowerLevel("Lo", watts=0.50),
+    ]
 
     MODES = ["FM", "NFM"]
     TMODES = ["", "Tone", "TSQL", "TSQL-R", "DTCS"]
@@ -108,18 +111,20 @@ class VX170Radio(ft7800.FTx800Radio):
             " on.\n"
             "4. Select CLONE in menu, then press F. Radio restarts in clone"
             " mode.\n"
-            "     (\"CLONE\" will appear on the display).\n"
+            '     ("CLONE" will appear on the display).\n'
             "5. <b>After clicking OK</b>, briefly hold [PTT] key to send"
             " image.\n"
-            "    (\"-TX-\" will appear on the LCD). \n")
+            '    ("-TX-" will appear on the LCD). \n'
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "3. Press and hold in the [moni] key while turning the radio"
             " on.\n"
             "4. Select CLONE in menu, then press F. Radio restarts in clone"
             " mode.\n"
-            "     (\"CLONE\" will appear on the display).\n"
-            "5. Press the [moni] key (\"-RX-\" will appear on the LCD).\n")
+            '     ("CLONE" will appear on the display).\n'
+            '5. Press the [moni] key ("-RX-" will appear on the LCD).\n'
+        )
         return rp
 
     def _checksums(self):
@@ -128,10 +133,8 @@ class VX170Radio(ft7800.FTx800Radio):
     def process_mmap(self):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
         if str(self._memobj.model) != self._model:
-            LOG.debug('Expected %r, found %r' % (self._model,
-                                                 str(self._memobj.model)))
-            raise errors.RadioError(
-              'Invalid model - radio is not %s' % self.MODEL)
+            LOG.debug("Expected %r, found %r" % (self._model, str(self._memobj.model)))
+            raise errors.RadioError("Invalid model - radio is not %s" % self.MODEL)
 
     def get_features(self):
         rf = super(VX170Radio, self).get_features()
@@ -145,11 +148,13 @@ class VX170Radio(ft7800.FTx800Radio):
 
 @directory.register
 class VX177Radio(VX170Radio):
-    MODEL = 'VX-177'
-    _model = 'AH022U'
-    POWER_LEVELS_UHF = [chirp_common.PowerLevel("Hi", watts=5.00),
-                        chirp_common.PowerLevel("Med", watts=2.00),
-                        chirp_common.PowerLevel("Lo", watts=0.50)]
+    MODEL = "VX-177"
+    _model = "AH022U"
+    POWER_LEVELS_UHF = [
+        chirp_common.PowerLevel("Hi", watts=5.00),
+        chirp_common.PowerLevel("Med", watts=2.00),
+        chirp_common.PowerLevel("Lo", watts=0.50),
+    ]
 
     def get_features(self):
         rf = super().get_features()

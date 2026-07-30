@@ -18,10 +18,15 @@ import re
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, directory, errors, bitwise, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -163,21 +168,27 @@ TONES = list(chirp_common.OLD_TONES)
 # the second ? is an uppercase gamma - \xD1
 # the third ? is an uppercase sigma - \xCF
 NUMERIC_CHARSET = list("0123456789")
-CHARSET = [str(x) for x in range(0, 10)] + \
-    [chr(x) for x in range(ord("A"), ord("Z")+1)] + \
-    list(" ()+-=*/" + ("\x00" * 3) + "|") + NUMERIC_CHARSET
+CHARSET = (
+    [str(x) for x in range(0, 10)]
+    + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    + list(" ()+-=*/" + ("\x00" * 3) + "|")
+    + NUMERIC_CHARSET
+)
 DTMFCHARSET = NUMERIC_CHARSET + list("ABCD*#")
 
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=5.0),
-                chirp_common.PowerLevel("L3", watts=2.5),
-                chirp_common.PowerLevel("L2", watts=1.0),
-                chirp_common.PowerLevel("L1", watts=0.1)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=5.0),
+    chirp_common.PowerLevel("L3", watts=2.5),
+    chirp_common.PowerLevel("L2", watts=1.0),
+    chirp_common.PowerLevel("L1", watts=0.1),
+]
 SPECIALS = ["L1", "U1", "L2", "U2", "L3", "U3", "L4", "U4", "L5", "U5", "UNK"]
 
 
 @directory.register
 class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu FT-50"""
+
     BAUD_RATE = 9600
     VENDOR = "Yaesu"
     MODEL = "FT-50"
@@ -197,14 +208,16 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
             "3. Press and hold [PTT] &amp; Knob while turning the\n"
             "     radio on.\n"
             "4. <b>After clicking OK</b>, press the [PTT] switch to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/SP jack.\n"
             "3. Press and hold [PTT] &amp; Knob while turning the\n"
             "     radio on.\n"
-            "4. Press the [MONI] switch (\"WAIT\" will appear on the LCD).\n"
-            "5. Press OK.\n")
+            '4. Press the [MONI] switch ("WAIT" will appear on the LCD).\n'
+            "5. Press OK.\n"
+        )
         return rp
 
     def get_features(self):
@@ -220,9 +233,11 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.valid_modes = MODES
         # Specials not yet implemented
         # rf.valid_special_chans = SPECIALS
-        rf.valid_bands = [(76000000, 200000000),
-                          (300000000, 540000000),
-                          (590000000, 999000000)]
+        rf.valid_bands = [
+            (76000000, 200000000),
+            (300000000, 540000000),
+            (590000000, 999000000),
+        ]
         # rf.can_odd_split = True
         rf.has_ctone = False
         rf.has_bank = False
@@ -242,8 +257,8 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
 
     def get_memory(self, number):
         mem = chirp_common.Memory()
-        _mem = self._memobj.memory[number-1]
-        _flg = self._memobj.flag[number-1]
+        _mem = self._memobj.memory[number - 1]
+        _flg = self._memobj.flag[number - 1]
         mem.number = number
 
         # if not _flg.visible:
@@ -275,15 +290,15 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
-        _flg = self._memobj.flag[mem.number-1]
-        _flg_repeat = self._memobj.flag_repeat[mem.number-1]
+        _mem = self._memobj.memory[mem.number - 1]
+        _flg = self._memobj.flag[mem.number - 1]
+        _flg_repeat = self._memobj.flag_repeat[mem.number - 1]
 
         if mem.empty:
             _flg.used = False
             return
 
-        if (len(mem.name) == 0):
+        if len(mem.name) == 0:
             _mem.name = [0x24] * 4
             _mem.showname = 0
         else:
@@ -297,10 +312,10 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         _mem.mode = MODES.index(mem.mode)
         _mem.tuning_step = TUNING_STEPS.index(mem.tuning_step)
         if mem.power:
-            if (mem.power == POWER_LEVELS[0]):
+            if mem.power == POWER_LEVELS[0]:
                 # low power level is not changed when high power is selected
                 _mem.ishighpower = 0x01
-                if (_mem.power == 3):
+                if _mem.power == 3:
                     # Set low power to L3 (0x02) if it is
                     # set to 3 (new object default)
                     LOG.debug("SETTING DEFAULT?")
@@ -316,7 +331,8 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
             _mem.tone = TONES.index(mem.rtone)
         except ValueError:
             raise errors.UnsupportedToneError(
-                ("This radio does not support tone %s" % mem.rtone))
+                ("This radio does not support tone %s" % mem.rtone)
+            )
         _mem.dtcs = chirp_common.DTCS_CODES.index(mem.dtcs)
 
         _flg.skip = SKIP_VALUES.index(mem.skip)
@@ -324,14 +340,14 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         # initialize new channel to safe defaults
         if not mem.empty and not _flg.used:
             _flg.used = True
-            _flg.mask = True        # Mask = True to be visible on radio
+            _flg.mask = True  # Mask = True to be visible on radio
             _mem.unknown1 = 0x00
             _mem.unknown2 = 0x00
             _mem.unknown3 = 0x00
             _mem.unknown4 = 0x00
             _mem.unknown5 = 0x00
             _mem.unknown6 = 0x00
-            _mem.codememno = 0x02   # Not implemented in chirp
+            _mem.codememno = 0x02  # Not implemented in chirp
             _mem.codeorpage = 0x00  # Not implemented in chirp
 
         # Duplicate flags to repeated part in memory
@@ -371,81 +387,92 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         top = RadioSettings(basic, autodial, arts, dtmf)
 
         rs = RadioSetting(
-                "squelch", "Squelch",
-                RadioSettingValueInteger(0, 15, _settings.squelch))
+            "squelch", "Squelch", RadioSettingValueInteger(0, 15, _settings.squelch)
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "keybeep", "Keypad Beep",
-                RadioSettingValueBoolean(_settings.keybeep))
+            "keybeep", "Keypad Beep", RadioSettingValueBoolean(_settings.keybeep)
+        )
         basic.append(rs)
 
-        rs = RadioSetting(
-                "scnl", "Scan Lamp",
-                RadioSettingValueBoolean(_settings.scnl))
+        rs = RadioSetting("scnl", "Scan Lamp", RadioSettingValueBoolean(_settings.scnl))
         basic.append(rs)
 
         options = ["off", "30m", "1h", "3h", "5h", "8h"]
         rs = RadioSetting(
-                "apo", "APO time (hrs)",
-                RadioSettingValueList(options, current_index=_settings.apo))
+            "apo",
+            "APO time (hrs)",
+            RadioSettingValueList(options, current_index=_settings.apo),
+        )
         basic.append(rs)
 
         options = ["off", "1m", "2.5m", "5m", "10m"]
         rs = RadioSetting(
-            "timeout", "Time Out Timer",
-            RadioSettingValueList(
-                options, current_index=_settings.timeout))
+            "timeout",
+            "Time Out Timer",
+            RadioSettingValueList(options, current_index=_settings.timeout),
+        )
         basic.append(rs)
 
-        options = ["key", "dial", "key+dial", "ptt",
-                   "key+ptt", "dial+ptt", "all"]
+        options = ["key", "dial", "key+dial", "ptt", "key+ptt", "dial+ptt", "all"]
         rs = RadioSetting(
-                "lock", "Lock mode",
-                RadioSettingValueList(options, current_index=_settings.lock))
+            "lock",
+            "Lock mode",
+            RadioSettingValueList(options, current_index=_settings.lock),
+        )
         basic.append(rs)
 
         options = ["off", "0.2", "0.3", "0.5", "1.0", "2.0"]
         rs = RadioSetting(
-                "rxsave", "RX Save (sec)",
-                RadioSettingValueList(options, current_index=_settings.rxsave))
+            "rxsave",
+            "RX Save (sec)",
+            RadioSettingValueList(options, current_index=_settings.rxsave),
+        )
         basic.append(rs)
 
         options = ["5sec", "key", "tgl"]
         rs = RadioSetting(
-                "lamp", "Lamp mode",
-                RadioSettingValueList(options, current_index=_settings.lamp))
+            "lamp",
+            "Lamp mode",
+            RadioSettingValueList(options, current_index=_settings.lamp),
+        )
         basic.append(rs)
 
         options = ["off", "1", "3", "5", "8", "rpt"]
         rs = RadioSetting(
-                "bell", "Bell Repetitions",
-                RadioSettingValueList(options, current_index=_settings.bell))
+            "bell",
+            "Bell Repetitions",
+            RadioSettingValueList(options, current_index=_settings.bell),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "cwid_en", "CWID Enable",
-                RadioSettingValueBoolean(_settings.cwid_en))
+            "cwid_en", "CWID Enable", RadioSettingValueBoolean(_settings.cwid_en)
+        )
         arts.append(rs)
 
         cwid = RadioSettingValueString(
-                0, 16, self._decode_cwid(_settings.cwid.get_value()))
+            0, 16, self._decode_cwid(_settings.cwid.get_value())
+        )
         cwid.set_charset(CHARSET)
         rs = RadioSetting("cwid", "CWID", cwid)
         arts.append(rs)
 
         options = ["off", "rx", "tx", "trx"]
         rs = RadioSetting(
-                "artsmode", "ARTS Mode",
-                RadioSettingValueList(
-                    options, current_index=_settings.artsmode))
+            "artsmode",
+            "ARTS Mode",
+            RadioSettingValueList(options, current_index=_settings.artsmode),
+        )
         arts.append(rs)
 
         options = ["off", "in range", "always"]
         rs = RadioSetting(
-            "artsbeep", "ARTS Beep",
-            RadioSettingValueList(
-                options, current_index=_settings.artsbeep))
+            "artsbeep",
+            "ARTS Beep",
+            RadioSettingValueList(options, current_index=_settings.artsbeep),
+        )
         arts.append(rs)
 
         for i in range(0, 8):
@@ -456,8 +483,9 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
                     dialstr += DTMFCHARSET[c]
             dialentry = RadioSettingValueString(0, 16, dialstr)
             dialentry.set_charset(DTMFCHARSET + list(" "))
-            rs = RadioSetting("autodial" + str(i+1),
-                              "AutoDial " + str(i+1), dialentry)
+            rs = RadioSetting(
+                "autodial" + str(i + 1), "AutoDial " + str(i + 1), dialentry
+            )
             autodial.append(rs)
 
         dialstr = ""
@@ -471,35 +499,41 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
 
         options = ["50ms", "100ms"]
         rs = RadioSetting(
-            "pagingspeed", "Paging Speed",
-            RadioSettingValueList(
-                options, current_index=_settings.pagingspeed))
+            "pagingspeed",
+            "Paging Speed",
+            RadioSettingValueList(options, current_index=_settings.pagingspeed),
+        )
         dtmf.append(rs)
 
         options = ["250ms", "450ms", "750ms", "1000ms"]
         rs = RadioSetting(
-            "pagingdelay", "Paging Delay",
-            RadioSettingValueList(
-                options, current_index=_settings.pagingdelay))
+            "pagingdelay",
+            "Paging Delay",
+            RadioSettingValueList(options, current_index=_settings.pagingdelay),
+        )
         dtmf.append(rs)
 
         options = ["off", "1", "3", "5", "8", "rpt"]
         rs = RadioSetting(
-            "pagingbell", "Paging Bell Repetitions",
-            RadioSettingValueList(
-                options, current_index=_settings.pagingbell))
+            "pagingbell",
+            "Paging Bell Repetitions",
+            RadioSettingValueList(options, current_index=_settings.pagingbell),
+        )
         dtmf.append(rs)
 
         options = ["off", "ans", "for"]
         rs = RadioSetting(
-                "paginganswer", "Paging Answerback",
-                RadioSettingValueList(options,
-                                      current_index=_settings.paginganswer))
+            "paginganswer",
+            "Paging Answerback",
+            RadioSettingValueList(options, current_index=_settings.paginganswer),
+        )
         dtmf.append(rs)
 
         rs = RadioSetting(
-                "code_dec_c_en", "Paging Code C Decode Enable",
-                RadioSettingValueBoolean(_settings.code_dec_c_en))
+            "code_dec_c_en",
+            "Paging Code C Decode Enable",
+            RadioSettingValueBoolean(_settings.code_dec_c_en),
+        )
         dtmf.append(rs)
 
         _str = str(_settings.pagingcodec_ro)
@@ -510,8 +544,10 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         dtmf.append(rs)
 
         rs = RadioSetting(
-                "code_dec_p_en", "Paging Code P Decode Enable",
-                RadioSettingValueBoolean(_settings.code_dec_p_en))
+            "code_dec_p_en",
+            "Paging Code P Decode Enable",
+            RadioSettingValueBoolean(_settings.code_dec_p_en),
+        )
         dtmf.append(rs)
 
         _str = str(_settings.pagingcodep)
@@ -521,11 +557,13 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
         dtmf.append(rs)
 
         for i in range(0, 6):
-            num = str(i+1)
+            num = str(i + 1)
             name = "code_dec_" + num + "_en"
             rs = RadioSetting(
-                    name, "Paging Code " + num + " Decode Enable",
-                    RadioSettingValueBoolean(getattr(_settings, name)))
+                name,
+                "Paging Code " + num + " Decode Enable",
+                RadioSettingValueBoolean(getattr(_settings, name)),
+            )
             dtmf.append(rs)
 
             _str = str(_settings.pagingcode[i].digits)
@@ -546,7 +584,7 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
             try:
                 setting = element.get_name()
                 _settings = self._memobj.settings
-                if re.match(r'autodial\d', setting):
+                if re.match(r"autodial\d", setting):
                     # set autodial fields
                     dtmfstr = str(element.value).strip()
                     newval = []
@@ -560,10 +598,10 @@ class FT50Radio(yaesu_clone.YaesuCloneModeRadio):
                     _settings = self._memobj.settings.autodial[idx]
                     _settings.digits = newval
                     continue
-                if (setting == "pagingcodep"):
+                if setting == "pagingcodep":
                     _settings.pagingcodep = int(element.value)
                     continue
-                if re.match(r'pagingcode\d', setting):
+                if re.match(r"pagingcode\d", setting):
                     idx = int(setting[-1:]) - 1
                     _settings.pagingcode[idx].digits = int(element.value)
                     continue
@@ -612,7 +650,7 @@ def __clone_out(radio):
     pos = 0
     for block in radio._block_lengths:
         blocks += 1
-        data = radio.get_mmap()[pos:pos + block]
+        data = radio.get_mmap()[pos : pos + block]
         # LOG.debug("Sending block: %s" % util.hexprint(data))
 
         recvd = b""
@@ -628,7 +666,7 @@ def __clone_out(radio):
         LOG.debug("Bytes sent: %i" % len(data))
 
         # Radio does not ack last block
-        if (blocks < 8):
+        if blocks < 8:
             buf = pipe.read(block)
             LOG.debug("ACK attempt: " + util.hexprint(buf))
             if buf and buf[0] != yaesu_clone.CMD_ACK:

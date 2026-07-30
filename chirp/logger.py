@@ -31,9 +31,11 @@ from chirp import CHIRP_VERSION
 
 
 def version_string():
-    args = (CHIRP_VERSION,
-            platform.get_platform().os_version_string(),
-            sys.version.split()[0])
+    args = (
+        CHIRP_VERSION,
+        platform.get_platform().os_version_string(),
+        sys.version.split()[0],
+    )
     return "CHIRP %s on %s (Python %s)" % args
 
 
@@ -44,22 +46,24 @@ class VersionAction(argparse.Action):
 
 
 def add_version_argument(parser):
-    parser.add_argument("--version", action=VersionAction, nargs=0,
-                        help="Print version and exit")
+    parser.add_argument(
+        "--version", action=VersionAction, nargs=0, help="Print version and exit"
+    )
 
 
 #: Map human-readable logging levels to their internal values.
-log_level_names = {"critical": logging.CRITICAL,
-                   "error":    logging.ERROR,
-                   "warn":     logging.WARNING,
-                   "info":     logging.INFO,
-                   "debug":    logging.DEBUG,
-                   }
+log_level_names = {
+    "critical": logging.CRITICAL,
+    "error": logging.ERROR,
+    "warn": logging.WARNING,
+    "info": logging.INFO,
+    "debug": logging.DEBUG,
+}
 
 
 class Logger(object):
 
-    log_format = '[%(asctime)s] %(name)s - %(levelname)s: %(message)s'
+    log_format = "[%(asctime)s] %(name)s - %(levelname)s: %(message)s"
 
     def __init__(self):
         # create root logger
@@ -87,10 +91,10 @@ class Logger(object):
         # console logging handler level to DEBUG.  To test this on Linux,
         # set CHIRP_DEBUG_LOG in the environment.
         console_stream = None
-        console_format = '%(levelname)s: %(message)s'
-        if 'CHIRP_TESTENV' not in os.environ and (
-                hasattr(sys, "frozen") or not os.isatty(0) or
-                os.getenv("CHIRP_DEBUG_LOG")):
+        console_format = "%(levelname)s: %(message)s"
+        if "CHIRP_TESTENV" not in os.environ and (
+            hasattr(sys, "frozen") or not os.isatty(0) or os.getenv("CHIRP_DEBUG_LOG")
+        ):
             p = platform.get_platform()
             log = open(p.config_file("debug.log"), "w", encoding="utf-8")
             sys.stdout = log
@@ -163,15 +167,26 @@ def is_visible(level):
 
 
 def add_arguments(parser):
-    parser.add_argument("-q", "--quiet", action="count", default=0,
-                        help="Decrease verbosity")
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Increase verbosity")
-    parser.add_argument("--log", dest="log_file", action="store", default=0,
-                        help="Log messages to a file")
-    parser.add_argument("--log-level", action="store", default="debug",
-                        help="Log file verbosity (critical, error, warn, " +
-                        "info, debug).  Defaults to 'debug'.")
+    parser.add_argument(
+        "-q", "--quiet", action="count", default=0, help="Decrease verbosity"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="count", default=0, help="Increase verbosity"
+    )
+    parser.add_argument(
+        "--log",
+        dest="log_file",
+        action="store",
+        default=0,
+        help="Log messages to a file",
+    )
+    parser.add_argument(
+        "--log-level",
+        action="store",
+        default="debug",
+        help="Log file verbosity (critical, error, warn, "
+        + "info, debug).  Defaults to 'debug'.",
+    )
 
 
 def handle_options(options):

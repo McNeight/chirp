@@ -21,9 +21,13 @@ import logging
 
 from chirp import util, memmap, chirp_common, bitwise, directory, errors
 from chirp.drivers.yaesu_clone import YaesuCloneModeRadio
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueString, RadioSettings
-
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -105,16 +109,16 @@ def _download(radio):
         cs += byte
     for byte in data:
         cs += byte
-    LOG.debug("calculated checksum is %x\n" % (cs & 0xff))
+    LOG.debug("calculated checksum is %x\n" % (cs & 0xFF))
     LOG.debug("Radio sent checksum is %x\n" % chunk[0])
 
-    if (cs & 0xff) != chunk[0]:
+    if (cs & 0xFF) != chunk[0]:
         raise Exception("Failed checksum on read.")
 
     # for debugging purposes, dump the channels, in hex.
     for _i in range(0, 200):
         _startData = 1892 + 20 * _i
-        chunk = data[_startData:_startData + 20]
+        chunk = data[_startData : _startData + 20]
         LOG.debug("channel %i:\n%s" % (_i, util.hexprint(chunk)))
 
     return memmap.MemoryMapBytes(data)
@@ -129,14 +133,16 @@ def _upload(radio):
         raise Exception("Radio sent unrecognized data")
 
     _send(radio.pipe, radio.IDBLOCK)
-    time.sleep(.2)
+    time.sleep(0.2)
     ack = radio.pipe.read(300)
     LOG.debug("Ack was (%i):\n%s" % (len(ack), util.hexprint(ack)))
     if ack != ACK:
-        raise Exception("Radio did not ack ID. Check cable, verify"
-                        " radio is not locked.\n"
-                        " (press & Hold red \"*L\" button to unlock"
-                        " radio if needed)")
+        raise Exception(
+            "Radio did not ack ID. Check cable, verify"
+            " radio is not locked.\n"
+            ' (press & Hold red "*L" button to unlock'
+            " radio if needed)"
+        )
 
     block = 0
     cs = INITIAL_CHECKSUM
@@ -144,7 +150,7 @@ def _upload(radio):
         cs += byte
 
     while block < (radio.get_memsize() // 32):
-        data = radio.get_mmap()[block * 32:(block + 1) * 32]
+        data = radio.get_mmap()[block * 32 : (block + 1) * 32]
 
         LOG.debug("Writing block %i:\n%s" % (block, util.hexprint(data)))
 
@@ -334,14 +340,14 @@ struct {
 
 MODES = ["FM", "NFM"]
 TMODES = ["", "Tone", "TSQL", "DTCS", "TSQL-R", "Cross"]
-CROSS_MODES = ["DTCS->", "Tone->DTCS", "DTCS->Tone",
-               "Tone->Tone", "DTCS->DTCS"]
+CROSS_MODES = ["DTCS->", "Tone->DTCS", "DTCS->Tone", "Tone->Tone", "DTCS->DTCS"]
 DUPLEX = ["", "-", "+", "split"]
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=75),
-                chirp_common.PowerLevel("Low3", watts=30),
-                chirp_common.PowerLevel("Low2", watts=10),
-                chirp_common.PowerLevel("Low1", watts=5),
-                ]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=75),
+    chirp_common.PowerLevel("Low3", watts=30),
+    chirp_common.PowerLevel("Low2", watts=10),
+    chirp_common.PowerLevel("Low1", watts=5),
+]
 
 CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ +-/?C[] _"
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0]
@@ -379,8 +385,8 @@ def _decode_name(mem):
 
 
 def _encode_name(mem):
-    if (mem.strip() == ""):
-        return [0xff] * 6
+    if mem.strip() == "":
+        return [0xFF] * 6
 
     name = [None] * 6
     for i in range(0, 6):
@@ -403,9 +409,9 @@ class FT2900Bank(chirp_common.NamedBank):
         _bank = self._model._radio._memobj.bank_names[self.index]
         name = ""
         for i in _bank.name:
-            if i == 0xff:
+            if i == 0xFF:
                 break
-            name += CHARSET[i & 0x7f]
+            name += CHARSET[i & 0x7F]
 
         return name.rstrip()
 
@@ -432,28 +438,29 @@ class FT2900BankModel(chirp_common.BankModel):
 
     def _get_channel_numbers_in_bank(self, bank):
         _bank_used = self._radio._memobj.bank_used[bank.index]
-        if _bank_used.in_use == 0xffff:
+        if _bank_used.in_use == 0xFFFF:
             return set()
 
         _members = self._radio._memobj.banks[bank.index]
-        return set([int(ch) for ch in _members.channels if ch != 0xffff])
+        return set([int(ch) for ch in _members.channels if ch != 0xFFFF])
 
     def _update_bank_with_channel_numbers(self, bank, channels_in_bank):
         _members = self._radio._memobj.banks[bank.index]
         if len(channels_in_bank) > len(_members.channels):
-            raise Exception("More than %i entries in bank %d" %
-                            (len(_members.channels), bank.index))
+            raise Exception(
+                "More than %i entries in bank %d" % (len(_members.channels), bank.index)
+            )
 
         empty = 0
         for index, channel_number in enumerate(sorted(channels_in_bank)):
             _members.channels[index] = channel_number
             empty = index + 1
         for index in range(empty, len(_members.channels)):
-            _members.channels[index] = 0xffff
+            _members.channels[index] = 0xFFFF
 
         _bank_used = self._radio._memobj.bank_used[bank.index]
         if empty == 0:
-            _bank_used.in_use = 0xffff
+            _bank_used.in_use = 0xFFFF
         else:
             _bank_used.in_use = empty - 1
 
@@ -471,8 +478,9 @@ class FT2900BankModel(chirp_common.BankModel):
         try:
             channels_in_bank.remove(memory.number)
         except KeyError:
-            raise Exception("Memory %i is not in bank %s. Cannot remove" %
-                            (memory.number, bank))
+            raise Exception(
+                "Memory %i is not in bank %s. Cannot remove" % (memory.number, bank)
+            )
         self._update_bank_with_channel_numbers(bank, channels_in_bank)
 
     def get_mapping_memories(self, bank):
@@ -493,8 +501,8 @@ class FT2900BankModel(chirp_common.BankModel):
 
 @directory.register
 class FT2900Radio(YaesuCloneModeRadio):
-
     """Yaesu FT-2900"""
+
     VENDOR = "Yaesu"
     MODEL = "FT-2900R/1900R"
     IDBLOCK = b"\x56\x43\x32\x33\x00\x02\x46\x01\x01\x01"
@@ -580,9 +588,9 @@ class FT2900Radio(YaesuCloneModeRadio):
         mem.freq = int(_mem.freq) * 1000
 
         # compensate for 12.5 kHz tuning steps, add 500 Hz if needed
-        if (mem.tuning_step == 12.5):
+        if mem.tuning_step == 12.5:
             lastdigit = int(_mem.freq) % 10
-            if (lastdigit == 2 or lastdigit == 7):
+            if lastdigit == 2 or lastdigit == 7:
                 mem.freq += 500
 
         mem.offset = chirp_common.fix_rounded_step(int(_mem.offset) * 1000)
@@ -599,8 +607,7 @@ class FT2900Radio(YaesuCloneModeRadio):
 
         # check for unequal ctone/rtone in TSQL mode.  map it as a
         # cross tone mode
-        if mem.rtone != mem.ctone and (mem.tmode == "TSQL" or
-                                       mem.tmode == "Tone"):
+        if mem.rtone != mem.ctone and (mem.tmode == "TSQL" or mem.tmode == "Tone"):
             mem.tmode = "Cross"
             mem.cross_mode = "Tone->Tone"
 
@@ -688,8 +695,7 @@ class FT2900Radio(YaesuCloneModeRadio):
                 _mem.tmode = TMODES.index("DTCS")
                 _mem.dtcssplitflag = 1
             else:
-                _mem.tmode = TMODES.index("Cross") + \
-                    CROSS_MODES.index(mem.cross_mode)
+                _mem.tmode = TMODES.index("Cross") + CROSS_MODES.index(mem.cross_mode)
 
         _mem.isnarrow = MODES.index(mem.mode)
         _mem.step = STEPS.index(mem.tuning_step)
@@ -710,8 +716,7 @@ class FT2900Radio(YaesuCloneModeRadio):
         _mem.unknown4 = 0
         _mem.unknown5 = 0
 
-        LOG.debug("encoded mem\n%s\n" % (util.hexprint(
-            _mem.get_raw()[0:20])))
+        LOG.debug("encoded mem\n%s\n" % (util.hexprint(_mem.get_raw()[0:20])))
 
     def get_settings(self):
         _settings = self._memobj.settings
@@ -729,8 +734,9 @@ class FT2900Radio(YaesuCloneModeRadio):
         disp = RadioSettingGroup("disp", "Display Settings")
         misc = RadioSettingGroup("misc", "Miscellaneous Settings")
 
-        setmode = RadioSettings(repeater, ctcss, arts, mbls, scan,
-                                dtmf, wires, switch, disp, misc)
+        setmode = RadioSettings(
+            repeater, ctcss, arts, mbls, scan, dtmf, wires, switch, disp, misc
+        )
 
         # numbers and names of settings refer to the way they're
         # presented in the set menu, as well as the list starting on
@@ -740,64 +746,88 @@ class FT2900Radio(YaesuCloneModeRadio):
         opts = ["Off", "30 Min", "1 Hour", "3 Hour", "5 Hour", "8 Hour"]
         misc.append(
             RadioSetting(
-                "apo", "Automatic Power Off",
-                RadioSettingValueList(opts, current_index=_settings.apo)))
+                "apo",
+                "Automatic Power Off",
+                RadioSettingValueList(opts, current_index=_settings.apo),
+            )
+        )
 
         # 2 AR.BEP
         opts = ["Off", "In Range", "Always"]
         arts.append(
             RadioSetting(
-                "arts_beep", "ARTS Beep",
-                RadioSettingValueList(
-                    opts, current_index=_settings.arts_beep)))
+                "arts_beep",
+                "ARTS Beep",
+                RadioSettingValueList(opts, current_index=_settings.arts_beep),
+            )
+        )
 
         # 3 AR.INT
         opts = ["15 Sec", "25 Sec"]
         arts.append(
             RadioSetting(
-                "arts_interval", "ARTS Polling Interval",
-                RadioSettingValueList(
-                    opts, current_index=_settings.arts_interval)))
+                "arts_interval",
+                "ARTS Polling Interval",
+                RadioSettingValueList(opts, current_index=_settings.arts_interval),
+            )
+        )
 
         # 4 ARS
         opts = ["Off", "On"]
         repeater.append(
             RadioSetting(
-                "ars", "Automatic Repeater Shift",
-                RadioSettingValueList(opts, current_index=_settings.ars)))
+                "ars",
+                "Automatic Repeater Shift",
+                RadioSettingValueList(opts, current_index=_settings.ars),
+            )
+        )
 
         # 5 BCLO
         opts = ["Off", "On"]
-        misc.append(RadioSetting(
-            "busy_lockout", "Busy Channel Lock-Out",
-            RadioSettingValueList(opts, current_index=_settings.busy_lockout)))
+        misc.append(
+            RadioSetting(
+                "busy_lockout",
+                "Busy Channel Lock-Out",
+                RadioSettingValueList(opts, current_index=_settings.busy_lockout),
+            )
+        )
 
         # 6 BEEP
         opts = ["Off", "Key+Scan", "Key"]
-        switch.append(RadioSetting(
-            "beep", "Enable the Beeper",
-            RadioSettingValueList(opts, current_index=_settings.beep)))
+        switch.append(
+            RadioSetting(
+                "beep",
+                "Enable the Beeper",
+                RadioSettingValueList(opts, current_index=_settings.beep),
+            )
+        )
 
         # 7 BELL
         opts = ["Off", "1", "3", "5", "8", "Continuous"]
         ctcss.append(
-                     RadioSetting(
-                         "bell", "Bell Repetitions",
-                         RadioSettingValueList(
-                             opts, current_index=_settings.bell)))
+            RadioSetting(
+                "bell",
+                "Bell Repetitions",
+                RadioSettingValueList(opts, current_index=_settings.bell),
+            )
+        )
 
         # 8 BNK.LNK
         for i in range(0, 8):
             opts = ["Off", "On"]
             mbs = (self._memobj.mbs >> i) & 1
-            rs = RadioSetting("mbs%i" % i, "Bank %s Scan" % (i + 1),
-                              RadioSettingValueList(opts, current_index=mbs))
+            rs = RadioSetting(
+                "mbs%i" % i,
+                "Bank %s Scan" % (i + 1),
+                RadioSettingValueList(opts, current_index=mbs),
+            )
 
             def apply_mbs(s, index):
                 if int(s.value):
-                    self._memobj.mbs |= (1 << index)
+                    self._memobj.mbs |= 1 << index
                 else:
                     self._memobj.mbs &= ~(1 << index)
+
             rs.set_apply_callback(apply_mbs, i)
             mbls.append(rs)
 
@@ -808,17 +838,19 @@ class FT2900Radio(YaesuCloneModeRadio):
         # 11 CW.ID
         opts = ["Off", "On"]
         arts.append(
-                    RadioSetting(
-                        "cw_id", "CW ID Enable",
-                        RadioSettingValueList(
-                            opts, current_index=_settings.cw_id)))
+            RadioSetting(
+                "cw_id",
+                "CW ID Enable",
+                RadioSettingValueList(opts, current_index=_settings.cw_id),
+            )
+        )
 
         cw_id_text = ""
         for i in _settings.cw_id_string:
             try:
                 cw_id_text += CHARSET[i & 0x7F]
             except IndexError:
-                if i != 0xff:
+                if i != 0xFF:
                     LOG.debug("unknown char index in cw id: %x " % (i))
 
         val = RadioSettingValueString(0, 16, cw_id_text, True)
@@ -830,29 +862,51 @@ class FT2900Radio(YaesuCloneModeRadio):
             mval = ""
             mval = [chr(CHARSET.index(x)) for x in str]
             for x in range(len(mval), 16):
-                mval.append(chr(0xff))
+                mval.append(chr(0xFF))
             for x in range(0, 16):
                 _settings.cw_id_string[x] = ord(mval[x])
+
         rs.set_apply_callback(apply_cw_id)
         arts.append(rs)
 
         # 12 CWTRNG
-        opts = ["Off", "4WPM", "5WPM", "6WPM", "7WPM", "8WPM", "9WPM",
-                "10WPM", "11WPM", "12WPM", "13WPM", "15WPM", "17WPM",
-                "20WPM", "24WPM", "30WPM", "40WPM"]
+        opts = [
+            "Off",
+            "4WPM",
+            "5WPM",
+            "6WPM",
+            "7WPM",
+            "8WPM",
+            "9WPM",
+            "10WPM",
+            "11WPM",
+            "12WPM",
+            "13WPM",
+            "15WPM",
+            "17WPM",
+            "20WPM",
+            "24WPM",
+            "30WPM",
+            "40WPM",
+        ]
         misc.append(
             RadioSetting(
-                "cw_trng", "CW Training",
-                RadioSettingValueList(
-                    opts, current_index=_settings.cw_trng)))
+                "cw_trng",
+                "CW Training",
+                RadioSettingValueList(opts, current_index=_settings.cw_trng),
+            )
+        )
 
         # todo: make the setting of the units here affect the display
         # of the speed.  Not critical, but would be slick.
         opts = ["CPM", "WPM"]
-        misc.append(RadioSetting("cw_trng_units", "CW Training Units",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings.
-                                                       cw_trng_units)))
+        misc.append(
+            RadioSetting(
+                "cw_trng_units",
+                "CW Training Units",
+                RadioSettingValueList(opts, current_index=_settings.cw_trng_units),
+            )
+        )
 
         # 13 DC VLT - a read-only status, so nothing to do here
 
@@ -862,30 +916,41 @@ class FT2900Radio(YaesuCloneModeRadio):
         opts = ["Disabled", "Enabled"]
         ctcss.append(
             RadioSetting(
-                "inverted_dcs", "\"Inverted\" DCS Code Decoding",
-                RadioSettingValueList(
-                    opts, current_index=_settings.inverted_dcs)))
+                "inverted_dcs",
+                '"Inverted" DCS Code Decoding',
+                RadioSettingValueList(opts, current_index=_settings.inverted_dcs),
+            )
+        )
 
         # 16 DIMMER
         opts = ["Off"] + ["Level %d" % (x) for x in range(1, 11)]
-        disp.append(RadioSetting("dimmer", "Dimmer",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .dimmer)))
+        disp.append(
+            RadioSetting(
+                "dimmer",
+                "Dimmer",
+                RadioSettingValueList(opts, current_index=_settings.dimmer),
+            )
+        )
 
         # 17 DT.A/M
         opts = ["Manual", "Auto"]
-        dtmf.append(RadioSetting("dtmf_mode", "DTMF Autodialer",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .dtmf_mode)))
+        dtmf.append(
+            RadioSetting(
+                "dtmf_mode",
+                "DTMF Autodialer",
+                RadioSettingValueList(opts, current_index=_settings.dtmf_mode),
+            )
+        )
 
         # 18 DT.DLY
         opts = ["50 ms", "250 ms", "450 ms", "750 ms", "1000 ms"]
-        dtmf.append(RadioSetting("dtmf_delay", "DTMF Autodialer Delay Time",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .dtmf_delay)))
+        dtmf.append(
+            RadioSetting(
+                "dtmf_delay",
+                "DTMF Autodialer Delay Time",
+                RadioSettingValueList(opts, current_index=_settings.dtmf_delay),
+            )
+        )
 
         # 19 DT.SET
         for memslot in range(0, 10):
@@ -899,8 +964,9 @@ class FT2900Radio(YaesuCloneModeRadio):
 
             val = RadioSettingValueString(0, 16, dtmf_memory, True)
             val.set_charset(CHARSET + "abcdef")
-            rs = RadioSetting("dtmf_string_%d" % memslot,
-                              "DTMF Memory %d" % memslot, val)
+            rs = RadioSetting(
+                "dtmf_string_%d" % memslot, "DTMF Memory %d" % memslot, val
+            )
 
             def apply_dtmf(s, i):
                 LOG.debug("applying dtmf for %x\n" % i)
@@ -909,80 +975,100 @@ class FT2900Radio(YaesuCloneModeRadio):
                 mval = ""
                 mval = [chr(CHARSET.index(x)) for x in str]
                 for x in range(len(mval), 16):
-                    mval.append(chr(0xff))
+                    mval.append(chr(0xFF))
                 for x in range(0, 16):
                     _dtmf_strings[i].dtmf_string[x] = ord(mval[x])
+
             rs.set_apply_callback(apply_dtmf, memslot)
             dtmf.append(rs)
 
         # 20 DT.SPD
         opts = ["50 ms", "100 ms"]
-        dtmf.append(RadioSetting("dtmf_speed",
-                                 "DTMF Autodialer Sending Speed",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings.
-                                                       dtmf_speed)))
+        dtmf.append(
+            RadioSetting(
+                "dtmf_speed",
+                "DTMF Autodialer Sending Speed",
+                RadioSettingValueList(opts, current_index=_settings.dtmf_speed),
+            )
+        )
 
         # 21 EDG.BEP
         opts = ["Off", "On"]
-        mbls.append(RadioSetting("edge_beep", "Band Edge Beeper",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings.
-                                                       edge_beep)))
+        mbls.append(
+            RadioSetting(
+                "edge_beep",
+                "Band Edge Beeper",
+                RadioSettingValueList(opts, current_index=_settings.edge_beep),
+            )
+        )
 
         # 22 INT.CD
         opts = ["DTMF %X" % (x) for x in range(0, 16)]
         wires.append(
             RadioSetting(
-                "int_cd", "Access Number for WiRES(TM)",
-                RadioSettingValueList(
-                    opts, current_index=_settings.int_cd)))
+                "int_cd",
+                "Access Number for WiRES(TM)",
+                RadioSettingValueList(opts, current_index=_settings.int_cd),
+            )
+        )
 
         # 23 ING MD
         opts = ["Sister Radio Group", "Friends Radio Group"]
         wires.append(
             RadioSetting(
-                "wires_mode", "Internet Link Connection Mode",
-                RadioSettingValueList(
-                    opts, current_index=_settings.wires_mode)))
+                "wires_mode",
+                "Internet Link Connection Mode",
+                RadioSettingValueList(opts, current_index=_settings.wires_mode),
+            )
+        )
 
         # 24 INT.A/M
         opts = ["Manual", "Auto"]
-        wires.append(RadioSetting("wires_auto", "Internet Link Autodialer",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .wires_auto)))
+        wires.append(
+            RadioSetting(
+                "wires_auto",
+                "Internet Link Autodialer",
+                RadioSettingValueList(opts, current_index=_settings.wires_auto),
+            )
+        )
         # 25 INT.SET
         opts = ["F%d" % (x) for x in range(0, 10)]
 
-        wires.append(RadioSetting("int_set", "Memory Register for "
-                                  "non-WiRES Internet",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .int_set)))
+        wires.append(
+            RadioSetting(
+                "int_set",
+                "Memory Register for " "non-WiRES Internet",
+                RadioSettingValueList(opts, current_index=_settings.int_set),
+            )
+        )
 
         # 26 LOCK
-        opts = ["Key", "Dial", "Key + Dial", "PTT",
-                "Key + PTT", "Dial + PTT", "All"]
+        opts = ["Key", "Dial", "Key + Dial", "PTT", "Key + PTT", "Dial + PTT", "All"]
         switch.append(
-                      RadioSetting(
-                          "lock", "Control Locking",
-                          RadioSettingValueList(
-                              opts, current_index=_settings.lock)))
+            RadioSetting(
+                "lock",
+                "Control Locking",
+                RadioSettingValueList(opts, current_index=_settings.lock),
+            )
+        )
 
         # 27 MCGAIN
         opts = ["Level %d" % (x) for x in range(1, 10)]
-        misc.append(RadioSetting("mic_gain", "Microphone Gain",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .mic_gain)))
+        misc.append(
+            RadioSetting(
+                "mic_gain",
+                "Microphone Gain",
+                RadioSettingValueList(opts, current_index=_settings.mic_gain),
+            )
+        )
 
         # 28 MEM.SCN
         opts = ["Tag 1", "Tag 2", "All Channels"]
-        rs = RadioSetting("scan_mode", "Memory Scan Mode",
-                          RadioSettingValueList(opts,
-                                                current_index=_settings
-                                                .scan_mode - 1))
+        rs = RadioSetting(
+            "scan_mode",
+            "Memory Scan Mode",
+            RadioSettingValueList(opts, current_index=_settings.scan_mode - 1),
+        )
         # this setting is unusual in that it starts at 1 instead of 0.
         # that is, index 1 corresponds to "Tag 1", and index 0 is invalid.
         # so we create a custom callback to handle this.
@@ -990,31 +1076,38 @@ class FT2900Radio(YaesuCloneModeRadio):
         def apply_scan_mode(s):
             myopts = ["Tag 1", "Tag 2", "All Channels"]
             _settings.scan_mode = myopts.index(s.value.get_value()) + 1
+
         rs.set_apply_callback(apply_scan_mode)
         mbls.append(rs)
 
         # 29 MW MD
         opts = ["Lower", "Next"]
-        mbls.append(RadioSetting("mw_mode", "Memory Write Mode",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .mw_mode)))
+        mbls.append(
+            RadioSetting(
+                "mw_mode",
+                "Memory Write Mode",
+                RadioSettingValueList(opts, current_index=_settings.mw_mode),
+            )
+        )
 
         # 30 NM SET - This is per channel, so nothing to do here
 
         # 31 OPN.MSG
         opts = ["Off", "DC Supply Voltage", "Text Message"]
-        disp.append(RadioSetting("open_msg", "Opening Message Type",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings.
-                                                       open_msg)))
+        disp.append(
+            RadioSetting(
+                "open_msg",
+                "Opening Message Type",
+                RadioSettingValueList(opts, current_index=_settings.open_msg),
+            )
+        )
 
         openmsg = ""
         for i in _settings.openMsg_Text:
             try:
                 openmsg += CHARSET[i & 0x7F]
             except IndexError:
-                if i != 0xff:
+                if i != 0xFF:
                     LOG.debug("unknown char index in openmsg: %x " % (i))
 
         val = RadioSettingValueString(0, 6, openmsg, True)
@@ -1026,9 +1119,10 @@ class FT2900Radio(YaesuCloneModeRadio):
             mval = ""
             mval = [chr(CHARSET.index(x)) for x in str]
             for x in range(len(mval), 6):
-                mval.append(chr(0xff))
+                mval.append(chr(0xFF))
             for x in range(0, 6):
                 _settings.openMsg_Text[x] = ord(mval[x])
+
         rs.set_apply_callback(apply_openmsg)
         disp.append(rs)
 
@@ -1036,62 +1130,100 @@ class FT2900Radio(YaesuCloneModeRadio):
 
         # 33 PAG.ABK
         opts = ["Off", "On"]
-        ctcss.append(RadioSetting("pag_abk", "Paging Answer Back",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .pag_abk)))
+        ctcss.append(
+            RadioSetting(
+                "pag_abk",
+                "Paging Answer Back",
+                RadioSettingValueList(opts, current_index=_settings.pag_abk),
+            )
+        )
 
         # 34 PAG.CDR
         opts = ["%2.2d" % (x) for x in range(1, 50)]
-        ctcss.append(RadioSetting("pag_cdr_1", "Receive Page Code 1",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .pag_cdr_1)))
+        ctcss.append(
+            RadioSetting(
+                "pag_cdr_1",
+                "Receive Page Code 1",
+                RadioSettingValueList(opts, current_index=_settings.pag_cdr_1),
+            )
+        )
 
-        ctcss.append(RadioSetting("pag_cdr_2", "Receive Page Code 2",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .pag_cdr_2)))
+        ctcss.append(
+            RadioSetting(
+                "pag_cdr_2",
+                "Receive Page Code 2",
+                RadioSettingValueList(opts, current_index=_settings.pag_cdr_2),
+            )
+        )
 
         # 35 PAG.CDT
         opts = ["%2.2d" % (x) for x in range(1, 50)]
-        ctcss.append(RadioSetting("pag_cdt_1", "Transmit Page Code 1",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .pag_cdt_1)))
+        ctcss.append(
+            RadioSetting(
+                "pag_cdt_1",
+                "Transmit Page Code 1",
+                RadioSettingValueList(opts, current_index=_settings.pag_cdt_1),
+            )
+        )
 
-        ctcss.append(RadioSetting("pag_cdt_2", "Transmit Page Code 2",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .pag_cdt_2)))
+        ctcss.append(
+            RadioSetting(
+                "pag_cdt_2",
+                "Transmit Page Code 2",
+                RadioSettingValueList(opts, current_index=_settings.pag_cdt_2),
+            )
+        )
 
         # Common Button Options
-        button_opts = ["Squelch Off", "Weather", "Smart Search",
-                       "Tone Scan", "Scan", "T Call", "ARTS"]
+        button_opts = [
+            "Squelch Off",
+            "Weather",
+            "Smart Search",
+            "Tone Scan",
+            "Scan",
+            "T Call",
+            "ARTS",
+        ]
 
         # 36 PRG P1
         opts = button_opts + ["DC Volts"]
-        switch.append(RadioSetting(
-            "prog_p1", "P1 Button",
-            RadioSettingValueList(opts, current_index=_settings.prog_p1)))
+        switch.append(
+            RadioSetting(
+                "prog_p1",
+                "P1 Button",
+                RadioSettingValueList(opts, current_index=_settings.prog_p1),
+            )
+        )
 
         # 37 PRG P2
         opts = button_opts + ["Dimmer"]
-        switch.append(RadioSetting(
-            "prog_p2", "P2 Button",
-            RadioSettingValueList(opts, current_index=_settings.prog_p2)))
+        switch.append(
+            RadioSetting(
+                "prog_p2",
+                "P2 Button",
+                RadioSettingValueList(opts, current_index=_settings.prog_p2),
+            )
+        )
 
         # 38 PRG P3
         opts = button_opts + ["Mic Gain"]
-        switch.append(RadioSetting(
-            "prog_p3", "P3 Button",
-            RadioSettingValueList(opts, current_index=_settings.prog_p3)))
+        switch.append(
+            RadioSetting(
+                "prog_p3",
+                "P3 Button",
+                RadioSettingValueList(opts, current_index=_settings.prog_p3),
+            )
+        )
 
         # 39 PRG P4
         opts = button_opts + ["Skip"]
-        switch.append(RadioSetting(
-            "prog_p4", "P4 Button",
-            RadioSettingValueList(opts, current_index=_settings.prog_p4)))
+        switch.append(
+            RadioSetting(
+                "prog_p4",
+                "P4 Button",
+                RadioSettingValueList(opts, current_index=_settings.prog_p4),
+            )
+        )
 
         # 40 PSWD
         password = ""
@@ -1111,9 +1243,10 @@ class FT2900Radio(YaesuCloneModeRadio):
             mval = ""
             mval = [chr(CHARSET.index(x)) for x in str]
             for x in range(len(mval), 4):
-                mval.append(chr(0xff))
+                mval.append(chr(0xFF))
             for x in range(0, 4):
                 _passwd[x] = ord(mval[x])
+
         rs.set_apply_callback(apply_password)
         misc.append(rs)
 
@@ -1121,17 +1254,21 @@ class FT2900Radio(YaesuCloneModeRadio):
         opts = ["3 Sec", "5 Sec", "10 Sec", "Busy", "Hold"]
         scan.append(
             RadioSetting(
-                "resume", "Scan Resume Mode",
-                RadioSettingValueList(
-                    opts, current_index=_settings.resume)))
+                "resume",
+                "Scan Resume Mode",
+                RadioSettingValueList(opts, current_index=_settings.resume),
+            )
+        )
 
         # 42 RF.SQL
         opts = ["Off"] + ["S-%d" % (x) for x in range(1, 10)]
         misc.append(
             RadioSetting(
-                "rf_sql", "RF Squelch Threshold",
-                RadioSettingValueList(
-                    opts, current_index=_settings.rf_sql)))
+                "rf_sql",
+                "RF Squelch Threshold",
+                RadioSettingValueList(opts, current_index=_settings.rf_sql),
+            )
+        )
 
         # 43 RPT - per channel attribute, nothing to do here
 
@@ -1139,17 +1276,21 @@ class FT2900Radio(YaesuCloneModeRadio):
         opts = ["Off", "On"]
         misc.append(
             RadioSetting(
-                "revert", "Priority Revert",
-                RadioSettingValueList(
-                    opts, current_index=_settings.revert)))
+                "revert",
+                "Priority Revert",
+                RadioSettingValueList(opts, current_index=_settings.revert),
+            )
+        )
 
         # 45 S.SRCH
         opts = ["Single", "Continuous"]
         misc.append(
             RadioSetting(
-                "s_search", "Smart Search Sweep Mode",
-                RadioSettingValueList(
-                    opts, current_index=_settings.s_search)))
+                "s_search",
+                "Smart Search Sweep Mode",
+                RadioSettingValueList(opts, current_index=_settings.s_search),
+            )
+        )
 
         # 46 SHIFT - per channel setting, nothing to do here
 
@@ -1168,47 +1309,62 @@ class FT2900Radio(YaesuCloneModeRadio):
         # 53 TOT
         opts = ["Off", "1 Min", "3 Min", "5 Min", "10 Min"]
         misc.append(
-                    RadioSetting(
-                        "tot", "Timeout Timer",
-                        RadioSettingValueList(
-                            opts, current_index=_settings.tot)))
+            RadioSetting(
+                "tot",
+                "Timeout Timer",
+                RadioSettingValueList(opts, current_index=_settings.tot),
+            )
+        )
 
         # 54 TS MUT
         opts = ["Off", "On"]
-        ctcss.append(RadioSetting("ts_mut", "Tone Search Mute",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .ts_mut)))
+        ctcss.append(
+            RadioSetting(
+                "ts_mut",
+                "Tone Search Mute",
+                RadioSettingValueList(opts, current_index=_settings.ts_mut),
+            )
+        )
 
         # 55 TS SPEED
         opts = ["Fast", "Slow"]
-        ctcss.append(RadioSetting("ts_speed", "Tone Search Scanner Speed",
-                                  RadioSettingValueList(opts,
-                                                        current_index=_settings
-                                                        .ts_speed)))
+        ctcss.append(
+            RadioSetting(
+                "ts_speed",
+                "Tone Search Scanner Speed",
+                RadioSettingValueList(opts, current_index=_settings.ts_speed),
+            )
+        )
 
         # 56 VFO.SCN
         opts = ["+/- 1 MHz", "+/- 2 MHz", "+/-5 MHz", "All"]
-        scan.append(RadioSetting("vfo_scan", "VFO Scanner Width",
-                                 RadioSettingValueList(opts,
-                                                       current_index=_settings
-                                                       .vfo_scan)))
+        scan.append(
+            RadioSetting(
+                "vfo_scan",
+                "VFO Scanner Width",
+                RadioSettingValueList(opts, current_index=_settings.vfo_scan),
+            )
+        )
 
         # 57 WX.ALT
         opts = ["Off", "On"]
         misc.append(
             RadioSetting(
-                "wx_alert", "Weather Alert Scan",
-                RadioSettingValueList(
-                    opts, current_index=_settings.wx_alert)))
+                "wx_alert",
+                "Weather Alert Scan",
+                RadioSettingValueList(opts, current_index=_settings.wx_alert),
+            )
+        )
 
         # 58 WX.VOL
         opts = ["Normal", "Maximum"]
         misc.append(
             RadioSetting(
-                "wx_vol_max", "Weather Alert Volume",
-                RadioSettingValueList(
-                    opts, current_index=_settings.wx_vol_max)))
+                "wx_vol_max",
+                "Weather Alert Volume",
+                RadioSettingValueList(opts, current_index=_settings.wx_vol_max),
+            )
+        )
 
         # 59 W/N DV - this is a per-channel attribute, nothing to do here
 
@@ -1252,19 +1408,21 @@ class FT2900Radio(YaesuCloneModeRadio):
         rp.pre_download = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"A/N LOW\" button, turn radio on.\n"
-            "4. <b>After clicking OK</b>, press \"SET MHz\" to send image.\n")
+            '3. While holding "A/N LOW" button, turn radio on.\n'
+            '4. <b>After clicking OK</b>, press "SET MHz" to send image.\n'
+        )
         rp.pre_upload = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"A/N LOW\" button, turn radio on.\n"
-            "4. Press \"MW D/MR\" to receive image.\n"
-            "5. Make sure display says \"-WAIT-\" (see note below if not)\n"
+            '3. While holding "A/N LOW" button, turn radio on.\n'
+            '4. Press "MW D/MR" to receive image.\n'
+            '5. Make sure display says "-WAIT-" (see note below if not)\n'
             "6. Click OK to dismiss this dialog and start transfer.\n"
-            "Note: if you don't see \"-WAIT-\" at step 5, try cycling\n"
-            "      power and pressing and holding red \"*L\" button to"
+            'Note: if you don\'t see "-WAIT-" at step 5, try cycling\n'
+            '      power and pressing and holding red "*L" button to'
             " unlock\n"
-            "      radio, then start back at step 1.\n")
+            "      radio, then start back at step 1.\n"
+        )
         return rp
 
 
@@ -1274,8 +1432,8 @@ class FT2900Radio(YaesuCloneModeRadio):
 # NOTE: Disabled until detection is fixed
 # @directory.register
 class FT2900ERadio(FT2900Radio):
-
     """Yaesu FT-2900E"""
+
     MODEL = "FT-2900E/1900E"
     VARIANT = "E"
     IDBLOCK = b"\x56\x43\x32\x33\x00\x02\x41\x02\x01\x01"
@@ -1285,8 +1443,8 @@ class FT2900ERadio(FT2900Radio):
 # Enabling out of band TX changes the header received by CHIRP
 @directory.register
 class FT2900ModRadio(FT2900Radio):
-
     """Yaesu FT-2900Mod"""
+
     MODEL = "FT-2900R/1900R(TXMod)"
     VARIANT = "Opened Xmit"
     IDBLOCK = b"\x56\x43\x32\x33\x00\x02\xc7\x01\x01\x01"

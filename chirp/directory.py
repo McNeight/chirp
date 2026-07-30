@@ -46,7 +46,7 @@ def registered_class(cls):
         except Exception:
             pass
     else:
-        raise KeyError('No parent radio class of %s is registered' % cls)
+        raise KeyError("No parent radio class of %s is registered" % cls)
 
 
 ALLOW_DUPS = False
@@ -75,9 +75,9 @@ def register(cls):
     DRV_TO_RADIO[ident] = cls
     RADIO_TO_DRV[cls] = ident
 
-    if not hasattr(cls, '_DETECTED_BY'):
+    if not hasattr(cls, "_DETECTED_BY"):
         cls._DETECTED_BY = None
-    if not hasattr(cls, '_MINOR_VARIANT'):
+    if not hasattr(cls, "_MINOR_VARIANT"):
         cls._MINOR_VARIANT = False
 
     return cls
@@ -133,7 +133,7 @@ def register_format(name, pattern, readonly=False):
     """
     if (name, pattern) not in [(n, p) for n, p, r in AUX_FORMATS]:
         if name in [x[0] for x in AUX_FORMATS]:
-            raise Exception('Duplicate format name %r' % name)
+            raise Exception("Duplicate format name %r" % name)
     AUX_FORMATS.add((name, pattern, readonly))
     return name
 
@@ -161,9 +161,9 @@ def get_driver(rclass):
 # as the wrong model name, or a model has to be split, we need to be able
 # to open older files and do something intelligent with them.
 MODEL_COMPAT = {
-    ('Retevis', 'RT-5R'): ('Retevis', 'RT5R'),
-    ('Retevis', 'RT-5RV'): ('Retevis', 'RT5RV'),
-    ('Signus', 'XTR-5'): ('Cignus', 'XTR-5'),
+    ("Retevis", "RT-5R"): ("Retevis", "RT5R"),
+    ("Retevis", "RT-5RV"): ("Retevis", "RT5RV"),
+    ("Signus", "XTR-5"): ("Cignus", "XTR-5"),
 }
 
 
@@ -187,27 +187,32 @@ def get_radio_by_image(image_file):
                 if rclass.match_model(filedata, image_file):
                     return rclass(image_file)
             except Exception as e:
-                LOG.error('Radio class %s failed during detection: %s' % (
-                    rclass.__name__, e))
+                LOG.error(
+                    "Radio class %s failed during detection: %s" % (rclass.__name__, e)
+                )
                 pass
 
-        meta_vendor = metadata.get('vendor')
-        meta_model = metadata.get('model')
-        meta_variant = metadata.get('variant')
+        meta_vendor = metadata.get("vendor")
+        meta_model = metadata.get("model")
+        meta_variant = metadata.get("variant")
 
-        meta_vendor, meta_model = MODEL_COMPAT.get((meta_vendor, meta_model),
-                                                   (meta_vendor, meta_model))
+        meta_vendor, meta_model = MODEL_COMPAT.get(
+            (meta_vendor, meta_model), (meta_vendor, meta_model)
+        )
 
         # If metadata, then it has to match one of the aliases or the parent
         for alias in rclass.ALIASES + [rclass]:
-            if (alias.VENDOR == meta_vendor and alias.MODEL == meta_model and
-                    (meta_variant is None or alias.VARIANT == meta_variant)):
+            if (
+                alias.VENDOR == meta_vendor
+                and alias.MODEL == meta_model
+                and (meta_variant is None or alias.VARIANT == meta_variant)
+            ):
 
                 class DynamicRadioAlias(rclass):
                     _orig_rclass = rclass
                     VENDOR = meta_vendor
                     MODEL = meta_model
-                    VARIANT = metadata.get('variant')
+                    VARIANT = metadata.get("variant")
 
                     def __repr__(self):
                         return repr(self._orig_rclass)
@@ -215,42 +220,42 @@ def get_radio_by_image(image_file):
                 return DynamicRadioAlias(image_file)
 
     if metadata:
-        ex = errors.ImageMetadataInvalidModel("Unsupported model %s %s" % (
-            metadata.get("vendor"), metadata.get("model")))
+        ex = errors.ImageMetadataInvalidModel(
+            "Unsupported model %s %s" % (metadata.get("vendor"), metadata.get("model"))
+        )
         ex.metadata = metadata
         raise ex
     else:
         # If we don't find anything else and the file appears to be a CSV
         # file, then explicitly open it with the generic driver so we can
         # get relevant errors instead of just "Unknown file format".
-        if image_file.lower().endswith('.csv'):
-            rclass = get_radio('Generic_CSV')
+        if image_file.lower().endswith(".csv"):
+            rclass = get_radio("Generic_CSV")
             return rclass(image_file)
         raise errors.ImageDetectFailed("Unknown file format")
 
 
 def import_drivers(limit=None):
-    frozen = getattr(sys, 'frozen', False)
-    if sys.platform == 'win32' and frozen:
+    frozen = getattr(sys, "frozen", False)
+    if sys.platform == "win32" and frozen:
         # We are in a frozen win32 build, so we can not glob
         # the driver files, but we do not need to anyway
         import chirp.drivers
+
         for module in chirp.drivers.__all__:
             try:
-                __import__('chirp.drivers.%s' % module)
+                __import__("chirp.drivers.%s" % module)
             except Exception as e:
-                print('Failed to import %s: %s' % (module, e))
+                print("Failed to import %s: %s" % (module, e))
         return
 
     # Safe import of everything in chirp/drivers. We need to import them
     # to get them to register, but should not abort if one import fails
     chirp_module_base = os.path.dirname(os.path.abspath(__file__))
-    driver_files = glob.glob(os.path.join(chirp_module_base,
-                                          'drivers',
-                                          '*.py'))
+    driver_files = glob.glob(os.path.join(chirp_module_base, "drivers", "*.py"))
     for driver_file in driver_files:
         module, ext = os.path.splitext(driver_file)
         driver_module = os.path.basename(module)
         if limit and driver_module not in limit:
             continue
-        __import__('chirp.drivers.%s' % driver_module)
+        __import__("chirp.drivers.%s" % driver_module)

@@ -91,7 +91,7 @@ struct channel {
 """
 
 LOG = logging.getLogger(__name__)
-SystemDef = namedtuple('SystemDef', ('index', 'number'))
+SystemDef = namedtuple("SystemDef", ("index", "number"))
 
 
 class TKx80_Trunked(tk280.KenwoodTKx80):
@@ -101,7 +101,7 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
         memobj = bitwise.parse(MEM_FORMAT, self._mmap)
         first = memobj.state.first_system
 
-        my_format = MEM_FORMAT + '#seekto 0x%04x;\n' % first
+        my_format = MEM_FORMAT + "#seekto 0x%04x;\n" % first
         for i in range(32):
             start = memobj.trunk.sys_start[i]
             if start == 0xFFFF:
@@ -116,14 +116,15 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
                 "struct { \n"
                 "  struct system sys;\n"
                 "  struct channel channels[0x%x];\n"
-                "} system%i;\n") % (count, i)
+                "} system%i;\n"
+            ) % (count, i)
             my_format += sys_format
         self._memobj = bitwise.parse(my_format, self._mmap)
 
     def _get_system_info(self, index):
         if self._memobj.trunk.sys_start[index] == 0xFFFF:
-            raise IndexError('No such system')
-        system = getattr(self._memobj, 'system%i' % index)
+            raise IndexError("No such system")
+        system = getattr(self._memobj, "system%i" % index)
         system_start = self._memobj.trunk.sys_start[index]
         system_end = system_start + (32 * (system.sys.channels + 1))
         return system_start, system_end, system
@@ -145,8 +146,7 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
                     _, system_start, _ = self._get_system_info(i)
                 except IndexError:
                     continue
-            LOG.debug('Allocating new system %i at 0x%04x',
-                      my_index, system_start)
+            LOG.debug("Allocating new system %i at 0x%04x", my_index, system_start)
             # An empty system has only the 32-byte header
             system_end = system_start + 32
 
@@ -155,7 +155,7 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
             if index > my_index:
                 if self._memobj.trunk.sys_start[index] == 0xFFFF:
                     continue
-                self._memobj.trunk.sys_start[index] += (amount * 32)
+                self._memobj.trunk.sys_start[index] += amount * 32
             elif index == my_index:
                 self._memobj.trunk.sys_start[index] = system_start
 
@@ -164,10 +164,10 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
         new_end = system_end + (amount * 32)
 
         # Copy everything to the new location
-        self._mmap[new_end] = self._mmap[system_end:-(amount * 32)]
+        self._mmap[new_end] = self._mmap[system_end : -(amount * 32)]
 
         # Clear the new hole and add to the channels
-        self._mmap[system_end] = b'\xFF' * 32 * amount
+        self._mmap[system_end] = b"\xff" * 32 * amount
 
         # If we allocated a new system, bootstrap the channel count, mark as
         # non-trunked, increase the total system count
@@ -178,13 +178,16 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
 
         # Rebuild the internal memory object
         self.process_mmap()
-        LOG.debug('Expanded system %i index %i to %i channels '
-                  '(start 0x%04x new end %04x)',
-                  system_number, my_index,
-                  system and system.sys.channels or amount,
-                  system_start, new_end)
+        LOG.debug(
+            "Expanded system %i index %i to %i channels " "(start 0x%04x new end %04x)",
+            system_number,
+            my_index,
+            system and system.sys.channels or amount,
+            system_start,
+            new_end,
+        )
 
-        return getattr(self._memobj, 'system%i' % my_index)
+        return getattr(self._memobj, "system%i" % my_index)
 
     def _reduce_system(self, system_number, channel):
         """Remove a memory slot from a system"""
@@ -201,7 +204,7 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
             elif found_channel:
                 system.channels[i - 1].set_raw(system.channels[i].get_raw())
         if not found_channel:
-            raise IndexError('Memory %i not mapped' % channel)
+            raise IndexError("Memory %i not mapped" % channel)
 
         # Remove space from all the system starts after this one
         for index in reversed(range(32)):
@@ -218,47 +221,57 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
         self._mmap[new_end] = self._mmap[system_end:]
 
         # Clear the hole at the end (if necessary) and decrement the channels
-        self._mmap[-32] = b'\xFF' * 32
+        self._mmap[-32] = b"\xff" * 32
         system.sys.channels -= 1
 
         # Rebuild the internal memory object
         self.process_mmap()
-        LOG.debug('Reduced system %i index %i to %i channels '
-                  '(start 0x%04x new end %04x)',
-                  system_number, my_index,
-                  system.sys.channels, system_start, new_end)
+        LOG.debug(
+            "Reduced system %i index %i to %i channels " "(start 0x%04x new end %04x)",
+            system_number,
+            my_index,
+            system.sys.channels,
+            system_start,
+            new_end,
+        )
 
     def get_features(self):
         rf = super().get_features()
         rf.memory_bounds = (1, 250)
         # These are all NFM only?
-        rf.valid_modes = ['NFM']
-        rf.valid_skips = ['', 'S']
+        rf.valid_modes = ["NFM"]
+        rf.valid_skips = ["", "S"]
         return rf
 
     def get_sub_devices(self):
-        to_copy = ('MODEL', 'TYPE', 'POWER_LEVELS', '_range', '_steps',
-                   '_freqmult')
+        to_copy = ("MODEL", "TYPE", "POWER_LEVELS", "_range", "_steps", "_freqmult")
         if not self._memobj:
             # For the uninitialized case of just surveying the features
-            return [tk280.TKx80SubdevMeta.make_subdev(
-                self, TKx80System, 1, to_copy)(self, 1)]
+            return [
+                tk280.TKx80SubdevMeta.make_subdev(self, TKx80System, 1, to_copy)(
+                    self, 1
+                )
+            ]
         return [
             tk280.TKx80SubdevMeta.make_subdev(
-                self, TKx80System, i,
+                self,
+                TKx80System,
+                i,
                 to_copy,
-                VARIANT=str(getattr(self._memobj,
-                                    'system%i' % i).sys.name).strip(' \xFF'))(
-                    self, i + 1)
+                VARIANT=str(getattr(self._memobj, "system%i" % i).sys.name).strip(
+                    " \xff"
+                ),
+            )(self, i + 1)
             for i in range(32)
-            if self._memobj.trunk.sys_start[i] != 0xFFFF]
+            if self._memobj.trunk.sys_start[i] != 0xFFFF
+        ]
 
     def _get_memory(self, number):
-        system = getattr(self._memobj, 'system%i' % (self._system - 1))
+        system = getattr(self._memobj, "system%i" % (self._system - 1))
         for i in range(system.sys.channels):
             if int(system.channels[i].number) == number:
                 return system.channels[i]
-        raise IndexError('Memory %i not mapped' % number)
+        raise IndexError("Memory %i not mapped" % number)
 
     def get_raw_memory(self, number):
         return repr(self._get_memory(number))
@@ -272,12 +285,11 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
             mem.empty = True
             return mem
         self._get_memory_base(mem, _mem)
-        mem.mode = 'NFM'
-        mem.skip = '' if bool(_mem.grouplockout) else 'S'
+        mem.mode = "NFM"
+        mem.skip = "" if bool(_mem.grouplockout) else "S"
 
-        mem.extra = RadioSettingGroup('extra', 'Extra')
-        rs = MemSetting('call', 'Call',
-                        RadioSettingValueInvertedBoolean(not _mem.call))
+        mem.extra = RadioSettingGroup("extra", "Extra")
+        rs = MemSetting("call", "Call", RadioSettingValueInvertedBoolean(not _mem.call))
         mem.extra.append(rs)
 
         return mem
@@ -299,19 +311,19 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
         self._set_memory_base(mem, _mem)
 
         _mem.talkaround = 0 if not mem.duplex else 1
-        _mem.grouplockout = 1 if mem.skip == '' else 0
+        _mem.grouplockout = 1 if mem.skip == "" else 0
 
         if mem.extra:
-            mem.extra['call'].apply_to_memobj(_mem)
+            mem.extra["call"].apply_to_memobj(_mem)
 
     def _set_settings_groups(self, settings):
         for i in range(32):
             try:
-                enabled = settings['system-%i-enable' % i].value
+                enabled = settings["system-%i-enable" % i].value
             except KeyError:
                 enabled = True
             try:
-                name = str(settings['system-%i-name' % i].value)
+                name = str(settings["system-%i-name" % i].value)
             except KeyError:
                 name = None
             try:
@@ -319,20 +331,22 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
             except IndexError:
                 if enabled:
                     new_system = self._expand_system(i + 1)
-                    new_system.sys.name = ('System %i' % (i + 1)).ljust(10)
+                    new_system.sys.name = ("System %i" % (i + 1)).ljust(10)
             else:
                 if name is not None:
                     system.sys.name = name
 
     def _get_settings_groups(self, groups):
-        groups.set_shortname('Systems')
+        groups.set_shortname("Systems")
         for i in range(32):
-            rsg = RadioSettingSubGroup('system-%i' % i, 'System %i' % (i + 1))
-            rse = RadioSetting('system-%i-enable' % i, 'Enabled',
-                               RadioSettingValueBoolean(
-                                   self._memobj.trunk.sys_start[i] != 0xFFFF))
+            rsg = RadioSettingSubGroup("system-%i" % i, "System %i" % (i + 1))
+            rse = RadioSetting(
+                "system-%i-enable" % i,
+                "Enabled",
+                RadioSettingValueBoolean(self._memobj.trunk.sys_start[i] != 0xFFFF),
+            )
             rse.set_volatile(True)
-            rse.set_doc('Requires reload of file after changing!')
+            rse.set_doc("Requires reload of file after changing!")
             if rse.value:
                 # FIXME: Don't allow deleting systems yet
                 rse.value.set_mutable(False)
@@ -341,17 +355,21 @@ class TKx80_Trunked(tk280.KenwoodTKx80):
                 _, _, system = self._get_system_info(i)
                 name = str(system.sys.name).strip()
             else:
-                name = ''
+                name = ""
 
-            rs = RadioSetting('system-%i-name' % i, 'Name',
-                              RadioSettingValueString(
-                                  0, 10, name.strip(' \xFF')))
+            rs = RadioSetting(
+                "system-%i-name" % i,
+                "Name",
+                RadioSettingValueString(0, 10, name.strip(" \xff")),
+            )
             rs.value.set_mutable(bool(rse.value))
             rsg.append(rs)
 
-            rs = RadioSetting('system-%i-lockout' % i, 'Scan',
-                              RadioSettingValueBoolean(
-                                  self._memobj.system_lockout[i]))
+            rs = RadioSetting(
+                "system-%i-lockout" % i,
+                "Scan",
+                RadioSettingValueBoolean(self._memobj.system_lockout[i]),
+            )
             rs.value.set_mutable(bool(rse.value))
             rsg.append(rs)
             groups.append(rsg)
@@ -387,18 +405,20 @@ class TKx80System:
 
 @directory.register
 class TK481(TKx80_Trunked):
-    MODEL = 'TK-481'
-    TYPE = b'PG481'
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1),
-                    chirp_common.PowerLevel("High", watts=2.5)]
+    MODEL = "TK-481"
+    TYPE = b"PG481"
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1),
+        chirp_common.PowerLevel("High", watts=2.5),
+    ]
     _range = [(896000000, 941000000)]
     _steps = chirp_common.COMMON_TUNING_STEPS + (6.25, 12.5)
 
 
 @directory.register
 class TK981(TKx80_Trunked):
-    MODEL = 'TK-981'
-    TYPE = b'M0981'
+    MODEL = "TK-981"
+    TYPE = b"M0981"
     POWER_LEVELS = []
     _range = [(896000000, 941000000)]
     _steps = chirp_common.COMMON_TUNING_STEPS + (6.25, 12.5)

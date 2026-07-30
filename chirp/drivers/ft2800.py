@@ -26,7 +26,7 @@ CHUNK_SIZE = 16
 
 def _send(s, data):
     for i in range(0, len(data), CHUNK_SIZE):
-        chunk = data[i:i+CHUNK_SIZE]
+        chunk = data[i : i + CHUNK_SIZE]
         s.write(chunk)
         echo = s.read(len(chunk))
         if chunk != echo:
@@ -37,10 +37,12 @@ def _send(s, data):
 # and indicates the radio subtype:
 #   USA Unmodified:            b"\x0c\x01\x41\x33\x35\x02\x00\xb8"
 #   USA With extended TX mod:  b"\x0c\x01\x41\x33\x35\x03\x00\xb9"
-SUPPORTED_IDBLOCKS = [b"\x0c\x01\x41\x33\x35\x02\x00\xb8",
-                      b"\x0c\x01\x41\x33\x35\x03\x00\xb9"]
+SUPPORTED_IDBLOCKS = [
+    b"\x0c\x01\x41\x33\x35\x02\x00\xb8",
+    b"\x0c\x01\x41\x33\x35\x03\x00\xb9",
+]
 TRAILER = b"\x0c\x02\x41\x33\x35\x00\x00\xb7"
-ACK = b"\x0C\x06\x00"
+ACK = b"\x0c\x06\x00"
 
 
 def _download(radio):
@@ -51,14 +53,14 @@ def _download(radio):
         if data in SUPPORTED_IDBLOCKS:
             radio.subtype = data
             break
-        LOG.debug('Download attempt %i received %i: %s',
-                  _i, len(data), util.hexprint(data))
+        LOG.debug(
+            "Download attempt %i received %i: %s", _i, len(data), util.hexprint(data)
+        )
         if radio.status_fn:
             status = chirp_common.Status()
             status.max = 1
             status.cur = 0
-            status.msg = "Waiting for radio (%i)" % (
-                attempts - (_i + 1))
+            status.msg = "Waiting for radio (%i)" % (attempts - (_i + 1))
             radio.status_fn(status)
 
     LOG.debug("Header:\n%s" % util.hexprint(data))
@@ -118,8 +120,8 @@ def _upload(radio):
 
     block = 0
     while block < (radio.get_memsize() // 32):
-        data = b"\x0C\x03\x00\x00" + bytes([block])
-        data += radio.get_mmap()[block*32:(block+1)*32]
+        data = b"\x0c\x03\x00\x00" + bytes([block])
+        data += radio.get_mmap()[block * 32 : (block + 1) * 32]
         cs = 0
         for byte in data:
             cs += byte
@@ -171,17 +173,19 @@ struct {
 MODES = ["FM", "NFM"]
 TMODES = ["", "Tone", "TSQL", "DTCS"]
 DUPLEX = ["", "-", "+", ""]
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=65),
-                chirp_common.PowerLevel("Mid", watts=25),
-                chirp_common.PowerLevel("Low2", watts=10),
-                chirp_common.PowerLevel("Low1", watts=5),
-                ]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=65),
+    chirp_common.PowerLevel("Mid", watts=25),
+    chirp_common.PowerLevel("Low2", watts=10),
+    chirp_common.PowerLevel("Low1", watts=5),
+]
 CHARSET = chirp_common.CHARSET_UPPER_NUMERIC + "()+-=*/???|_"
 
 
 @directory.register
 class FT2800Radio(YaesuCloneModeRadio):
     """Yaesu FT-2800"""
+
     VENDOR = "Yaesu"
     MODEL = "FT-2800M"
 
@@ -192,12 +196,11 @@ class FT2800Radio(YaesuCloneModeRadio):
     def subtype(self):
         # If our image is from before the subtype was stashed, assume
         # the default unmodified US ID block
-        return bytes(self.metadata.get('subtype_idblock',
-                                       SUPPORTED_IDBLOCKS[0]))
+        return bytes(self.metadata.get("subtype_idblock", SUPPORTED_IDBLOCKS[0]))
 
     @subtype.setter
     def subtype(self, value):
-        self.metadata = {'subtype_idblock': [x for x in value]}
+        self.metadata = {"subtype_idblock": [x for x in value]}
 
     @classmethod
     def get_prompts(cls):
@@ -211,7 +214,8 @@ class FT2800Radio(YaesuCloneModeRadio):
             "5. <b>After clicking OK</b>, "
             "press the MHz key on the radio to send"
             " image.\n"
-            "    (\"TX\" will appear on the LCD). \n")
+            '    ("TX" will appear on the LCD). \n'
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable\n"
@@ -219,8 +223,9 @@ class FT2800Radio(YaesuCloneModeRadio):
             "while turning it on\n"
             "4. Radio is in clone mode when TX/RX is flashing\n"
             "5. Press the Low key on the radio "
-            "(\"RX\" will appear on the LCD).\n"
-            "6. Click OK.")
+            '("RX" will appear on the LCD).\n'
+            "6. Click OK."
+        )
         return rp
 
     def get_features(self):
@@ -233,8 +238,7 @@ class FT2800Radio(YaesuCloneModeRadio):
         rf.has_dtcs_polarity = False
         rf.has_bank = False
 
-        rf.valid_tuning_steps = [5.0, 10.0, 12.5, 15.0,
-                                 20.0, 25.0, 50.0, 100.0]
+        rf.valid_tuning_steps = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0]
         rf.valid_modes = MODES
         rf.valid_tmodes = TMODES
         rf.valid_bands = [(137000000, 174000000)]
@@ -255,7 +259,7 @@ class FT2800Radio(YaesuCloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed download')
+            LOG.exception("Failed download")
             raise errors.RadioError("Failed to communicate with radio: %s" % e)
         LOG.info("Downloaded in %.2f sec" % (time.time() - start))
         self.process_mmap()
@@ -269,7 +273,7 @@ class FT2800Radio(YaesuCloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed upload')
+            LOG.exception("Failed upload")
             raise errors.RadioError("Failed to communicate with radio: %s" % e)
         LOG.info("Uploaded in %.2f sec" % (time.time() - start))
 
@@ -286,7 +290,7 @@ class FT2800Radio(YaesuCloneModeRadio):
 
         mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw(asbytes=False)[0] == "\xff":
             mem.empty = True
             return mem
 
@@ -308,10 +312,10 @@ class FT2800Radio(YaesuCloneModeRadio):
         _nam = self._memobj.names[mem.number]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
             return
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw(asbytes=False)[0] == "\xff":
             # Empty -> Non-empty, so initialize
             _mem.set_raw("\x00" * (_mem.size() // 8))
 

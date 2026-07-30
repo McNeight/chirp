@@ -82,18 +82,20 @@ TMODES = ["", "Tone", "TSQL", "DTCS"]
 DUPLEX = ["", "", "-", "+"]
 DTCS_POL = ["NN", "NR", "RN", "RR"]
 STEPS = [5.0, 10.0, 12.5, 15, 20.0, 25.0, 30.0, 50.0, 100.0, 200.0, 6.25]
-POWER_LEVELS = [chirp_common.PowerLevel('High', watts=50),
-                chirp_common.PowerLevel('Low', watts=5),
-                chirp_common.PowerLevel('Mid', watts=15)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=50),
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=15),
+]
 
 ID800_SPECIAL = {
     "C2": 510,
     "C1": 511,
-    }
+}
 ID800_SPECIAL_REV = {
     510: "C2",
     511: "C1",
-    }
+}
 
 for i in range(0, 5):
     idA = "%iA" % (i + 1)
@@ -102,7 +104,7 @@ for i in range(0, 5):
     ID800_SPECIAL[idA] = num
     ID800_SPECIAL[idB] = num + 1
     ID800_SPECIAL_REV[num] = idA
-    ID800_SPECIAL_REV[num+1] = idB
+    ID800_SPECIAL_REV[num + 1] = idB
 
 ALPHA_CHARSET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NUMERIC_CHARSET = "0123456789+-=*/()|"
@@ -110,6 +112,7 @@ NUMERIC_CHARSET = "0123456789+-=*/()|"
 
 def get_name(_mem):
     """Decode the name from @_mem"""
+
     def _get_char(val):
         if val == 0:
             return " "
@@ -118,8 +121,14 @@ def get_name(_mem):
         else:
             return NUMERIC_CHARSET[val & 0x0F]
 
-    name_bytes = [_mem.name1, _mem.name2, _mem.name3,
-                  _mem.name4, _mem.name5, _mem.name6]
+    name_bytes = [
+        _mem.name1,
+        _mem.name2,
+        _mem.name3,
+        _mem.name4,
+        _mem.name5,
+        _mem.name6,
+    ]
     name = ""
     for val in name_bytes:
         name += _get_char(val)
@@ -129,6 +138,7 @@ def get_name(_mem):
 
 def set_name(_mem, name):
     """Encode @name in @_mem"""
+
     def _get_index(char):
         if char == " ":
             return 0
@@ -154,6 +164,7 @@ def set_name(_mem, name):
 @directory.register
 class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom ID800"""
+
     VENDOR = "Icom"
     MODEL = "ID-800H"
     VARIANT = "v2"
@@ -165,54 +176,50 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
     _memories = []
 
-    _ranges = [(0x0020, 0x2B18, 32),
-               (0x2B18, 0x2B20,  8),
-               (0x2B20, 0x2BE0, 32),
-               (0x2BE0, 0x2BF4, 20),
-               (0x2BF4, 0x2C00, 12),
-               (0x2C00, 0x2DE0, 32),
-               (0x2DE0, 0x2DF4, 20),
-               (0x2DF4, 0x2E00, 12),
-               (0x2E00, 0x2E20, 32),
-
-               (0x2F00, 0x3070, 32),
-
-               (0x30D0, 0x30E0, 16),
-               (0x30E0, 0x3160, 32),
-               (0x3160, 0x3180, 16),
-               (0x3180, 0x31A0, 32),
-               (0x31A0, 0x31B0, 16),
-
-               (0x3220, 0x3240, 32),
-               (0x3240, 0x3260, 16),
-               (0x3260, 0x3560, 32),
-               (0x3560, 0x3580, 16),
-               (0x3580, 0x3720, 32),
-               (0x3720, 0x3780,  8),
-
-               (0x3798, 0x37A0,  8),
-               (0x37A0, 0x37B0, 16),
-               (0x37B0, 0x37B1,  1),
-
-               (0x37D8, 0x37E0,  8),
-               (0x37E0, 0x3898, 32),
-               (0x3898, 0x389A,  2),
-
-               (0x38A8, 0x38C0, 16), ]
+    _ranges = [
+        (0x0020, 0x2B18, 32),
+        (0x2B18, 0x2B20, 8),
+        (0x2B20, 0x2BE0, 32),
+        (0x2BE0, 0x2BF4, 20),
+        (0x2BF4, 0x2C00, 12),
+        (0x2C00, 0x2DE0, 32),
+        (0x2DE0, 0x2DF4, 20),
+        (0x2DF4, 0x2E00, 12),
+        (0x2E00, 0x2E20, 32),
+        (0x2F00, 0x3070, 32),
+        (0x30D0, 0x30E0, 16),
+        (0x30E0, 0x3160, 32),
+        (0x3160, 0x3180, 16),
+        (0x3180, 0x31A0, 32),
+        (0x31A0, 0x31B0, 16),
+        (0x3220, 0x3240, 32),
+        (0x3240, 0x3260, 16),
+        (0x3260, 0x3560, 32),
+        (0x3560, 0x3580, 16),
+        (0x3580, 0x3720, 32),
+        (0x3720, 0x3780, 8),
+        (0x3798, 0x37A0, 8),
+        (0x37A0, 0x37B0, 16),
+        (0x37B0, 0x37B1, 1),
+        (0x37D8, 0x37E0, 8),
+        (0x37E0, 0x3898, 32),
+        (0x3898, 0x389A, 2),
+        (0x38A8, 0x38C0, 16),
+    ]
 
     MYCALL_LIMIT = (1, 7)
     URCALL_LIMIT = (1, 99)
     RPTCALL_LIMIT = (1, 59)
 
     def _get_bank(self, loc):
-        _flg = self._memobj.flags[loc-1]
+        _flg = self._memobj.flags[loc - 1]
         if _flg.bank >= 0x0A:
             return None
         else:
             return _flg.bank
 
     def _set_bank(self, loc, bank):
-        _flg = self._memobj.flags[loc-1]
+        _flg = self._memobj.flags[loc - 1]
         if bank is None:
             _flg.bank = 0x0A
         else:
@@ -227,10 +234,13 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS"]
         rf.valid_duplexes = ["", "-", "+"]
         rf.valid_tuning_steps = list(STEPS)
-        rf.valid_bands = [(118000000, 173995000), (230000000, 549995000),
-                          (810000000, 999990000)]
+        rf.valid_bands = [
+            (118000000, 173995000),
+            (230000000, 549995000),
+            (810000000, 999990000),
+        ]
         rf.valid_skips = ["", "S", "P"]
-        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + '*'
+        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "*"
         rf.valid_name_length = 6
         rf.valid_special_chans = sorted(ID800_SPECIAL.keys())
         rf.valid_power_levels = list(POWER_LEVELS)
@@ -245,11 +255,10 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             try:
                 number = ID800_SPECIAL[number] + 1  # Because we subtract below
             except KeyError:
-                raise errors.InvalidMemoryLocation("Unknown channel %s" %
-                                                   number)
+                raise errors.InvalidMemoryLocation("Unknown channel %s" % number)
 
-        _mem = self._memobj.memory[number-1]
-        _flg = self._memobj.flags[number-1]
+        _mem = self._memobj.memory[number - 1]
+        _flg = self._memobj.flags[number - 1]
 
         if MODES[_mem.mode] == "DV":
             urcalls = self.get_urcall_list()
@@ -286,8 +295,8 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
-        _flg = self._memobj.flags[mem.number-1]
+        _mem = self._memobj.memory[mem.number - 1]
+        _flg = self._memobj.flags[mem.number - 1]
 
         _flg.empty = mem.empty
         if mem.empty:
@@ -337,13 +346,13 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         self.process_mmap()
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def get_urcall_list(self):
         calls = ["CQCQCQ"]
 
         for i in range(*self.URCALL_LIMIT):
-            calls.append(str(self._memobj.urcalls[i-1].call).rstrip())
+            calls.append(str(self._memobj.urcalls[i - 1].call).rstrip())
 
         return calls
 
@@ -351,7 +360,7 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = ["*NOTUSE*"]
 
         for i in range(*self.RPTCALL_LIMIT):
-            calls.append(str(self._memobj.rptcalls[i-1].call).rstrip())
+            calls.append(str(self._memobj.rptcalls[i - 1].call).rstrip())
 
         return calls
 
@@ -359,7 +368,7 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = []
 
         for i in range(*self.MYCALL_LIMIT):
-            calls.append(str(self._memobj.mycalls[i-1].call).rstrip())
+            calls.append(str(self._memobj.mycalls[i - 1].call).rstrip())
 
         return calls
 
@@ -370,7 +379,7 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             except IndexError:
                 call = " " * 8
 
-            self._memobj.urcalls[i-1].call = call.ljust(8)[:8]
+            self._memobj.urcalls[i - 1].call = call.ljust(8)[:8]
 
     def set_repeater_call_list(self, calls):
         for i in range(*self.RPTCALL_LIMIT):
@@ -379,13 +388,13 @@ class ID800v2Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             except IndexError:
                 call = " " * 8
 
-            self._memobj.rptcalls[i-1].call = call.ljust(8)[:8]
+            self._memobj.rptcalls[i - 1].call = call.ljust(8)[:8]
 
     def set_mycall_list(self, calls):
         for i in range(*self.MYCALL_LIMIT):
             try:
-                call = calls[i-1].upper()
+                call = calls[i - 1].upper()
             except IndexError:
                 call = " " * 8
 
-            self._memobj.mycalls[i-1].call = call.ljust(8)[:8]
+            self._memobj.mycalls[i - 1].call = call.ljust(8)[:8]

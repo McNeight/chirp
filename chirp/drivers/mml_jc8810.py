@@ -211,8 +211,17 @@ TXPOWER_HIGH = 0x00
 TXPOWER_LOW = 0x01
 TXPOWER_MID = 0x02
 
-ABR_LIST = ["On", "5 seconds", "10 seconds", "15 seconds", "20 seconds",
-            "30 seconds", "1 minute", "2 minutes", "3 minutes"]
+ABR_LIST = [
+    "On",
+    "5 seconds",
+    "10 seconds",
+    "15 seconds",
+    "20 seconds",
+    "30 seconds",
+    "1 minute",
+    "2 minutes",
+    "3 minutes",
+]
 ALMODE_LIST = ["Site", "Tone", "Code"]
 AUTOLK_LIST = ["Off"] + ABR_LIST[1:4]
 DTMFSPEED_LIST = ["50 ms", "100 ms", "200 ms", "300 ms", "500 ms"]
@@ -226,8 +235,7 @@ OFF1TO9_LIST = ["Off"] + ["%s" % x for x in range(1, 10)]
 PONMSG_LIST = ["Logo", "Voltage"]
 PTTID_LIST = ["Off", "BOT", "EOT", "Both"]
 PTTIDCODE_LIST = ["%s" % x for x in range(1, 16)]
-PTTLT_LIST = ["None", "100 ms"] + \
-             ["%s ms" % x for x in range(200, 1200, 200)]
+PTTLT_LIST = ["None", "100 ms"] + ["%s ms" % x for x in range(200, 1200, 200)]
 QTSAVE_LIST = ["All", "RX", "TX"]
 ROGER_LIST = ["OFF", "BEEP", "TONE1200"]
 RPSTE_LIST = ["Off"] + ["%s ms" % x for x in range(100, 1100, 100)]
@@ -237,38 +245,48 @@ TAILCODE_LIST = ["55 Hz", "62.5 Hz"]
 TAILPHASE_LIST = ["None", "120 Shift", "180 Shift", "240 Shift"]
 TONERXEND_LIST = ["Off", "MDC-1200"]
 TONE_LIST = ["1000 Hz", "1450 Hz", "1750 Hz", "2100 Hz"]
-TOT_LIST = ["Off", "30 seconds", "60 seconds", "120 seconds", "240 seconds",
-            "480 seconds"]
+TOT_LIST = [
+    "Off",
+    "30 seconds",
+    "60 seconds",
+    "120 seconds",
+    "240 seconds",
+    "480 seconds",
+]
 VOXD_LIST = ["%s seconds" % str(x / 10) for x in range(5, 21)]
 WORKMODE_LIST = ["VFO Mode", "Channel Mode"]
 
-ALL_SKEY_CHOICES = ["OFF",
-                    "FM Radio",
-                    "TX Power Level",
-                    "Scan",
-                    "Search",
-                    "Flashlight",
-                    "NOAA Weather",
-                    "Monitor",
-                    "PTT B",
-                    "SOS",
-                    "DTMF",
-                    "REVERSE",
-                    "REMOTE Scan"]
+ALL_SKEY_CHOICES = [
+    "OFF",
+    "FM Radio",
+    "TX Power Level",
+    "Scan",
+    "Search",
+    "Flashlight",
+    "NOAA Weather",
+    "Monitor",
+    "PTT B",
+    "SOS",
+    "DTMF",
+    "REVERSE",
+    "REMOTE Scan",
+]
 
-ALL_SKEY_VALUES = [0xFF,
-                   0x07,
-                   0x0A,
-                   0x1C,
-                   0x1D,
-                   0x08,
-                   0x0C,
-                   0x05,
-                   0x01,
-                   0x03,
-                   0x2A,
-                   0x2D,
-                   0x23]
+ALL_SKEY_VALUES = [
+    0xFF,
+    0x07,
+    0x0A,
+    0x1C,
+    0x1D,
+    0x08,
+    0x0C,
+    0x05,
+    0x01,
+    0x03,
+    0x2A,
+    0x2D,
+    0x23,
+]
 
 SCRAMBLE_VALUEMAP = [("Off", 0x00), ("SCRAM1", 0x04), ("SCRAM2", 0x08)]
 
@@ -327,7 +345,7 @@ def _exit_programming_mode(radio):
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"R" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -347,8 +365,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -358,8 +376,7 @@ def _write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -409,42 +426,51 @@ def do_upload(radio):
 
 class JC8810base(chirp_common.CloneModeRadio):
     """MML JC-8810"""
+
     VENDOR = "MML"
     MODEL = "JC-8810base"
     BAUD_RATE = 57600
     BLOCK_SIZE = 0x40
     BLOCK_SIZE_UP = 0x40
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=10.00),
-                    chirp_common.PowerLevel("M", watts=8.00),
-                    chirp_common.PowerLevel("L", watts=4.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=10.00),
+        chirp_common.PowerLevel("M", watts=8.00),
+        chirp_common.PowerLevel("L", watts=4.00),
+    ]
 
-    VALID_BANDS = [(108000000, 136000000),
-                   (136000000, 180000000),
-                   (200000000, 260000000),
-                   (330000000, 400000000),
-                   (400000000, 520000000)]
+    VALID_BANDS = [
+        (108000000, 136000000),
+        (136000000, 180000000),
+        (200000000, 260000000),
+        (330000000, 400000000),
+        (400000000, 520000000),
+    ]
 
     _magic = b"PROGRAMJC81U"
-    _fingerprint = [b"\x00\x00\x00\x26\x00\x20\xD8\x04",
-                    b"\x00\x00\x00\x42\x00\x20\xF0\x04",
-                    b"\x00\x00\x00\x4A\x00\x20\xF8\x04"]
+    _fingerprint = [
+        b"\x00\x00\x00\x26\x00\x20\xd8\x04",
+        b"\x00\x00\x00\x42\x00\x20\xf0\x04",
+        b"\x00\x00\x00\x4a\x00\x20\xf8\x04",
+    ]
 
     _ranges = [
-               (0x0000, 0x2000),
-               (0x8000, 0x8040),
-               (0x9000, 0x9040),
-               (0xA000, 0xA140),
-               (0xB000, 0xB300)
-              ]
+        (0x0000, 0x2000),
+        (0x8000, 0x8040),
+        (0x9000, 0x9040),
+        (0xA000, 0xA140),
+        (0xB000, 0xB300),
+    ]
     _memsize = 0xB300
     _upper = 256
     _aninames = 30
-    _mem_params = (_upper,  # number of channels
-                   _aninames,  # number of aninames
-                   )
-    _valid_chars = chirp_common.CHARSET_ALPHANUMERIC + \
-        "`~!@#$%^&*()-=_+[]\\{}|;':\",./<>?"
+    _mem_params = (
+        _upper,  # number of channels
+        _aninames,  # number of aninames
+    )
+    _valid_chars = (
+        chirp_common.CHARSET_ALPHANUMERIC + "`~!@#$%^&*()-=_+[]\\{}|;':\",./<>?"
+    )
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -460,14 +486,21 @@ class JC8810base(chirp_common.CloneModeRadio):
         rf.valid_characters = self._valid_chars
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
         rf.valid_dtcs_codes = DTCS
         rf.memory_bounds = (1, self._upper)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 8.33, 10., 12.5, 20., 25., 50.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 8.33, 10.0, 12.5, 20.0, 25.0, 50.0]
         rf.valid_bands = self.VALID_BANDS
         return rf
 
@@ -484,9 +517,8 @@ class JC8810base(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -499,9 +531,8 @@ class JC8810base(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_memory(self, number):
         """Get the mem representation from the radio image"""
@@ -513,14 +544,14 @@ class JC8810base(chirp_common.CloneModeRadio):
         # Memory number
         mem.number = number
 
-        if _mem.get_raw()[:1] == b"\xFF":
+        if _mem.get_raw()[:1] == b"\xff":
             mem.empty = True
             return mem
 
         # Freq and offset
         mem.freq = int(_mem.rxfreq) * 10
         # tx freq can be blank
-        if _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             # TX freq not set
             mem.offset = 0
             mem.duplex = "off"
@@ -528,8 +559,9 @@ class JC8810base(chirp_common.CloneModeRadio):
             # TX freq set
             offset = (int(_mem.txfreq) * 10) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.txfreq) * 10):
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.txfreq) * 10
+                ):
                     mem.duplex = "split"
                     mem.offset = int(_mem.txfreq) * 10
                 elif offset < 0:
@@ -542,10 +574,10 @@ class JC8810base(chirp_common.CloneModeRadio):
                 mem.offset = 0
 
         for char in _mem.name:
-            if str(char) == "\xFF":
+            if str(char) == "\xff":
                 char = " "  # may have 0xFF mid-name
             mem.name += str(char)
-        mem.name = mem.name.rstrip().replace('\x00', '')
+        mem.name = mem.name.rstrip().replace("\x00", "")
 
         dtcs_pol = ["N", "N"]
 
@@ -603,8 +635,10 @@ class JC8810base(chirp_common.CloneModeRadio):
             elif _mem.txpower == TXPOWER_LOW:
                 mem.power = _levels[1]
             else:
-                LOG.error('%s: get_mem: unhandled power level: 0x%02x' %
-                          (mem.name, _mem.txpower))
+                LOG.error(
+                    "%s: get_mem: unhandled power level: 0x%02x"
+                    % (mem.name, _mem.txpower)
+                )
         else:
             if _mem.txpower == TXPOWER_HIGH:
                 mem.power = _levels[0]
@@ -613,8 +647,10 @@ class JC8810base(chirp_common.CloneModeRadio):
             elif _mem.txpower == TXPOWER_LOW:
                 mem.power = _levels[2]
             else:
-                LOG.error('%s: get_mem: unhandled power level: 0x%02x' %
-                          (mem.name, _mem.txpower))
+                LOG.error(
+                    "%s: get_mem: unhandled power level: 0x%02x"
+                    % (mem.name, _mem.txpower)
+                )
 
         mem.mode = _mem.narrow and "NFM" or "FM"
 
@@ -654,12 +690,12 @@ class JC8810base(chirp_common.CloneModeRadio):
             _mem.set_raw("\xff" * 32)
             return
 
-        _mem.set_raw("\x00" * 16 + "\xFF" * 16)
+        _mem.set_raw("\x00" * 16 + "\xff" * 16)
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
-            _mem.txfreq.fill_raw(b"\xFF")
+            _mem.txfreq.fill_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -674,7 +710,7 @@ class JC8810base(chirp_common.CloneModeRadio):
             try:
                 _mem.name[i] = mem.name[i]
             except IndexError:
-                _mem.name[i] = "\xFF"
+                _mem.name[i] = "\xff"
 
         rxmode = txmode = ""
         if mem.tmode == "Tone":
@@ -722,8 +758,9 @@ class JC8810base(chirp_common.CloneModeRadio):
             elif mem.power == _levels[1]:
                 _mem.txpower = TXPOWER_LOW
             else:
-                LOG.error('%s: set_mem: unhandled power level: %s' %
-                          (mem.name, mem.power))
+                LOG.error(
+                    "%s: set_mem: unhandled power level: %s" % (mem.name, mem.power)
+                )
         else:
             if mem.power is None:
                 _mem.txpower = TXPOWER_HIGH
@@ -734,8 +771,9 @@ class JC8810base(chirp_common.CloneModeRadio):
             elif mem.power == _levels[2]:
                 _mem.txpower = TXPOWER_LOW
             else:
-                LOG.error('%s: set_mem: unhandled power level: %s' %
-                          (mem.name, mem.power))
+                LOG.error(
+                    "%s: set_mem: unhandled power level: %s" % (mem.name, mem.power)
+                )
 
         for setting in mem.extra:
             if setting.get_name() == "scramble_type":
@@ -777,8 +815,7 @@ class JC8810base(chirp_common.CloneModeRadio):
 
         if self.MODEL not in ["A36plus", "A36plus_8w", "UV-A37", "AR-730"]:
             # Menu 17: LANGUAGE
-            rs = RadioSettingValueList(LANGUAGE_LIST,
-                                       current_index=_settings.language)
+            rs = RadioSettingValueList(LANGUAGE_LIST, current_index=_settings.language)
             rset = RadioSetting("language", "Voice", rs)
             basic.append(rset)
 
@@ -788,14 +825,12 @@ class JC8810base(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Work Mode A
-        rs = RadioSettingValueList(WORKMODE_LIST,
-                                   current_index=_settings.vfomra)
+        rs = RadioSettingValueList(WORKMODE_LIST, current_index=_settings.vfomra)
         rset = RadioSetting("vfomra", "Work Mode A", rs)
         basic.append(rset)
 
         # Work Mode B
-        rs = RadioSettingValueList(WORKMODE_LIST,
-                                   current_index=_settings.vfomrb)
+        rs = RadioSettingValueList(WORKMODE_LIST, current_index=_settings.vfomrb)
         rset = RadioSetting("vfomrb", "Work Mode B", rs)
         basic.append(rset)
 
@@ -805,8 +840,7 @@ class JC8810base(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 10: SAVE
-        rs = RadioSettingValueList(SAVE_LIST,
-                                   current_index=_settings.save)
+        rs = RadioSettingValueList(SAVE_LIST, current_index=_settings.save)
         rset = RadioSetting("save", "Battery Save Mode", rs)
         basic.append(rset)
 
@@ -842,8 +876,7 @@ class JC8810base(chirp_common.CloneModeRadio):
             val = SKEY2S_VALUES[index]
             obj.set_value(val)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-470"]:
+        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT", "RT-470"]:
             unwanted = [9, 10, 11, 12]
         elif self.MODEL in ["UV-A37", "AR-730"]:
             unwanted = [0, 5, 7, 9, 10, 11, 12]
@@ -876,8 +909,7 @@ class JC8810base(chirp_common.CloneModeRadio):
             val = SKEY2L_VALUES[index]
             obj.set_value(val)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-470"]:
+        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT", "RT-470"]:
             unwanted = [8, 9, 10, 11, 12]
         elif self.MODEL in ["UV-A37", "AR-730"]:
             unwanted = [0, 5, 7, 8, 10, 11, 12]
@@ -910,8 +942,7 @@ class JC8810base(chirp_common.CloneModeRadio):
             val = SKEY3S_VALUES[index]
             obj.set_value(val)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-470"]:
+        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT", "RT-470"]:
             unwanted = [8, 9, 10, 11, 12]
         elif self.MODEL in ["UV-A37", "AR-730"]:
             unwanted = [0, 5, 7, 8, 9, 10, 11, 12]
@@ -936,19 +967,24 @@ class JC8810base(chirp_common.CloneModeRadio):
         rset.set_apply_callback(apply_skey3s_listvalue, _settings.skey3_sp)
         basic.append(rset)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-470", "RT-630", "RT-495"]:
+        if self.MODEL in [
+            "HI-8811",
+            "RT-470L",
+            "RT-470X",
+            "RT-470X_BT",
+            "RT-470",
+            "RT-630",
+            "RT-495",
+        ]:
             # Menu 24: PF3 LONG PRESS (RT-470L)
             def apply_skey3l_listvalue(setting, obj):
-                LOG.debug("Setting value: " + str(setting.value) +
-                          " from list")
+                LOG.debug("Setting value: " + str(setting.value) + " from list")
                 val = str(setting.value)
                 index = SKEY3L_CHOICES.index(val)
                 val = SKEY2L_VALUES[index]
                 obj.set_value(val)
 
-            if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                              "RT-470"]:
+            if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT", "RT-470"]:
                 unwanted = [8, 9, 10, 11, 12]
             elif self.MODEL in ["RT-630", "RT-495"]:
                 unwanted = [5, 9, 10, 11, 12]
@@ -966,21 +1002,18 @@ class JC8810base(chirp_common.CloneModeRadio):
                 idx = SKEY3L_VALUES.index(0x1D)  # default SEARCH
             rs = RadioSettingValueList(SKEY3L_CHOICES, current_index=idx)
             rset = RadioSetting("skey3_lp", "PF3 Key (Long Press)", rs)
-            rset.set_apply_callback(apply_skey3l_listvalue,
-                                    _settings.skey3_lp)
+            rset.set_apply_callback(apply_skey3l_listvalue, _settings.skey3_lp)
             basic.append(rset)
 
         # Menu 25: TOP KEY (RT-470L)
         def apply_skeytop_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(setting.value) +
-                      " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = SKEYTOP_CHOICES.index(val)
             val = SKEYTOP_VALUES[index]
             obj.set_value(val)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-470"]:
+        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT", "RT-470"]:
             unwanted = [8, 9, 10, 11, 12]
         elif self.MODEL in ["UV-A37", "AR-730"]:
             unwanted = [0, 5, 7, 8, 9, 10, 11, 12]
@@ -1000,8 +1033,7 @@ class JC8810base(chirp_common.CloneModeRadio):
             idx = SKEYTOP_VALUES.index(0x1D)  # default SEARCH
         rs = RadioSettingValueList(SKEYTOP_CHOICES, current_index=idx)
         rset = RadioSetting("topkey_sp", "Top Key (Short Press)", rs)
-        rset.set_apply_callback(apply_skeytop_listvalue,
-                                _settings.topkey_sp)
+        rset.set_apply_callback(apply_skeytop_listvalue, _settings.topkey_sp)
         basic.append(rset)
 
         # Mneu 36: TONE
@@ -1014,10 +1046,15 @@ class JC8810base(chirp_common.CloneModeRadio):
         rset = RadioSetting("ponmsg", "Power On Message", rs)
         basic.append(rset)
 
-        if self.MODEL in ["HI-8811", "RT-470L", "RT-470X", "RT-470X_BT",
-                          "RT-630", "RT-495"]:
-            rs = RadioSettingValueList(TAILCODE_LIST,
-                                       current_index=_settings.tailcode)
+        if self.MODEL in [
+            "HI-8811",
+            "RT-470L",
+            "RT-470X",
+            "RT-470X_BT",
+            "RT-630",
+            "RT-495",
+        ]:
+            rs = RadioSettingValueList(TAILCODE_LIST, current_index=_settings.tailcode)
             rset = RadioSetting("tailcode", "Tail Code", rs)
             basic.append(rset)
 
@@ -1037,8 +1074,7 @@ class JC8810base(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 38: MENU EXIT TIME
-        rs = RadioSettingValueList(MENUQUIT_LIST,
-                                   current_index=_settings.menuquit)
+        rs = RadioSettingValueList(MENUQUIT_LIST, current_index=_settings.menuquit)
         rset = RadioSetting("menuquit", "Menu Auto Quit", rs)
         basic.append(rset)
 
@@ -1097,8 +1133,9 @@ class JC8810base(chirp_common.CloneModeRadio):
 
         if self.MODEL not in ["A36plus", "A36plus_8w", "UV-A37", "AR-730"]:
             # Menu 48: RX END TAIL
-            rs = RadioSettingValueList(TONERXEND_LIST,
-                                       current_index=_settings.rxendtail)
+            rs = RadioSettingValueList(
+                TONERXEND_LIST, current_index=_settings.rxendtail
+            )
             rset = RadioSetting("rxendtail", "Tone RX End", rs)
             basic.append(rset)
 
@@ -1119,25 +1156,21 @@ class JC8810base(chirp_common.CloneModeRadio):
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             rs = RadioSettingValueString(0, 5, _code, False)
             rs.set_charset(DTMF_CHARS)
-            rset = RadioSetting("pttid/%i.code" % i,
-                                "PTT-ID Code %i" % (i + 1), rs)
+            rset = RadioSetting("pttid/%i.code" % i, "PTT-ID Code %i" % (i + 1), rs)
             rset.set_apply_callback(apply_code, self._memobj.pttid[i], 5)
             dtmf.append(rset)
 
-        rs = RadioSettingValueList(DTMFSPEED_LIST,
-                                   current_index=_dtmf.dtmfon)
+        rs = RadioSettingValueList(DTMFSPEED_LIST, current_index=_dtmf.dtmfon)
         rset = RadioSetting("dtmf.dtmfon", "DTMF Speed (on)", rs)
         dtmf.append(rset)
 
-        rs = RadioSettingValueList(DTMFSPEED_LIST,
-                                   current_index=_dtmf.dtmfoff)
+        rs = RadioSettingValueList(DTMFSPEED_LIST, current_index=_dtmf.dtmfoff)
         rset = RadioSetting("dtmf.dtmfoff", "DTMF Speed (off)", rs)
         dtmf.append(rset)
 
         # RT470X Plus Bluetooth does not seem to have correct PTTID setting
         if self.MODEL not in ["RT-470X_BT"]:
-            rs = RadioSettingValueList(
-                PTTID_LIST, current_index=_settings.pttid)
+            rs = RadioSettingValueList(PTTID_LIST, current_index=_settings.pttid)
             rset = RadioSetting("pttid", "PTT ID", rs)
             dtmf.append(rset)
 
@@ -1159,8 +1192,9 @@ class JC8810base(chirp_common.CloneModeRadio):
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             rs = RadioSettingValueString(0, 3, _code, False)
             rs.set_charset(DTMF_CHARS)
-            rset = RadioSetting("anicodes/%i.code" % i,
-                                "ANI Code %i (NUM.%i)" % (i + 1, i + 1), rs)
+            rset = RadioSetting(
+                "anicodes/%i.code" % i, "ANI Code %i (NUM.%i)" % (i + 1, i + 1), rs
+            )
             rset.set_apply_callback(apply_code, self._memobj.anicodes[i], 3)
             ani.append(rset)
 
@@ -1169,16 +1203,15 @@ class JC8810base(chirp_common.CloneModeRadio):
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             rs = RadioSettingValueString(0, 3, _code, False)
             rs.set_charset(DTMF_CHARS)
-            rset = RadioSetting("anicodes/%i.code" % (i),
-                                "ANI Code %i" % (i + 1), rs)
-            rset.set_apply_callback(apply_code,
-                                    self._memobj.anicodes[i], 3)
+            rset = RadioSetting("anicodes/%i.code" % (i), "ANI Code %i" % (i + 1), rs)
+            rset.set_apply_callback(apply_code, self._memobj.anicodes[i], 3)
             ani.append(rset)
 
             _nameobj = self._memobj.aninames[i - end].name
             rs = RadioSettingValueString(0, 10, _filter(_nameobj))
-            rset = RadioSetting("aninames/%i.name" % (i - end),
-                                "ANI Code %i Name" % (i + 1), rs)
+            rset = RadioSetting(
+                "aninames/%i.name" % (i - end), "ANI Code %i Name" % (i + 1), rs
+            )
             ani.append(rset)
 
         if self.MODEL in ["A36plus", "A36plus_8w"]:
@@ -1188,20 +1221,21 @@ class JC8810base(chirp_common.CloneModeRadio):
             for i in range(0, 30):
                 _nameobj = self._memobj.customnames[i].name
                 rs = RadioSettingValueString(0, 10, _filter(_nameobj))
-                rset = RadioSetting("customnames/%i.name" % i,
-                                    "Custom Name %i" % (i + 1), rs)
+                rset = RadioSetting(
+                    "customnames/%i.name" % i, "Custom Name %i" % (i + 1), rs
+                )
                 custom.append(rset)
 
         if self.MODEL in ["A36plus", "A36plus_8w"]:
             # Menu 21: RX END TAIL
-            rs = RadioSettingValueList(TONERXEND_LIST,
-                                       current_index=_settings.skey3_lp)
+            rs = RadioSettingValueList(TONERXEND_LIST, current_index=_settings.skey3_lp)
             rset = RadioSetting("skey3_lp", "RX End Tail", rs)
             basic.append(rset)
 
             # Menu 23: TAIL PHASE
-            rs = RadioSettingValueList(TAILPHASE_LIST,
-                                       current_index=_settings.rxendtail)
+            rs = RadioSettingValueList(
+                TAILPHASE_LIST, current_index=_settings.rxendtail
+            )
             rset = RadioSetting("rxendtail", "Tail Phase", rs)
             basic.append(rset)
 
@@ -1212,8 +1246,7 @@ class JC8810base(chirp_common.CloneModeRadio):
 
             # Menu 48: UNLOCK SW CH
             rs = RadioSettingValueBoolean(_settings.unlock_sw_ch)
-            rset = RadioSetting("unlock_sw_ch",
-                                "Override KB Lock for Channel Keys", rs)
+            rset = RadioSetting("unlock_sw_ch", "Override KB Lock for Channel Keys", rs)
             basic.append(rset)
 
             # Menu 49: DIS S TABLE
@@ -1271,6 +1304,7 @@ class JC8810base(chirp_common.CloneModeRadio):
 @directory.register
 class RT470Radio(JC8810base):
     """Radtel RT-470"""
+
     VENDOR = "Radtel"
     MODEL = "RT-470"
 
@@ -1282,34 +1316,38 @@ class RT470Radio(JC8810base):
     # ==========
 
     # original pcb
-    _fingerprint_pcb1 = [b"\x00\x00\x00\x26\x00\x20\xD8\x04",
-                         b"\x00\x00\x00\x42\x00\x20\xF0\x04",
-                         b"\x00\x00\x00\x4A\x00\x20\xF8\x04",
-                         b"\x00\x00\x00\x3A\x00\x20\xE8\x04",  # fw 1.25A
-                         b"\x00\x00\x00\x42\x00\x20\xec\x04",  # fw 1.27A
-                         ]
+    _fingerprint_pcb1 = [
+        b"\x00\x00\x00\x26\x00\x20\xd8\x04",
+        b"\x00\x00\x00\x42\x00\x20\xf0\x04",
+        b"\x00\x00\x00\x4a\x00\x20\xf8\x04",
+        b"\x00\x00\x00\x3a\x00\x20\xe8\x04",  # fw 1.25A
+        b"\x00\x00\x00\x42\x00\x20\xec\x04",  # fw 1.27A
+    ]
 
     # pcb 2
-    _fingerprint_pcb2 = [b"\x00\x00\x00\x28\x00\x20\xD4\x04",  # fw v2.00
-                         b"\x00\x00\x00\x2C\x00\x20\xD8\x04",  # fw v2.11A
-                         b"\x00\x00\x00\x36\x00\x20\xDC\x04",  # fw v2.13A
-                         ]
+    _fingerprint_pcb2 = [
+        b"\x00\x00\x00\x28\x00\x20\xd4\x04",  # fw v2.00
+        b"\x00\x00\x00\x2c\x00\x20\xd8\x04",  # fw v2.11A
+        b"\x00\x00\x00\x36\x00\x20\xdc\x04",  # fw v2.13A
+    ]
 
     _fingerprint = _fingerprint_pcb1 + _fingerprint_pcb2
 
-    VALID_BANDS = [(16000000, 100000000),
-                   (100000000, 136000000),
-                   (136000000, 200000000),
-                   (200000000, 300000000),
-                   (300000000, 400000000),
-                   (400000000, 560000000),
-                   (740000000, 1000000000),
-                   ]
+    VALID_BANDS = [
+        (16000000, 100000000),
+        (100000000, 136000000),
+        (136000000, 200000000),
+        (200000000, 300000000),
+        (300000000, 400000000),
+        (400000000, 560000000),
+        (740000000, 1000000000),
+    ]
 
 
 @directory.register
 class RT470LRadio(JC8810base):
     """Radtel RT-470L"""
+
     VENDOR = "Radtel"
     MODEL = "RT-470L"
 
@@ -1318,24 +1356,31 @@ class RT470LRadio(JC8810base):
     # The RT-470 support in this driver is currently based upon v1.17 firmware.
     # ==========
 
-    _fingerprint = [b"\x00\x00\x00\xfe\x00\x20\xAC\x04",
-                    b"\x00\x00\x00\x20\x00\x20\xCC\x04",
-                    b"\x00\x00\x00\x20\x00\x20\x07\x00"]
+    _fingerprint = [
+        b"\x00\x00\x00\xfe\x00\x20\xac\x04",
+        b"\x00\x00\x00\x20\x00\x20\xcc\x04",
+        b"\x00\x00\x00\x20\x00\x20\x07\x00",
+    ]
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=5.00),
-                    chirp_common.PowerLevel("M", watts=4.00),
-                    chirp_common.PowerLevel("L", watts=2.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=5.00),
+        chirp_common.PowerLevel("M", watts=4.00),
+        chirp_common.PowerLevel("L", watts=2.00),
+    ]
 
-    VALID_BANDS = [(108000000, 136000000),
-                   (136000000, 179000000),
-                   (220000000, 260000000),
-                   (330000000, 400000000),
-                   (400000000, 520000000)]
+    VALID_BANDS = [
+        (108000000, 136000000),
+        (136000000, 179000000),
+        (220000000, 260000000),
+        (330000000, 400000000),
+        (400000000, 520000000),
+    ]
 
 
 @directory.register
 class RT470XRadio(RT470LRadio):
     """Radtel RT-470X"""
+
     VENDOR = "Radtel"
     MODEL = "RT-470X"
 
@@ -1347,40 +1392,50 @@ class RT470XRadio(RT470LRadio):
     # ==========
 
     # original pcb
-    _fingerprint_pcb1 = [b"\x00\x00\x00\x20\x00\x20\xCC\x04",
-                         ]
+    _fingerprint_pcb1 = [
+        b"\x00\x00\x00\x20\x00\x20\xcc\x04",
+    ]
 
     # pcb 2
-    _fingerprint_pcb2 = [b"\x00\x00\x00\x2C\x00\x20\xD8\x04",  # fw v2.10A
-                         b"\x00\x00\x00\x36\x00\x20\xDC\x04",  # fw v2.13A
-                         ]
+    _fingerprint_pcb2 = [
+        b"\x00\x00\x00\x2c\x00\x20\xd8\x04",  # fw v2.10A
+        b"\x00\x00\x00\x36\x00\x20\xdc\x04",  # fw v2.13A
+    ]
 
     _fingerprint = _fingerprint_pcb1 + _fingerprint_pcb2
     RT470X_ORIG = False
-    VALID_BANDS = [(100000000, 136000000),
-                   (136000000, 200000000),
-                   (200000000, 300000000),
-                   (300000000, 400000000),
-                   (400000000, 560000000)]
+    VALID_BANDS = [
+        (100000000, 136000000),
+        (136000000, 200000000),
+        (200000000, 300000000),
+        (300000000, 400000000),
+        (400000000, 560000000),
+    ]
     _AIRBAND = (118000000, 136000000)
 
     def get_features(self):
         rf = super().get_features()
-        rf.valid_modes.append('AM')
-        rf.valid_modes.append('NAM')
+        rf.valid_modes.append("AM")
+        rf.valid_modes.append("NAM")
         rf.valid_bands = [(18000000, 1000000000)]
         return rf
 
     def validate_memory(self, mem):
         msgs = []
         in_range = chirp_common.in_range
-        AM_mode = mem.mode == 'AM' or mem.mode == "NAM"
+        AM_mode = mem.mode == "AM" or mem.mode == "NAM"
         if in_range(mem.freq, [self._AIRBAND]) and not AM_mode:
-            msgs.append(chirp_common.ValidationWarning(
-                _('Frequency in this range requires AM mode')))
+            msgs.append(
+                chirp_common.ValidationWarning(
+                    _("Frequency in this range requires AM mode")
+                )
+            )
         if not in_range(mem.freq, [self._AIRBAND]) and AM_mode:
-            msgs.append(chirp_common.ValidationWarning(
-                _('Frequency in this range must not be AM mode')))
+            msgs.append(
+                chirp_common.ValidationWarning(
+                    _("Frequency in this range must not be AM mode")
+                )
+            )
         return msgs + super().validate_memory(mem)
 
     def get_memory(self, number):
@@ -1394,19 +1449,20 @@ class RT470XRadio(RT470LRadio):
 @directory.register
 class RT470XPlusRadio(RT470XRadio):
     """Radtel RT-470X Plus BT"""
+
     VENDOR = "Radtel"
     MODEL = "RT-470X_BT"
     RT470X_ORIG = False  # BT fingerprint will fall automatically here
 
     # BT version
-    _fingerprint_bt = [b"\x01\x36\x01\x80\x04\x00\x05\x20"  # fw v0.15
-                       ]
+    _fingerprint_bt = [b"\x01\x36\x01\x80\x04\x00\x05\x20"]  # fw v0.15
     _fingerprint = _fingerprint_bt
 
 
 @directory.register
 class HI8811Radio(RT470LRadio):
     """Hiroyasu HI-8811"""
+
     VENDOR = "Hiroyasu"
     MODEL = "HI-8811"
 
@@ -1418,15 +1474,17 @@ class HI8811Radio(RT470LRadio):
     # ==========
 
     # original pcb
-    _fingerprint_pcb1 = [b"\x00\x00\x00\xfe\x00\x20\xAC\x04",
-                         b"\x00\x00\x00\x20\x00\x20\xCC\x04",  # fw v1.17
-                         b"\x00\x00\x00\x20\x00\x20\x07\x00",
-                         ]
+    _fingerprint_pcb1 = [
+        b"\x00\x00\x00\xfe\x00\x20\xac\x04",
+        b"\x00\x00\x00\x20\x00\x20\xcc\x04",  # fw v1.17
+        b"\x00\x00\x00\x20\x00\x20\x07\x00",
+    ]
 
     # pcb 2
-    _fingerprint_pcb2 = [b"\x00\x00\x00\x28\x00\x20\xD4\x04",  # fw v2.00
-                         b"\x00\x00\x00\x28\x00\x20\x07\x00",  # fw v2.00
-                         ]
+    _fingerprint_pcb2 = [
+        b"\x00\x00\x00\x28\x00\x20\xd4\x04",  # fw v2.00
+        b"\x00\x00\x00\x28\x00\x20\x07\x00",  # fw v2.00
+    ]
 
     _fingerprint = _fingerprint_pcb1 + _fingerprint_pcb2
 
@@ -1434,6 +1492,7 @@ class HI8811Radio(RT470LRadio):
 @directory.register
 class UVA37Radio(JC8810base):
     """Anysecu UV-A37"""
+
     VENDOR = "Anysecu"
     MODEL = "UV-A37"
 
@@ -1443,32 +1502,39 @@ class UVA37Radio(JC8810base):
     # firmware.
     # ==========
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=5.00),
-                    chirp_common.PowerLevel("L", watts=1.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=5.00),
+        chirp_common.PowerLevel("L", watts=1.00),
+    ]
 
-    VALID_BANDS = [(108000000, 136000000),
-                   (136000000, 174000000),
-                   (200000000, 260000000),
-                   (350000000, 390000000),
-                   (400000000, 520000000)]
+    VALID_BANDS = [
+        (108000000, 136000000),
+        (136000000, 174000000),
+        (200000000, 260000000),
+        (350000000, 390000000),
+        (400000000, 520000000),
+    ]
 
     _magic = b"PROGRAMJC37U"
-    _fingerprint = [b"\x00\x00\x00\xE4\x00\x20\x94\x04",
-                    b"\x00\x00\x00\xE8\x00\x20\x98\x04"]
+    _fingerprint = [
+        b"\x00\x00\x00\xe4\x00\x20\x94\x04",
+        b"\x00\x00\x00\xe8\x00\x20\x98\x04",
+    ]
 
     _ranges = [
-               (0x0000, 0x2000),
-               (0x8000, 0x8040),
-               (0x9000, 0x9040),
-               (0xA000, 0xA140),
-               (0xB000, 0xB440)
-              ]
+        (0x0000, 0x2000),
+        (0x8000, 0x8040),
+        (0x9000, 0x9040),
+        (0xA000, 0xA140),
+        (0xB000, 0xB440),
+    ]
     _memsize = 0xB440
 
 
 @directory.register
 class A36plusRadio(JC8810base):
     """Talkpod A36plus"""
+
     VENDOR = "Talkpod"
     MODEL = "A36plus"
 
@@ -1478,37 +1544,42 @@ class A36plusRadio(JC8810base):
     # firmware.
     # ==========
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=5.00),
-                    chirp_common.PowerLevel("L", watts=1.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=5.00),
+        chirp_common.PowerLevel("L", watts=1.00),
+    ]
 
-    VALID_BANDS = [(108000000, 136000000),
-                   (136000000, 180000000),
-                   (200000000, 260000000),
-                   (350000000, 400000000),
-                   (400000000, 520000000),
-                   ]
+    VALID_BANDS = [
+        (108000000, 136000000),
+        (136000000, 180000000),
+        (200000000, 260000000),
+        (350000000, 400000000),
+        (400000000, 520000000),
+    ]
 
     _magic = b"PROGRAMJC37U"
-    _fingerprint = [b"\x00\x00\x00\x42\x00\x20\xF0\x04",
-                    b"\x00\x00\x00\x5A\x00\x20\x08\x05",  # fw 1.18
-                    b"\x00\x00\x00\x9E\x00\x20\x0C\x05",  # fw 1.22
-                    b"\x00\x00\x00\xFA\x00\x20\x40\x05",  # fw 1.4
-                    b"\x00\x00\x00\x9C\x00\x20\x04\x05",  # fw 1.26
-                    ]
+    _fingerprint = [
+        b"\x00\x00\x00\x42\x00\x20\xf0\x04",
+        b"\x00\x00\x00\x5a\x00\x20\x08\x05",  # fw 1.18
+        b"\x00\x00\x00\x9e\x00\x20\x0c\x05",  # fw 1.22
+        b"\x00\x00\x00\xfa\x00\x20\x40\x05",  # fw 1.4
+        b"\x00\x00\x00\x9c\x00\x20\x04\x05",  # fw 1.26
+    ]
 
     _ranges = [
-               (0x0000, 0x4000),
-               (0x8000, 0x8040),
-               (0x9000, 0x9040),
-               (0xA000, 0xA140),
-               (0xB000, 0xB440)
-              ]
+        (0x0000, 0x4000),
+        (0x8000, 0x8040),
+        (0x9000, 0x9040),
+        (0xA000, 0xA140),
+        (0xB000, 0xB440),
+    ]
     _memsize = 0xB440
     _upper = 512  # fw 1.22 expands from 256 to 512 channels
     _aninames = 10
-    _mem_params = (_upper,  # number of channels
-                   _aninames,  # number of aninames
-                   )
+    _mem_params = (
+        _upper,  # number of channels
+        _aninames,  # number of aninames
+    )
 
     def process_mmap(self):
         mem_format = MEM_FORMAT % self._mem_params + MEM_FORMAT_A36PLUS
@@ -1518,6 +1589,7 @@ class A36plusRadio(JC8810base):
 @directory.register
 class A36plus8wRadio(A36plusRadio):
     """Talkpod A36plus8w"""
+
     VENDOR = "Talkpod"
     MODEL = "A36plus_8w"
 
@@ -1527,17 +1599,21 @@ class A36plus8wRadio(A36plusRadio):
     # firmware.
     # ==========
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=8.00),
-                    chirp_common.PowerLevel("L", watts=1.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=8.00),
+        chirp_common.PowerLevel("L", watts=1.00),
+    ]
 
-    _fingerprint = [b"\x00\x00\x00\xFA\x00\x20\x40\x05",  # fw 1.4
-                    b"\x00\x00\x00\xD8\x00\x20\x58\x05",  # fw 1.6
-                    ]
+    _fingerprint = [
+        b"\x00\x00\x00\xfa\x00\x20\x40\x05",  # fw 1.4
+        b"\x00\x00\x00\xd8\x00\x20\x58\x05",  # fw 1.6
+    ]
 
 
 @directory.register
 class AR730Radio(UVA37Radio):
     """Abbree AR730"""
+
     VENDOR = "Abbree"
     MODEL = "AR-730"
 
@@ -1547,19 +1623,24 @@ class AR730Radio(UVA37Radio):
     # firmware.
     # ==========
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=5.00),
-                    chirp_common.PowerLevel("L", watts=1.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=5.00),
+        chirp_common.PowerLevel("L", watts=1.00),
+    ]
 
-    VALID_BANDS = [(108000000, 136000000),
-                   (136000000, 180000000),
-                   (200000000, 260000000),
-                   (350000000, 390000000),
-                   (400000000, 520000000)]
+    VALID_BANDS = [
+        (108000000, 136000000),
+        (136000000, 180000000),
+        (200000000, 260000000),
+        (350000000, 390000000),
+        (400000000, 520000000),
+    ]
 
 
 @directory.register
 class RT630Radio(JC8810base):
     """Radtel RT-630"""
+
     VENDOR = "Radtel"
     MODEL = "RT-630"
 
@@ -1568,34 +1649,40 @@ class RT630Radio(JC8810base):
     # The RT-630 support in this driver is currently based upon v0.07 firmware.
     # ==========
 
-    _fingerprint = [b"\x00\x00\x00\x32\x00\x20\xD8\x04",  # fw 0.07
-                    b"\x00\x00\x00\x36\x00\x20\xDC\x04",  # fw V0.09 20250703
-                    ]
+    _fingerprint = [
+        b"\x00\x00\x00\x32\x00\x20\xd8\x04",  # fw 0.07
+        b"\x00\x00\x00\x36\x00\x20\xdc\x04",  # fw V0.09 20250703
+    ]
 
-    POWER_LEVELS = [chirp_common.PowerLevel("H", watts=5.00),
-                    chirp_common.PowerLevel("M", watts=4.00),
-                    chirp_common.PowerLevel("L", watts=2.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("H", watts=5.00),
+        chirp_common.PowerLevel("M", watts=4.00),
+        chirp_common.PowerLevel("L", watts=2.00),
+    ]
 
-    VALID_BANDS = [(18000000, 108000000),
-                   (108000000, 136000000),
-                   (136000000, 300000000),
-                   (300000000, 660000000),
-                   (840000000, 1000000000)]
+    VALID_BANDS = [
+        (18000000, 108000000),
+        (108000000, 136000000),
+        (136000000, 300000000),
+        (300000000, 660000000),
+        (840000000, 1000000000),
+    ]
 
     _ranges = [
-               (0x0000, 0x2000),
-               (0x8000, 0x8040),
-               (0x9000, 0x9040),
-               (0xA000, 0xA140),
-               (0xB000, 0xB2C0),
-               (0xB500, 0xB740)
-               ]
+        (0x0000, 0x2000),
+        (0x8000, 0x8040),
+        (0x9000, 0x9040),
+        (0xA000, 0xA140),
+        (0xB000, 0xB2C0),
+        (0xB500, 0xB740),
+    ]
     _memsize = 0xB740
 
 
 @directory.register
 class RT495Radio(RT630Radio):
     """Radtel RT-495"""
+
     VENDOR = "Radtel"
     MODEL = "RT-495"
 
@@ -1604,6 +1691,7 @@ class RT495Radio(RT630Radio):
     # The RT-495 support in this driver is currently based upon v0.07 firmware.
     # ==========
 
-    _fingerprint = [b"\x00\x00\x00\x24\x00\x20\xD0\x04",  # fw 0.06
-                    b"\x00\x00\x00\x32\x00\x20\xD8\x04",  # fw 0.07
-                    ]
+    _fingerprint = [
+        b"\x00\x00\x00\x24\x00\x20\xd0\x04",  # fw 0.06
+        b"\x00\x00\x00\x32\x00\x20\xd8\x04",  # fw 0.07
+    ]

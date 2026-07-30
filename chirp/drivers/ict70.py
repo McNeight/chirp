@@ -62,16 +62,32 @@ struct {
 TMODES = ["", "Tone", "TSQL", "TSQL", "DTCS", "DTCS"]
 DUPLEX = ["", "-", "+"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
-TUNING_STEPS = [5.0, 5.0, 5.0, 5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0,
-                50.0, 100.0, 125.0, 200.0]
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5),
-                chirp_common.PowerLevel("Low", watts=0.5),
-                chirp_common.PowerLevel("Mid", watts=1.0),
-                ]
+TUNING_STEPS = [
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+    125.0,
+    200.0,
+]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=5),
+    chirp_common.PowerLevel("Low", watts=0.5),
+    chirp_common.PowerLevel("Mid", watts=1.0),
+]
 
 
 class ICT70Bank(icf.IcomBank):
     """ICT70 bank"""
+
     def get_name(self):
         _bank = self._model._radio._memobj.bank_names[self.index]
         return str(_bank.name).rstrip()
@@ -84,6 +100,7 @@ class ICT70Bank(icf.IcomBank):
 @directory.register
 class ICT70Radio(icf.IcomCloneModeRadio):
     """Icom IC-T70"""
+
     VENDOR = "Icom"
     MODEL = "IC-T70"
 

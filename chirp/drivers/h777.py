@@ -21,9 +21,14 @@ import logging
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -92,15 +97,26 @@ struct {
 
 CMD_ACK = b"\x06"
 BLOCK_SIZE = 0x08
-UPLOAD_BLOCKS = [list(range(0x0000, 0x0110, 8)),
-                 list(range(0x02b0, 0x02c0, 8)),
-                 list(range(0x0380, 0x03e0, 8))]
+UPLOAD_BLOCKS = [
+    list(range(0x0000, 0x0110, 8)),
+    list(range(0x02B0, 0x02C0, 8)),
+    list(range(0x0380, 0x03E0, 8)),
+]
 
 VOICE_LIST = ["English", "Chinese"]
-TIMEOUTTIMER_LIST = ["Off", "30 seconds", "60 seconds", "90 seconds",
-                     "120 seconds", "150 seconds", "180 seconds",
-                     "210 seconds", "240 seconds", "270 seconds",
-                     "300 seconds"]
+TIMEOUTTIMER_LIST = [
+    "Off",
+    "30 seconds",
+    "60 seconds",
+    "90 seconds",
+    "120 seconds",
+    "150 seconds",
+    "180 seconds",
+    "210 seconds",
+    "240 seconds",
+    "270 seconds",
+    "300 seconds",
+]
 DTCS_FLAG = 0x80
 DTCS_REV_FLAG = 0x40
 
@@ -115,14 +131,13 @@ def _h777_enter_programming_mode(serial, radio_cls):
         serial.write(radio_cls.PROGRAM_CMD)
         ack = serial.read(1)
     except Exception as e:
-        LOG.warning('Failed to send program command: %s', e)
+        LOG.warning("Failed to send program command: %s", e)
         raise errors.RadioError("Error communicating with radio")
 
     if not ack:
         raise errors.RadioNoResponse()
     elif ack != CMD_ACK:
-        LOG.warning('Ack from program command was %r, expected %r',
-                    ack, CMD_ACK)
+        LOG.warning("Ack from program command was %r, expected %r", ack, CMD_ACK)
         raise errors.RadioError("Radio refused to enter programming mode")
 
     try:
@@ -133,18 +148,18 @@ def _h777_enter_programming_mode(serial, radio_cls):
         # timeout so that the read doesn't finish early.
         ident = serial.read(8)
     except Exception as e:
-        LOG.warning('Failed to read ident: %s', e)
+        LOG.warning("Failed to read ident: %s", e)
         raise errors.RadioError("Error communicating with radio")
 
     if ident:
-        LOG.info('Radio identified with:\n%s', util.hexprint(ident))
+        LOG.info("Radio identified with:\n%s", util.hexprint(ident))
         try:
             serial.write(CMD_ACK)
             ack = serial.read(1)
             if ack != CMD_ACK:
                 raise errors.RadioError("Bad ACK after reading ident")
         except:
-            raise errors.RadioError('No ACK after reading ident')
+            raise errors.RadioError("No ACK after reading ident")
         return ident
 
     raise errors.RadioNoResponse()
@@ -154,14 +169,14 @@ def _h777_exit_programming_mode(serial):
     try:
         serial.write(b"E")
     except Exception as e:
-        LOG.warning('Failed to send exit command: %s', e)
+        LOG.warning("Failed to send exit command: %s", e)
         raise errors.RadioError("Radio refused to exit programming mode")
 
 
 def _h777_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, BLOCK_SIZE)
+    cmd = struct.pack(">cHb", b"R", block_addr, BLOCK_SIZE)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -169,8 +184,7 @@ def _h777_read_block(radio, block_addr, block_size):
         serial.write(cmd)
         response = serial.read(4 + BLOCK_SIZE)
         if response[:4] != expectedresponse:
-            LOG.warning('Got %r expected %r' % (response[:4],
-                                                expectedresponse))
+            LOG.warning("Got %r expected %r" % (response[:4], expectedresponse))
             raise Exception("Error reading block %04x." % (block_addr))
 
         block_data = response[4:]
@@ -189,10 +203,10 @@ def _h777_read_block(radio, block_addr, block_size):
 def _h777_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, BLOCK_SIZE)
+    cmd = struct.pack(">cHb", b"W", block_addr, BLOCK_SIZE)
     data = radio.get_mmap().get_byte_compatible()[block_addr:block_addr + 8]
 
-    radio.pipe.log('Writing %i block at %04x' % (BLOCK_SIZE, block_addr))
+    radio.pipe.log("Writing %i block at %04x" % (BLOCK_SIZE, block_addr))
 
     try:
         serial.write(cmd + data)
@@ -202,8 +216,7 @@ def _h777_write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def _h777_enter_single_programming_mode(radio):
@@ -211,21 +224,23 @@ def _h777_enter_single_programming_mode(radio):
     if not ident:
         raise errors.RadioNoResponse()
     if not any(rc_ident in ident for rc_ident in radio.IDENT):
-        LOG.warning('Expected %s for %s but got:\n%s',
-                    radio.IDENT, radio.__class__.__name__,
-                    util.hexprint(ident))
-        raise errors.RadioError('Incorrect model')
+        LOG.warning(
+            "Expected %s for %s but got:\n%s",
+            radio.IDENT,
+            radio.__class__.__name__,
+            util.hexprint(ident),
+        )
+        raise errors.RadioError("Incorrect model")
 
 
 def do_download(radio):
     LOG.debug("download")
 
     if len(radio.detected_models()) <= 1:
-        LOG.debug('Entering programming mode for %s', radio.__class__.__name__)
+        LOG.debug("Entering programming mode for %s", radio.__class__.__name__)
         _h777_enter_single_programming_mode(radio)
     else:
-        LOG.debug('Already in programming mode for %s',
-                  radio.__class__.__name__)
+        LOG.debug("Already in programming mode for %s", radio.__class__.__name__)
 
     data = b""
 
@@ -239,7 +254,7 @@ def do_download(radio):
         status.cur = addr + BLOCK_SIZE
         radio.status_fn(status)
 
-        radio.pipe.log('Reading %i block at %04x' % (BLOCK_SIZE, addr))
+        radio.pipe.log("Reading %i block at %04x" % (BLOCK_SIZE, addr))
         block = _h777_read_block(radio, addr, BLOCK_SIZE)
         data += block
 
@@ -267,53 +282,64 @@ def do_upload(radio):
 
 
 class ArcshellAR5(chirp_common.Alias):
-    VENDOR = 'Arcshell'
-    MODEL = 'AR-5'
+    VENDOR = "Arcshell"
+    MODEL = "AR-5"
 
 
 class ArcshellAR6(chirp_common.Alias):
-    VENDOR = 'Arcshell'
-    MODEL = 'AR-6'
+    VENDOR = "Arcshell"
+    MODEL = "AR-6"
 
 
 class GV8SAlias(chirp_common.Alias):
-    VENDOR = 'Greaval'
-    MODEL = 'GV-8S'
+    VENDOR = "Greaval"
+    MODEL = "GV-8S"
 
 
 class GV9SAlias(chirp_common.Alias):
-    VENDOR = 'Greaval'
-    MODEL = 'GV-9S'
+    VENDOR = "Greaval"
+    MODEL = "GV-9S"
 
 
 class A8SAlias(chirp_common.Alias):
-    VENDOR = 'Ansoko'
-    MODEL = 'A-8S'
+    VENDOR = "Ansoko"
+    MODEL = "A-8S"
 
 
 class TenwayTW325Alias(chirp_common.Alias):
-    VENDOR = 'Tenway'
-    MODEL = 'TW-325'
+    VENDOR = "Tenway"
+    MODEL = "TW-325"
 
 
 @directory.register
 class H777Radio(chirp_common.CloneModeRadio):
     """HST H-777"""
+
     # VENDOR = "Heng Shun Tong (恒顺通)"
     # MODEL = "H-777"
     VENDOR = "Baofeng"
     MODEL = "BF-888"
-    PROGRAM_CMD = b'PROGRAM'
-    IDENT = [b"P3107", ]
+    PROGRAM_CMD = b"PROGRAM"
+    IDENT = [
+        b"P3107",
+    ]
     BAUD_RATE = 9600
 
     # TODO: Is it 1 watt?
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("High", watts=5.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("High", watts=5.00),
+    ]
     VALID_BANDS = (400000000, 490000000)
     MAX_VOXLEVEL = 5
-    ALIASES = [ArcshellAR5, ArcshellAR6, GV8SAlias, GV9SAlias, A8SAlias,
-               TenwayTW325Alias]
+    ALIASES = [
+        ArcshellAR5,
+        ArcshellAR6,
+        GV8SAlias,
+        GV9SAlias,
+        A8SAlias,
+        TenwayTW325Alias,
+    ]
     SIDEKEYFUNCTION_LIST = ["Off", "Monitor", "Transmit Power", "Alarm"]
     SCANMODE_LIST = ["Carrier", "Time"]
 
@@ -356,15 +382,26 @@ class H777Radio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.has_tuning_step = False
         rf.has_bank = False
         rf.has_name = False
         rf.memory_bounds = (1, 16)
         rf.valid_bands = [self.VALID_BANDS]
         rf.valid_power_levels = self.POWER_LEVELS
-        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0,
-                                 50.0, 100.0]
+        rf.valid_tuning_steps = [
+            2.5,
+            5.0,
+            6.25,
+            10.0,
+            12.5,
+            15.0,
+            20.0,
+            25.0,
+            50.0,
+            100.0,
+        ]
 
         return rf
 
@@ -385,23 +422,23 @@ class H777Radio(chirp_common.CloneModeRadio):
         memval[1].ignore_bits(DTCS_FLAG | DTCS_REV_FLAG)
         is_dtcs = memval[1].get_bits(DTCS_FLAG)
         is_rev = memval[1].get_bits(DTCS_REV_FLAG)
-        if memval.get_raw() == b"\xFF\xFF":
-            return '', None, None
+        if memval.get_raw() == b"\xff\xff":
+            return "", None, None
         elif is_dtcs:
-            return 'DTCS', int(memval), 'R' if is_rev else 'N'
+            return "DTCS", int(memval), "R" if is_rev else "N"
         else:
-            return 'Tone', int(memval) / 10.0, None
+            return "Tone", int(memval) / 10.0, None
 
     def _encode_tone(self, memval, mode, value, pol):
         memval[1].ignore_bits(DTCS_FLAG | DTCS_REV_FLAG)
-        if mode == '':
-            memval.fill_raw(b'\xFF')
-        elif mode == 'Tone':
+        if mode == "":
+            memval.fill_raw(b"\xff")
+        elif mode == "Tone":
             memval[1].clr_bits(DTCS_FLAG | DTCS_REV_FLAG)
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
+        elif mode == "DTCS":
             memval[1].set_bits(DTCS_FLAG)
-            if pol == 'R':
+            if pol == "R":
                 memval[1].set_bits(DTCS_REV_FLAG)
             else:
                 memval[1].clr_bits(DTCS_REV_FLAG)
@@ -422,12 +459,12 @@ class H777Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
 
-        if _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
             mem.offset = 0
         elif int(_mem.rxfreq) == int(_mem.txfreq):
@@ -447,15 +484,19 @@ class H777Radio(chirp_common.CloneModeRadio):
         chirp_common.split_tone_decode(mem, txtone, rxtone)
 
         mem.extra = RadioSettingGroup("Extra", "extra")
-        rs = RadioSetting("bcl", "Busy Channel Lockout",
-                          RadioSettingValueBoolean(not _mem.bcl))
+        rs = RadioSetting(
+            "bcl", "Busy Channel Lockout", RadioSettingValueBoolean(not _mem.bcl)
+        )
         rs.set_doc('Prevents transmitting on a channel that is already in '
                    'use. Pressing PTT while the channel is busy emits an '
                    'alert tone and inhibits the transmitter')
         mem.extra.append(rs)
         if self._has_scramble:
-            rs = RadioSetting("beatshift", "Beat Shift(scramble)",
-                              RadioSettingValueBoolean(not _mem.beatshift))
+            rs = RadioSetting(
+                "beatshift",
+                "Beat Shift(scramble)",
+                RadioSettingValueBoolean(not _mem.beatshift),
+            )
             mem.extra.append(rs)
 
         return mem
@@ -465,14 +506,14 @@ class H777Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
             return
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -486,7 +527,7 @@ class H777Radio(chirp_common.CloneModeRadio):
         self._encode_tone(_mem.txtone, *txtone)
         self._encode_tone(_mem.rxtone, *rxtone)
 
-        _mem.narrow = 'N' in mem.mode
+        _mem.narrow = "N" in mem.mode
         _mem.highpower = mem.power == self.POWER_LEVELS[1]
         _mem.skip = mem.skip == "S"
 
@@ -509,20 +550,23 @@ class H777Radio(chirp_common.CloneModeRadio):
         # TODO: Check that all these settings actually do what they
         # say they do.
 
-        rs = RadioSetting("voiceprompt", "Voice prompt",
-                          RadioSettingValueBoolean(_settings.voiceprompt))
+        rs = RadioSetting(
+            "voiceprompt",
+            "Voice prompt",
+            RadioSettingValueBoolean(_settings.voiceprompt),
+        )
         rs.set_doc('Announces channel changes and operations by voice')
         basic.append(rs)
 
-        rs = RadioSetting("voicelanguage", "Voice language",
-                          RadioSettingValueList(
-                              VOICE_LIST,
-                              current_index=_settings.voicelanguage))
+        rs = RadioSetting(
+            "voicelanguage",
+            "Voice language",
+            RadioSettingValueList(VOICE_LIST, current_index=_settings.voicelanguage),
+        )
         rs.set_doc('Language used for the voice prompts (Chinese or English)')
         basic.append(rs)
 
-        rs = RadioSetting("scan", "Scan",
-                          RadioSettingValueBoolean(_settings.scan))
+        rs = RadioSetting("scan", "Scan", RadioSettingValueBoolean(_settings.scan))
         rs.set_doc('Set the channel selector to channel 16 to scan '
                    'channels 1-15. Scanning stops when a signal is '
                    'detected and resumes once it clears. At least two '
@@ -531,48 +575,62 @@ class H777Radio(chirp_common.CloneModeRadio):
         basic.append(rs)
 
         if self._has_scanmodes:
-            rs = RadioSetting("settings2.scanmode", "Scan mode",
+            rs = RadioSetting(
+                "settings2.scanmode",
+                "Scan mode",
                               RadioSettingValueList(
-                                  self.SCANMODE_LIST,
-                                  current_index=(
-                                      self._memobj.settings2.scanmode)))
+                    self.SCANMODE_LIST, current_index=(self._memobj.settings2.scanmode)
+                ),
+            )
             basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX",
-                          RadioSettingValueBoolean(_settings.vox))
+        rs = RadioSetting("vox", "VOX", RadioSettingValueBoolean(_settings.vox))
         rs.set_doc('Voice Operated Transmit keys the transmitter when you '
                    'speak into the microphone, eliminating the need to '
                    'press PTT')
         basic.append(rs)
 
-        rs = RadioSetting("voxlevel", "VOX level",
-                          RadioSettingValueInteger(
-                              1, self.MAX_VOXLEVEL, _settings.voxlevel + 1))
+        rs = RadioSetting(
+            "voxlevel",
+            "VOX level",
+            RadioSettingValueInteger(1, self.MAX_VOXLEVEL, _settings.voxlevel + 1),
+        )
         rs.set_doc('VOX gain sensitivity. If set too sensitive the radio '
                    'keys up on background noise; if not sensitive enough it '
                    'will not pick up your voice')
         basic.append(rs)
 
-        rs = RadioSetting("voxinhibitonrx", "Inhibit VOX on receive",
-                          RadioSettingValueBoolean(_settings.voxinhibitonrx))
+        rs = RadioSetting(
+            "voxinhibitonrx",
+            "Inhibit VOX on receive",
+            RadioSettingValueBoolean(_settings.voxinhibitonrx),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("lowvolinhibittx", "Low voltage inhibit transmit",
-                          RadioSettingValueBoolean(_settings.lowvolinhibittx))
+        rs = RadioSetting(
+            "lowvolinhibittx",
+            "Low voltage inhibit transmit",
+            RadioSettingValueBoolean(_settings.lowvolinhibittx),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("highvolinhibittx", "High voltage inhibit transmit",
-                          RadioSettingValueBoolean(_settings.highvolinhibittx))
+        rs = RadioSetting(
+            "highvolinhibittx",
+            "High voltage inhibit transmit",
+            RadioSettingValueBoolean(_settings.highvolinhibittx),
+        )
         basic.append(rs)
 
-        if self.PROGRAM_CMD == b'PWPG970':  # Baofeng 1900 series
-            rs = RadioSetting("alarm", "Alarm",
-                              RadioSettingValueList(
-                                    self.ALARM_LIST,
-                                    current_index=_settings.alarm))
+        if self.PROGRAM_CMD == b"PWPG970":  # Baofeng 1900 series
+            rs = RadioSetting(
+                "alarm",
+                "Alarm",
+                RadioSettingValueList(self.ALARM_LIST, current_index=_settings.alarm),
+            )
         else:
-            rs = RadioSetting("alarm", "Alarm",
-                              RadioSettingValueBoolean(_settings.alarm))
+            rs = RadioSetting(
+                "alarm", "Alarm", RadioSettingValueBoolean(_settings.alarm)
+            )
         rs.set_doc('Emergency alarm triggered by the side key. Depending '
                    'on the model this either sounds a local siren or also '
                    'alerts other radios on the channel')
@@ -581,48 +639,60 @@ class H777Radio(chirp_common.CloneModeRadio):
         # TODO: This should probably be called “FM Broadcast Band Radio”
         # or something. I'm not sure if the model actually has one though.
         if self._has_fm:
-            rs = RadioSetting("fmradio", "FM function",
-                              RadioSettingValueBoolean(_settings.fmradio))
+            rs = RadioSetting(
+                "fmradio", "FM function", RadioSettingValueBoolean(_settings.fmradio)
+            )
             rs.set_doc('Broadcast FM radio receiver. The radio cannot scan '
                        'while this is active')
             basic.append(rs)
 
-        rs = RadioSetting("settings2.beep", "Beep",
-                          RadioSettingValueBoolean(
-                              self._memobj.settings2.beep))
+        rs = RadioSetting(
+            "settings2.beep",
+            "Beep",
+            RadioSettingValueBoolean(self._memobj.settings2.beep),
+        )
         rs.set_doc('When enabled, the radio emits a short tone when you '
                    'select a channel that has nothing programmed')
         basic.append(rs)
 
-        rs = RadioSetting("settings2.batterysaver", "Battery saver",
-                          RadioSettingValueBoolean(
-                              self._memobj.settings2.batterysaver))
+        rs = RadioSetting(
+            "settings2.batterysaver",
+            "Battery saver",
+            RadioSettingValueBoolean(self._memobj.settings2.batterysaver),
+        )
         rs.set_doc('Reduces battery power used when no signal is being '
                    'received. Activates automatically about 10 seconds '
                    'after the last received signal or operation')
         basic.append(rs)
 
-        rs = RadioSetting("settings2.squelchlevel", "Squelch level",
-                          RadioSettingValueInteger(
-                              0, 9, self._memobj.settings2.squelchlevel))
+        rs = RadioSetting(
+            "settings2.squelchlevel",
+            "Squelch level",
+            RadioSettingValueInteger(0, 9, self._memobj.settings2.squelchlevel),
+        )
         rs.set_doc('Mutes the speaker when no signal is present so that you '
                    'only hear sound when a signal is received. Higher '
                    'levels require a stronger signal to unmute')
         basic.append(rs)
 
         if self._has_sidekey:
-            rs = RadioSetting("settings2.sidekeyfunction", "Side key function",
+            rs = RadioSetting(
+                "settings2.sidekeyfunction",
+                "Side key function",
                               RadioSettingValueList(
                                   self.SIDEKEYFUNCTION_LIST,
-                                  current_index=(
-                                      self._memobj.settings2.sidekeyfunction)))
+                    current_index=(self._memobj.settings2.sidekeyfunction),
+                ),
+            )
             basic.append(rs)
 
         rs = RadioSetting(
-            "settings2.timeouttimer", "Timeout timer",
+            "settings2.timeouttimer",
+            "Timeout timer",
             RadioSettingValueList(
-                TIMEOUTTIMER_LIST,
-                current_index=self._memobj.settings2.timeouttimer))
+                TIMEOUTTIMER_LIST, current_index=self._memobj.settings2.timeouttimer
+            ),
+        )
         rs.set_doc('Limits the maximum length of a single transmission to '
                    'prevent overheating the radio. An alert sounds when the '
                    'limit is reached')
@@ -662,8 +732,8 @@ class H777Radio(chirp_common.CloneModeRadio):
 
 @directory.register
 class RetevisH777(H777Radio):
-    VENDOR = 'Retevis'
-    MODEL = 'H777'
+    VENDOR = "Retevis"
+    MODEL = "H777"
     ALIASES = []
 
     @classmethod
@@ -673,16 +743,16 @@ class RetevisH777(H777Radio):
             ident = _h777_enter_programming_mode(pipe, ident_rclass)
             for rclass, idents in cls_to_ident.items():
                 if any(rc_ident in ident for rc_ident in idents):
-                    LOG.debug('Detected %s', rclass.__name__)
+                    LOG.debug("Detected %s", rclass.__name__)
                     return rclass
-                LOG.debug('Ident was %r, idents were %r', ident, idents)
+                LOG.debug("Ident was %r, idents were %r", ident, idents)
 
-            LOG.info('Did not identify radio as %s', rclass.__name__)
+            LOG.info("Did not identify radio as %s", rclass.__name__)
             time.sleep(0.5)
             _h777_exit_programming_mode(pipe)
             time.sleep(1)
 
-        raise errors.RadioError('Failed to identify with radio.')
+        raise errors.RadioError("Failed to identify with radio.")
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -728,6 +798,7 @@ struct {
 @directory.register
 class MP31Radio(H777Radio):
     """Baofeng MP31"""
+
     VENDOR = "Baofeng"
     MODEL = "MP31"
     IDENT = [b"P3107\xf7\x00\x00"]
@@ -738,7 +809,8 @@ class MP31Radio(H777Radio):
 
     def process_mmap(self):
         self._memobj = bitwise.parse(
-            MP31_MEM_FORMAT + MP31_SETTINGS2 + MEM_FORMAT_SETTINGS, self._mmap)
+            MP31_MEM_FORMAT + MP31_SETTINGS2 + MEM_FORMAT_SETTINGS, self._mmap
+        )
 
     def get_features(self):
         rf = super().get_features()
@@ -754,47 +826,46 @@ class H777TestCase(unittest.TestCase):
 
     def setUp(self):
         self.driver = H777Radio(None)
-        self.testdata = bitwise.parse("lbcd foo[2];",
-                                      memmap.MemoryMap("\x00\x00"))
+        self.testdata = bitwise.parse("lbcd foo[2];", memmap.MemoryMap("\x00\x00"))
 
     def test_decode_tone_dtcs_normal(self):
         mode, value, pol = self.driver._decode_tone(8023)
-        self.assertEqual('DTCS', mode)
+        self.assertEqual("DTCS", mode)
         self.assertEqual(23, value)
-        self.assertEqual('N', pol)
+        self.assertEqual("N", pol)
 
     def test_decode_tone_dtcs_rev(self):
         mode, value, pol = self.driver._decode_tone(12023)
-        self.assertEqual('DTCS', mode)
+        self.assertEqual("DTCS", mode)
         self.assertEqual(23, value)
-        self.assertEqual('R', pol)
+        self.assertEqual("R", pol)
 
     def test_decode_tone_tone(self):
         mode, value, pol = self.driver._decode_tone(885)
-        self.assertEqual('Tone', mode)
+        self.assertEqual("Tone", mode)
         self.assertEqual(88.5, value)
         self.assertEqual(None, pol)
 
     def test_decode_tone_none(self):
         mode, value, pol = self.driver._decode_tone(16665)
-        self.assertEqual('', mode)
+        self.assertEqual("", mode)
         self.assertEqual(None, value)
         self.assertEqual(None, pol)
 
     def test_encode_tone_dtcs_normal(self):
-        self.driver._encode_tone(self.testdata.foo, 'DTCS', 23, 'N')
+        self.driver._encode_tone(self.testdata.foo, "DTCS", 23, "N")
         self.assertEqual(8023, int(self.testdata.foo))
 
     def test_encode_tone_dtcs_rev(self):
-        self.driver._encode_tone(self.testdata.foo, 'DTCS', 23, 'R')
+        self.driver._encode_tone(self.testdata.foo, "DTCS", 23, "R")
         self.assertEqual(12023, int(self.testdata.foo))
 
     def test_encode_tone(self):
-        self.driver._encode_tone(self.testdata.foo, 'Tone', 88.5, 'N')
+        self.driver._encode_tone(self.testdata.foo, "Tone", 88.5, "N")
         self.assertEqual(885, int(self.testdata.foo))
 
     def test_encode_tone_none(self):
-        self.driver._encode_tone(self.testdata.foo, '', 67.0, 'N')
+        self.driver._encode_tone(self.testdata.foo, "", 67.0, "N")
         self.assertEqual(16665, int(self.testdata.foo))
 
     def test_mp31_38_channels(self):
@@ -873,7 +944,7 @@ class MT8SRadio(H777Radio):
 class BF1901Radio(H777Radio):
     VENDOR = "Baofeng"
     MODEL = "BF-1901"
-    PROGRAM_CMD = b'PWPG970'
+    PROGRAM_CMD = b"PWPG970"
     ALIASES = []
 
     VALID_BANDS = (400000000, 520000000)
@@ -902,8 +973,10 @@ class BF1904Radio(BF1901Radio):
     ALIASES = []
 
     # TODO: Is it 1 watt?
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("High", watts=10.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("High", watts=10.00),
+    ]
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -916,8 +989,9 @@ class BF1909Radio(BF1901Radio):
     VENDOR = "Baofeng"
     MODEL = "BF-1909"
     ALIASES = []
-    IDENT = [b"P320h",
-             b"P3107" + b"\xF4" + b"AM",
+    IDENT = [
+        b"P320h",
+        b"P3107" + b"\xf4" + b"AM",
              ]
     _ranges = [
         (0x0000, 0x0110),
@@ -928,8 +1002,10 @@ class BF1909Radio(BF1901Radio):
     _memsize = 0x03F0
 
     # TODO: Is it 1 watt?
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("High", watts=10.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("High", watts=10.00),
+    ]
 
     @classmethod
     def match_model(cls, filedata, filename):

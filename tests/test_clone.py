@@ -18,7 +18,7 @@ class SerialException(Exception):
 class SerialNone(serialtrace.SerialTrace):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
-        self.port = '/dev/ttyUSB0'
+        self.port = "/dev/ttyUSB0"
 
     def flush(self):
         pass
@@ -37,7 +37,7 @@ class SerialNone(serialtrace.SerialTrace):
 
     def write(self, data):
         if not isinstance(data, bytes):
-            raise TypeError('Radio wrote non-bytes to serial')
+            raise TypeError("Radio wrote non-bytes to serial")
 
     def setBaudrate(self, rate):
         pass
@@ -74,7 +74,7 @@ class SerialShortGarbage(SerialNone):
     def read(self, size=None):
         if size is None:
             size = random.randint(0, 128)
-        return b'\x01' * (size - 1)
+        return b"\x01" * (size - 1)
 
 
 class TestCaseClone(base.DriverTest):
@@ -84,7 +84,7 @@ class TestCaseClone(base.DriverTest):
         self.clone = isinstance(self.radio, chirp_common.CloneModeRadio)
 
         if not self.clone and not self.live:
-            self.skipTest('Does not support clone')
+            self.skipTest("Does not support clone")
 
         real_time = time.time
 
@@ -92,21 +92,20 @@ class TestCaseClone(base.DriverTest):
             return real_time() * 1000
 
         self.patches = []
-        self.use_patch(mock.patch('time.sleep'))
-        self.use_patch(mock.patch('time.time',
-                                  side_effect=fake_time))
+        self.use_patch(mock.patch("time.sleep"))
+        self.use_patch(mock.patch("time.time", side_effect=fake_time))
 
     def _test_with_serial(self, serial):
         # The base case sets us up with a file, so re-init with our serial.
         # The radio must not read (or fail) with unexpected/error serial
         # behavior on init.
-        LOG.info('Initializing radio with fake serial; Radio should not fail')
+        LOG.info("Initializing radio with fake serial; Radio should not fail")
         orig_mmap = self.parent._mmap
 
         try:
             cls = self.RADIO_CLASS.detect_from_serial(serial)
             if cls and cls != self.RADIO_CLASS:
-                self.fail('Radio detection did not return self')
+                self.fail("Radio detection did not return self")
         except NotImplementedError:
             pass
         except errors.RadioError:
@@ -118,13 +117,17 @@ class TestCaseClone(base.DriverTest):
         self.radio._mmap = orig_mmap
         self.radio.status_fn = lambda s: True
 
-        msg = ('Clone in should have failed and raised an exception '
-               'that inherits from RadioError')
+        msg = (
+            "Clone in should have failed and raised an exception "
+            "that inherits from RadioError"
+        )
         with self.assertRaises(errors.RadioError, msg=msg):
             self.radio.sync_in()
 
-        msg = ('Clone out should have failed and raised an exception '
-               'that inherits from RadioError')
+        msg = (
+            "Clone out should have failed and raised an exception "
+            "that inherits from RadioError"
+        )
         with self.assertRaises(errors.RadioError, msg=msg):
             self.radio.sync_out()
 

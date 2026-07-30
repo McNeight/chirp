@@ -47,13 +47,13 @@ HF90_CONFIG_LEN = 0x800
 
 
 def to_ihex(addr, kind, data):
-    rec = [len(data) & 0xff, (addr >> 8) & 0xff, addr & 0xff, kind & 0xff]
+    rec = [len(data) & 0xFF, (addr >> 8) & 0xFF, addr & 0xFF, kind & 0xFF]
     for d in data:
         rec.append(d)
     csum = 0
     for n in rec:
         csum += n
-    rec.append((-csum) & 0xff)
+    rec.append((-csum) & 0xFF)
     return rec
 
 
@@ -70,13 +70,14 @@ def reset_buffer(pipe):
         count = len(junk)
     pipe.timeout = timeout
     if count > 0:
-        raise errors.RadioError("Unable to clean serial buffer. "
-                                "Please check your serial port selection.")
+        raise errors.RadioError(
+            "Unable to clean serial buffer. " "Please check your serial port selection."
+        )
 
 
-class HF90StyleRadio(chirp_common.CloneModeRadio,
-                     chirp_common.ExperimentalRadio):
+class HF90StyleRadio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Base class for HF-90 radio variants"""
+
     VENDOR = "Q-MAC"
     MODEL = "HF-90"
     MODES = ["LSB", "USB"]
@@ -103,11 +104,11 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
 
     def _serial_prompt(self):
         reset_buffer(self.pipe)
-        self._send(b'\r')
+        self._send(b"\r")
         resp = self._read(3)
         if not resp:
             raise errors.RadioNoResponse()
-        return resp == b'\r\n#'
+        return resp == b"\r\n#"
 
     def _download_chunk(self, addr):
         if addr % 16:
@@ -122,9 +123,9 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         resp_len = 5 + 48 + 1 + 16 + 2
 
         resp = self._read(resp_len).strip()
-        if b'  ' not in resp:
+        if b"  " not in resp:
             raise errors.RadioError("Incorrect data received from radio")
-        words = resp.split(b' ')
+        words = resp.split(b" ")
         if addr != int(words[0], 16):
             raise errors.RadioError("Incorrect address received from radio")
         data = []
@@ -142,13 +143,13 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         if not self._serial_prompt():
             raise errors.RadioError("Did not get initial prompt from radio")
 
-        data = b'\x00' * HF90_CONFIG_ADDR
+        data = b"\x00" * HF90_CONFIG_ADDR
 
-        cmd = b'D%04X%04X' % (HF90_CONFIG_ADDR, limit - HF90_CONFIG_ADDR)
+        cmd = b"D%04X%04X" % (HF90_CONFIG_ADDR, limit - HF90_CONFIG_ADDR)
         self._send(cmd)
 
         resp = self._read(2)
-        if resp != b'\r\n':
+        if resp != b"\r\n":
             raise errors.RadioError("Incorrect separator received from radio")
 
         for addr in range(HF90_CONFIG_ADDR, limit, 16):
@@ -162,7 +163,7 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
                 self.status_fn(status)
 
         resp = self._read(3)
-        if resp != b'\r\n#':
+        if resp != b"\r\n#":
             raise errors.RadioError("Incorrect response from radio")
 
         return memmap.MemoryMapBytes(data)
@@ -171,14 +172,14 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         if addr % 16:
             raise Exception("Addr 0x%04x not on 16-byte boundary" % addr)
 
-        data = self._mmap.get_byte_compatible()[addr:addr + 16]
+        data = self._mmap.get_byte_compatible()[addr : addr + 16]
         ihex_rec = to_ihex(addr, 0, list(data[0:16]))
-        cmd = b':' + b''.join(b'%02X' % b for b in ihex_rec)
+        cmd = b":" + b"".join(b"%02X" % b for b in ihex_rec)
         LOG.debug(cmd)
         self._send(cmd)
 
         resp = self._read(4)
-        if resp != b'\x13\x11\r\n':
+        if resp != b"\x13\x11\r\n":
             LOG.debug(util.hexprint(resp))
             raise errors.RadioError("Did not receive ack from radio")
 
@@ -190,10 +191,10 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         timeout = self.pipe.timeout
         self.pipe.timeout = 1
 
-        self._send(b'L0000')
+        self._send(b"L0000")
 
         resp = self._read(4)
-        if resp != b'\r\n\r\n':
+        if resp != b"\r\n\r\n":
             raise errors.RadioError("Did not get initial response from radio")
 
         for addr in range(HF90_CONFIG_ADDR, limit, 16):
@@ -206,10 +207,10 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
                 status.msg = "Uploading to radio"
                 self.status_fn(status)
 
-        self._send(b':00000001FF\r')
+        self._send(b":00000001FF\r")
 
         resp = self._read(5)
-        if resp != b'\r\n\r\n#':
+        if resp != b"\r\n\r\n#":
             raise errors.RadioError("Did not get final response from radio")
 
         # Reset radio
@@ -244,15 +245,15 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
                 highest_nonempty = i
                 msgs = self.validate_memory(m)
                 if msgs:
-                    raise Exception("Memory %d failed validation: %s" %
-                                    (i, ", ".join(msgs)))
+                    raise Exception(
+                        "Memory %d failed validation: %s" % (i, ", ".join(msgs))
+                    )
 
         if highest_nonempty is None:
             raise Exception("Cannot upload with no channels defined")
         if isinstance(self, EarlyHF90Radio):
             if lowest_empty is not None and lowest_empty < highest_nonempty:
-                raise Exception(
-                    "Cannot upload with gaps between defined channels")
+                raise Exception("Cannot upload with gaps between defined channels")
 
         try:
             self._upload(self._memsize)
@@ -271,20 +272,24 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = ("This radio driver is currently under development."
-                           "\nThere are no known issues with it, but you "
-                           "should proceed with caution.\n")
-        rp.pre_download = ("Follow these instructions to down/upload:\n"
-                           "1. Turn off your radio.\n"
-                           "2. Connect the serial interface cable.\n"
-                           "3. Turn on your radio.\n"
-                           "4. Hold down 'CHAN UP' and 'CHAN DOWN' buttons "
-                           "until 'RS-232' is displayed.\n"
-                           "5. Click OK to proceed.\n"
-                           "6. After the process completes, cycle power on "
-                           "the radio to exit RS-232 mode.\n"
-                           "Please refer to the CHIRP wiki for information "
-                           "about HF-90 serial port compatibility issues.\n")
+        rp.experimental = (
+            "This radio driver is currently under development."
+            "\nThere are no known issues with it, but you "
+            "should proceed with caution.\n"
+        )
+        rp.pre_download = (
+            "Follow these instructions to down/upload:\n"
+            "1. Turn off your radio.\n"
+            "2. Connect the serial interface cable.\n"
+            "3. Turn on your radio.\n"
+            "4. Hold down 'CHAN UP' and 'CHAN DOWN' buttons "
+            "until 'RS-232' is displayed.\n"
+            "5. Click OK to proceed.\n"
+            "6. After the process completes, cycle power on "
+            "the radio to exit RS-232 mode.\n"
+            "Please refer to the CHIRP wiki for information "
+            "about HF-90 serial port compatibility issues.\n"
+        )
         rp.pre_upload = rp.pre_download
         return rp
 
@@ -346,44 +351,56 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
 
         grp = RadioSettingGroup("settings", "Settings")
 
-        rs = RadioSetting("type", "Type",
-                          RadioSettingValueList(
-                              self.HF90_TYPES,
-                              current_index=_settings.type))
+        rs = RadioSetting(
+            "type",
+            "Type",
+            RadioSettingValueList(self.HF90_TYPES, current_index=_settings.type),
+        )
         rs.set_apply_callback(self.apply_type, _settings)
         grp.append(rs)
 
         if isinstance(self, EarlyHF90Radio):
-            rs = RadioSetting("selcall_id", "Selcall ID (0 for standard type)",
-                              RadioSettingValueInteger(
-                                  0, 9999,
-                                  self._get_selcall_id(_settings)))
+            rs = RadioSetting(
+                "selcall_id",
+                "Selcall ID (0 for standard type)",
+                RadioSettingValueInteger(0, 9999, self._get_selcall_id(_settings)),
+            )
             rs.set_apply_callback(self.apply_selcall_id, _settings)
             grp.append(rs)
         else:
-            rs = RadioSetting("selcall_id", "Selcall ID",
-                              RadioSettingValueInteger(
-                                  1, 9999,
-                                  self._get_selcall_id(_settings)))
+            rs = RadioSetting(
+                "selcall_id",
+                "Selcall ID",
+                RadioSettingValueInteger(1, 9999, self._get_selcall_id(_settings)),
+            )
             rs.set_apply_callback(self.apply_selcall_id, _settings)
             grp.append(rs)
 
-        rs = RadioSetting("f_p_program", "Front panel programming",
-                          RadioSettingValueBoolean(_settings.f_p_program))
+        rs = RadioSetting(
+            "f_p_program",
+            "Front panel programming",
+            RadioSettingValueBoolean(_settings.f_p_program),
+        )
         grp.append(rs)
 
-        rs = RadioSetting("auto_tune", "Auto tuning",
-                          RadioSettingValueBoolean(_settings.auto_tune))
+        rs = RadioSetting(
+            "auto_tune", "Auto tuning", RadioSettingValueBoolean(_settings.auto_tune)
+        )
         grp.append(rs)
 
-        rs = RadioSetting("mode_toggle", "Mode toggling",
-                          RadioSettingValueBoolean(_settings.mode_toggle))
+        rs = RadioSetting(
+            "mode_toggle",
+            "Mode toggling",
+            RadioSettingValueBoolean(_settings.mode_toggle),
+        )
         grp.append(rs)
 
         hp = int(_settings.tx_power == 3)
-        rs = RadioSetting("tx_power", "Tx Power",
-                          RadioSettingValueList(self.HF90_POWER_LEVELS,
-                                                current_index=hp))
+        rs = RadioSetting(
+            "tx_power",
+            "Tx Power",
+            RadioSettingValueList(self.HF90_POWER_LEVELS, current_index=hp),
+        )
         rs.set_apply_callback(self.apply_txpower, _settings)
         grp.append(rs)
 
@@ -457,20 +474,18 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         else:
             mem.mode = "LSB"
 
-        n = _mem.vnum & 0xff
+        n = _mem.vnum & 0xFF
         if n == 0:
             n = number
 
         rsg = RadioSettingGroup("Extra", "extra")
-        rs = RadioSetting("vnum", "Number",
-                          RadioSettingValueInteger(self._lower,
-                                                   self._upper, n))
+        rs = RadioSetting(
+            "vnum", "Number", RadioSettingValueInteger(self._lower, self._upper, n)
+        )
         rsg.append(rs)
-        rs = RadioSetting("selcall", "Selcall",
-                          RadioSettingValueBoolean(_mem.selcall))
+        rs = RadioSetting("selcall", "Selcall", RadioSettingValueBoolean(_mem.selcall))
         rsg.append(rs)
-        rs = RadioSetting("scan", "Scan",
-                          RadioSettingValueBoolean(_mem.scan))
+        rs = RadioSetting("scan", "Scan", RadioSettingValueBoolean(_mem.scan))
         rsg.append(rs)
         mem.extra = rsg
 
@@ -500,11 +515,11 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
 
         _mem.tx_equals_rx = tx == rx
 
-        _mem.rx0_15 = (rx >> 0) & 0xffff
-        _mem.rx16_19 = (rx >> 16) & 0xf
+        _mem.rx0_15 = (rx >> 0) & 0xFFFF
+        _mem.rx16_19 = (rx >> 16) & 0xF
 
-        _mem.tx0_3 = (tx >> 0) & 0xf
-        _mem.tx4_19 = (tx >> 4) & 0xffff
+        _mem.tx0_3 = (tx >> 0) & 0xF
+        _mem.tx4_19 = (tx >> 4) & 0xFFFF
 
         _mem.usb = mem.mode == "USB"
 
@@ -517,18 +532,23 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
         msgs = chirp_common.CloneModeRadio.validate_memory(self, mem)
 
         if 0 < self._get_tx_freq(mem) < self._min_tx_freq:
-            msgs.append(chirp_common.ValidationWarning(
-                "tx frequency too low"))
+            msgs.append(chirp_common.ValidationWarning("tx frequency too low"))
 
         if mem.extra and isinstance(self, EarlyHF90Radio):
-            if self._memobj.settings.selcall_id == 0x0fff:
+            if self._memobj.settings.selcall_id == 0x0FFF:
                 if mem.extra["scan"].value or mem.extra["selcall"].value:
-                    msgs.append(chirp_common.ValidationWarning(
-                        "standard type but scan or selcall enabled"))
+                    msgs.append(
+                        chirp_common.ValidationWarning(
+                            "standard type but scan or selcall enabled"
+                        )
+                    )
             else:
                 if mem.extra["scan"].value and not mem.extra["selcall"].value:
-                    msgs.append(chirp_common.ValidationWarning(
-                        "scan enabled but selcall disabled"))
+                    msgs.append(
+                        chirp_common.ValidationWarning(
+                            "scan enabled but selcall disabled"
+                        )
+                    )
 
         return msgs
 
@@ -539,9 +559,11 @@ class HF90StyleRadio(chirp_common.CloneModeRadio,
 # Unfortunately, the author does not have access to the technical information
 # required to better accommodate the quirks of the various firmware revisions.
 
+
 @directory.register
 class EarlyHF90Radio(HF90StyleRadio):
     """Base class for early HF-90 radios"""
+
     VARIANT = "v300 or earlier"
     _min_rx_freq = 2000000
     _min_tx_freq = 2000000
@@ -553,6 +575,7 @@ class EarlyHF90Radio(HF90StyleRadio):
 @directory.register
 class LateHF90Radio(HF90StyleRadio):
     """Base class for late HF-90 radios"""
+
     VARIANT = "v301 or later"
     _min_rx_freq = 500000
     _min_tx_freq = 1800000
@@ -565,6 +588,7 @@ class LateHF90Radio(HF90StyleRadio):
 if __name__ == "__main__":
     import sys
     import serial
+
     s = serial.Serial(port=sys.argv[1], baudrate=4800, timeout=0.1)
     reset_buffer(s)
     s.write(b"\r")

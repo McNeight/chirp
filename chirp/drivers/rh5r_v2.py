@@ -20,7 +20,6 @@ import logging
 
 from chirp import chirp_common, bitwise, errors, directory, memmap
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -29,10 +28,9 @@ def _identify(radio):
         radio.pipe.write(b"PGM2015")
         ack = radio.pipe.read(2)
         if ack != b"\x06\x30":
-            raise errors.RadioError("Radio did not ACK first command: %r" %
-                                    ack)
+            raise errors.RadioError("Radio did not ACK first command: %r" % ack)
     except:
-        LOG.exception('')
+        LOG.exception("")
         raise errors.RadioError("Unable to communicate with the radio")
 
 
@@ -40,12 +38,13 @@ def _download(radio):
     _identify(radio)
     data = []
     for i in range(0, 0x2000, 0x40):
-        msg = struct.pack('>cHb', b'R', i, 0x40)
+        msg = struct.pack(">cHb", b"R", i, 0x40)
         radio.pipe.write(msg)
         block = radio.pipe.read(0x40 + 4)
         if len(block) != (0x40 + 4):
-            raise errors.RadioError("Radio sent a short block (%02x/%02x)" % (
-                len(block), 0x44))
+            raise errors.RadioError(
+                "Radio sent a short block (%02x/%02x)" % (len(block), 0x44)
+            )
         data += block[4:]
 
         if radio.status_fn:
@@ -56,7 +55,7 @@ def _download(radio):
             radio.status_fn(status)
 
     data = bytes(data)
-    data += b'PGM2015'
+    data += b"PGM2015"
 
     return memmap.MemoryMapBytes(data)
 
@@ -64,13 +63,12 @@ def _download(radio):
 def _upload(radio):
     _identify(radio)
     for i in range(0, 0x2000, 0x40):
-        msg = struct.pack('>cHb', b'W', i, 0x40)
-        msg += radio._mmap[i:(i + 0x40)]
+        msg = struct.pack(">cHb", b"W", i, 0x40)
+        msg += radio._mmap[i : (i + 0x40)]
         radio.pipe.write(msg)
         ack = radio.pipe.read(1)
-        if ack != b'\x06':
-            raise errors.RadioError('Radio did not ACK block %i (0x%04x)' % (
-                i, i))
+        if ack != b"\x06":
+            raise errors.RadioError("Radio did not ACK block %i (0x%04x)" % (i, i))
 
         if radio.status_fn:
             status = chirp_common.Status()
@@ -115,15 +113,17 @@ struct memory vfo2;
 """
 
 
-POWER_LEVELS = [chirp_common.PowerLevel('Low', watts=1),
-                chirp_common.PowerLevel('High', watts=5)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1),
+    chirp_common.PowerLevel("High", watts=5),
+]
 
 
 class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
     VENDOR = "TYT"
     MODEL = "TH-UVF8F"
     BAUD_RATE = 9600
-    _FILEID = b'OEMOEM \\XFF'
+    _FILEID = b"OEMOEM \\XFF"
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -136,17 +136,23 @@ class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
         rf.has_rx_dtcs = True
         rf.has_settings = False
         rf.can_odd_split = False
-        rf.valid_duplexes = ['', '-', '+']
+        rf.valid_duplexes = ["", "-", "+"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "-"
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 480000000)]
+        rf.valid_bands = [(136000000, 174000000), (400000000, 480000000)]
         rf.valid_skips = ["", "S"]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_name_length = 7
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         return rf
 
     def sync_in(self):
@@ -171,19 +177,18 @@ class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return (filedata.endswith(b"PGM2015") and
-                filedata[0x840:0x848] == cls._FILEID)
+        return filedata.endswith(b"PGM2015") and filedata[0x840:0x848] == cls._FILEID
 
     def process_mmap(self):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return (repr(self._memobj.channels[number - 1]) +
-                repr(self._memobj.names[number - 1]))
+        return repr(self._memobj.channels[number - 1]) + repr(
+            self._memobj.names[number - 1]
+        )
 
     def _get_memobjs(self, number):
-        return (self._memobj.channels[number - 1],
-                self._memobj.names[number - 1])
+        return (self._memobj.channels[number - 1], self._memobj.names[number - 1])
 
     def _decode_tone(self, toneval):
         pol = "N"
@@ -231,7 +236,7 @@ class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw().startswith(b"\xFF\xFF\xFF\xFF"):
+        if _mem.get_raw().startswith(b"\xff\xff\xff\xff"):
             mem.empty = True
             return mem
 
@@ -239,38 +244,38 @@ class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
         offset = (int(_mem.tx_freq) - int(_mem.rx_freq)) * 10
         if not offset:
             mem.offset = 0
-            mem.duplex = ''
+            mem.duplex = ""
         elif offset < 0:
             mem.offset = abs(offset)
-            mem.duplex = '-'
+            mem.duplex = "-"
         else:
             mem.offset = offset
-            mem.duplex = '+'
+            mem.duplex = "+"
 
         txmode, txval, txpol = self._decode_tone(_mem.tx_tone)
         rxmode, rxval, rxpol = self._decode_tone(_mem.rx_tone)
 
-        chirp_common.split_tone_decode(mem,
-                                       (txmode, txval, txpol),
-                                       (rxmode, rxval, rxpol))
+        chirp_common.split_tone_decode(
+            mem, (txmode, txval, txpol), (rxmode, rxval, rxpol)
+        )
 
-        mem.mode = 'NFM' if _mem.narrow else 'FM'
-        mem.skip = '' if _mem.scanadd else 'S'
+        mem.mode = "NFM" if _mem.narrow else "FM"
+        mem.skip = "" if _mem.scanadd else "S"
         mem.power = POWER_LEVELS[int(_mem.highpower)]
-        mem.name = str(_name.name).rstrip('\xFF ')
+        mem.name = str(_name.name).rstrip("\xff ")
 
         return mem
 
     def set_memory(self, mem):
         _mem, _name = self._get_memobjs(mem.number)
         if mem.empty:
-            _mem.set_raw(b'\xFF' * 16)
-            _name.set_raw(b'\xFF' * 7)
+            _mem.set_raw(b"\xff" * 16)
+            _name.set_raw(b"\xff" * 7)
             return
-        _mem.set_raw(b'\x00' * 16)
+        _mem.set_raw(b"\x00" * 16)
 
         _mem.rx_freq = mem.freq / 10
-        if mem.duplex == '-':
+        if mem.duplex == "-":
             mult = -1
         elif not mem.duplex:
             mult = 0
@@ -278,20 +283,21 @@ class TYTTHUVF8_V2(chirp_common.CloneModeRadio):
             mult = 1
         _mem.tx_freq = (mem.freq + (mem.offset * mult)) / 10
 
-        (txmode, txval, txpol), (rxmode, rxval, rxpol) = \
-            chirp_common.split_tone_encode(mem)
+        (txmode, txval, txpol), (rxmode, rxval, rxpol) = chirp_common.split_tone_encode(
+            mem
+        )
 
         self._encode_tone(_mem.tx_tone, txmode, txval, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxval, rxpol)
 
-        _mem.narrow = mem.mode == 'NFM'
-        _mem.scanadd = mem.skip != 'S'
+        _mem.narrow = mem.mode == "NFM"
+        _mem.scanadd = mem.skip != "S"
         _mem.highpower = POWER_LEVELS.index(mem.power) if mem.power else 1
-        _name.name = mem.name.rstrip(' ').ljust(7, '\xFF')
+        _name.name = mem.name.rstrip(" ").ljust(7, "\xff")
 
 
 @directory.register
 class RH5RV2(TYTTHUVF8_V2):
     VENDOR = "Rugged"
     MODEL = "RH5R-V2"
-    _FILEID = b'RUGGED \xFF'
+    _FILEID = b"RUGGED \xff"

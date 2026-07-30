@@ -4,7 +4,7 @@ from chirp import directory
 from chirp import chirp_common
 import sys
 
-setattr(__builtins__, '_', str)
+setattr(__builtins__, "_", str)
 sys.path.insert(0, ".")
 sys.path.insert(0, "..")
 
@@ -15,16 +15,15 @@ sys.stdout = tmp
 directory.import_drivers()
 
 RF = chirp_common.RadioFeatures()
-KEYS = [x for x in sorted(RF.__dict__.keys())
-        if "_" in x and not x.startswith("_")]
+KEYS = [x for x in sorted(RF.__dict__.keys()) if "_" in x and not x.startswith("_")]
 ADDITIONAL = {
-    'experimental': lambda r: bool(r.get_prompts().experimental),
+    "experimental": lambda r: bool(r.get_prompts().experimental),
 }
 
 RADIO_TYPES = {
-    'Clone': chirp_common.CloneModeRadio,
-    'File':  chirp_common.FileBackedRadio,
-    'Live':  chirp_common.LiveRadio,
+    "Clone": chirp_common.CloneModeRadio,
+    "File": chirp_common.FileBackedRadio,
+    "Live": chirp_common.LiveRadio,
 }
 
 
@@ -43,14 +42,19 @@ def supported_row(radio):
     counter += 1
     odd = counter % 2
 
-    row = '<tr class="%s" title="%s %s %s">' % (odd and "odd" or "even",
-                                                radio.VENDOR,
-                                                radio.MODEL,
-                                                radio.VARIANT)
-    row += "<td><a href=\"#%s\" name=\"%s\">%s %s %s</a></td>\n" % (
-        'row%04i' % counter,
-        'row%04i' % counter,
-        radio.VENDOR, radio.MODEL, radio.VARIANT)
+    row = '<tr class="%s" title="%s %s %s">' % (
+        odd and "odd" or "even",
+        radio.VENDOR,
+        radio.MODEL,
+        radio.VARIANT,
+    )
+    row += '<td><a href="#%s" name="%s">%s %s %s</a></td>\n' % (
+        "row%04i" % counter,
+        "row%04i" % counter,
+        radio.VENDOR,
+        radio.MODEL,
+        radio.VARIANT,
+    )
     rf = radio.get_features()
     for key in KEYS + list(ADDITIONAL.items()):
         if isinstance(key, tuple):
@@ -59,15 +63,19 @@ def supported_row(radio):
         else:
             value = rf.__dict__[key]
         if key == "valid_bands":
-            value = ["%s-%s MHz" % (chirp_common.format_freq(x),
-                                    chirp_common.format_freq(y))
-                     for x, y in value]
+            value = [
+                "%s-%s MHz" % (chirp_common.format_freq(x), chirp_common.format_freq(y))
+                for x, y in value
+            ]
 
-        if key in ["valid_bands", "valid_modes", "valid_power_levels",
-                   "valid_tuning_steps"]:
+        if key in [
+            "valid_bands",
+            "valid_modes",
+            "valid_power_levels",
+            "valid_tuning_steps",
+        ]:
             try:
-                value = ", ".join([str(x) for x in value
-                                   if not str(x).startswith("?")])
+                value = ", ".join([str(x) for x in value if not str(x).startswith("?")])
             except Exception:
                 raise
 
@@ -85,10 +93,11 @@ def supported_row(radio):
         if value is None:
             row += '<td class="%s"><span class="False">N/A</span></td>' % key
         elif isinstance(value, bool):
-            row += '<td class="%s"><span class="%s">%s</span></td>' % \
-                (key,
-                 value,
-                 value and "Yes" or "No")
+            row += '<td class="%s"><span class="%s">%s</span></td>' % (
+                key,
+                value,
+                value and "Yes" or "No",
+            )
         else:
             row += '<td class="%s">%s</td>' % (key, value)
     row += '<td class="radio_type">%s</td>' % radio_type(radio)
@@ -107,7 +116,7 @@ def header_row():
         try:
             doc = RF.get_doc(key)
         except KeyError:
-            doc = ''
+            doc = ""
         row += '<th title="%s">%s</th>' % (doc, Key)
     row += '<th title="Radio programming type">Type</th>\n'
     row += "</tr></thead>\n"
@@ -116,11 +125,11 @@ def header_row():
 
 dest = sys.stdout
 if len(sys.argv) > 1:
-    dest = open(sys.argv[1], 'w')
+    dest = open(sys.argv[1], "w")
 
 
 def output(string):
-    dest.write(string + '\n')
+    dest.write(string + "\n")
 
 
 output("""
@@ -165,15 +174,17 @@ for radio in directory.DRV_TO_RADIO.values():
 
     models.append(radio)
     for alias in radio.ALIASES:
+
         class DynamicRadioAlias(radio):
             VENDOR = alias.VENDOR
             MODEL = alias.MODEL
             VARIANT = alias.VARIANT
+
         models.append(DynamicRadioAlias)
 
 
 def get_key(rc):
-    return '%s %s %s' % (rc.VENDOR, rc.MODEL, rc.VARIANT)
+    return "%s %s %s" % (rc.VENDOR, rc.MODEL, rc.VARIANT)
 
 
 for radio in sorted(models, key=get_key):

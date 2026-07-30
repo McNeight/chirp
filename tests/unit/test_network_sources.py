@@ -12,9 +12,9 @@ from chirp.sources import dmrmarc
 class TestDMRMARC(unittest.TestCase):
     def test_marc_works(self):
         r = dmrmarc.DMRMARCRadio()
-        r.do_fetch(mock.MagicMock(), {'city': 'portland',
-                                      'state': 'oregon',
-                                      'country': ''})
+        r.do_fetch(
+            mock.MagicMock(), {"city": "portland", "state": "oregon", "country": ""}
+        )
         f = r.get_features()
 
         # Assert that we found some repeaters. If they all go away in
@@ -23,6 +23,6 @@ class TestDMRMARC(unittest.TestCase):
 
         for i in range(*f.memory_bounds):
             m = r.get_memory(i)
-            self.assertEqual('DMR', m.mode)
+            self.assertEqual("DMR", m.mode)
             # Assume all DMR repeaters are above 100MHz
             self.assertGreater(m.freq, 100000000)

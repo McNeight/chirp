@@ -62,8 +62,7 @@ class ICT7HRadio(icf.IcomCloneModeRadio):
         rf.valid_tmodes = list(TMODES)
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_tuning_steps = list(STEPS)
-        rf.valid_bands = [(118000000, 174000000),
-                          (400000000, 470000000)]
+        rf.valid_bands = [(118000000, 174000000), (400000000, 470000000)]
         rf.valid_skips = ["", "S"]
         rf.has_dtcs = False
         rf.has_dtcs_polarity = False
@@ -110,7 +109,7 @@ class ICT7HRadio(icf.IcomCloneModeRadio):
         topfreq = int(mem.freq / 100000) * 100000
         lastfreq = int((mem.freq - topfreq) / 10000)
         _mem.lastfreq = lastfreq
-        midfreq = (mem.freq - topfreq - lastfreq * 10000)
+        midfreq = mem.freq - topfreq - lastfreq * 10000
         _mem.fraction = midfreq // 500
 
         _mem.offset = mem.offset / 10000

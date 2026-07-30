@@ -19,10 +19,16 @@ import time
 import logging
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -88,13 +94,13 @@ struct {            // Menu A/B settings
 
 """
 
-MEMSIZE = 0x0b1d       # img file size
+MEMSIZE = 0x0B1D  # img file size
 STIMEOUT = 0.6
-BAUD = 0    # Initial baud rate
+BAUD = 0  # Initial baud rate
 MEMSEL = 0  # Default Menu A
-BEEPVOL = 5     # Default beep level
-W8S = 0.01      # short wait, secs
-W8L = 0.05      # long wait
+BEEPVOL = 5  # Default beep level
+W8S = 0.01  # short wait, secs
+W8L = 0.05  # long wait
 
 TS480_DUPLEX = ["", "split"]
 TS480_SKIP = ["", "S"]
@@ -106,18 +112,30 @@ EX_MODES = ["FSK-R", "CW-R"]
 TS480_TONES = list(chirp_common.TONES)
 TS480_TONES.append(1750.0)
 
-TS480_BANDS = [(50000, 24999999),  # VFO Rx range. TX has lockouts
-               (25000000, 59999999)]
+TS480_BANDS = [(50000, 24999999), (25000000, 59999999)]  # VFO Rx range. TX has lockouts
 
-TS480_TUNE_STEPS = [0.5, 1.0, 2.5, 5.0, 6.25, 10.0, 12.5,
-                    15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
+TS480_TUNE_STEPS = [
+    0.5,
+    1.0,
+    2.5,
+    5.0,
+    6.25,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+]
 
-RADIO_IDS = {   # From kenwood_live.py; used to report wrong radio
+RADIO_IDS = {  # From kenwood_live.py; used to report wrong radio
     "ID019;": "TS-2000",
     "ID009;": "TS-850",
     "ID020:": "TS-480",
     "ID021;": "TS-590S",
-    "ID023;": "TS-590SG"
+    "ID023;": "TS-590SG",
 }
 
 
@@ -128,27 +146,27 @@ def command(ser, cmd, rsplen, w8t=0.01, exts=""):
     #       If rsplen = 0 then do not read after write
 
     start = time.time()
-    stx = cmd       # preserve cmd for response check
-    stx = stx + exts + ";"    # append arguments
+    stx = cmd  # preserve cmd for response check
+    stx = stx + exts + ";"  # append arguments
     ser.write(stx)
     LOG.debug("PC->RADIO [%s]" % stx)
-    ts = time.time()        # implement the wait after command
+    ts = time.time()  # implement the wait after command
     while (time.time() - ts) < w8t:
-        ix = 0      # NOP
+        ix = 0  # NOP
     result = ""
     if rsplen > 0:  # read response
         result = ser.read(rsplen)
         LOG.debug("RADIO->PC [%s]" % result)
-        result = result[:-1]        # remove terminator
+        result = result[:-1]  # remove terminator
     return result.strip()
 
 
 def _connect_radio(radio):
     """Determine baud rate and verify radio on-line"""
-    global BAUD        # Allows modification
+    global BAUD  # Allows modification
     bauds = [9600, 115200, 57600, 38400, 19200, 4800]
     if BAUD > 0:
-        bauds.insert(0, BAUD)       # Make the detected one first
+        bauds.insert(0, BAUD)  # Make the detected one first
     # Flush the input buffer
     radio.pipe.timeout = 0.005
     junk = radio.pipe.read(256)
@@ -167,12 +185,11 @@ def _connect_radio(radio):
         resp = radio.pipe.read(16)
         if resp:
             saw_response = True
-        if resp.find(radio.ID) >= 0:           # Good comms
+        if resp.find(radio.ID) >= 0:  # Good comms
             resp = command(radio.pipe, "AI0", 0, W8L)
             return
         elif resp in RADIO_IDS.keys():
-            msg = "Radio reported as model %s, not %s!" % \
-                (RADIO_IDS[resp], radio.MODEL)
+            msg = "Radio reported as model %s, not %s!" % (RADIO_IDS[resp], radio.MODEL)
             raise errors.RadioError(msg)
     if saw_response:
         raise errors.RadioError("Unexpected response from radio")
@@ -180,14 +197,14 @@ def _connect_radio(radio):
 
 
 def read_str(radio, trm=";"):
-    """ Read chars until terminator """
+    """Read chars until terminator"""
     stq = ""
     ctq = ""
     while ctq != trm:
         ctq = radio.pipe.read(1)
         stq += ctq
     LOG.debug("   + [%s]" % stq)
-    return stq[:-1]     # Return without trm
+    return stq[:-1]  # Return without trm
 
 
 def _read_mem(radio):
@@ -202,24 +219,22 @@ def _read_mem(radio):
 
     result0 = command(radio.pipe, "EX0120000", 12, W8S)
     BEEPVOL = int(result0[6:12])
-    result0 = command(radio.pipe, "EX01200000", 0, W8L)   # Silence beeps
+    result0 = command(radio.pipe, "EX01200000", 0, W8L)  # Silence beeps
     data = ""
-    mrlen = 41      # Expected fixed return string length
-    for chn in range(0, (radio._upper + 11)):   # Loop stops at +10
+    mrlen = 41  # Expected fixed return string length
+    for chn in range(0, (radio._upper + 11)):  # Loop stops at +10
         # Request this mem chn
         r0ch = 999
         r1ch = r0ch
         # return results can come back out of order
-        while (r0ch != chn):
+        while r0ch != chn:
             # simplex
-            result0 = command(radio.pipe, "MR0%03i" % chn,
-                              mrlen, W8S)
+            result0 = command(radio.pipe, "MR0%03i" % chn, mrlen, W8S)
             result0 += read_str(radio)
             r0ch = int(result0[3:6])
-        while (r1ch != chn):
+        while r1ch != chn:
             # split
-            result1 = command(radio.pipe, "MR1%03i" % chn,
-                              mrlen, W8S)
+            result1 = command(radio.pipe, "MR1%03i" % chn, mrlen, W8S)
             result1 += read_str(radio)
             r1ch = int(result1[3:6])
         data += radio._parse_mem_spec(result0, result1)
@@ -228,13 +243,13 @@ def _read_mem(radio):
         status.msg = "Reading Channel Memory..."
         radio.status_fn(status)
 
-    if len(data) == 0:       # To satisfy run_tests
-        raise errors.RadioError('No data received.')
+    if len(data) == 0:  # To satisfy run_tests
+        raise errors.RadioError("No data received.")
     return data
 
 
 def _make_dat(sx, nb):
-    """ Split the string sx into nb binary bytes """
+    """Split the string sx into nb binary bytes"""
     vx = int(sx)
     dx = ""
     if nb > 3:
@@ -248,10 +263,10 @@ def _make_dat(sx, nb):
 
 
 def _sets_asf(stx):
-    """ Process AS0 auto-mode setting """
-    asm = _make_dat(stx[0:11], 4)   # 11-bit freq
-    a1 = int(stx[11])               # 4-bit mode
-    a2 = 0                          # not used in TS-480
+    """Process AS0 auto-mode setting"""
+    asm = _make_dat(stx[0:11], 4)  # 11-bit freq
+    a1 = int(stx[11])  # 4-bit mode
+    a2 = 0  # not used in TS-480
     asm += chr((a1 << 4) | (a2 << 2))
     return asm
 
@@ -263,7 +278,7 @@ def my_val_list(setting, opts, obj, atrb, fix=0, ndx=-1):
     # ndx is optional obj[ndx] array index
     value = opts.index(str(setting.value))
     value += fix
-    if ndx >= 0:    # indexed obj
+    if ndx >= 0:  # indexed obj
         setattr(obj[ndx], atrb, value)
     else:
         setattr(obj, atrb, value)
@@ -271,7 +286,7 @@ def my_val_list(setting, opts, obj, atrb, fix=0, ndx=-1):
 
 
 def _read_settings(radio):
-    """ Continue filling memory map"""
+    """Continue filling memory map"""
     global MEMSEL
     # setc: the list of CAT commands for downloaded settings
     # Block parameters first. In the exact order of MEM_FORMAT
@@ -288,12 +303,11 @@ def _read_settings(radio):
     nc = 0
     for cmc in setc:
         skipme = False
-        argx = ""           # Extended arguments
+        argx = ""  # Extended arguments
         if cmc == "AS0":
-            skipme = True   # flag to disable further processing
-            for ix in range(32):        # 32 AS params
-                result0 = command(radio.pipe, cmc, 19, W8S,
-                                  "%02i" % ix)
+            skipme = True  # flag to disable further processing
+            for ix in range(32):  # 32 AS params
+                result0 = command(radio.pipe, cmc, 19, W8S, "%02i" % ix)
                 xc = len(cmc) + 2
                 result0 = result0[xc:]
                 setts += _sets_asf(result0)
@@ -302,37 +316,36 @@ def _read_settings(radio):
                 radio.status_fn(status)
         elif cmc == "SS":
             skipme = True
-            for ix in range(10):     # 10 chans
-                for nx in range(5):     # 5 spots
-                    result0 = command(radio.pipe, cmc, 16, W8S,
-                                      "%1i%1i" % (ix, nx))
+            for ix in range(10):  # 10 chans
+                for nx in range(5):  # 5 spots
+                    result0 = command(radio.pipe, cmc, 16, W8S, "%1i%1i" % (ix, nx))
                     setts += _make_dat(result0[4:], 4)
                     nc += 1
                     status.cur = nc
                     radio.status_fn(status)
         elif (cmc == "MF0") or (cmc == "MF1"):
             result0 = command(radio.pipe, cmc, 0, W8S)
-            skipme = True   # cmd only, no response
-        else:   # issue the cmc cmd as-is with argx
+            skipme = True  # cmd only, no response
+        else:  # issue the cmc cmd as-is with argx
             if str(cmc).startswith("EX"):
                 argx = "0000"
             result0 = command(radio.pipe, cmc, 0, W8S, argx)
-            result0 = read_str(radio)    # various length responses
+            result0 = read_str(radio)  # various length responses
             # strip the cmd echo
             xc = len(cmc)
             result0 = result0[xc:]
         # Cmd has been sent, process the result
-        if (cmc == "FA") or (cmc == "FB"):    # Response is 11-bit frq
+        if (cmc == "FA") or (cmc == "FB"):  # Response is 11-bit frq
             skipme = True
-            setts += _make_dat(result0, 4)   # 11-bit freq
+            setts += _make_dat(result0, 4)  # 11-bit freq
         elif (cmc == "MF0") or (cmc == "MF1"):  # No stored response
             skipme = True
-        elif (cmc == "TY"):     # remove upper 2 digits
+        elif cmc == "TY":  # remove upper 2 digits
             result0 = result0[2:]
         # Generic single byte processing
         if not skipme:
             setts += chr(int(result0))
-        if cmc == "MF":     # Save the initial Menu selection
+        if cmc == "MF":  # Save the initial Menu selection
             MEMSEL = int(result0)
         nc += 1
         status.cur = nc
@@ -346,7 +359,7 @@ def _read_settings(radio):
 
 
 def _write_mem(radio):
-    """ Send MW commands for each channel """
+    """Send MW commands for each channel"""
     global BEEPVOL
     # UI progress
     status = chirp_common.Status()
@@ -357,18 +370,18 @@ def _write_mem(radio):
 
     result0 = command(radio.pipe, "EX0120000", 12, W8S)
     BEEPVOL = int(result0[6:12])
-    result0 = command(radio.pipe, "EX01200000", 0, W8L)   # Silence beeps
+    result0 = command(radio.pipe, "EX01200000", 0, W8L)  # Silence beeps
 
     for chn in range(0, (radio._upper + 1)):
         _mem = radio._memobj.ch_mem[chn]
         cmx = "MW0%03i" % chn
-        if _mem.rxfreq == 0:            # Empty, deleted
+        if _mem.rxfreq == 0:  # Empty, deleted
             stm = cmx + "0" * 35
             result0 = command(radio.pipe, stm, 0, W8L)
         else:
             stm = cmx + radio._make_base_spec(_mem, _mem.rxfreq)
-            result0 = command(radio.pipe, stm, 0, W8L)     # No response
-            if _mem.split:     # SPLIT mode
+            result0 = command(radio.pipe, stm, 0, W8L)  # No response
+            if _mem.split:  # SPLIT mode
                 cmx = "MW1%03i" % chn
                 stm = cmx + radio._make_base_spec(_mem, _mem.txfreq)
                 result0 = command(radio.pipe, stm, 0, W8L)
@@ -378,10 +391,10 @@ def _write_mem(radio):
 
 
 def _write_sets(radio):
-    """ Send settings and Menu a/b """
+    """Send settings and Menu a/b"""
     status = chirp_common.Status()
     status.cur = 0
-    status.max = 124   # Total to send
+    status.max = 124  # Total to send
     status.msg = "Writing Settings"
     radio.status_fn(status)
     # Define mem struct shortcuts
@@ -389,12 +402,16 @@ def _write_sets(radio):
     _asf = radio._memobj.asf
     _ssf = radio._memobj.ssf
     _mex = radio._memobj.exset
-    snx = 0     # Settings status counter
-    stlen = 0   # No response count
+    snx = 0  # Settings status counter
+    stlen = 0  # No response count
     # Send 32 AS
     for ix in range(32):
-        scm = "AS0%02i%011i%1i%1i" % (ix, _asf[ix].asfreq,
-                                      _asf[ix].asmode, _asf[ix].asdata)
+        scm = "AS0%02i%011i%1i%1i" % (
+            ix,
+            _asf[ix].asfreq,
+            _asf[ix].asmode,
+            _asf[ix].asdata,
+        )
         result0 = command(radio.pipe, scm, stlen, W8S)
         snx += 1
         status.cur = snx
@@ -424,20 +441,19 @@ def _write_sets(radio):
     scm = "RG%03i" % _sets.rg
     result0 = command(radio.pipe, scm, stlen, W8S)
     # TY cmd is firmware read-only
-    scm = "MF0"   # Select menu A/B
+    scm = "MF0"  # Select menu A/B
     result0 = command(radio.pipe, scm, stlen, W8S)
     snx += 8
     status.cur = snx
     radio.status_fn(status)
     # Send 17 Menu A EX
-    setc = radio.EX     # list of EX cmds
+    setc = radio.EX  # list of EX cmds
     for ix in range(2):
         for cmx in setc:
             if str(cmx)[0:2] == "MF":
                 scm = cmx
-            else:       # The EX cmds
-                scm = "%s0000%i" % (cmx, getattr(_mex[ix],
-                                    cmx.lower()))
+            else:  # The EX cmds
+                scm = "%s0000%i" % (cmx, getattr(_mex[ix], cmx.lower()))
             result0 = command(radio.pipe, scm, stlen, W8S)
             snx += 1
             status.cur = snx
@@ -451,37 +467,56 @@ def _write_sets(radio):
 
 @directory.register
 class TS480_CRadio(chirp_common.CloneModeRadio):
-    """ Kenwood TS-480 simulated clone mode """
+    """Kenwood TS-480 simulated clone mode"""
+
     VENDOR = "Kenwood"
     MODEL = "TS-480_CloneMode"
     NEEDS_COMPAT_SERIAL = True
     ID = "ID020;"
     # Settings read/write cmd sequence list
-    SETC = ["AS0", "SS", "AG0", "AN", "FA", "FB",
-            "MF", "MG", "PC", "RG", "TY", "MF0"]
+    SETC = ["AS0", "SS", "AG0", "AN", "FA", "FB", "MF", "MG", "PC", "RG", "TY", "MF0"]
     # This is the TS-590SG MENU A/B read_settings parameter tuple list
     # The order is mandatory; to match the Mem_Format sequence
-    EX = ["EX000", "EX003", "EX007", "EX008", "EX009", "EX010", "EX011",
-          "EX012", "EX013", "EX014", "EX021", "EX022", "EX048", "EX049",
-          "EX050", "EX051", "EX052", "MF1"]
+    EX = [
+        "EX000",
+        "EX003",
+        "EX007",
+        "EX008",
+        "EX009",
+        "EX010",
+        "EX011",
+        "EX012",
+        "EX013",
+        "EX014",
+        "EX021",
+        "EX022",
+        "EX048",
+        "EX049",
+        "EX050",
+        "EX051",
+        "EX052",
+        "MF1",
+    ]
     # EX menu settings label dictionary. Key is the EX number
-    EX_LBL = {0: " Display brightness",
-              3: "  Tuning control adj rate (Hz)",
-              12: " Beep volume",
-              13: " Sidetone volume",
-              14: " Message playback volume",
-              7: " Temporary MR Chan freq allowed",
-              8: " Program Scan slowdown",
-              9: " Program Scan slowdown range (Hz)",
-              10: " Program Scan hold",
-              11: " Scan Resume method",
-              21: " TX Power fine adjust",
-              22: " Timeout timer (Secs)",
-              48: " Panel PF-A function",
-              49: " MIC PF1 function",
-              50: " MIC PF2 function",
-              51: " MIC PF3 function",
-              52: " MIC PF4 function"}
+    EX_LBL = {
+        0: " Display brightness",
+        3: "  Tuning control adj rate (Hz)",
+        12: " Beep volume",
+        13: " Sidetone volume",
+        14: " Message playback volume",
+        7: " Temporary MR Chan freq allowed",
+        8: " Program Scan slowdown",
+        9: " Program Scan slowdown range (Hz)",
+        10: " Program Scan hold",
+        11: " Scan Resume method",
+        21: " TX Power fine adjust",
+        22: " Timeout timer (Secs)",
+        48: " Panel PF-A function",
+        49: " MIC PF1 function",
+        50: " MIC PF2 function",
+        51: " MIC PF3 function",
+        52: " MIC PF4 function",
+    }
 
     _upper = 99
 
@@ -498,7 +533,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         rf.has_offset = True
         rf.has_mode = True
         rf.has_tuning_step = True
-        rf.has_nostep_tuning = True     # Radio accepts any entered freq
+        rf.has_nostep_tuning = True  # Radio accepts any entered freq
         rf.has_cross = False
         rf.has_comment = False
         rf.memory_bounds = (0, self._upper)
@@ -509,7 +544,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         rf.valid_skips = TS480_SKIP
         rf.valid_tuning_steps = TS480_TUNE_STEPS
         rf.valid_tmodes = ["", "Tone", "TSQL"]
-        rf.valid_name_length = 8    # 8 character channel names
+        rf.valid_name_length = 8  # 8 character channel names
 
         return rf
 
@@ -519,19 +554,22 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         rp.info = _(
             "P-VFO channels 100-109 are considered Settings.\n"
             "Only a subset of the over 130 available radio settings\n"
-            "are supported in this release.\n")
+            "are supported in this release.\n"
+        )
         rp.pre_download = _(
             "Follow these instructions to download the radio memory:\n"
             "1 - Connect your interface cable\n"
             "2 - Radio > Download from radio: Don't adjust any settings\n"
             "on the radio head!\n"
-            "3 - Disconnect your interface cable\n")
+            "3 - Disconnect your interface cable\n"
+        )
         rp.pre_upload = _(
             "Follow these instructions to upload the radio memory:\n"
             "1 - Connect your interface cable\n"
             "2 - Radio > Upload to radio: Don't adjust any settings\n"
             "on the radio head!\n"
-            "3 - Disconnect your interface cable\n")
+            "3 - Disconnect your interface cable\n"
+        )
         return rp
 
     def sync_in(self):
@@ -546,9 +584,8 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
         self._mmap = memmap.MemoryMap(data)
         self.process_mmap()
@@ -565,9 +602,8 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         return
 
     def process_mmap(self):
@@ -593,16 +629,16 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             return mem
         mem.empty = False
         mem.freq = int(_mem.rxfreq)
-        mem.duplex = TS480_DUPLEX[0]    # None by default
+        mem.duplex = TS480_DUPLEX[0]  # None by default
         mem.offset = 0
-        if _mem.split:              # NO +/- Offsets, just split
+        if _mem.split:  # NO +/- Offsets, just split
             mem.duplex = TS480_DUPLEX[1]
             mem.offset = _mem.txfreq
         elif _mem.txfreq == 0:
             # leave offset alone, or run_tests will bomb
             mem.duplex = TS480_DUPLEX[0]
-        mx = _mem.xmode - 1     # CAT modes start at 1
-        if _mem.xmode == 9:     # except there is no xmode 9
+        mx = _mem.xmode - 1  # CAT modes start at 1
+        if _mem.xmode == 9:  # except there is no xmode 9
             mx = 7
         mem.mode = TS480_MODES[mx]
         mem.tmode = ""
@@ -617,8 +653,8 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             mem.tmode = "Cross"
         mem.skip = TS480_SKIP[_mem.skip]
         # Tuning step depends on mode
-        options = [0.5, 1.0, 2.5, 5.0, 10.0]    # SSB/CS/FSK
-        if _mem.xmode == 4 or _mem.xmode == 5:   # AM/FM
+        options = [0.5, 1.0, 2.5, 5.0, 10.0]  # SSB/CS/FSK
+        if _mem.xmode == 4 or _mem.xmode == 5:  # AM/FM
             options = TS480_TUNE_STEPS[3:]
         mem.tuning_step = options[_mem.step]
         return mem
@@ -639,7 +675,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             _mem.name = "        "
             return
 
-        if mem.number > self._upper:    # Specials: No Name changes
+        if mem.number > self._upper:  # Specials: No Name changes
             ix = 0
             # LOG.warning("Special Chan set_mem @ %i" % mem.number)
         else:
@@ -648,7 +684,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
                 if ix < nx:
                     _mem.name[ix] = mem.name[ix].upper()
                 else:
-                    _mem.name[ix] = " "    # assignment needs 8 chrs
+                    _mem.name[ix] = " "  # assignment needs 8 chrs
         _mem.rxfreq = mem.freq
         _mem.txfreq = 0
         _mem.split = 0
@@ -658,9 +694,9 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             _mem.split = 1
             _mem.txfreq = mem.offset
         ix = TS480_MODES.index(mem.mode)
-        _mem.xmode = ix + 1     # stored as CAT values, LSB= 1
-        if ix == 7:     # FSK-R
-            _mem.xmode = 9      # There is no CAT 8
+        _mem.xmode = ix + 1  # stored as CAT values, LSB= 1
+        if ix == 7:  # FSK-R
+            _mem.xmode = 9  # There is no CAT 8
         _mem.tmode = 0
         _mem.rtone = TS480_TONES.index(mem.rtone)
         _mem.ctone = TS480_TONES.index(mem.ctone)
@@ -671,8 +707,8 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         _mem.skip = 0
         if mem.skip == "S":
             _mem.skip = 1
-        options = [0.5, 1.0, 2.5, 5.0, 10.0]    # SSB/CS/FSK steps
-        if _mem.xmode == 4 or _mem.xmode == 5:   # AM/FM
+        options = [0.5, 1.0, 2.5, 5.0, 10.0]  # SSB/CS/FSK steps
+        if _mem.xmode == 4 or _mem.xmode == 5:  # AM/FM
             options = TS480_TUNE_STEPS[3:]
         try:
             _mem.step = options.index(mem.tuning_step)
@@ -682,47 +718,52 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
 
     def validate_memory(self, mem):
         msgs = super().validate_memory(mem)
-        if mem.mode in ('AM', 'FM'):
+        if mem.mode in ("AM", "FM"):
             if mem.tuning_step not in TS480_TUNE_STEPS[3:]:
-                msgs.append(chirp_common.ValidationError(
-                    'Tuning step %s must be in list %s for %s' % (
-                        mem.tuning_step,
-                        ','.join(str(x) for x in TS480_TUNE_STEPS[3:]),
-                        mem.mode)))
+                msgs.append(
+                    chirp_common.ValidationError(
+                        "Tuning step %s must be in list %s for %s"
+                        % (
+                            mem.tuning_step,
+                            ",".join(str(x) for x in TS480_TUNE_STEPS[3:]),
+                            mem.mode,
+                        )
+                    )
+                )
         return msgs
 
     def _parse_mem_spec(self, spec0, spec1):
-        """ Extract ascii memory parameters; build data string """
+        """Extract ascii memory parameters; build data string"""
         # spec0 is Rx freq string, spec1 is Tx
         # pad string so indexes match Kenwood docs
         spec0 = "x" + spec0  # match CAT document 1-based description
         ix = len(spec0)
         # _pxx variables are STRINGS
-        _p1 = spec0[3]       # P1    Tx/Rx Specification
-        _p3 = spec0[5:7]     # P3    Memory Channel
-        _p4 = spec0[7:18]    # P4    Rx Frequency
-        _p5 = spec0[18]      # P5    Mode
-        _p6 = spec0[19]      # P6    Chan Lockout (Skip)
-        _p7 = spec0[20]      # P7    Tone Mode
-        _p8 = spec0[21:23]   # P8    Tone Frequency Index
-        _p9 = spec0[23:25]   # P9    CTCSS Frequency Index
+        _p1 = spec0[3]  # P1    Tx/Rx Specification
+        _p3 = spec0[5:7]  # P3    Memory Channel
+        _p4 = spec0[7:18]  # P4    Rx Frequency
+        _p5 = spec0[18]  # P5    Mode
+        _p6 = spec0[19]  # P6    Chan Lockout (Skip)
+        _p7 = spec0[20]  # P7    Tone Mode
+        _p8 = spec0[21:23]  # P8    Tone Frequency Index
+        _p9 = spec0[23:25]  # P9    CTCSS Frequency Index
         _p14 = spec0[39:41]  # P14   Step Size
         _p16 = spec0[41:50]  # P16   Max 8-Char Name if assigned
 
         spec1 = "x" + spec1
-        _p4s = spec1[7:18]   # P4s: Tx freq
+        _p4s = spec1[7:18]  # P4s: Tx freq
         _split = 0
         if _p4 != _p4s:
-            _split = 16     # upper byte bit 0 set
-        datm = ""   # Fill in MEM_FORMAT sequence
-        datm += _make_dat(_p4, 4)   # rxreq: u32, 4 bytes/chars
+            _split = 16  # upper byte bit 0 set
+        datm = ""  # Fill in MEM_FORMAT sequence
+        datm += _make_dat(_p4, 4)  # rxreq: u32, 4 bytes/chars
         datm += _make_dat(_p4s, 4)  # tx freq
-        datm += chr(int(_p5))       # xmode: 0-9
-        datm += chr(int(_p7))       # Tmode: 0-3
-        datm += chr(int(_p8))       # rtone: 00-41
-        datm += chr(int(_p9))       # ctone: 00-41
-        datm += chr(int(_p6) + _split)       # split 0/1 & skip: 0/1
-        datm += chr(int(_p14))      # step: 0-9
+        datm += chr(int(_p5))  # xmode: 0-9
+        datm += chr(int(_p7))  # Tmode: 0-3
+        datm += chr(int(_p8))  # rtone: 00-41
+        datm += chr(int(_p9))  # ctone: 00-41
+        datm += chr(int(_p6) + _split)  # split 0/1 & skip: 0/1
+        datm += chr(int(_p14))  # step: 0-9
         v1 = len(_p16)
         for ix in range(8):
             if ix < v1:
@@ -732,10 +773,17 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         return datm
 
     def _make_base_spec(self, mem, freq):
-        """ Generate memory channel parameter string """
-        spec = "%011i%1i%1i%1i%02i%02i00000000000000%02i0%s" \
-            % (freq, mem.xmode, mem.skip, mem.tmode, mem.rtone,
-                mem.ctone, mem.step, mem.name)
+        """Generate memory channel parameter string"""
+        spec = "%011i%1i%1i%1i%02i%02i00000000000000%02i0%s" % (
+            freq,
+            mem.xmode,
+            mem.skip,
+            mem.tmode,
+            mem.rtone,
+            mem.ctone,
+            mem.step,
+            mem.name,
+        )
 
         return spec.strip()
 
@@ -755,7 +803,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         ssc = RadioSettingGroup("ssc", "Slow Scan")
         group = RadioSettings(basic, pvfo, mena, menb, amode, ssc)
 
-        mhz1 = 1000000.
+        mhz1 = 1000000.0
 
         # Callback functions
         def _my_readonly(setting, obj, atrb):
@@ -776,7 +824,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             return
 
         def my_mhz_val(setting, obj, atrb, ndx=-1):
-            """ Callback to set freq back to Hz """
+            """Callback to set freq back to Hz"""
             vx = float(str(setting.value))
             vx = int(vx * mhz1)
             if ndx < 0:
@@ -786,7 +834,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             return
 
         def my_bool(setting, obj, atrb, ndx=-1):
-            """ Callback to properly set boolean """
+            """Callback to properly set boolean"""
             # set_settings is not setting [indexed] booleans???
             vx = 0
             if str(setting.value) == "True":
@@ -798,42 +846,46 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             return
 
         def my_asf_mode(setting, obj, nx=0):
-            """ Callback to extract mode and create asmode, asdata """
+            """Callback to extract mode and create asmode, asdata"""
             v1 = TS480_MODES.index(str(setting.value))
-            v2 = 0      # asdata
-            vx = v1 + 1     # stored as CAT values, same as xmode
+            v2 = 0  # asdata
+            vx = v1 + 1  # stored as CAT values, same as xmode
             if v1 == 7:
                 vx = 9
-            if v1 > 7:      # a Data mode
+            if v1 > 7:  # a Data mode
                 v2 = 1
                 if v1 == 8:
-                    vx = 1      # LSB
+                    vx = 1  # LSB
                 elif v1 == 9:
-                    vx = 2      # USB
+                    vx = 2  # USB
                 elif v1 == 10:
-                    vx = 4      # FM
+                    vx = 4  # FM
             setattr(obj[nx], "asdata", v2)
             setattr(obj[nx], "asmode", vx)
             return
 
         def my_fnctns(setting, obj, ndx, atrb):
-            """ Filter only valid key function assignments """
+            """Filter only valid key function assignments"""
             vx = int(str(setting.value))
             if vx > 79:
-                vx = 99       # Off
+                vx = 99  # Off
             setattr(obj[ndx], atrb, vx)
             return
 
         def my_labels(kx):
-            lbl = "%03i:" % kx      # SG EX number
-            lbl += self.EX_LBL[kx]      # and the label to match
+            lbl = "%03i:" % kx  # SG EX number
+            lbl += self.EX_LBL[kx]  # and the label to match
             return lbl
 
         # ===== BASIC GROUP =====
 
-        options = ["TS-480HX (200W)", "TS-480SAT (100W + AT)",
-                   "Japanese 50W type", "Japanese 20W type"]
-        nx = _sets.ty & 7      # Can have 'reserved' upper 2 digits
+        options = [
+            "TS-480HX (200W)",
+            "TS-480SAT (100W + AT)",
+            "Japanese 50W type",
+            "Japanese 20W type",
+        ]
+        nx = _sets.ty & 7  # Can have 'reserved' upper 2 digits
         rx = RadioSettingValueString(14, 22, options[nx])
         rset = RadioSetting("settings.ty", "FirmwareVersion", rx)
         rset.set_apply_callback(_my_readonly, _sets, "ty")
@@ -861,19 +913,19 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         rset = RadioSetting("settings.mg", "Microphone gain", rx)
         basic.append(rset)
 
-        nx = 5      # Coarse step
-        if bool(_mex[0].ex021):   # Power Fine enabled in menu A
+        nx = 5  # Coarse step
+        if bool(_mex[0].ex021):  # Power Fine enabled in menu A
             nx = 1
-        vx = _sets.pc       # Trap invalid values from run_tests.py
+        vx = _sets.pc  # Trap invalid values from run_tests.py
         if vx < 5:
             vx = 5
-        options = [200, 100, 50, 20]    # subject to firmware
+        options = [200, 100, 50, 20]  # subject to firmware
         rx = RadioSettingValueInteger(5, options[_sets.ty & 7], vx, nx)
         sx = "TX Output power (Watts)"
         rset = RadioSetting("settings.pc", sx, rx)
         basic.append(rset)
 
-        val = _sets.fa / mhz1       # valid range is for receiver
+        val = _sets.fa / mhz1  # valid range is for receiver
         rx = RadioSettingValueFloat(0.05, 60.0, val, 0.001, 3)
         sx = "VFO-A Frequency (MHz)"
         rset = RadioSetting("settings.fa", sx, rx)
@@ -898,8 +950,8 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
 
         for mx in range(100, 110):
             val = _chm[mx].rxfreq / mhz1
-            if val < 1.8:       # Many operators never use this
-                val = 1.8       # So default is 0.0
+            if val < 1.8:  # Many operators never use this
+                val = 1.8  # So default is 0.0
             rx = RadioSettingValueFloat(1.8, 54.0, val, 0.001, 3)
             sx = "VFO-Band %i lower limit (MHz)" % (mx - 100)
             rset = RadioSetting("ch_mem.rxfreq/%d" % mx, sx, rx)
@@ -916,18 +968,27 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             pvfo.append(rset)
 
             kx = _chm[mx].xmode
-            options = ["None", "LSB", "USB", "CW", "FM", "AM", "FSK",
-                       "CW-R", "N/A", "FSK-R"]
+            options = [
+                "None",
+                "LSB",
+                "USB",
+                "CW",
+                "FM",
+                "AM",
+                "FSK",
+                "CW-R",
+                "N/A",
+                "FSK-R",
+            ]
             rx = RadioSettingValueList(options, current_index=kx)
             sx = "    VFO-Band %i Tx/Rx Mode" % (mx - 100)
             rset = RadioSetting("ch_mem.xmode/%d" % mx, sx, rx)
-            rset.set_apply_callback(my_val_list, options, _chm,
-                                    "xmode", 0, mx)
+            rset.set_apply_callback(my_val_list, options, _chm, "xmode", 0, mx)
             pvfo.append(rset)
 
         # ==== Menu A/B Group =================
 
-        for mx in range(2):      # A/B index
+        for mx in range(2):  # A/B index
             sx = my_labels(0)
             rx = RadioSettingValueInteger(0, 4, _mex[mx].ex000)
             rset = RadioSetting("exset.ex000", sx, rx)
@@ -964,8 +1025,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             rx = RadioSettingValueList(options, current_index=_mex[mx].ex003)
             sx = my_labels(3)
             rset = RadioSetting("exset.ex003/%d" % mx, sx, rx)
-            rset.set_apply_callback(my_val_list, options, _mex,
-                                    "ex003", 0, mx)
+            rset.set_apply_callback(my_val_list, options, _mex, "ex003", 0, mx)
             if mx == 0:
                 mena.append(rset)
             else:
@@ -993,8 +1053,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             rx = RadioSettingValueList(options, current_index=_mex[mx].ex009)
             sx = my_labels(9)
             rset = RadioSetting("exset.ex009/%d" % mx, sx, rx)
-            rset.set_apply_callback(my_val_list, options, _mex,
-                                    "ex009", 0, mx)
+            rset.set_apply_callback(my_val_list, options, _mex, "ex009", 0, mx)
             if mx == 0:
                 mena.append(rset)
             else:
@@ -1013,8 +1072,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             rx = RadioSettingValueList(options, current_index=_mex[mx].ex011)
             sx = my_labels(11)
             rset = RadioSetting("exset.ex011/%d" % mx, sx, rx)
-            rset.set_apply_callback(my_val_list, options, _mex,
-                                    "ex011", 0, mx)
+            rset.set_apply_callback(my_val_list, options, _mex, "ex011", 0, mx)
             if mx == 0:
                 mena.append(rset)
             else:
@@ -1033,8 +1091,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             rx = RadioSettingValueList(options, current_index=_mex[mx].ex022)
             sx = my_labels(22)
             rset = RadioSetting("exset.ex022/%d" % mx, sx, rx)
-            rset.set_apply_callback(my_val_list, options, _mex,
-                                    "ex022", 0, mx)
+            rset.set_apply_callback(my_val_list, options, _mex, "ex022", 0, mx)
             if mx == 0:
                 mena.append(rset)
             else:
@@ -1090,12 +1147,11 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
         for ix in range(32):
             val = _asf[ix].asfreq / mhz1
             rx = RadioSettingValueFloat(0.03, 60.0, val, 0.001, 3)
-            rset = RadioSetting("asf.asfreq/%d" % ix,
-                                "Scan %02i Freq (MHz)" % ix, rx)
+            rset = RadioSetting("asf.asfreq/%d" % ix, "Scan %02i Freq (MHz)" % ix, rx)
             rset.set_apply_callback(my_mhz_val, _asf, "asfreq", ix)
             amode.append(rset)
 
-            mx = _asf[ix].asmode - 1     # Same logic as xmode
+            mx = _asf[ix].asmode - 1  # Same logic as xmode
             if _asf[ix].asmode == 9:
                 mx = 7
             rx = RadioSettingValueList(TS480_MODES, current_index=mx)
@@ -1104,9 +1160,9 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
             amode.append(rset)
 
         # ==== Slow Scan Settings ===
-        for ix in range(10):        # Chans
-            for nx in range(5):     # spots
-                px = ((ix * 5) + nx)
+        for ix in range(10):  # Chans
+            for nx in range(5):  # spots
+                px = (ix * 5) + nx
                 val = _ssf[px].ssfreq / mhz1
                 stx = "      -   -   -    Slot %02i Freq (MHz)" % nx
                 if nx == 0:
@@ -1116,7 +1172,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
                 rset.set_apply_callback(my_mhz_val, _ssf, "ssfreq", px)
                 ssc.append(rset)
 
-        return group       # END get_settings()
+        return group  # END get_settings()
 
     def set_settings(self, settings):
         _settings = self._memobj.settings
@@ -1156,7 +1212,7 @@ class TS480_CRadio(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, fdata, fyle):
-        """ Included to prevent 'File > New' error """
+        """Included to prevent 'File > New' error"""
         # Test the file data size
         if len(fdata) == MEMSIZE:
             return True

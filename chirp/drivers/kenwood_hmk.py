@@ -25,50 +25,52 @@ LOG = logging.getLogger(__name__)
 
 class OmittedHeaderError(Exception):
     """An internal exception to indicate that a header was omitted"""
+
     pass
 
 
 @directory.register
 class HMKRadio(generic_csv.CSVRadio):
     """Kenwood HMK format"""
+
     VENDOR = "Kenwood"
     MODEL = "HMK"
     FILE_EXTENSION = "hmk"
 
     DUPLEX_MAP = {
-        " ":    "",
-        "S":    "split",
-        "+":    "+",
-        "-":    "-",
+        " ": "",
+        "S": "split",
+        "+": "+",
+        "-": "-",
     }
 
     SKIP_MAP = {
-        "Off":  "",
-        "On":   "S",
-        }
+        "Off": "",
+        "On": "S",
+    }
 
     TMODE_MAP = {
-        "Off":  "",
-        "T":    "Tone",
-        "CT":   "TSQL",
-        "DCS":  "DTCS",
-        "":     "Cross",
-        }
+        "Off": "",
+        "T": "Tone",
+        "CT": "TSQL",
+        "DCS": "DTCS",
+        "": "Cross",
+    }
 
     ATTR_MAP = {
-        "!!Ch":          (int,   "number"),
-        "M.Name":        (str,   "name"),
-        "Rx Freq.":      (chirp_common.parse_freq, "freq"),
-        "Shift/Split":   (lambda v: HMKRadio.DUPLEX_MAP[v], "duplex"),
-        "Offset":        (chirp_common.parse_freq, "offset"),
-        "T/CT/DCS":      (lambda v: HMKRadio.TMODE_MAP[v], "tmode"),
-        "TO Freq.":      (float, "rtone"),
-        "CT Freq.":      (float, "ctone"),
-        "DCS Code":      (int,   "dtcs"),
-        "Mode":          (str,   "mode"),
-        "Rx Step":       (float, "tuning_step"),
-        "L.Out":         (lambda v: HMKRadio.SKIP_MAP[v], "skip"),
-        }
+        "!!Ch": (int, "number"),
+        "M.Name": (str, "name"),
+        "Rx Freq.": (chirp_common.parse_freq, "freq"),
+        "Shift/Split": (lambda v: HMKRadio.DUPLEX_MAP[v], "duplex"),
+        "Offset": (chirp_common.parse_freq, "offset"),
+        "T/CT/DCS": (lambda v: HMKRadio.TMODE_MAP[v], "tmode"),
+        "TO Freq.": (float, "rtone"),
+        "CT Freq.": (float, "ctone"),
+        "DCS Code": (int, "dtcs"),
+        "Mode": (str, "mode"),
+        "Rx Step": (float, "tuning_step"),
+        "L.Out": (lambda v: HMKRadio.SKIP_MAP[v], "skip"),
+    }
 
     def load(self, filename=None):
         if filename is None and self._filename is None:
@@ -95,20 +97,21 @@ class HMKRadio(generic_csv.CSVRadio):
                 continue
 
             if len(header) > len(line):
-                LOG.debug("Line %i has %i columns, expected %i" %
-                          (lineno, len(line), len(header)))
-                self.errors.append("Column number mismatch on line %i" %
-                                   lineno)
+                LOG.debug(
+                    "Line %i has %i columns, expected %i"
+                    % (lineno, len(line), len(header))
+                )
+                self.errors.append("Column number mismatch on line %i" % lineno)
                 continue
 
             # hmk stores Tx Freq. in its own field, but Chirp expects the Tx
             # Freq. for odd-split channels to be in the Offset field.
             # If channel is odd-split, copy Tx Freq. field to Offset field.
-            if line[header.index('Shift/Split')] == "S":
-                line[header.index('Offset')] = line[header.index('Tx Freq.')]
+            if line[header.index("Shift/Split")] == "S":
+                line[header.index("Offset")] = line[header.index("Tx Freq.")]
 
             # fix EU decimal
-            line = [i.replace(',', '.') for i in line]
+            line = [i.replace(",", ".") for i in line]
 
             try:
                 mem = self._parse_csv_data_line(header, line)

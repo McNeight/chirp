@@ -19,7 +19,7 @@ class TestCaseEdges(base.DriverTest):
 
     def test_longname(self):
         m = self.get_mem()
-        m.name = ("X" * 256)  # Should be longer than any radio can handle
+        m.name = "X" * 256  # Should be longer than any radio can handle
         m.name = self.radio.filter_name(m.name)
 
         self.radio.set_memory(m)
@@ -30,9 +30,9 @@ class TestCaseEdges(base.DriverTest):
     def test_badname(self):
         m = self.get_mem()
 
-        ascii = "".join([chr(x) for x in range(ord(" "), ord("~")+1)])
+        ascii = "".join([chr(x) for x in range(ord(" "), ord("~") + 1)])
         for i in range(0, len(ascii), 4):
-            m.name = self.radio.filter_name(ascii[i:i+4])
+            m.name = self.radio.filter_name(ascii[i : i + 4])
             self.radio.set_memory(m)
             n = self.radio.get_memory(m.number)
             self.assertEqualMem(m, n)
@@ -43,15 +43,14 @@ class TestCaseEdges(base.DriverTest):
 
     def test_bandedges(self):
         m = self.get_mem()
-        min_step = min(self.rf.has_tuning_step and
-                       self.rf.valid_tuning_steps or [10])
+        min_step = min(self.rf.has_tuning_step and self.rf.valid_tuning_steps or [10])
 
         for low, high in self.rf.valid_bands:
             for freq in (low, high - int(min_step * 1000)):
                 try:
                     m.freq = freq
                 except chirp_common.ImmutableValueError:
-                    self.skipTest('Test memory has immutable freq')
+                    self.skipTest("Test memory has immutable freq")
                 if self.radio.validate_memory(m):
                     # Radio doesn't like it, so skip
                     continue
@@ -81,14 +80,13 @@ class TestCaseEdges(base.DriverTest):
                     try:
                         m.freq = testfreq
                     except chirp_common.ImmutableValueError:
-                        self.skipTest('Test channel has immutable freq')
+                        self.skipTest("Test channel has immutable freq")
                     m.tuning_step = step
                     self.radio.set_memory(m)
                     n = self.radio.get_memory(m.number)
                     # Some radios have per-band required modes, which we
                     # don't care about testing here
-                    self.assertEqualMem(m, n, ignore=['tuning_step',
-                                                      'mode'])
+                    self.assertEqualMem(m, n, ignore=["tuning_step", "mode"])
 
     def test_empty_to_not(self):
         firstband = self.rf.valid_bands[0]
@@ -100,30 +98,35 @@ class TestCaseEdges(base.DriverTest):
                 m.freq = testfreq
                 self.radio.set_memory(m)
                 m = self.radio.get_memory(loc)
-                self.assertEqual(testfreq, m.freq,
-                                 'Radio returned an unexpected frequency when'
-                                 'setting previously-empty location %i' % loc)
+                self.assertEqual(
+                    testfreq,
+                    m.freq,
+                    "Radio returned an unexpected frequency when"
+                    "setting previously-empty location %i" % loc,
+                )
                 break
 
     def test_delete_memory(self):
         for loc in range(*self.rf.memory_bounds):
             m = self.radio.get_memory(loc)
-            if 'empty' in m.immutable:
+            if "empty" in m.immutable:
                 # This memory is not deletable
                 continue
             if not m.empty:
                 m.empty = True
                 self.radio.set_memory(m)
                 m = self.radio.get_memory(loc)
-                self.assertTrue(m.empty,
-                                'Radio returned non-empty memory when asked '
-                                'to delete location %i' % loc)
+                self.assertTrue(
+                    m.empty,
+                    "Radio returned non-empty memory when asked "
+                    "to delete location %i" % loc,
+                )
                 break
 
     def test_redelete_memory(self):
         m = self.get_mem()
-        if 'empty' in m.immutable:
-            self.skipTest('Test memory is not deletable')
+        if "empty" in m.immutable:
+            self.skipTest("Test memory is not deletable")
 
         # Delete this memory
         m.empty = True
@@ -138,7 +141,7 @@ class TestCaseEdges(base.DriverTest):
 
     def test_get_set_specials(self):
         if not self.rf.valid_special_chans:
-            self.skipTest('Radio has no specials')
+            self.skipTest("Radio has no specials")
         lo, hi = self.rf.memory_bounds
         for name in self.rf.valid_special_chans:
             m1 = self.radio.get_memory(name)
@@ -147,9 +150,12 @@ class TestCaseEdges(base.DriverTest):
             if m1.empty:
                 m1.empty = False
 
-            self.assertIsInstance(m1.number, int,
-                                  ('Special memory %s number %r is not an '
-                                   'integer') % (name, m1.number))
+            self.assertIsInstance(
+                m1.number,
+                int,
+                ("Special memory %s number %r is not an " "integer")
+                % (name, m1.number),
+            )
 
             try:
                 del m1.extra
@@ -169,44 +175,53 @@ class TestCaseEdges(base.DriverTest):
                 # special channel that is not editable
                 continue
             m2 = self.radio.get_memory(name)
-            self.assertEqualMem(m1, m2, ignore=['name'])
+            self.assertEqualMem(m1, m2, ignore=["name"])
 
             self.assertFalse(
                 lo < m1.number < hi,
-                'Special memory %s maps into memory bounds at %i' % (
-                    name, m1.number))
+                "Special memory %s maps into memory bounds at %i" % (name, m1.number),
+            )
 
     def test_check_regular_not_special(self):
         lo, hi = self.rf.memory_bounds
         for i in range(lo, hi + 1):
             m = self.radio.get_memory(i)
-            self.assertEqual('', m.extd_number,
-                             'Non-special memory %i should not have '
-                             'extd_number set to %r' % (i, m.extd_number))
-            self.assertIsInstance(m.number, int,
-                                  'Memory number %r is not an integer' %
-                                  m.number)
+            self.assertEqual(
+                "",
+                m.extd_number,
+                "Non-special memory %i should not have "
+                "extd_number set to %r" % (i, m.extd_number),
+            )
+            self.assertIsInstance(
+                m.number, int, "Memory number %r is not an integer" % m.number
+            )
 
     def test_get_memory_name_trailing_whitespace(self):
-        if self.radio.MODEL == 'KG-UV8E':
-            self.skipTest('The UV8E driver is so broken it does not even '
-                          'parse its own test image cleanly')
+        if self.radio.MODEL == "KG-UV8E":
+            self.skipTest(
+                "The UV8E driver is so broken it does not even "
+                "parse its own test image cleanly"
+            )
         for i in range(*self.rf.memory_bounds):
             m = self.radio.get_memory(i)
-            self.assertEqual(m.name.rstrip(), m.name,
-                             'Radio returned a memory with trailing '
-                             'whitespace in the name')
+            self.assertEqual(
+                m.name.rstrip(),
+                m.name,
+                "Radio returned a memory with trailing " "whitespace in the name",
+            )
 
     def test_memory_name_stripped(self):
-        if ' ' not in self.rf.valid_characters:
-            self.skipTest('Radio does not support space characters')
+        if " " not in self.rf.valid_characters:
+            self.skipTest("Radio does not support space characters")
         m1 = self.get_mem()
-        m1.name = 'FOO '
+        m1.name = "FOO "
         self.radio.set_memory(m1)
         m2 = self.radio.get_memory(m1.number)
-        self.assertEqual(m2.name.rstrip(), m2.name,
-                         'Radio set and returned a memory with trailing '
-                         'whitespace in the name')
+        self.assertEqual(
+            m2.name.rstrip(),
+            m2.name,
+            "Radio set and returned a memory with trailing " "whitespace in the name",
+        )
 
 
 class TestBitwiseStrict(base.DriverTest):
@@ -217,19 +232,16 @@ class TestBitwiseStrict(base.DriverTest):
         raise SyntaxError(message)
 
     @pytest.mark.xfail(strict=False)
-    @mock.patch.object(bitwise.Processor, 'assert_negative_seek',
-                       side_effect=_raise)
+    @mock.patch.object(bitwise.Processor, "assert_negative_seek", side_effect=_raise)
     def test_bitwise_negative_seek(self, mock_assert):
         super().setUp()
 
     @pytest.mark.xfail(strict=False)
-    @mock.patch.object(bitwise.Processor, 'assert_unnecessary_seek',
-                       side_effect=_raise)
+    @mock.patch.object(bitwise.Processor, "assert_unnecessary_seek", side_effect=_raise)
     def test_bitwise_unnecessary_seek(self, mock_assert):
         super().setUp()
 
-    @mock.patch.object(bitwise.LOG, 'error')
+    @mock.patch.object(bitwise.LOG, "error")
     def test_bitwise_errors(self, mock_log):
         super().setUp()
-        self.assertFalse(mock_log.called,
-                         [x[0][0] for x in mock_log.call_args_list])
+        self.assertFalse(mock_log.called, [x[0][0] for x in mock_log.call_args_list])

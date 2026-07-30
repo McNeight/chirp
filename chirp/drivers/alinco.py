@@ -77,6 +77,7 @@ STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0]
 
 class AlincoStyleRadio(chirp_common.CloneModeRadio):
     """Base class for all known Alinco radios"""
+
     _memsize = 0
     _model = b"NONE"
 
@@ -103,7 +104,7 @@ class AlincoStyleRadio(chirp_common.CloneModeRadio):
         if b":" not in resp:
             raise errors.RadioError("Unexpected response from radio")
         addr, _data = resp.split(b":", 1)
-        data = codecs.decode(_data, 'hex')
+        data = codecs.decode(_data, "hex")
 
         if len(data) != 16:
             LOG.debug("Response was:")
@@ -148,8 +149,8 @@ class AlincoStyleRadio(chirp_common.CloneModeRadio):
         if addr % 16:
             raise Exception("Addr 0x%04x not on 16-byte boundary" % addr)
 
-        _data = self._mmap[addr:addr+16]
-        data = codecs.encode(_data, 'hex').upper()
+        _data = self._mmap[addr : addr + 16]
+        data = codecs.encode(_data, "hex").upper()
 
         cmd = b"AL~F%04XW%s\r\n" % (addr, data)
         self._send(cmd)
@@ -204,10 +205,13 @@ DCS_CODES = {
     "Jetstream": (17,) + chirp_common.DTCS_CODES,
 }
 
-CHARSET = (["\x00"] * 0x30) + \
-    [chr(x + ord("0")) for x in range(0, 10)] + \
-    [chr(x + ord("A")) for x in range(0, 26)] + [" "] + \
-    list("\x00" * 128)
+CHARSET = (
+    (["\x00"] * 0x30)
+    + [chr(x + ord("0")) for x in range(0, 10)]
+    + [chr(x + ord("A")) for x in range(0, 26)]
+    + [" "]
+    + list("\x00" * 128)
+)
 
 
 def _get_name(_mem):
@@ -249,6 +253,7 @@ ALINCO_TONES.remove(254.1)
 
 class DRx35Radio(AlincoStyleRadio):
     """Base class for the DR-x35 radios"""
+
     _range = [(118000000, 155000000)]
     _power_levels = []
     _valid_tones = ALINCO_TONES
@@ -272,12 +277,12 @@ class DRx35Radio(AlincoStyleRadio):
 
     def _get_used(self, number):
         _usd = self._memobj.used_flags[number / 8]
-        bit = (0x80 >> (number % 8))
+        bit = 0x80 >> (number % 8)
         return _usd & bit
 
     def _set_used(self, number, is_used):
         _usd = self._memobj.used_flags[number / 8]
-        bit = (0x80 >> (number % 8))
+        bit = 0x80 >> (number % 8)
         if is_used:
             _usd |= bit
         else:
@@ -290,13 +295,13 @@ class DRx35Radio(AlincoStyleRadio):
 
     def _set_power(self, _mem, mem):
         if self._power_levels:
-            _mem.ishigh = mem.power is None or \
-                mem.power == self._power_levels[1]
+            _mem.ishigh = mem.power is None or mem.power == self._power_levels[1]
 
     def _get_extra(self, _mem, mem):
         mem.extra = RadioSettingGroup("extra", "Extra")
-        dig = RadioSetting("isdigital", "Digital",
-                           RadioSettingValueBoolean(bool(_mem.isdigital)))
+        dig = RadioSetting(
+            "isdigital", "Digital", RadioSettingValueBoolean(bool(_mem.isdigital))
+        )
         dig.set_doc("Digital/Packet mode enabled")
         mem.extra.append(dig)
 
@@ -308,15 +313,15 @@ class DRx35Radio(AlincoStyleRadio):
         _mem = self._memobj.memory[number]
         _skp = self._memobj.skips[number / 8]
         _usd = self._memobj.used_flags[number / 8]
-        bit = (0x80 >> (number % 8))
+        bit = 0x80 >> (number % 8)
 
         mem = chirp_common.Memory()
         mem.number = number
         if not self._get_used(number) and self.MODEL != "JT220M":
             mem.empty = True
             return mem
-        elif self.MODEL == 'JT220M':
-            mem.immutable = ['empty']
+        elif self.MODEL == "JT220M":
+            mem.immutable = ["empty"]
 
         mem.freq = int(_mem.freq) * 100
         mem.rtone = self._valid_tones[_mem.rtone]
@@ -345,7 +350,7 @@ class DRx35Radio(AlincoStyleRadio):
         _mem = self._memobj.memory[mem.number]
         _skp = self._memobj.skips[mem.number / 8]
         _usd = self._memobj.used_flags[mem.number / 8]
-        bit = (0x80 >> (mem.number % 8))
+        bit = 0x80 >> (mem.number % 8)
 
         if self._get_used(mem.number) and not mem.empty:
             # Initialize the memory
@@ -363,8 +368,9 @@ class DRx35Radio(AlincoStyleRadio):
             _tone = mem.ctone
             _mem.ctone = self._valid_tones.index(mem.ctone)
         except ValueError:
-            raise errors.UnsupportedToneError("This radio does not support " +
-                                              "tone %.1fHz" % _tone)
+            raise errors.UnsupportedToneError(
+                "This radio does not support " + "tone %.1fHz" % _tone
+            )
 
         _mem.duplex = DUPLEX.index(mem.duplex)
         _mem.offset = mem.offset / 100
@@ -389,6 +395,7 @@ class DRx35Radio(AlincoStyleRadio):
 @directory.register
 class DR03Radio(DRx35Radio):
     """Alinco DR03"""
+
     VENDOR = "Alinco"
     MODEL = "DR03T"
 
@@ -398,13 +405,13 @@ class DR03Radio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x00\x28'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x00\x28"
 
 
 @directory.register
 class DR06Radio(DRx35Radio):
     """Alinco DR06"""
+
     VENDOR = "Alinco"
     MODEL = "DR06T"
 
@@ -414,13 +421,13 @@ class DR06Radio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x00\x50'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x00\x50"
 
 
 @directory.register
 class DR135Radio(DRx35Radio):
     """Alinco DR135"""
+
     VENDOR = "Alinco"
     MODEL = "DR135T"
 
@@ -430,13 +437,13 @@ class DR135Radio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x01\x44'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x01\x44"
 
 
 @directory.register
 class DR235Radio(DRx35Radio):
     """Alinco DR235"""
+
     VENDOR = "Alinco"
     MODEL = "DR235T"
 
@@ -446,13 +453,13 @@ class DR235Radio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x02\x22'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x02\x22"
 
 
 @directory.register
 class DR435Radio(DRx35Radio):
     """Alinco DR435"""
+
     VENDOR = "Alinco"
     MODEL = "DR435T"
 
@@ -462,31 +469,33 @@ class DR435Radio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x04\x00'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x04\x00"
 
 
 @directory.register
 class DJ596Radio(DRx35Radio):
     """Alinco DJ596"""
+
     VENDOR = "Alinco"
     MODEL = "DJ596"
 
     _model = b"DJ596"
     _memsize = 4096
     _range = [(136000000, 174000000), (400000000, 511000000)]
-    _power_levels = [chirp_common.PowerLevel("Low", watts=1.00),
-                     chirp_common.PowerLevel("High", watts=5.00)]
+    _power_levels = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("High", watts=5.00),
+    ]
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-                filedata[0x64:0x66] == b'\x45\x01'
+        return len(filedata) == cls._memsize and filedata[0x64:0x66] == b"\x45\x01"
 
 
 @directory.register
 class JT220MRadio(DRx35Radio):
     """Jetstream JT220"""
+
     VENDOR = "Jetstream"
     MODEL = "JT220M"
 
@@ -496,13 +505,13 @@ class JT220MRadio(DRx35Radio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-            filedata[0x60:0x64] == b'2009'
+        return len(filedata) == cls._memsize and filedata[0x60:0x64] == b"2009"
 
 
 @directory.register
 class DJ175Radio(DRx35Radio):
     """Alinco DJ175"""
+
     VENDOR = "Alinco"
     MODEL = "DJ175"
 
@@ -513,7 +522,7 @@ class DJ175Radio(DRx35Radio):
         chirp_common.PowerLevel("Low", watts=0.50),
         chirp_common.PowerLevel("Mid", watts=2.00),
         chirp_common.PowerLevel("High", watts=5.00),
-        ]
+    ]
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -543,7 +552,7 @@ class DJ175Radio(DRx35Radio):
         if len(_data) == 0:
             raise errors.RadioNoResponse()
 
-        data = codecs.decode(_data, 'hex')
+        data = codecs.decode(_data, "hex")
 
         if len(data) != 16:
             LOG.debug("Response was:")
@@ -583,19 +592,36 @@ struct {
 
 class AlincoDJG7(AlincoStyleRadio):
     """Alinco DJ-G7EG"""
+
     VENDOR = "Alinco"
     MODEL = "DJ-G7EG"
     BAUD_RATE = 57600
 
     # Those are different from the other Alinco radios.
-    STEPS = [5.0, 6.25, 8.33, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0,
-             100.0, 125.0, 150.0, 200.0, 500.0, 1000.0]
+    STEPS = [
+        5.0,
+        6.25,
+        8.33,
+        10.0,
+        12.5,
+        15.0,
+        20.0,
+        25.0,
+        30.0,
+        50.0,
+        100.0,
+        125.0,
+        150.0,
+        200.0,
+        500.0,
+        1000.0,
+    ]
     DUPLEX = ["", "+", "-"]
     MODES = ["NFM", "FM", "AM", "WFM"]
     TMODES = ["", "??1", "Tone", "TSQL", "TSQL-R", "DTCS"]
 
     # This is a bit of a hack to avoid overwriting _identify()
-    _memsize = 0x1a7c0
+    _memsize = 0x1A7C0
     _range = [(500000, 1300000000)]
 
     @classmethod
@@ -609,7 +635,8 @@ class AlincoDJG7(AlincoStyleRadio):
             "5. Press and release PTT 3 times while holding MONI key\n"
             "6. Supported baud rates: 57600 (default) and 19200\n"
             "   (rotate dial while holding MONI to change)\n"
-            "7. Click OK\n")
+            "7. Click OK\n"
+        )
         rp.pre_upload = _(
             "1. Ensure your firmware version is 4_10 or higher\n"
             "2. Turn radio off\n"
@@ -618,7 +645,8 @@ class AlincoDJG7(AlincoStyleRadio):
             "5. Press and release PTT 3 times while holding MONI key\n"
             "6. Supported baud rates: 57600 (default) and 19200\n"
             "   (rotate dial while holding MONI to change)\n"
-            "7. Click OK\n")
+            "7. Click OK\n"
+        )
         return rp
 
     def get_features(self):
@@ -647,7 +675,7 @@ class AlincoDJG7(AlincoStyleRadio):
 
         # Response: "\r\n[ ... data ... ]\r\n
         # data is encoded in hex, hence we read two chars per byte
-        _data = self._read(2+2*64+2).strip()
+        _data = self._read(2 + 2 * 64 + 2).strip()
         if len(_data) == 0:
             raise errors.RadioNoResponse()
 
@@ -675,7 +703,7 @@ class AlincoDJG7(AlincoStyleRadio):
     def _download(self, limit):
         self._detect_baudrate_and_identify()
 
-        data = b"\x00"*0x200
+        data = b"\x00" * 0x200
 
         for addr in range(0x200, limit, 0x40):
             data += self._download_chunk(addr)
@@ -694,7 +722,7 @@ class AlincoDJG7(AlincoStyleRadio):
         if addr % 0x40:
             raise Exception("Addr 0x%04x not on 64-byte boundary" % addr)
 
-        _data = self._mmap[addr:addr+0x40]
+        _data = self._mmap[addr : addr + 0x40]
         data = codecs.encode(_data, "hex").upper()
 
         cmd = b"AL~F%05XW%s\r" % (addr, data)
@@ -727,9 +755,11 @@ class AlincoDJG7(AlincoStyleRadio):
         # band.
         if mode not in ("NFM", "FM"):
             return 0x01
-        if (freq >= 136000000 and freq < 174000000) or \
-           (freq >= 400000000 and freq < 470000000) or \
-           (freq >= 1240000000 and freq < 1300000000):
+        if (
+            (freq >= 136000000 and freq < 174000000)
+            or (freq >= 400000000 and freq < 470000000)
+            or (freq >= 1240000000 and freq < 1300000000)
+        ):
             return 0x02
         else:
             return 0x01
@@ -737,21 +767,23 @@ class AlincoDJG7(AlincoStyleRadio):
     def _check_channel_consistency(self, number):
         _mem = self._memobj.memory[number]
         if _mem.empty != 0x00:
-            if _mem.unknown1 == 0xffffff:
+            if _mem.unknown1 == 0xFFFFFF:
                 # Previous versions of this code have skipped the unknown
                 # fields. They contain bytes of value if the channel is empty
                 # and thus those bytes remain 0xff when the channel is put to
                 # use. The radio is totally fine with this but the Alinco
                 # programming software is not (see #5275). Here, we check for
                 # this and report if it is encountered.
-                LOG.warning("Channel %d is inconsistent: Found 0xff in "
-                            "non-empty channel. Touch channel to fix."
-                            % number)
+                LOG.warning(
+                    "Channel %d is inconsistent: Found 0xff in "
+                    "non-empty channel. Touch channel to fix." % number
+                )
 
-            if _mem.empty != self._get_empty_flag(_mem.freq,
-                                                  self.MODES[_mem.mode]):
-                LOG.warning("Channel %d is inconsistent: Found out of band "
-                            "frequency. Touch channel to fix." % number)
+            if _mem.empty != self._get_empty_flag(_mem.freq, self.MODES[_mem.mode]):
+                LOG.warning(
+                    "Channel %d is inconsistent: Found out of band "
+                    "frequency. Touch channel to fix." % number
+                )
 
     def process_mmap(self):
         self._memobj = bitwise.parse(DJG7_MEM_FORMAT, self._mmap)
@@ -774,19 +806,21 @@ class AlincoDJG7(AlincoStyleRadio):
             mem.tuning_step = self.STEPS[_mem.step]
             mem.offset = int(_mem.offset)
             mem.duplex = self.DUPLEX[_mem.duplex]
-            if self.TMODES[_mem.squelch_type] == "TSQL" and \
-                    _mem.tx_tone != _mem.rx_tone:
+            if (
+                self.TMODES[_mem.squelch_type] == "TSQL"
+                and _mem.tx_tone != _mem.rx_tone
+            ):
                 mem.tmode = "Cross"
                 mem.cross_mode = "Tone->Tone"
             else:
                 mem.tmode = self.TMODES[_mem.squelch_type]
-            mem.rtone = ALINCO_TONES[_mem.tx_tone-1]
-            mem.ctone = ALINCO_TONES[_mem.rx_tone-1]
+            mem.rtone = ALINCO_TONES[_mem.tx_tone - 1]
+            mem.ctone = ALINCO_TONES[_mem.rx_tone - 1]
             mem.dtcs = DCS_CODES[self.VENDOR][_mem.dcs]
             if _mem.skip:
                 mem.skip = "S"
             # FIXME find out what every other byte is used for. Japanese?
-            mem.name = str(_mem.name.get_raw(asbytes=False)[::2]).rstrip('\0')
+            mem.name = str(_mem.name.get_raw(asbytes=False)[::2]).rstrip("\0")
         return mem
 
     def set_memory(self, mem):
@@ -805,42 +839,47 @@ class AlincoDJG7(AlincoStyleRadio):
             if mem.tmode == "Cross":
                 _mem.squelch_type = self.TMODES.index("TSQL")
                 try:
-                    _mem.tx_tone = ALINCO_TONES.index(mem.rtone)+1
+                    _mem.tx_tone = ALINCO_TONES.index(mem.rtone) + 1
                 except ValueError:
                     raise errors.UnsupportedToneError(
-                        "This radio does not support tone %.1fHz" % mem.rtone)
+                        "This radio does not support tone %.1fHz" % mem.rtone
+                    )
                 try:
-                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone)+1
+                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone) + 1
                 except ValueError:
                     raise errors.UnsupportedToneError(
-                        "This radio does not support tone %.1fHz" % mem.ctone)
+                        "This radio does not support tone %.1fHz" % mem.ctone
+                    )
             elif mem.tmode == "TSQL":
                 _mem.squelch_type = self.TMODES.index("TSQL")
                 # Note how the same TSQL tone is copied to both memory
                 # locations
                 try:
-                    _mem.tx_tone = ALINCO_TONES.index(mem.ctone)+1
-                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone)+1
+                    _mem.tx_tone = ALINCO_TONES.index(mem.ctone) + 1
+                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone) + 1
                 except ValueError:
                     raise errors.UnsupportedToneError(
-                        "This radio does not support tone %.1fHz" % mem.ctone)
+                        "This radio does not support tone %.1fHz" % mem.ctone
+                    )
             else:
                 _mem.squelch_type = self.TMODES.index(mem.tmode)
                 try:
-                    _mem.tx_tone = ALINCO_TONES.index(mem.rtone)+1
+                    _mem.tx_tone = ALINCO_TONES.index(mem.rtone) + 1
                 except ValueError:
                     raise errors.UnsupportedToneError(
-                        "This radio does not support tone %.1fHz" % mem.rtone)
+                        "This radio does not support tone %.1fHz" % mem.rtone
+                    )
                 try:
-                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone)+1
+                    _mem.rx_tone = ALINCO_TONES.index(mem.ctone) + 1
                 except ValueError:
                     raise errors.UnsupportedToneError(
-                        "This radio does not support tone %.1fHz" % mem.ctone)
+                        "This radio does not support tone %.1fHz" % mem.ctone
+                    )
             _mem.dcs = DCS_CODES[self.VENDOR].index(mem.dtcs)
-            _mem.skip = (mem.skip == "S")
+            _mem.skip = mem.skip == "S"
             _mem.name = "\x00".join(mem.name.rstrip()).ljust(32, "\x00")
-            _mem.unknown1 = 0x3e001c
-            _mem.unknown2 = 0x0000000a
+            _mem.unknown1 = 0x3E001C
+            _mem.unknown2 = 0x0000000A
             _mem.unknown3 = 0x00000000
             _mem.unknown4 = 0x00000000
 
@@ -848,6 +887,7 @@ class AlincoDJG7(AlincoStyleRadio):
 @directory.register
 class AlincoDJG7EG(AlincoDJG7):
     """Alinco DJ-G7EG"""
+
     MODEL = "DJ-G7EG"
     _model = b"AL~DJ-G7EG"
 
@@ -855,5 +895,6 @@ class AlincoDJG7EG(AlincoDJG7):
 @directory.register
 class AlincoDJG7T(AlincoDJG7):
     """Alinco DJ-G7T"""
+
     MODEL = "DJ-G7T"
     _model = b"AL~DJ-G7T"

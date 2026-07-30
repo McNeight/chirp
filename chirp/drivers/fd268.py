@@ -17,9 +17,14 @@ import struct
 import logging
 
 from chirp import chirp_common, directory, memmap, errors, util, bitwise
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -155,9 +160,8 @@ def recv(radio):
     """Generic receive data from the radio, return just data"""
     # you must get it all 12 at once (4 header + 8 data)
     rxdata = raw_recv(radio, 12)
-    if (len(rxdata) != 12):
-        raise errors.RadioError(
-            "Radio sent %i bytes, we expected 12" % (len(rxdata)))
+    if len(rxdata) != 12:
+        raise errors.RadioError("Radio sent %i bytes, we expected 12" % (len(rxdata)))
     else:
         data = rxdata[4:]
         send(radio, CMD_ACK)
@@ -232,7 +236,7 @@ def do_program(radio):
 
 
 def do_download(radio):
-    """ The download function """
+    """The download function"""
     do_program(radio)
     # UI progress
     status = chirp_common.Status()
@@ -263,8 +267,7 @@ def do_upload(radio):
     radio.status_fn(status)
 
     for addr in range(0x0000, MEM_SIZE, BLOCK_SIZE):
-        send(radio, make_frame("W", addr),
-             radio.get_mmap()[addr:addr+BLOCK_SIZE])
+        send(radio, make_frame("W", addr), radio.get_mmap()[addr : addr + BLOCK_SIZE])
         # UI Update
         status.cur = addr
         radio.status_fn(status)
@@ -283,6 +286,7 @@ def model_match(cls, data):
 
 class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
     """Feidaxin FD-268 & alike Radios"""
+
     VENDOR = "Feidaxin"
     MODEL = "FD-268 & alike Radios"
     BAUD_RATE = 9600
@@ -296,21 +300,24 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('The program mode of this radio has his tricks, '
-             'so this driver is *completely experimental*.')
+        rp.experimental = (
+            "The program mode of this radio has his tricks, "
+            "so this driver is *completely experimental*."
+        )
         rp.pre_download = _(
             "This radio has a tricky way of enter into program mode,\n"
             "even the original software has a few tries to get inside.\n"
             "I will try 8 times (most of the time ~3 will doit) and this\n"
             "can take a few seconds, if don't work, try again a few times.\n"
-            "If you can get into it, please check the radio and cable.\n")
+            "If you can get into it, please check the radio and cable.\n"
+        )
         rp.pre_upload = _(
             "This radio has a tricky way of enter into program mode,\n"
             "even the original software has a few tries to get inside.\n"
             "I will try 8 times (most of the time ~3 will doit) and this\n"
             "can take a few seconds, if don't work, try again a few times.\n"
-            "If you can get into it, please check the radio and cable.\n")
+            "If you can get into it, please check the radio and cable.\n"
+        )
         return rp
 
     def get_features(self):
@@ -329,7 +336,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         rf.has_ctone = True
         rf.has_cross = True
         rf.valid_duplexes = ["", "-", "+", "off"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         # we have to remove "Tone->" because this is the same to "TQSL"
         # I get a few days hitting the wall with my head about this...
         rf.valid_cross_modes = [
@@ -339,7 +346,8 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         # Power levels are global and no per channel, so disabled
         # rf.valid_power_levels = POWER_LEVELS
         # this radio has no skips
@@ -380,29 +388,29 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
     def _decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
-            return '', None, None
+        if val.get_raw(asbytes=False) == "\xff\xff":
+            return "", None, None
 
         val = int(val)
         if val >= 12000:
             a = val - 12000
-            return 'DTCS', a, 'R'
+            return "DTCS", a, "R"
         elif val >= 8000:
             a = val - 8000
-            return 'DTCS', a, 'N'
+            return "DTCS", a, "N"
         else:
             a = val / 10.0
-            return 'Tone', a, None
+            return "Tone", a, None
 
     def _encode_tone(self, memval, mode, value, pol):
         """Parse the tone data to encode from UI to mem"""
-        if mode == '':
+        if mode == "":
             memval[0].set_raw(0xFF)
             memval[1].set_raw(0xFF)
-        elif mode == 'Tone':
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
-            flag = 0x80 if pol == 'N' else 0xC0
+        elif mode == "DTCS":
+            flag = 0x80 if pol == "N" else 0xC0
             memval.set_value(value)
             memval[1].set_bits(flag)
         else:
@@ -419,7 +427,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         mem.number = number
 
         # empty
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw(asbytes=False)[0] == "\xff":
             mem.empty = True
             return mem
 
@@ -428,7 +436,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
         # checking if tx freq is empty, this is "possible" on the
         # original soft after a warning, and radio is happy with it
-        if _mem.tx_freq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.tx_freq.get_raw(asbytes=False) == "\xff\xff\xff\xff":
             mem.duplex = "off"
             mem.offset = 0
         else:
@@ -449,13 +457,17 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         # Extra setting group, FD-268 don't uset it at all
         # FD-288's & others do it?
         mem.extra = RadioSettingGroup("extra", "Extra")
-        busy = RadioSetting("busy_lock", "Busy Channel Lockout",
-                            RadioSettingValueBoolean(
-                                bool(_mem.busy_lock)))
+        busy = RadioSetting(
+            "busy_lock",
+            "Busy Channel Lockout",
+            RadioSettingValueBoolean(bool(_mem.busy_lock)),
+        )
         mem.extra.append(busy)
-        scramble = RadioSetting("scrambler", "Scrambler Option",
-                                RadioSettingValueBoolean(
-                                    bool(_mem.scrambler)))
+        scramble = RadioSetting(
+            "scrambler",
+            "Scrambler Option",
+            RadioSettingValueBoolean(bool(_mem.scrambler)),
+        )
         mem.extra.append(scramble)
 
         # return mem
@@ -469,7 +481,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 
         # Empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw("\xff" * 16)
             return
 
         # freq rx
@@ -482,13 +494,14 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
             _mem.tx_freq = (mem.freq - mem.offset) / 10
         elif mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw("\xff")
         else:
             _mem.tx_freq = mem.freq / 10
 
         # tone data
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self._encode_tone(_mem.tx_tone, txmode, txtone, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxtone, rxpol)
 
@@ -506,63 +519,96 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         top = RadioSettings(basic, work)
 
         # Basic
-        sql = RadioSetting("settings.sql", "Squelch Level",
-                           RadioSettingValueList(LIST_SQL, current_index=_mem.settings.sql))
+        sql = RadioSetting(
+            "settings.sql",
+            "Squelch Level",
+            RadioSettingValueList(LIST_SQL, current_index=_mem.settings.sql),
+        )
         basic.append(sql)
 
-        tot = RadioSetting("settings.tot", "Time out timer",
-                           RadioSettingValueList(LIST_TOT, current_index=_mem.settings.tot))
+        tot = RadioSetting(
+            "settings.tot",
+            "Time out timer",
+            RadioSettingValueList(LIST_TOT, current_index=_mem.settings.tot),
+        )
         basic.append(tot)
 
-        key_lock = RadioSetting("settings.key", "Keyboard Lock",
-                                RadioSettingValueList(KEY_LOCK, current_index=_mem.settings.key))
+        key_lock = RadioSetting(
+            "settings.key",
+            "Keyboard Lock",
+            RadioSettingValueList(KEY_LOCK, current_index=_mem.settings.key),
+        )
         basic.append(key_lock)
 
-        bw = RadioSetting("settings.bw", "Bandwidth",
-                          RadioSettingValueList(BW, current_index=_mem.settings.bw))
+        bw = RadioSetting(
+            "settings.bw",
+            "Bandwidth",
+            RadioSettingValueList(BW, current_index=_mem.settings.bw),
+        )
         basic.append(bw)
 
-        powerrank = RadioSetting("settings.powerrank", "Power output adjust",
-                                 RadioSettingValueList(POWER_RANK, current_index=_mem.settings.powerrank))
+        powerrank = RadioSetting(
+            "settings.powerrank",
+            "Power output adjust",
+            RadioSettingValueList(POWER_RANK, current_index=_mem.settings.powerrank),
+        )
         basic.append(powerrank)
 
-        lamp = RadioSetting("settings.lamp", "LCD Lamp",
-                            RadioSettingValueBoolean(_mem.settings.lamp))
+        lamp = RadioSetting(
+            "settings.lamp", "LCD Lamp", RadioSettingValueBoolean(_mem.settings.lamp)
+        )
         basic.append(lamp)
 
-        lamp_auto = RadioSetting("settings.lamp_auto", "LCD Lamp auto on/off",
-                                 RadioSettingValueBoolean(
-                                     _mem.settings.lamp_auto))
+        lamp_auto = RadioSetting(
+            "settings.lamp_auto",
+            "LCD Lamp auto on/off",
+            RadioSettingValueBoolean(_mem.settings.lamp_auto),
+        )
         basic.append(lamp_auto)
 
-        bs = RadioSetting("settings.bs", "Battery Save",
-                          RadioSettingValueBoolean(_mem.settings.bs))
+        bs = RadioSetting(
+            "settings.bs", "Battery Save", RadioSettingValueBoolean(_mem.settings.bs)
+        )
         basic.append(bs)
 
-        warning = RadioSetting("settings.warning", "Warning Alerts",
-                               RadioSettingValueBoolean(_mem.settings.warning))
+        warning = RadioSetting(
+            "settings.warning",
+            "Warning Alerts",
+            RadioSettingValueBoolean(_mem.settings.warning),
+        )
         basic.append(warning)
 
-        monitor = RadioSetting("settings.monitor", "Monitor key",
-                               RadioSettingValueBoolean(_mem.settings.monitor))
+        monitor = RadioSetting(
+            "settings.monitor",
+            "Monitor key",
+            RadioSettingValueBoolean(_mem.settings.monitor),
+        )
         basic.append(monitor)
 
         # Work mode settings
-        wmset = RadioSetting("settings.wmem", "VFO/MR Mode",
-                             RadioSettingValueList(
-                                 W_MODE, current_index=_mem.settings.wmem))
+        wmset = RadioSetting(
+            "settings.wmem",
+            "VFO/MR Mode",
+            RadioSettingValueList(W_MODE, current_index=_mem.settings.wmem),
+        )
         work.append(wmset)
 
-        power = RadioSetting("settings.power", "Actual Power",
-                             RadioSettingValueList(POWER_LEVELS, current_index=_mem.settings.power))
+        power = RadioSetting(
+            "settings.power",
+            "Actual Power",
+            RadioSettingValueList(POWER_LEVELS, current_index=_mem.settings.power),
+        )
         work.append(power)
 
-        active_ch = RadioSetting("settings.active_ch", "Work Channel",
-                                 RadioSettingValueList(ACTIVE_CH, current_index=_mem.settings.active_ch))
+        active_ch = RadioSetting(
+            "settings.active_ch",
+            "Work Channel",
+            RadioSettingValueList(ACTIVE_CH, current_index=_mem.settings.active_ch),
+        )
         work.append(active_ch)
 
         # vfo rx validation
-        if _mem.vfo.vrx_freq.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.vfo.vrx_freq.get_raw(asbytes=False)[0] == "\xff":
             # if the vfo is not set, the UI cares about the
             # length of the field, so set a default
             LOG.debug("Setting VFO to default %s" % self._VFO_DEFAULT)
@@ -577,9 +623,11 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
             obj.set_value(value / 10)
 
         # preparing for callback on vrxfreq (handled also in a special )
-        vf_freq = RadioSetting("none.vrx_freq", "VFO frequency",
-                               RadioSettingValueString(0, 10, chirp_common.
-                                                       format_freq(vfo)))
+        vf_freq = RadioSetting(
+            "none.vrx_freq",
+            "VFO frequency",
+            RadioSettingValueString(0, 10, chirp_common.format_freq(vfo)),
+        )
         vf_freq.set_apply_callback(apply_freq, _mem.vfo.vrx_freq)
         work.append(vf_freq)
 
@@ -591,12 +639,13 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         elif bool(_mem.vfo.shift_plus) is True:
             sset = 2
 
-        shift = RadioSetting("none.shift", "VFO Shift",
-                             RadioSettingValueList(VSHIFT, current_index=sset))
+        shift = RadioSetting(
+            "none.shift", "VFO Shift", RadioSettingValueList(VSHIFT, current_index=sset)
+        )
         work.append(shift)
 
         # vfo shift validation if none set it to ZERO
-        if _mem.settings.vfo_shift.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.settings.vfo_shift.get_raw(asbytes=False)[0] == "\xff":
             # if the shift is not set, the UI cares about the
             # length of the field, so set to zero
             LOG.debug("VFO shift not set, setting it to zero")
@@ -604,31 +653,39 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         else:
             vfo_shift = int(_mem.settings.vfo_shift) * 10
 
-        offset = RadioSetting("none.vfo_shift", "VFO Offset",
-                              RadioSettingValueString(0, 9, chirp_common.
-                                                      format_freq(vfo_shift)))
+        offset = RadioSetting(
+            "none.vfo_shift",
+            "VFO Offset",
+            RadioSettingValueString(0, 9, chirp_common.format_freq(vfo_shift)),
+        )
         work.append(offset)
 
-        step = RadioSetting("settings", "VFO step",
-                            RadioSettingValueList(STEPF, current_index=_mem.settings.step))
+        step = RadioSetting(
+            "settings",
+            "VFO step",
+            RadioSettingValueList(STEPF, current_index=_mem.settings.step),
+        )
         work.append(step)
 
         # FD-288 Family ANI settings
         if "FD-288" in self.MODEL:
-            ani_mode = RadioSetting("ani_mode", "ANI ID",
-                                    RadioSettingValueList(ANI, current_index=_mem.settings.ani_mode))
+            ani_mode = RadioSetting(
+                "ani_mode",
+                "ANI ID",
+                RadioSettingValueList(ANI, current_index=_mem.settings.ani_mode),
+            )
             work.append(ani_mode)
 
             # it can't be \xFF
             ani_value = str(_mem.settings.ani)
-            if ani_value == "\xFF\xFF\xFF":
+            if ani_value == "\xff\xff\xff":
                 ani_value = "200"
 
-            ani_value = "".join(x for x in ani_value if (int(x) >= 2 and
-                                                         int(x) <= 9))
+            ani_value = "".join(x for x in ani_value if (int(x) >= 2 and int(x) <= 9))
 
-            ani = RadioSetting("ani", "ANI (200-999)",
-                               RadioSettingValueString(0, 3, ani_value))
+            ani = RadioSetting(
+                "ani", "ANI (200-999)", RadioSettingValueString(0, 3, ani_value)
+            )
             work.append(ani)
 
         return top
@@ -645,11 +702,11 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
             _vfo.shift_plus = 0
 
             # parse and set if needed
-            rx = chirp_common.parse_freq(
-                str(settings["none.vrx_freq"]).split(":")[1])
+            rx = chirp_common.parse_freq(str(settings["none.vrx_freq"]).split(":")[1])
 
             offset = chirp_common.parse_freq(
-                str(settings["none.vfo_shift"]).split(":")[1])
+                str(settings["none.vfo_shift"]).split(":")[1]
+            )
 
             shift = str(settings["none.shift"]).split(":")[1]
 
@@ -761,8 +818,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
                 elif element.value.get_mutable():
                     # value is mutable, find it on the mem space
 
-                    LOG.debug("Setting %s.%s = %s" % (sett, name, str(
-                              element.value)))
+                    LOG.debug("Setting %s.%s = %s" % (sett, name, str(element.value)))
 
                     # process it
                     try:
@@ -794,6 +850,7 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
         else:
             return False
 
+
 # ##########################################################################3
 # FD-268 family: this are the original tested models, FD-268B UHF
 # was tested "remotely" with images thanks to AG5M
@@ -803,19 +860,21 @@ class FeidaxinFD2x8yRadio(chirp_common.CloneModeRadio):
 @directory.register
 class FD268ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-268A Radio"""
+
     MODEL = "FD-268A"
     _range = (136000000, 174000000)
     _VFO_DEFAULT = 145000000
-    _IDENT = b"\xFF\xEE\x46\xFF"
+    _IDENT = b"\xff\xee\x46\xff"
 
 
 @directory.register
 class FD268BRadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-268B Radio"""
+
     MODEL = "FD-268B"
     _range = (400000000, 470000000)
     _VFO_DEFAULT = 439000000
-    _IDENT = b"\xFF\xEE\x47\xFF"
+    _IDENT = b"\xff\xee\x47\xff"
 
 
 # #####################################################################
@@ -827,19 +886,21 @@ class FD268BRadio(FeidaxinFD2x8yRadio):
 @directory.register
 class FD288ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-288A Radio"""
+
     MODEL = "FD-288A"
     _range = (136000000, 174000000)
     _VFO_DEFAULT = 145000000
-    _IDENT = b"\xFF\xEE\x4B\xFF"
+    _IDENT = b"\xff\xee\x4b\xff"
 
 
 @directory.register
 class FD288BRadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-288B Radio"""
+
     MODEL = "FD-288B"
     _range = (400000000, 470000000)
     _VFO_DEFAULT = 439000000
-    _IDENT = b"\xFF\xEE\x4C\xFF"
+    _IDENT = b"\xff\xee\x4c\xff"
 
 
 # #####################################################################
@@ -851,43 +912,48 @@ class FD288BRadio(FeidaxinFD2x8yRadio):
 @directory.register
 class FD150ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-150A Radio"""
+
     MODEL = "FD-150A"
     _range = (136000000, 174000000)
     _VFO_DEFAULT = 145000000
-    _IDENT = b"\xFF\xEE\x45\xFF"
+    _IDENT = b"\xff\xee\x45\xff"
 
 
 @directory.register
 class FD160ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-160A Radio"""
+
     MODEL = "FD-160A"
     _range = (136000000, 174000000)
     _VFO_DEFAULT = 145000000
-    _IDENT = b"\xFF\xEE\x48\xFF"
+    _IDENT = b"\xff\xee\x48\xff"
 
 
 @directory.register
 class FD450ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-450A Radio"""
+
     MODEL = "FD-450A"
     _range = (400000000, 470000000)
     _VFO_DEFAULT = 439000000
-    _IDENT = b"\xFF\xEE\x44\xFF"
+    _IDENT = b"\xff\xee\x44\xff"
 
 
 @directory.register
 class FD460ARadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-460A Radio"""
+
     MODEL = "FD-460A"
     _range = (400000000, 470000000)
     _VFO_DEFAULT = 439000000
-    _IDENT = b"\xFF\xEE\x4A\xFF"
+    _IDENT = b"\xff\xee\x4a\xff"
 
 
 @directory.register
 class FD460UHRadio(FeidaxinFD2x8yRadio):
     """Feidaxin FD-460UH Radio"""
+
     MODEL = "FD-460UH"
     _range = (400000000, 480000000)
     _VFO_DEFAULT = 439000000
-    _IDENT = b"\xFF\xF4\x44\xFF"
+    _IDENT = b"\xff\xf4\x44\xff"

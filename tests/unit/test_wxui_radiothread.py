@@ -5,13 +5,13 @@ from unittest import mock
 
 import ddt
 
-sys.modules['wx'] = wx = mock.MagicMock()
-sys.modules['wx.lib'] = mock.MagicMock()
-sys.modules['wx.lib.scrolledpanel'] = mock.MagicMock()
-sys.modules['wx.lib.sized_controls'] = mock.MagicMock()
-sys.modules['wx.richtext'] = mock.MagicMock()
+sys.modules["wx"] = wx = mock.MagicMock()
+sys.modules["wx.lib"] = mock.MagicMock()
+sys.modules["wx.lib.scrolledpanel"] = mock.MagicMock()
+sys.modules["wx.lib.sized_controls"] = mock.MagicMock()
+sys.modules["wx.richtext"] = mock.MagicMock()
 wx.lib.newevent.NewCommandEvent.return_value = None, None
-sys.modules['chirp.wxui.developer'] = mock.MagicMock()
+sys.modules["chirp.wxui.developer"] = mock.MagicMock()
 
 # These need to be imported after the above mock so that we don't require
 # wx to be present for these tests
@@ -30,40 +30,44 @@ class TestRadioThread(base.BaseTest):
     def test_radiojob(self):
         radio = mock.MagicMock()
         editor = mock.MagicMock()
-        job = radiothread.RadioJob(editor, 'get_memory', [12], {})
+        job = radiothread.RadioJob(editor, "get_memory", [12], {})
         self.assertIsNone(job.dispatch(radio))
         radio.get_memory.assert_called_once_with(12)
         self.assertEqual(job.result, radio.get_memory.return_value)
 
     def test_radiojob_exception(self):
         radio = mock.MagicMock()
-        radio.get_memory.side_effect = ValueError('some error')
+        radio.get_memory.side_effect = ValueError("some error")
         editor = mock.MagicMock()
-        job = radiothread.RadioJob(editor, 'get_memory', [12], {})
+        job = radiothread.RadioJob(editor, "get_memory", [12], {})
         self.assertIsNone(job.dispatch(radio))
         radio.get_memory.assert_called_once_with(12)
         self.assertIsInstance(job.result, ValueError)
 
     def test_thread(self):
         radio = mock.MagicMock()
-        radio.get_features.side_effect = ValueError('some error')
+        radio.get_features.side_effect = ValueError("some error")
         editor = mock.MagicMock()
         # Simulate an edit conflict with the first event by returning
         # False for "delivered" to force us to queue an event.
         editor.radio_thread_event.side_effect = [False, True, True, True]
         thread = radiothread.RadioThread(radio)
         mem = mock.MagicMock()
-        job1id = thread.submit(editor, 'get_memory', 12)
-        job2id = thread.submit(editor, 'set_memory', mem)
-        job3id = thread.submit(editor, 'get_features')
+        job1id = thread.submit(editor, "get_memory", 12)
+        job2id = thread.submit(editor, "set_memory", mem)
+        job3id = thread.submit(editor, "get_features")
         # We have to start the thread after we submit the main jobs so
         # the order is stable for comparison.
         thread.start()
 
         # Wait for the main jobs to be processed before we signal exit
-        while not all([radio.get_memory.called,
-                       radio.set_memory.called,
-                       radio.get_features.called]):
+        while not all(
+            [
+                radio.get_memory.called,
+                radio.set_memory.called,
+                radio.get_features.called,
+            ]
+        ):
             time.sleep(0.1)
 
         thread.end()
@@ -80,29 +84,31 @@ class TestRadioThread(base.BaseTest):
         # delivered first on the next cycle.
         expected_order = [job2id, job2id, job3id, job1id]
         for i, (jobid, call) in enumerate(
-                zip(expected_order,
-                    editor.radio_thread_event.call_args_list)):
+            zip(expected_order, editor.radio_thread_event.call_args_list)
+        ):
             job = call[0][0]
             self.assertEqual(jobid, job.id)
 
         # We should call non-blocking for every call except the last
         # one, when the queue is empty
-        editor.radio_thread_event.assert_has_calls([
-            mock.call(mock.ANY, block=False),
-            mock.call(mock.ANY, block=False),
-            mock.call(mock.ANY, block=False),
-            mock.call(mock.ANY, block=True),
-        ])
+        editor.radio_thread_event.assert_has_calls(
+            [
+                mock.call(mock.ANY, block=False),
+                mock.call(mock.ANY, block=False),
+                mock.call(mock.ANY, block=False),
+                mock.call(mock.ANY, block=True),
+            ]
+        )
 
     def test_thread_abort_priority(self):
         radio = mock.MagicMock()
-        radio.get_features.side_effect = ValueError('some error')
+        radio.get_features.side_effect = ValueError("some error")
         editor = mock.MagicMock()
         thread = radiothread.RadioThread(radio)
         mem = mock.MagicMock()
-        thread.submit(editor, 'get_memory', 12)
-        thread.submit(editor, 'set_memory', mem)
-        thread.submit(editor, 'get_features')
+        thread.submit(editor, "get_memory", 12)
+        thread.submit(editor, "set_memory", mem)
+        thread.submit(editor, "get_features")
         thread.end()
         # We have to start the thread after we submit the main jobs so
         # the order is stable for comparison.
@@ -121,52 +127,47 @@ class TestRadioThread(base.BaseTest):
 
 
 class TestClone(base.BaseTest):
-    @mock.patch('platform.system', return_value='Linux')
+    @mock.patch("platform.system", return_value="Linux")
     def test_sort_ports_unix(self, system):
         ports = [
-            mock.MagicMock(device='/dev/cu.zed',
-                           description='My Zed'),
-            mock.MagicMock(device='/dev/cu.abc',
-                           description='Some device'),
-            mock.MagicMock(device='/dev/cu.serial',
-                           description='')
-            ]
+            mock.MagicMock(device="/dev/cu.zed", description="My Zed"),
+            mock.MagicMock(device="/dev/cu.abc", description="Some device"),
+            mock.MagicMock(device="/dev/cu.serial", description=""),
+        ]
         self.assertEqual(
-            ['Some device (cu.abc)',
-             'cu.serial',
-             'My Zed (cu.zed)'],
-            [clone.port_label(p)
-                for p in sorted(ports, key=clone.port_sort_key)])
+            ["Some device (cu.abc)", "cu.serial", "My Zed (cu.zed)"],
+            [clone.port_label(p) for p in sorted(ports, key=clone.port_sort_key)],
+        )
 
-    @mock.patch('platform.system', return_value='Windows')
+    @mock.patch("platform.system", return_value="Windows")
     def test_sort_ports_windows(self, system):
         ports = [
-            mock.MagicMock(device='COM7',
-                           description='Some serial device'),
-            mock.MagicMock(device='COM17',
-                           description='Some other device'),
-            mock.MagicMock(device='CNC0',
-                           description='Some weird device'),
-            mock.MagicMock(device='COM4',
-                           description=''),
-            ]
+            mock.MagicMock(device="COM7", description="Some serial device"),
+            mock.MagicMock(device="COM17", description="Some other device"),
+            mock.MagicMock(device="CNC0", description="Some weird device"),
+            mock.MagicMock(device="COM4", description=""),
+        ]
         self.assertEqual(
-            ['CNC0: Some weird device',
-             'COM4',
-             'COM7: Some serial device',
-             'COM17: Some other device'],
-            [clone.port_label(p)
-                for p in sorted(ports, key=clone.port_sort_key)])
+            [
+                "CNC0: Some weird device",
+                "COM4",
+                "COM7: Some serial device",
+                "COM17: Some other device",
+            ],
+            [clone.port_label(p) for p in sorted(ports, key=clone.port_sort_key)],
+        )
 
     def test_detected_model_labels(self):
         # Make sure all our detected model labels will be reasonable
         # (and nonzero) in length. If the full label is too long, it will not
         # be visible in the model box.
-        for rclass in [x for x in directory.DRV_TO_RADIO.values()
-                       if issubclass(x, chirp_common.DetectableInterface)]:
+        for rclass in [
+            x
+            for x in directory.DRV_TO_RADIO.values()
+            if issubclass(x, chirp_common.DetectableInterface)
+        ]:
             label = clone.get_model_label(rclass)
-            self.assertLessEqual(len(label), 32,
-                                 'Label %r is too long' % label)
+            self.assertLessEqual(len(label), 32, "Label %r is too long" % label)
 
 
 class TestException(Exception):
@@ -177,13 +178,14 @@ class TestException(Exception):
 class TestStartup(base.BaseTest):
     def setUp(self):
         super().setUp()
-        self.use(mock.patch('os.path'))
-        self.use(mock.patch('os.makedirs'))
-        self.use(mock.patch('chirp.wxui.CONF'))
+        self.use(mock.patch("os.path"))
+        self.use(mock.patch("os.makedirs"))
+        self.use(mock.patch("chirp.wxui.CONF"))
         self.args = mock.MagicMock()
         self.args.install_desktop_app = False
         self.args.no_install_desktop_app = False
         from chirp.wxui import maybe_install_desktop, CONF
+
         self.maybe_install_desktop = maybe_install_desktop
         self.conf = CONF
 
@@ -216,8 +218,9 @@ class TestStartup(base.BaseTest):
         if answ is True:
             # If we made it through all the checks, and thus prompted the user,
             # make sure we get to the makedirs part if expected
-            self.assertRaises(TestException,
-                              self.maybe_install_desktop, self.args, None)
+            self.assertRaises(
+                TestException, self.maybe_install_desktop, self.args, None
+            )
         elif answ is False:
             # If we were supposed to make it to the prompt but answer no,
             # make sure we did

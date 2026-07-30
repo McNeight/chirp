@@ -24,7 +24,7 @@ import logging
 from chirp import logger
 from chirp import chirp_common, errors, directory, util
 
-sys.modules['builtins']._ = lambda x: x  # type: ignore[attr-defined]
+sys.modules["builtins"]._ = lambda x: x  # type: ignore[attr-defined]
 
 directory.import_drivers()
 
@@ -46,8 +46,7 @@ class ToneAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         value = values[0]
         if value not in chirp_common.TONES:
-            raise argparse.ArgumentError(
-                self, "Invalid tone value: %.1f" % value)
+            raise argparse.ArgumentError(self, "Invalid tone value: %.1f" % value)
         setattr(namespace, self.dest, value)
 
 
@@ -55,8 +54,7 @@ class DTCSAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         value = values[0]
         if value not in chirp_common.DTCS_CODES:
-            raise argparse.ArgumentError(
-                self, "Invalid DTCS value: %03i" % value)
+            raise argparse.ArgumentError(self, "Invalid DTCS value: %03i" % value)
         setattr(namespace, self.dest, value)
 
 
@@ -64,8 +62,7 @@ class DTCSPolarityAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         value = values[0]
         if value not in ["NN", "RN", "NR", "RR"]:
-            raise argparse.ArgumentError(
-                self, "Invalid DTCS polarity: %s" % value)
+            raise argparse.ArgumentError(self, "Invalid DTCS polarity: %s" % value)
         setattr(namespace, self.dest, value)
 
 
@@ -84,12 +81,16 @@ def parse_memory_number(radio, args):
     if not (start <= memnum <= end or memnum in rf.valid_special_chans):
         if len(rf.valid_special_chans) > 0:
             LOG.error(
-                "memory number must be between %d and %d or one of %s"
-                " (got %s)",
-                start, end, ", ".join(rf.valid_special_chans), memnum)
+                "memory number must be between %d and %d or one of %s" " (got %s)",
+                start,
+                end,
+                ", ".join(rf.valid_special_chans),
+                memnum,
+            )
         else:
-            LOG.error("memory number must be between %d and %d (got %s)",
-                      start, end, memnum)
+            LOG.error(
+                "memory number must be between %d and %d (got %s)", start, end, memnum
+            )
         sys.exit(1)
     return memnum
 
@@ -97,93 +98,138 @@ def parse_memory_number(radio, args):
 def main(args=None):
     parser = argparse.ArgumentParser()
     logger.add_version_argument(parser)
-    parser.add_argument("-s", "--serial", dest="serial",
-                        default="mmap",
-                        help="Serial port (default: mmap)")
+    parser.add_argument(
+        "-s",
+        "--serial",
+        dest="serial",
+        default="mmap",
+        help="Serial port (default: mmap)",
+    )
 
-    parser.add_argument("--list-settings", action="store_true",
-                        help="List settings")
+    parser.add_argument("--list-settings", action="store_true", help="List settings")
 
-    parser.add_argument("-i", "--id", dest="id",
-                        default=False,
-                        action="store_true",
-                        help="Request radio ID string")
+    parser.add_argument(
+        "-i",
+        "--id",
+        dest="id",
+        default=False,
+        action="store_true",
+        help="Request radio ID string",
+    )
 
     memarg = parser.add_argument_group("Memory/Channel Options")
-    memarg.add_argument("--list-mem", action="store_true",
-                        help="List all memory locations")
+    memarg.add_argument(
+        "--list-mem", action="store_true", help="List all memory locations"
+    )
 
-    memarg.add_argument("--list-special-mem", action="store_true",
-                        help="List all special memory locations")
+    memarg.add_argument(
+        "--list-special-mem",
+        action="store_true",
+        help="List all special memory locations",
+    )
 
-    memarg.add_argument("--raw", action="store_true",
-                        help="Dump raw memory location")
+    memarg.add_argument("--raw", action="store_true", help="Dump raw memory location")
 
-    memarg.add_argument("--get-mem", action="store_true",
-                        help="Get and print memory location")
-    memarg.add_argument("--copy-mem", action="store_true",
-                        help="Copy memory location")
-    memarg.add_argument("--clear-mem", action="store_true",
-                        help="Clear memory location")
+    memarg.add_argument(
+        "--get-mem", action="store_true", help="Get and print memory location"
+    )
+    memarg.add_argument("--copy-mem", action="store_true", help="Copy memory location")
+    memarg.add_argument(
+        "--clear-mem", action="store_true", help="Clear memory location"
+    )
 
     memarg.add_argument("--set-mem-name", help="Set memory name")
-    memarg.add_argument("--set-mem-freq", type=float,
-                        help="Set memory frequency")
+    memarg.add_argument("--set-mem-freq", type=float, help="Set memory frequency")
 
-    memarg.add_argument("--set-mem-tencon", action="store_true",
-                        help="Set tone encode enabled flag")
-    memarg.add_argument("--set-mem-tencoff", action="store_true",
-                        help="Set tone decode disabled flag")
-    memarg.add_argument("--set-mem-tsqlon", action="store_true",
-                        help="Set tone squelch enabled flag")
-    memarg.add_argument("--set-mem-tsqloff", action="store_true",
-                        help="Set tone squelch disabled flag")
-    memarg.add_argument("--set-mem-dtcson", action="store_true",
-                        help="Set DTCS enabled flag")
-    memarg.add_argument("--set-mem-dtcsoff", action="store_true",
-                        help="Set DTCS disabled flag")
+    memarg.add_argument(
+        "--set-mem-tencon", action="store_true", help="Set tone encode enabled flag"
+    )
+    memarg.add_argument(
+        "--set-mem-tencoff", action="store_true", help="Set tone decode disabled flag"
+    )
+    memarg.add_argument(
+        "--set-mem-tsqlon", action="store_true", help="Set tone squelch enabled flag"
+    )
+    memarg.add_argument(
+        "--set-mem-tsqloff", action="store_true", help="Set tone squelch disabled flag"
+    )
+    memarg.add_argument(
+        "--set-mem-dtcson", action="store_true", help="Set DTCS enabled flag"
+    )
+    memarg.add_argument(
+        "--set-mem-dtcsoff", action="store_true", help="Set DTCS disabled flag"
+    )
 
-    memarg.add_argument("--set-mem-tenc",
-                        type=float, action=ToneAction, nargs=1,
-                        help="Set memory encode tone")
-    memarg.add_argument("--set-mem-tsql",
-                        type=float, action=ToneAction, nargs=1,
-                        help="Set memory squelch tone")
+    memarg.add_argument(
+        "--set-mem-tenc",
+        type=float,
+        action=ToneAction,
+        nargs=1,
+        help="Set memory encode tone",
+    )
+    memarg.add_argument(
+        "--set-mem-tsql",
+        type=float,
+        action=ToneAction,
+        nargs=1,
+        help="Set memory squelch tone",
+    )
 
-    memarg.add_argument("--set-mem-dtcs",
-                        type=int, action=DTCSAction, nargs=1,
-                        help="Set memory DTCS code")
-    memarg.add_argument("--set-mem-dtcspol",
-                        action=DTCSPolarityAction, nargs=1,
-                        help="Set memory DTCS polarity (NN, NR, RN, RR)")
+    memarg.add_argument(
+        "--set-mem-dtcs",
+        type=int,
+        action=DTCSAction,
+        nargs=1,
+        help="Set memory DTCS code",
+    )
+    memarg.add_argument(
+        "--set-mem-dtcspol",
+        action=DTCSPolarityAction,
+        nargs=1,
+        help="Set memory DTCS polarity (NN, NR, RN, RR)",
+    )
 
-    memarg.add_argument("--set-mem-dup",
-                        help="Set memory duplex (+,-, or blank)")
-    memarg.add_argument("--set-mem-offset", type=float,
-                        help="Set memory duplex offset (in MHz)")
+    memarg.add_argument("--set-mem-dup", help="Set memory duplex (+,-, or blank)")
+    memarg.add_argument(
+        "--set-mem-offset", type=float, help="Set memory duplex offset (in MHz)"
+    )
 
-    memarg.add_argument("--set-mem-mode",
-                        help="Set mode (%s)" % ",".join(chirp_common.MODES))
+    memarg.add_argument(
+        "--set-mem-mode", help="Set mode (%s)" % ",".join(chirp_common.MODES)
+    )
 
-    parser.add_argument("-r", "--radio", dest="radio",
-                        default=None,
-                        help="Radio model (see --list-radios)")
-    parser.add_argument("--list-radios", action="store_true",
-                        help="List radio models")
-    parser.add_argument("--mmap", dest="mmap",
-                        default=None,
-                        help="Radio memory map file location")
-    parser.add_argument("--download-mmap", dest="download_mmap",
-                        action="store_true",
-                        default=False,
-                        help="Download memory map from radio")
-    parser.add_argument("--upload-mmap", dest="upload_mmap",
-                        action="store_true",
-                        default=False,
-                        help="Upload memory map to radio")
+    parser.add_argument(
+        "-r",
+        "--radio",
+        dest="radio",
+        default=None,
+        help="Radio model (see --list-radios)",
+    )
+    parser.add_argument("--list-radios", action="store_true", help="List radio models")
+    parser.add_argument(
+        "--mmap", dest="mmap", default=None, help="Radio memory map file location"
+    )
+    parser.add_argument(
+        "--download-mmap",
+        dest="download_mmap",
+        action="store_true",
+        default=False,
+        help="Download memory map from radio",
+    )
+    parser.add_argument(
+        "--upload-mmap",
+        dest="upload_mmap",
+        action="store_true",
+        default=False,
+        help="Upload memory map to radio",
+    )
     logger.add_arguments(parser)
-    parser.add_argument("args", metavar="arg", nargs='*',
-                        help="Some commands require additional arguments")
+    parser.add_argument(
+        "args",
+        metavar="arg",
+        nargs="*",
+        help="Some commands require additional arguments",
+    )
 
     if len(sys.argv) <= 1:
         parser.print_help()
@@ -200,6 +246,7 @@ def main(args=None):
 
     if options.id:
         from chirp import detect
+
         md = detect.detect_icom_radio(options.serial)
         print("Model:\n%s" % md.MODEL)
         sys.exit(0)
@@ -223,7 +270,7 @@ def main(args=None):
             sys.exit(1)
     else:
         LOG.info("opening %s at %i" % (options.serial, rclass.BAUD_RATE))
-        if '://' in options.serial:
+        if "://" in options.serial:
             s = serial.serial_for_url(options.serial, do_not_open=True)
             s.timeout = 0.5
             s.open()
@@ -284,16 +331,20 @@ def main(args=None):
         data = radio.get_raw_memory(memnum)
         for i in data:
             if ord(i) > 0x7F:
-                print("Memory location %s (%i):\n%s" %
-                      (memnum, len(data), util.hexprint(data)))
+                print(
+                    "Memory location %s (%i):\n%s"
+                    % (memnum, len(data), util.hexprint(data))
+                )
                 sys.exit(0)
         print(data)
         sys.exit(0)
 
     if options.set_mem_dup is not None:
-        if options.set_mem_dup != "+" and \
-                options.set_mem_dup != "-" and \
-                options.set_mem_dup != "":
+        if (
+            options.set_mem_dup != "+"
+            and options.set_mem_dup != "-"
+            and options.set_mem_dup != ""
+        ):
             LOG.error("Invalid duplex value `%s'" % options.set_mem_dup)
             LOG.error("Valid values are: '+', '-', ''")
             sys.exit(1)
@@ -312,14 +363,23 @@ def main(args=None):
     else:
         _mode = None
 
-    if options.set_mem_name or options.set_mem_freq or \
-            options.set_mem_tencon or options.set_mem_tencoff or \
-            options.set_mem_tsqlon or options.set_mem_tsqloff or \
-            options.set_mem_dtcson or options.set_mem_dtcsoff or \
-            options.set_mem_tenc or options.set_mem_tsql or \
-            options.set_mem_dtcs or options.set_mem_dup is not None or \
-            options.set_mem_mode or options.set_mem_dtcspol or\
-            options.set_mem_offset:
+    if (
+        options.set_mem_name
+        or options.set_mem_freq
+        or options.set_mem_tencon
+        or options.set_mem_tencoff
+        or options.set_mem_tsqlon
+        or options.set_mem_tsqloff
+        or options.set_mem_dtcson
+        or options.set_mem_dtcsoff
+        or options.set_mem_tenc
+        or options.set_mem_tsql
+        or options.set_mem_dtcs
+        or options.set_mem_dup is not None
+        or options.set_mem_mode
+        or options.set_mem_dtcspol
+        or options.set_mem_offset
+    ):
         memnum = parse_memory_number(radio, args)
         try:
             mem = radio.get_memory(memnum)

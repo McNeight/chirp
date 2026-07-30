@@ -41,9 +41,14 @@
 
 from chirp import chirp_common, directory, memmap, errors, util, checksum
 from chirp import bitwise
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 import struct
 import time
@@ -55,7 +60,7 @@ LOG = logging.getLogger(__name__)
 # We often just know small bits of it, we can use #seekto to skip
 # around as needed.
 
-MEM_FORMAT = '''
+MEM_FORMAT = """
 #seekto 0x0000;
 struct {
   bbcd freq[4];
@@ -243,16 +248,16 @@ struct {
   u8 unknowne;
   u8 unknownf;
 } radio_settings;
-'''
+"""
 
 # Format for the version messages returned by the radio
-VER_FORMAT = '''
+VER_FORMAT = """
 u8 hdr;
 char model[7];
 u8 bandlimit;
 char version[6];
 u8 ack;
-'''
+"""
 
 TXPOWER_LOW = 0x00
 TXPOWER_MED = 0x01
@@ -275,54 +280,93 @@ MEMORY_ADDRESS_RANGE = (0x0000, 0x3290)
 MEMORY_RW_BLOCK_SIZE = 0x10
 MEMORY_RW_BLOCK_CMD_SIZE = 0x16
 
-POWER_LEVELS = [chirp_common.PowerLevel('Low', dBm=37),
-                chirp_common.PowerLevel('Medium', dBm=40),
-                chirp_common.PowerLevel('High', dBm=44)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", dBm=37),
+    chirp_common.PowerLevel("Medium", dBm=40),
+    chirp_common.PowerLevel("High", dBm=44),
+]
 
 # CTCSS Tone definitions
 TONE_CUSTOM_CTCSS = 0x33
-TONE_MAP_VAL_TO_TONE = {0x00: 62.5, 0x01: 67.0, 0x02: 69.3,
-                        0x03: 71.9, 0x04: 74.4, 0x05: 77.0,
-                        0x06: 79.7, 0x07: 82.5, 0x08: 85.4,
-                        0x09: 88.5, 0x0a: 91.5, 0x0b: 94.8,
-                        0x0c: 97.4, 0x0d: 100.0, 0x0e: 103.5,
-                        0x0f: 107.2, 0x10: 110.9, 0x11: 114.8,
-                        0x12: 118.8, 0x13: 123.0, 0x14: 127.3,
-                        0x15: 131.8, 0x16: 136.5, 0x17: 141.3,
-                        0x18: 146.2, 0x19: 151.4, 0x1a: 156.7,
-                        0x1b: 159.8, 0x1c: 162.2, 0x1d: 165.5,
-                        0x1e: 167.9, 0x1f: 171.3, 0x20: 173.8,
-                        0x21: 177.3, 0x22: 179.9, 0x23: 183.5,
-                        0x24: 186.2, 0x25: 189.9, 0x26: 192.8,
-                        0x27: 196.6, 0x28: 199.5, 0x29: 203.5,
-                        0x2a: 206.5, 0x2b: 210.7, 0x2c: 218.1,
-                        0x2d: 225.7, 0x2e: 229.1, 0x2f: 233.6,
-                        0x30: 241.8, 0x31: 250.3, 0x32: 254.1}
+TONE_MAP_VAL_TO_TONE = {
+    0x00: 62.5,
+    0x01: 67.0,
+    0x02: 69.3,
+    0x03: 71.9,
+    0x04: 74.4,
+    0x05: 77.0,
+    0x06: 79.7,
+    0x07: 82.5,
+    0x08: 85.4,
+    0x09: 88.5,
+    0x0A: 91.5,
+    0x0B: 94.8,
+    0x0C: 97.4,
+    0x0D: 100.0,
+    0x0E: 103.5,
+    0x0F: 107.2,
+    0x10: 110.9,
+    0x11: 114.8,
+    0x12: 118.8,
+    0x13: 123.0,
+    0x14: 127.3,
+    0x15: 131.8,
+    0x16: 136.5,
+    0x17: 141.3,
+    0x18: 146.2,
+    0x19: 151.4,
+    0x1A: 156.7,
+    0x1B: 159.8,
+    0x1C: 162.2,
+    0x1D: 165.5,
+    0x1E: 167.9,
+    0x1F: 171.3,
+    0x20: 173.8,
+    0x21: 177.3,
+    0x22: 179.9,
+    0x23: 183.5,
+    0x24: 186.2,
+    0x25: 189.9,
+    0x26: 192.8,
+    0x27: 196.6,
+    0x28: 199.5,
+    0x29: 203.5,
+    0x2A: 206.5,
+    0x2B: 210.7,
+    0x2C: 218.1,
+    0x2D: 225.7,
+    0x2E: 229.1,
+    0x2F: 233.6,
+    0x30: 241.8,
+    0x31: 250.3,
+    0x32: 254.1,
+}
 
-TONE_MAP_TONE_TO_VAL = {TONE_MAP_VAL_TO_TONE[val]: val
-                        for val in TONE_MAP_VAL_TO_TONE}
+TONE_MAP_TONE_TO_VAL = {TONE_MAP_VAL_TO_TONE[val]: val for val in TONE_MAP_VAL_TO_TONE}
 
-TONES_EN_TXTONE = (1 << 3)
-TONES_EN_RXTONE = (1 << 2)
-TONES_EN_TXCODE = (1 << 1)
-TONES_EN_RXCODE = (1 << 0)
+TONES_EN_TXTONE = 1 << 3
+TONES_EN_RXTONE = 1 << 2
+TONES_EN_TXCODE = 1 << 1
+TONES_EN_RXCODE = 1 << 0
 TONES_EN_NO_TONE = 0
 
 # Radio supports upper case and symbols
-CHARSET_ASCII_PLUS = chirp_common.CHARSET_UPPER_NUMERIC + '- '
+CHARSET_ASCII_PLUS = chirp_common.CHARSET_UPPER_NUMERIC + "- "
 
 # Band limits as defined by the band byte in ver_response, defined in Hz, for
 # VHF and UHF, used for RX and TX.
-BAND_LIMITS = {0x00: [(144000000, 148000000), (430000000, 440000000)],
-               0x01: [(136000000, 174000000), (400000000, 490000000)],
-               0x02: [(144000000, 146000000), (430000000, 440000000)]}
+BAND_LIMITS = {
+    0x00: [(144000000, 148000000), (430000000, 440000000)],
+    0x01: [(136000000, 174000000), (400000000, 490000000)],
+    0x02: [(144000000, 146000000), (430000000, 440000000)],
+}
 
 
 # Get band limits from a band limit value
 def get_band_limits_Hz(limit_value):
     if limit_value not in BAND_LIMITS:
         limit_value = 0x01
-        LOG.warning('Unknown band limit value 0x%02x, default to 0x01')
+        LOG.warning("Unknown band limit value 0x%02x, default to 0x01")
     bandlimitfrequencies = BAND_LIMITS[limit_value]
     return bandlimitfrequencies
 
@@ -333,13 +377,13 @@ def get_band_limits_Hz(limit_value):
 # Send a command to the radio, return any reply stripping the echo of the
 # command (tx and rx share a single pin in this radio)
 def send_serial_command(serial, command, expectedlen=None):
-    ''' send a command to the radio, and return any response.
+    """send a command to the radio, and return any response.
     set expectedlen to return as soon as that many bytes are read.
-    '''
+    """
     serial.write(command)
     serial.flush()
 
-    response = b''
+    response = b""
     tout = time.time() + 0.5
     while time.time() < tout:
         if serial.inWaiting():
@@ -350,7 +394,7 @@ def send_serial_command(serial, command, expectedlen=None):
 
     # cut off what got echo'd back, we don't need to see it again
     if response.startswith(command):
-        response = response[len(command):]
+        response = response[len(command) :]
 
     return response
 
@@ -358,35 +402,36 @@ def send_serial_command(serial, command, expectedlen=None):
 # strip trailing 0x00 to convert a string returned by bitwise.parse into a
 # python string
 def cstring_to_py_string(cstring):
-    return "".join(c for c in cstring if c != '\x00')
+    return "".join(c for c in cstring if c != "\x00")
 
 
 # Check the radio version reported to see if it's one we support,
 # returns bool version supported, the band index, and has_vox
 def check_ver(ver_response, allowed_types):
-    ''' Check the returned radio version is one we approve of '''
+    """Check the returned radio version is one we approve of"""
 
-    LOG.debug('ver_response = ')
+    LOG.debug("ver_response = ")
     LOG.debug(util.hexprint(ver_response))
 
     resp = bitwise.parse(VER_FORMAT, ver_response)
     verok = False
 
     if resp.hdr == 0x49 and resp.ack == 0x06:
-        model, version = [cstring_to_py_string(bitwise.get_string(s)).strip()
-                          for s in (resp.model, resp.version)]
-        LOG.debug('radio model: \'%s\' version: \'%s\'' %
-                  (model, version))
-        LOG.debug('allowed_types = %s' % allowed_types)
+        model, version = [
+            cstring_to_py_string(bitwise.get_string(s)).strip()
+            for s in (resp.model, resp.version)
+        ]
+        LOG.debug("radio model: '%s' version: '%s'" % (model, version))
+        LOG.debug("allowed_types = %s" % allowed_types)
 
         if model in allowed_types:
-            LOG.debug('model in allowed_types')
+            LOG.debug("model in allowed_types")
 
             if version in allowed_types[model]:
-                LOG.debug('version in allowed_types[model]')
+                LOG.debug("version in allowed_types[model]")
                 verok = True
     else:
-        raise errors.RadioError('Failed to parse version response')
+        raise errors.RadioError("Failed to parse version response")
 
     return verok, int(resp.bandlimit)
 
@@ -396,26 +441,32 @@ def check_ver(ver_response, allowed_types):
 # if the returned version isn't matched by check_ver
 def enter_program_mode(serial):
     # place the radio in program mode, and confirm
-    program_response = send_serial_command(serial, b'PROGRAM')
+    program_response = send_serial_command(serial, b"PROGRAM")
 
     if not program_response:
         raise errors.RadioNoResponse()
 
-    if program_response != b'QX\x06':
-        raise errors.RadioError('No initial response from radio.')
-    LOG.debug('entered program mode')
+    if program_response != b"QX\x06":
+        raise errors.RadioError("No initial response from radio.")
+    LOG.debug("entered program mode")
 
     # read the radio ID string, make sure it matches one we know about
-    return send_serial_command(serial, b'\x02')
+    return send_serial_command(serial, b"\x02")
 
 
 def get_bandlimit_from_ver(radio, ver_response):
-    verok, bandlimit, = check_ver(ver_response,
-                                  radio.ALLOWED_RADIO_TYPES)
+    (
+        verok,
+        bandlimit,
+    ) = check_ver(ver_response, radio.ALLOWED_RADIO_TYPES)
     if not verok:
-        LOG.debug('Radio version response not allowed for %s-%s: %s',
-                  radio.VENDOR, radio.MODEL, ver_response)
-        raise errors.RadioError('Radio model/version mismatch')
+        LOG.debug(
+            "Radio version response not allowed for %s-%s: %s",
+            radio.VENDOR,
+            radio.MODEL,
+            ver_response,
+        )
+        raise errors.RadioError("Radio model/version mismatch")
 
     return bandlimit
 
@@ -423,9 +474,9 @@ def get_bandlimit_from_ver(radio, ver_response):
 # Exit programming mode
 def exit_program_mode(serial):
     try:
-        send_serial_command(serial, b'END')
+        send_serial_command(serial, b"END")
     except Exception as e:
-        LOG.error('Failed to exit programming mode: %s', e)
+        LOG.error("Failed to exit programming mode: %s", e)
 
 
 # Parse a packet from the radio returning the header (R/W, address, data, and
@@ -434,20 +485,20 @@ def parse_read_response(resp):
     if not resp:
         raise errors.RadioNoResponse()
     if len(resp) < 6:
-        raise errors.RadioError('Short read response from radio')
+        raise errors.RadioError("Short read response from radio")
     addr = resp[:4]
     data = bytes(resp[4:-2])
     cs = checksum.checksum_8bit(d for d in resp[1:-2])
     valid = cs == resp[-2]
     if not valid:
-        LOG.error('checksumfail: %02x, expected %02x' % (cs, resp[-2]))
-        LOG.error('msg data: %s' % util.hexprint(resp))
+        LOG.error("checksumfail: %02x, expected %02x" % (cs, resp[-2]))
+        LOG.error("msg data: %s" % util.hexprint(resp))
     return addr, data, valid
 
 
 # Download data from the radio and populate the memory map
 def do_download(radio):
-    '''Download memories from the radio'''
+    """Download memories from the radio"""
 
     # NOTE: The radio is already in programming mode because of
     # detect_from_serial()
@@ -461,34 +512,36 @@ def do_download(radio):
         # status info for the UI
         status = chirp_common.Status()
         status.cur = 0
-        status.max = (MEMORY_ADDRESS_RANGE[1] -
-                      MEMORY_ADDRESS_RANGE[0]) // MEMORY_RW_BLOCK_SIZE
-        status.msg = 'Cloning from radio...'
+        status.max = (
+            MEMORY_ADDRESS_RANGE[1] - MEMORY_ADDRESS_RANGE[0]
+        ) // MEMORY_RW_BLOCK_SIZE
+        status.msg = "Cloning from radio..."
         radio.status_fn(status)
 
-        for addr in range(MEMORY_ADDRESS_RANGE[0],
-                          MEMORY_ADDRESS_RANGE[1] + MEMORY_RW_BLOCK_SIZE,
-                          MEMORY_RW_BLOCK_SIZE):
-            read_command = struct.pack('>BHB', 0x52, addr,
-                                       MEMORY_RW_BLOCK_SIZE)
-            read_response = send_serial_command(serial, read_command,
-                                                MEMORY_RW_BLOCK_CMD_SIZE)
+        for addr in range(
+            MEMORY_ADDRESS_RANGE[0],
+            MEMORY_ADDRESS_RANGE[1] + MEMORY_RW_BLOCK_SIZE,
+            MEMORY_RW_BLOCK_SIZE,
+        ):
+            read_command = struct.pack(">BHB", 0x52, addr, MEMORY_RW_BLOCK_SIZE)
+            read_response = send_serial_command(
+                serial, read_command, MEMORY_RW_BLOCK_CMD_SIZE
+            )
             # LOG.debug('read response:\n%s' % util.hexprint(read_response))
 
             address, data, valid = parse_read_response(read_response)
             if not valid:
-                raise errors.RadioError('Invalid response received from radio')
+                raise errors.RadioError("Invalid response received from radio")
             memory_data += data
 
             # update UI
-            status.cur = (addr - MEMORY_ADDRESS_RANGE[0])\
-                // MEMORY_RW_BLOCK_SIZE
+            status.cur = (addr - MEMORY_ADDRESS_RANGE[0]) // MEMORY_RW_BLOCK_SIZE
             radio.status_fn(status)
 
     except errors.RadioError as e:
         raise e
     except Exception as e:
-        raise errors.RadioError('Failed to download from radio: %s' % e)
+        raise errors.RadioError("Failed to download from radio: %s" % e)
     finally:
         exit_program_mode(radio.pipe)
 
@@ -497,10 +550,10 @@ def do_download(radio):
 
 # Build a write data command to send to the radio
 def make_write_data_cmd(addr, data, datalen):
-    cmd = struct.pack('>BHB', 0x57, addr, datalen)
+    cmd = struct.pack(">BHB", 0x57, addr, datalen)
     cmd += data
     cs = checksum.checksum_8bit(c for c in cmd[1:])
-    cmd += struct.pack('>BB', cs, 0x06)
+    cmd += struct.pack(">BB", cs, 0x06)
     return cmd
 
 
@@ -511,56 +564,63 @@ def do_upload(radio):
         bandlimit = get_bandlimit_from_ver(radio, ver_response)
 
         if bandlimit != radio._memobj.radio_settings.bandlimit:
-            LOG.warning('radio and image bandlimits differ'
-                        ' some channels many not work'
-                        ' (img:0x%02x radio:0x%02x)' %
-                        (int(bandlimit),
-                         int(radio._memobj.radio_settings.bandlimit)))
-            LOG.warning('radio bands: %s' % get_band_limits_Hz(
-                         int(radio._memobj.radio_settings.bandlimit)))
-            LOG.warning('img bands: %s' % get_band_limits_Hz(bandlimit))
+            LOG.warning(
+                "radio and image bandlimits differ"
+                " some channels many not work"
+                " (img:0x%02x radio:0x%02x)"
+                % (int(bandlimit), int(radio._memobj.radio_settings.bandlimit))
+            )
+            LOG.warning(
+                "radio bands: %s"
+                % get_band_limits_Hz(int(radio._memobj.radio_settings.bandlimit))
+            )
+            LOG.warning("img bands: %s" % get_band_limits_Hz(bandlimit))
 
         serial = radio.pipe
 
         # send the initial message, radio responds with something that looks a
         # bit like a bitfield, but I don't know what it is yet.
-        read_command = struct.pack('>BHB', 0x52, 0x3b10, MEMORY_RW_BLOCK_SIZE)
-        read_response = send_serial_command(serial, read_command,
-                                            MEMORY_RW_BLOCK_CMD_SIZE)
+        read_command = struct.pack(">BHB", 0x52, 0x3B10, MEMORY_RW_BLOCK_SIZE)
+        read_response = send_serial_command(
+            serial, read_command, MEMORY_RW_BLOCK_CMD_SIZE
+        )
         address, data, valid = parse_read_response(read_response)
-        LOG.debug('Got initial response from radio: %s' %
-                  util.hexprint(read_response))
+        LOG.debug("Got initial response from radio: %s" % util.hexprint(read_response))
 
         bptr = 0
 
-        memory_addrs = list(range(MEMORY_ADDRESS_RANGE[0],
-                                  MEMORY_ADDRESS_RANGE[1] +
-                                  MEMORY_RW_BLOCK_SIZE,
-                                  MEMORY_RW_BLOCK_SIZE))
+        memory_addrs = list(
+            range(
+                MEMORY_ADDRESS_RANGE[0],
+                MEMORY_ADDRESS_RANGE[1] + MEMORY_RW_BLOCK_SIZE,
+                MEMORY_RW_BLOCK_SIZE,
+            )
+        )
 
         # status info for the UI
         status = chirp_common.Status()
         status.cur = 0
         status.max = len(memory_addrs)
-        status.msg = 'Cloning to radio...'
+        status.msg = "Cloning to radio..."
         radio.status_fn(status)
 
         for idx, addr in enumerate(memory_addrs):
             write_command = make_write_data_cmd(
-                addr, radio._mmap[bptr:bptr+MEMORY_RW_BLOCK_SIZE],
-                MEMORY_RW_BLOCK_SIZE)
+                addr,
+                radio._mmap[bptr : bptr + MEMORY_RW_BLOCK_SIZE],
+                MEMORY_RW_BLOCK_SIZE,
+            )
             # LOG.debug('write data:\n%s' % util.hexprint(write_command))
             write_response = send_serial_command(serial, write_command, 0x01)
             bptr += MEMORY_RW_BLOCK_SIZE
 
-            if write_response == '\x0a':
+            if write_response == "\x0a":
                 # NACK from radio, e.g. checksum wrong
-                LOG.debug('Radio returned 0x0a - NACK:')
-                LOG.debug(' * write cmd:\n%s' % util.hexprint(write_command))
-                LOG.debug(' * write response:\n%s' %
-                          util.hexprint(write_response))
+                LOG.debug("Radio returned 0x0a - NACK:")
+                LOG.debug(" * write cmd:\n%s" % util.hexprint(write_command))
+                LOG.debug(" * write response:\n%s" % util.hexprint(write_response))
                 exit_program_mode(radio.pipe)
-                raise errors.RadioError('Radio NACK\'d write command')
+                raise errors.RadioError("Radio NACK'd write command")
 
             # update UI
             status.cur = idx
@@ -568,26 +628,26 @@ def do_upload(radio):
     except errors.RadioError:
         raise
     except Exception as e:
-        raise errors.RadioError('Failed to download from radio: %s' % e)
+        raise errors.RadioError("Failed to download from radio: %s" % e)
     finally:
         exit_program_mode(radio.pipe)
 
 
 # Get the value of @bitfield @number of bits in from 0
 def get_bitfield(bitfield, number):
-    ''' Get the value of @bitfield @number of bits in '''
-    byteidx = number//8
+    """Get the value of @bitfield @number of bits in"""
+    byteidx = number // 8
     bitidx = number - (byteidx * 8)
     return bitfield[byteidx] & (1 << bitidx)
 
 
 # Set the @value of @bitfield @number of bits in from 0
 def set_bitfield(bitfield, number, value):
-    ''' Set the @value of @bitfield @number of bits in '''
-    byteidx = number//8
+    """Set the @value of @bitfield @number of bits in"""
+    byteidx = number // 8
     bitidx = number - (byteidx * 8)
     if value is True:
-        bitfield[byteidx] |= (1 << bitidx)
+        bitfield[byteidx] |= 1 << bitidx
     else:
         bitfield[byteidx] &= ~(1 << bitidx)
     return bitfield
@@ -595,7 +655,7 @@ def set_bitfield(bitfield, number, value):
 
 # Translate the radio's version of a code as stored to a real code
 def dtcs_code_bits_to_val(highbit, lowbyte):
-    return chirp_common.ALL_DTCS_CODES[highbit*256 + lowbyte]
+    return chirp_common.ALL_DTCS_CODES[highbit * 256 + lowbyte]
 
 
 # Translate the radio's version of a tone as stored to a real tone
@@ -606,10 +666,9 @@ def ctcss_tone_bits_to_val(tone_byte):
     if tone_byte in TONE_MAP_VAL_TO_TONE:
         return TONE_MAP_VAL_TO_TONE[tone_byte]
     elif tone_byte == TONE_CUSTOM_CTCSS:
-        LOG.info('custom ctcss not implemented (yet?).')
+        LOG.info("custom ctcss not implemented (yet?).")
     else:
-        raise errors.UnsupportedToneError('unknown ctcss tone value: %02x' %
-                                          tone_byte)
+        raise errors.UnsupportedToneError("unknown ctcss tone value: %02x" % tone_byte)
 
 
 # Translate a real tone to the radio's version as stored
@@ -617,7 +676,7 @@ def ctcss_code_val_to_bits(tone_value):
     if tone_value in TONE_MAP_TONE_TO_VAL:
         return TONE_MAP_TONE_TO_VAL[tone_value]
     else:
-        raise errors.UnsupportedToneError('Tone %f not supported' % tone_value)
+        raise errors.UnsupportedToneError("Tone %f not supported" % tone_value)
 
 
 # Translate a real code to the radio's version as stored
@@ -626,9 +685,9 @@ def dtcs_code_val_to_bits(code):
     return (val & 0xFF), ((val >> 8) & 0x01)
 
 
-class AnyTone778UVBase(chirp_common.CloneModeRadio,
-                       chirp_common.ExperimentalRadio):
-    '''AnyTone 778UV and probably Retevis RT95 and others'''
+class AnyTone778UVBase(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
+    """AnyTone 778UV and probably Retevis RT95 and others"""
+
     BAUD_RATE = 9600
     NAME_LENGTH = 5
     HAS_VOX = False
@@ -640,18 +699,17 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             ver_ok, _ = check_ver(ver_response, radio_cls.ALLOWED_RADIO_TYPES)
             if ver_ok:
                 return radio_cls
-        LOG.warning('No match for ver_response: %s',
-                    util.hexprint(ver_response))
-        raise errors.RadioError('Incorrect radio model')
+        LOG.warning("No match for ver_response: %s", util.hexprint(ver_response))
+        raise errors.RadioError("Incorrect radio model")
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
 
-        rp.experimental = \
-            ('This is experimental support for the %s %s.  '
-             'Please send in bug and enhancement requests!' %
-             (cls.VENDOR, cls.MODEL))
+        rp.experimental = (
+            "This is experimental support for the %s %s.  "
+            "Please send in bug and enhancement requests!" % (cls.VENDOR, cls.MODEL)
+        )
 
         return rp
 
@@ -665,7 +723,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         rf.has_name = True
         rf.has_offset = True
         rf.valid_name_length = self.NAME_LENGTH
-        rf.valid_duplexes = ['', '+', '-', 'split', 'off']
+        rf.valid_duplexes = ["", "+", "-", "split", "off"]
         rf.valid_characters = CHARSET_ASCII_PLUS
 
         rf.has_dtcs = True
@@ -674,27 +732,29 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         rf.valid_dtcs_codes = chirp_common.ALL_DTCS_CODES
         rf.has_ctone = True
         rf.has_cross = True
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ['Tone->Tone',
-                                'Tone->DTCS',
-                                'DTCS->Tone',
-                                'DTCS->DTCS',
-                                'DTCS->',
-                                '->DTCS',
-                                '->Tone']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "DTCS->DTCS",
+            "DTCS->",
+            "->DTCS",
+            "->Tone",
+        ]
 
         rf.memory_bounds = (1, 200)  # This radio supports memories 1-200
         try:
             rf.valid_bands = get_band_limits_Hz(
-                int(self._memobj.radio_settings.bandlimit))
+                int(self._memobj.radio_settings.bandlimit)
+            )
         except AttributeError:
             # If we're asked without memory loaded, assume the most permissive
             rf.valid_bands = get_band_limits_Hz(1)
         except Exception as e:
-            LOG.exception(
-                'Failed to get band limits for anytone778uv: %s' % e)
+            LOG.exception("Failed to get band limits for anytone778uv: %s" % e)
             rf.valid_bands = get_band_limits_Hz(1)
-        rf.valid_modes = ['FM', 'NFM']
+        rf.valid_modes = ["FM", "NFM"]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_tuning_steps = [2.5, 5, 6.25, 10, 12.5, 20, 25, 30, 50]
         rf.has_tuning_step = False
@@ -728,16 +788,16 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Create a high-level memory object to return to the UI
         mem = chirp_common.Memory()
-        mem.number = number + 1           # Set the memory number
+        mem.number = number + 1  # Set the memory number
 
         # Check if this memory is present in the occupied list
         mem.empty = get_bitfield(_mem_status.occupied_bitfield, number) == 0
 
         if not mem.empty:
             # Check if this memory is in the scan enabled list
-            mem.skip = ''
+            mem.skip = ""
             if get_bitfield(_mem_status.scan_enabled_bitfield, number) == 0:
-                mem.skip = 'S'
+                mem.skip = "S"
 
             # set the name
             if self.NAME_LENGTH == 5:
@@ -755,34 +815,37 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
             # Set the duplex flags
             if _mem.duplex == DUPLEX_POSSPLIT:
-                mem.duplex = '+'
+                mem.duplex = "+"
             elif _mem.duplex == DUPLEX_NEGSPLIT:
-                mem.duplex = '-'
+                mem.duplex = "-"
             elif _mem.duplex == DUPLEX_NOSPLIT:
-                mem.duplex = ''
+                mem.duplex = ""
             elif _mem.duplex == DUPLEX_ODDSPLIT:
-                mem.duplex = 'split'
+                mem.duplex = "split"
             else:
-                LOG.error('%s: get_mem: unhandled duplex: %02x' %
-                          (mem.name, _mem.duplex))
+                LOG.error(
+                    "%s: get_mem: unhandled duplex: %02x" % (mem.name, _mem.duplex)
+                )
 
             # handle tx off
             if _mem.tx_off:
-                mem.duplex = 'off'
+                mem.duplex = "off"
 
             # Set the channel width
             if _mem.channel_width == CHANNEL_WIDTH_25kHz:
-                mem.mode = 'FM'
+                mem.mode = "FM"
             elif _mem.channel_width == CHANNEL_WIDTH_20kHz:
                 LOG.info(
-                    '%s: get_mem: promoting 20 kHz channel width to 25 kHz' %
-                    mem.name)
-                mem.mode = 'FM'
+                    "%s: get_mem: promoting 20 kHz channel width to 25 kHz" % mem.name
+                )
+                mem.mode = "FM"
             elif _mem.channel_width == CHANNEL_WIDTH_12d5kHz:
-                mem.mode = 'NFM'
+                mem.mode = "NFM"
             else:
-                LOG.error('%s: get_mem: unhandled channel width: 0x%02x' %
-                          (mem.name, _mem.channel_width))
+                LOG.error(
+                    "%s: get_mem: unhandled channel width: 0x%02x"
+                    % (mem.name, _mem.channel_width)
+                )
 
             # set the power level
             if _mem.txpower == TXPOWER_LOW:
@@ -792,8 +855,10 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             elif _mem.txpower == TXPOWER_HIGH:
                 mem.power = POWER_LEVELS[2]
             else:
-                LOG.error('%s: get_mem: unhandled power level: 0x%02x' %
-                          (mem.name, _mem.txpower))
+                LOG.error(
+                    "%s: get_mem: unhandled power level: 0x%02x"
+                    % (mem.name, _mem.txpower)
+                )
 
             # CTCSS Tones
             # TODO support custom ctcss tones here
@@ -804,18 +869,20 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
             # check if dtcs tx is enabled
             if _mem.dtcs_encode_en:
-                txcode = dtcs_code_bits_to_val(_mem.dtcs_encode_code_highbit,
-                                               _mem.dtcs_encode_code)
+                txcode = dtcs_code_bits_to_val(
+                    _mem.dtcs_encode_code_highbit, _mem.dtcs_encode_code
+                )
 
             # check if dtcs rx is enabled
             if _mem.dtcs_decode_en:
-                rxcode = dtcs_code_bits_to_val(_mem.dtcs_decode_code_highbit,
-                                               _mem.dtcs_decode_code)
+                rxcode = dtcs_code_bits_to_val(
+                    _mem.dtcs_decode_code_highbit, _mem.dtcs_decode_code
+                )
 
             if txcode is not None:
-                LOG.debug('%s: get_mem dtcs_enc: %d' % (mem.name, txcode))
+                LOG.debug("%s: get_mem dtcs_enc: %d" % (mem.name, txcode))
             if rxcode is not None:
-                LOG.debug('%s: get_mem dtcs_dec: %d' % (mem.name, rxcode))
+                LOG.debug("%s: get_mem dtcs_dec: %d" % (mem.name, rxcode))
 
             # tsql set if radio squelches on tone
             tsql = _mem.tone_squelch_en
@@ -839,48 +906,47 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             # Add some debugging output for the tone bitmap
             enstr = []
             if enabled & TONES_EN_TXTONE:
-                enstr += ['TONES_EN_TXTONE']
+                enstr += ["TONES_EN_TXTONE"]
             if enabled & TONES_EN_RXTONE:
-                enstr += ['TONES_EN_RXTONE']
+                enstr += ["TONES_EN_RXTONE"]
             if enabled & TONES_EN_TXCODE:
-                enstr += ['TONES_EN_TXCODE']
+                enstr += ["TONES_EN_TXCODE"]
             if enabled & TONES_EN_RXCODE:
-                enstr += ['TONES_EN_RXCODE']
+                enstr += ["TONES_EN_RXCODE"]
             if enabled == 0:
-                enstr = ['TONES_EN_NOTONE']
-            LOG.debug('%s: enabled = %s' % (
-                mem.name, '|'.join(enstr)))
+                enstr = ["TONES_EN_NOTONE"]
+            LOG.debug("%s: enabled = %s" % (mem.name, "|".join(enstr)))
 
-            mem.tmode = ''
+            mem.tmode = ""
             if enabled == TONES_EN_NO_TONE:
-                mem.tmode = ''
+                mem.tmode = ""
             elif enabled == TONES_EN_TXTONE:
-                mem.tmode = 'Tone'
+                mem.tmode = "Tone"
                 mem.rtone = txtone
             elif enabled == TONES_EN_RXTONE and tsql:
-                mem.tmode = 'Cross'
-                mem.cross_mode = '->Tone'
+                mem.tmode = "Cross"
+                mem.cross_mode = "->Tone"
                 mem.ctone = rxtone
             elif enabled == (TONES_EN_TXTONE | TONES_EN_RXTONE) and tsql:
                 if txtone == rxtone:  # TSQL
-                    mem.tmode = 'TSQL'
+                    mem.tmode = "TSQL"
                     mem.ctone = txtone
                 else:  # Tone->Tone
-                    mem.tmode = 'Cross'
-                    mem.cross_mode = 'Tone->Tone'
+                    mem.tmode = "Cross"
+                    mem.cross_mode = "Tone->Tone"
                     mem.ctone = rxtone
                     mem.rtone = txtone
             elif enabled == TONES_EN_TXCODE:
-                mem.tmode = 'Cross'
-                mem.cross_mode = 'DTCS->'
+                mem.tmode = "Cross"
+                mem.cross_mode = "DTCS->"
                 mem.dtcs = txcode
             elif enabled == TONES_EN_RXCODE and tsql:
-                mem.tmode = 'Cross'
-                mem.cross_mode = '->DTCS'
+                mem.tmode = "Cross"
+                mem.cross_mode = "->DTCS"
                 mem.rx_dtcs = rxcode
             elif enabled == (TONES_EN_TXCODE | TONES_EN_RXCODE) and tsql:
                 if rxcode == txcode:
-                    mem.tmode = 'DTCS'
+                    mem.tmode = "DTCS"
                     mem.rx_dtcs = rxcode
                     # #8327 Not sure this is the correct interpretation of
                     # DevelopersToneModes, but it seems to make it work round
@@ -889,23 +955,22 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                     # rx works (as if we were Cross:None->DTCS).
                     mem.dtcs = rxcode
                 else:
-                    mem.tmode = 'Cross'
-                    mem.cross_mode = 'DTCS->DTCS'
+                    mem.tmode = "Cross"
+                    mem.cross_mode = "DTCS->DTCS"
                     mem.rx_dtcs = rxcode
                     mem.dtcs = txcode
             elif enabled == (TONES_EN_TXCODE | TONES_EN_RXTONE) and tsql:
-                mem.tmode = 'Cross'
-                mem.cross_mode = 'DTCS->Tone'
+                mem.tmode = "Cross"
+                mem.cross_mode = "DTCS->Tone"
                 mem.dtcs = txcode
                 mem.ctone = rxtone
             elif enabled == (TONES_EN_TXTONE | TONES_EN_RXCODE) and tsql:
-                mem.tmode = 'Cross'
-                mem.cross_mode = 'Tone->DTCS'
+                mem.tmode = "Cross"
+                mem.cross_mode = "Tone->DTCS"
                 mem.rx_dtcs = rxcode
                 mem.rtone = txtone
             else:
-                LOG.error('%s: Unhandled tmode enabled = %d.' % (
-                    mem.name, enabled))
+                LOG.error("%s: Unhandled tmode enabled = %d." % (mem.name, enabled))
 
                 # Can get here if e.g. TONE_EN_RXCODE is set and tsql isn't
                 # In that case should we perhaps store the tone and code values
@@ -913,19 +978,23 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 # appropriate later?
 
             # set the dtcs polarity
-            dtcs_pol_bit_to_str = {0: 'N', 1: 'R'}
-            mem.dtcs_polarity = '%s%s' %\
-                (dtcs_pol_bit_to_str[_mem.dtcs_encode_invert == 1],
-                 dtcs_pol_bit_to_str[_mem.dtcs_decode_invert == 1])
+            dtcs_pol_bit_to_str = {0: "N", 1: "R"}
+            mem.dtcs_polarity = "%s%s" % (
+                dtcs_pol_bit_to_str[_mem.dtcs_encode_invert == 1],
+                dtcs_pol_bit_to_str[_mem.dtcs_decode_invert == 1],
+            )
 
             # Extra
             mem.extra = RadioSettingGroup("Extra", "extra")
 
             # Busy channel lockout
-            bcl_options = ['Off', 'Repeater', 'Busy']
+            bcl_options = ["Off", "Repeater", "Busy"]
             bcl_option = bcl_options[_mem.busy_channel_lockout]
-            rs = RadioSetting("busy_channel_lockout", "Busy Channel Lockout",
-                              RadioSettingValueList(bcl_options, bcl_option))
+            rs = RadioSetting(
+                "busy_channel_lockout",
+                "Busy Channel Lockout",
+                RadioSettingValueList(bcl_options, bcl_option),
+            )
             mem.extra.append(rs)
 
         return mem
@@ -938,20 +1007,22 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         _mem_status = self._memobj.memory_status
 
         # set the occupied bitfield
-        _mem_status.occupied_bitfield = \
-            set_bitfield(_mem_status.occupied_bitfield, mem.number - 1,
-                         not mem.empty)
+        _mem_status.occupied_bitfield = set_bitfield(
+            _mem_status.occupied_bitfield, mem.number - 1, not mem.empty
+        )
 
         # set the scan add bitfield
-        _mem_status.scan_enabled_bitfield = \
-            set_bitfield(_mem_status.scan_enabled_bitfield, mem.number - 1,
-                         (not mem.empty) and (mem.skip != 'S'))
+        _mem_status.scan_enabled_bitfield = set_bitfield(
+            _mem_status.scan_enabled_bitfield,
+            mem.number - 1,
+            (not mem.empty) and (mem.skip != "S"),
+        )
 
         if mem.empty:
             # Set the whole memory to 0xff
-            _mem.set_raw('\xff' * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
         else:
-            _mem.set_raw('\x00' * (_mem.size() // 8))
+            _mem.set_raw("\x00" * (_mem.size() // 8))
 
             _mem.freq = int(mem.freq / 10)
             _mem.offset = int(mem.offset / 10)
@@ -959,41 +1030,39 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             # Store the alpha tag
             if self.NAME_LENGTH == 5:
                 # original models with 5-character name length
-                temp_name = mem.name.ljust(self.NAME_LENGTH)[:self.NAME_LENGTH]
+                temp_name = mem.name.ljust(self.NAME_LENGTH)[: self.NAME_LENGTH]
                 # prefix the 5-character name with 0x00 to fit structure
                 _mem.name = temp_name.rjust(6, chr(00))
             else:
                 # new VOX models with 6-character name length
-                _mem.name = mem.name.ljust(self.NAME_LENGTH)[:self.NAME_LENGTH]
+                _mem.name = mem.name.ljust(self.NAME_LENGTH)[: self.NAME_LENGTH]
 
             # Set duplex bitfields
             _mem.tx_off = 0
-            if mem.duplex == '+':
+            if mem.duplex == "+":
                 _mem.duplex = DUPLEX_POSSPLIT
-            elif mem.duplex == '-':
+            elif mem.duplex == "-":
                 _mem.duplex = DUPLEX_NEGSPLIT
-            elif mem.duplex == '':
+            elif mem.duplex == "":
                 _mem.duplex = DUPLEX_NOSPLIT
-            elif mem.duplex == 'split':
+            elif mem.duplex == "split":
                 # TODO: this is an unverified punt!
                 _mem.duplex = DUPLEX_ODDSPLIT
-            elif mem.duplex == 'off':
+            elif mem.duplex == "off":
                 # handle tx off
                 _mem.tx_off = 1
             else:
-                LOG.error('%s: set_mem: unhandled duplex: %s' %
-                          (mem.name, mem.duplex))
+                LOG.error("%s: set_mem: unhandled duplex: %s" % (mem.name, mem.duplex))
 
             # Set the channel width - remember we promote 20 kHz channels to FM
             # on import
             # , so don't handle them here
-            if mem.mode == 'FM':
+            if mem.mode == "FM":
                 _mem.channel_width = CHANNEL_WIDTH_25kHz
-            elif mem.mode == 'NFM':
+            elif mem.mode == "NFM":
                 _mem.channel_width = CHANNEL_WIDTH_12d5kHz
             else:
-                LOG.error('%s: set_mem: unhandled mode: %s' % (
-                    mem.name, mem.mode))
+                LOG.error("%s: set_mem: unhandled mode: %s" % (mem.name, mem.mode))
 
             # set the power level
             if mem.power == POWER_LEVELS[0]:
@@ -1003,8 +1072,9 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             elif mem.power == POWER_LEVELS[2]:
                 _mem.txpower = TXPOWER_HIGH
             else:
-                LOG.error('%s: set_mem: unhandled power level: %s' %
-                          (mem.name, mem.power))
+                LOG.error(
+                    "%s: set_mem: unhandled power level: %s" % (mem.name, mem.power)
+                )
 
             # TODO set the CTCSS values
             # TODO support custom ctcss tones here
@@ -1024,68 +1094,82 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             _mem.dtcs_decode_code = 0
             _mem.dtcs_decode_invert = 0
 
-            dtcs_pol_str_to_bit = {'N': 0, 'R': 1}
+            dtcs_pol_str_to_bit = {"N": 0, "R": 1}
             _mem.dtcs_encode_invert = dtcs_pol_str_to_bit[mem.dtcs_polarity[0]]
             _mem.dtcs_decode_invert = dtcs_pol_str_to_bit[mem.dtcs_polarity[1]]
 
-            if mem.tmode == 'Tone':
+            if mem.tmode == "Tone":
                 _mem.ctcss_encode_en = 1
                 _mem.ctcss_enc_tone = ctcss_code_val_to_bits(mem.rtone)
-            elif mem.tmode == 'TSQL':
+            elif mem.tmode == "TSQL":
                 _mem.ctcss_encode_en = 1
                 _mem.ctcss_enc_tone = ctcss_code_val_to_bits(mem.ctone)
                 _mem.ctcss_decode_en = 1
                 _mem.tone_squelch_en = 1
                 _mem.ctcss_dec_tone = ctcss_code_val_to_bits(mem.ctone)
-            elif mem.tmode == 'DTCS':
+            elif mem.tmode == "DTCS":
                 _mem.dtcs_encode_en = 1
-                _mem.dtcs_encode_code, _mem.dtcs_encode_code_highbit = \
+                _mem.dtcs_encode_code, _mem.dtcs_encode_code_highbit = (
                     dtcs_code_val_to_bits(mem.dtcs)
+                )
                 _mem.dtcs_decode_en = 1
-                _mem.dtcs_decode_code, _mem.dtcs_decode_code_highbit = \
+                _mem.dtcs_decode_code, _mem.dtcs_decode_code_highbit = (
                     dtcs_code_val_to_bits(mem.dtcs)
+                )
                 _mem.tone_squelch_en = 1
-            elif mem.tmode == 'Cross':
-                txmode, rxmode = mem.cross_mode.split('->')
+            elif mem.tmode == "Cross":
+                txmode, rxmode = mem.cross_mode.split("->")
 
-                if txmode == 'Tone':
+                if txmode == "Tone":
                     _mem.ctcss_encode_en = 1
                     _mem.ctcss_enc_tone = ctcss_code_val_to_bits(mem.rtone)
-                elif txmode == '':
+                elif txmode == "":
                     pass
-                elif txmode == 'DTCS':
+                elif txmode == "DTCS":
                     _mem.dtcs_encode_en = 1
-                    _mem.dtcs_encode_code, _mem.dtcs_encode_code_highbit = \
+                    _mem.dtcs_encode_code, _mem.dtcs_encode_code_highbit = (
                         dtcs_code_val_to_bits(mem.dtcs)
+                    )
                 else:
-                    LOG.error('%s: unhandled cross TX mode: %s' % (
-                        mem.name, mem.cross_mode))
+                    LOG.error(
+                        "%s: unhandled cross TX mode: %s" % (mem.name, mem.cross_mode)
+                    )
 
-                if rxmode == 'Tone':
+                if rxmode == "Tone":
                     _mem.ctcss_decode_en = 1
                     _mem.tone_squelch_en = 1
                     _mem.ctcss_dec_tone = ctcss_code_val_to_bits(mem.ctone)
-                elif rxmode == '':
+                elif rxmode == "":
                     pass
-                elif rxmode == 'DTCS':
+                elif rxmode == "DTCS":
                     _mem.dtcs_decode_en = 1
-                    _mem.dtcs_decode_code, _mem.dtcs_decode_code_highbit = \
+                    _mem.dtcs_decode_code, _mem.dtcs_decode_code_highbit = (
                         dtcs_code_val_to_bits(mem.rx_dtcs)
+                    )
                     _mem.tone_squelch_en = 1
                 else:
-                    LOG.error('%s: unhandled cross RX mode: %s' % (
-                        mem.name, mem.cross_mode))
+                    LOG.error(
+                        "%s: unhandled cross RX mode: %s" % (mem.name, mem.cross_mode)
+                    )
             elif mem.tmode:
-                LOG.error('%s: Unhandled tmode/cross %s/%s.' %
-                          (mem.name, mem.tmode, mem.cross_mode))
-            LOG.debug('%s: tmode=%s, cross=%s, rtone=%f, ctone=%f' % (
-                mem.name, mem.tmode, mem.cross_mode, mem.rtone, mem.ctone))
-            LOG.debug('%s: CENC=%d, CDEC=%d, t(enc)=%02x, t(dec)=%02x' % (
-                mem.name,
-                _mem.ctcss_encode_en,
-                _mem.ctcss_decode_en,
-                ctcss_code_val_to_bits(mem.rtone),
-                ctcss_code_val_to_bits(mem.ctone)))
+                LOG.error(
+                    "%s: Unhandled tmode/cross %s/%s."
+                    % (mem.name, mem.tmode, mem.cross_mode)
+                )
+            LOG.debug(
+                "%s: tmode=%s, cross=%s, rtone=%f, ctone=%f"
+                % (mem.name, mem.tmode, mem.cross_mode, mem.rtone, mem.ctone)
+            )
+            LOG.debug(
+                "%s: CENC=%d, CDEC=%d, t(enc)=%02x, t(dec)=%02x"
+                % (
+                    mem.name,
+                    _mem.ctcss_encode_en,
+                    _mem.ctcss_decode_en,
+                    ctcss_code_val_to_bits(mem.rtone),
+                    ctcss_code_val_to_bits(mem.ctone),
+                )
+            )
 
             # set unknown defaults, based on reading memory set by vendor tool
             _mem.unknown1 = 0x00
@@ -1118,36 +1202,31 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Menu 3 - Display Mode
         options = ["Frequency", "Channel", "Name"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.displayMode)
+        rs = RadioSettingValueList(options, current_index=_settings.displayMode)
         rset = RadioSetting("settings.displayMode", "Display Mode", rs)
         function.append(rset)
 
         # VFO/MR A
         options = ["MR", "VFO"]
-        rs = RadioSettingValueList(
-            options, current_index=_radio_settings.vfomrA)
+        rs = RadioSettingValueList(options, current_index=_radio_settings.vfomrA)
         rset = RadioSetting("radio_settings.vfomrA", "VFO/MR mode A", rs)
         function.append(rset)
 
         # MR Channel A
         options = ["%s" % x for x in range(1, 201)]
-        rs = RadioSettingValueList(
-            options, current_index=_radio_settings.mrChanA)
+        rs = RadioSettingValueList(options, current_index=_radio_settings.mrChanA)
         rset = RadioSetting("radio_settings.mrChanA", "MR channel A", rs)
         function.append(rset)
 
         # VFO/MR B
         options = ["MR", "VFO"]
-        rs = RadioSettingValueList(
-            options, current_index=_radio_settings.vfomrB)
+        rs = RadioSettingValueList(options, current_index=_radio_settings.vfomrB)
         rset = RadioSetting("radio_settings.vfomrB", "VFO/MR mode B", rs)
         function.append(rset)
 
         # MR Channel B
         options = ["%s" % x for x in range(1, 201)]
-        rs = RadioSettingValueList(
-            options, current_index=_radio_settings.mrChanB)
+        rs = RadioSettingValueList(options, current_index=_radio_settings.mrChanB)
         rset = RadioSetting("radio_settings.mrChanB", "MR channel B", rs)
         function.append(rset)
 
@@ -1165,8 +1244,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Menu 11 - Backlight Brightness
         options = ["%s" % x for x in range(1, 4)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.backlightBr - 1)
+        rs = RadioSettingValueList(options, current_index=_settings.backlightBr - 1)
         rset = RadioSetting("settings.backlightBr", "Backlight brightness", rs)
         function.append(rset)
 
@@ -1178,10 +1256,8 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Hand Mic Key Brightness
         options = ["%s" % x for x in range(1, 32)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.micKeyBrite - 1)
-        rset = RadioSetting("settings.micKeyBrite",
-                            "Hand mic key brightness", rs)
+        rs = RadioSettingValueList(options, current_index=_settings.micKeyBrite - 1)
+        rset = RadioSetting("settings.micKeyBrite", "Hand mic key brightness", rs)
         function.append(rset)
 
         # VOL SET
@@ -1193,30 +1269,29 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Menu 5 - Volume level Setup
         options = ["%s" % x for x in range(1, 37)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.speakerVol - 1)
+        rs = RadioSettingValueList(options, current_index=_settings.speakerVol - 1)
         rset = RadioSetting("settings.speakerVol", "Speaker volume", rs)
         function.append(rset)
 
         # Menu 16 - Speaker Switch
-        options = ["Host on | Hand mic off", "Host on | Hand mic on",
-                   "Host off | Hand mic on"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.speakerSwitch)
+        options = [
+            "Host on | Hand mic off",
+            "Host on | Hand mic on",
+            "Host off | Hand mic on",
+        ]
+        rs = RadioSettingValueList(options, current_index=_settings.speakerSwitch)
         rset = RadioSetting("settings.speakerSwitch", "Speaker switch", rs)
         function.append(rset)
 
         # STE SET
         # STE Frequency
         options = ["Off", "55.2 Hz", "259.2 Hz"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.steFrequency)
+        rs = RadioSettingValueList(options, current_index=_settings.steFrequency)
         rset = RadioSetting("settings.steFrequency", "STE frequency", rs)
         function.append(rset)
 
         # STE Type
-        options = ["Off", "Silent", "120 degrees", "180 degrees",
-                   "240 degrees"]
+        options = ["Off", "Silent", "120 degrees", "180 degrees", "240 degrees"]
         rs = RadioSettingValueList(options, current_index=_settings.steType)
         rset = RadioSetting("settings.steType", "STE type", rs)
         function.append(rset)
@@ -1226,13 +1301,12 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         if not self.HAS_VOX:
             # Power-on Password
             rs = RadioSettingValueBoolean(_settings.powerOnPasswd)
-            rset = RadioSetting("settings.powerOnPasswd", "Power-on Password",
-                                rs)
+            rset = RadioSetting("settings.powerOnPasswd", "Power-on Password", rs)
             function.append(rset)
 
             # Password
             def _char_to_str(chrx):
-                """ Remove ff pads from char array """
+                """Remove ff pads from char array"""
                 #  chrx is char array
                 str1 = ""
                 for sx in chrx:
@@ -1241,10 +1315,10 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 return str1
 
             def _pswd_vfy(setting, obj, atrb):
-                """ Verify password is 1-6 chars, numbers 1-5 """
+                """Verify password is 1-6 chars, numbers 1-5"""
                 str1 = str(setting.value).strip()  # initial
                 # valid chars
-                str2 = ''.join([c for c in str1 if c in '0123456789'])
+                str2 = "".join([c for c in str1 if c in "0123456789"])
                 if str1 != str2:
                     # Two lines due to python 73 char limit
                     sx = "Bad characters in Password"
@@ -1267,8 +1341,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Menu 13 - Auto Power Off
         options = ["Off", "30 minutes", "60 minutes", "120 minutes"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.autoPowerOff)
+        rs = RadioSettingValueList(options, current_index=_settings.autoPowerOff)
         rset = RadioSetting("settings.autoPowerOff", "Auto power off", rs)
         function.append(rset)
 
@@ -1280,29 +1353,25 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         # FUNCTION SET
         # Menu 4 - Squelch Level A
         options = ["OFF"] + ["%s" % x for x in range(1, 10)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.squelchLevelA)
+        rs = RadioSettingValueList(options, current_index=_settings.squelchLevelA)
         rset = RadioSetting("settings.squelchLevelA", "Squelch level A", rs)
         function.append(rset)
 
         # Squelch Level B
         options = ["OFF"] + ["%s" % x for x in range(1, 10)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.squelchLevelB)
+        rs = RadioSettingValueList(options, current_index=_settings.squelchLevelB)
         rset = RadioSetting("settings.squelchLevelB", "Squelch level B", rs)
         function.append(rset)
 
         # Menu 7 - Scan Type
-        options = ["Time operated (TO)", "Carrier operated (CO)",
-                   "Search (SE)"]
+        options = ["Time operated (TO)", "Carrier operated (CO)", "Search (SE)"]
         rs = RadioSettingValueList(options, current_index=_settings.scanType)
         rset = RadioSetting("settings.scanType", "Scan mode", rs)
         function.append(rset)
 
         # Menu 8 - Scan Recovery Time
         options = ["%s seconds" % x for x in range(5, 20, 5)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.scanRecoveryT)
+        rs = RadioSettingValueList(options, current_index=_settings.scanRecoveryT)
         rset = RadioSetting("settings.scanRecoveryT", "Scan recovery time", rs)
         function.append(rset)
 
@@ -1319,36 +1388,40 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
 
         # Menu 12 - Time Out Timer
         options = ["OFF"] + ["%s minutes" % x for x in range(1, 31)]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.timeOutTimer)
+        rs = RadioSettingValueList(options, current_index=_settings.timeOutTimer)
         rset = RadioSetting("settings.timeOutTimer", "Time out timer", rs)
         function.append(rset)
 
         # TBST Frequency
         options = ["1000 Hz", "1450 Hz", "1750 Hz", "2100 Hz"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.tbstFrequency)
+        rs = RadioSettingValueList(options, current_index=_settings.tbstFrequency)
         rset = RadioSetting("settings.tbstFrequency", "TBST frequency", rs)
         function.append(rset)
 
         # Save Channel Parameter
         rs = RadioSettingValueBoolean(_settings.saveChParameter)
-        rset = RadioSetting("settings.saveChParameter",
-                            "Save channel parameter", rs)
+        rset = RadioSetting("settings.saveChParameter", "Save channel parameter", rs)
         function.append(rset)
 
         # MON Key Function
         options = ["Squelch off momentary", "Squelch off"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.monKeyFunction)
+        rs = RadioSettingValueList(options, current_index=_settings.monKeyFunction)
         rset = RadioSetting("settings.monKeyFunction", "MON key function", rs)
         function.append(rset)
 
         # Frequency Step
-        options = ["2.5 kHz", "5 kHz", "6.25 kHz", "10 kHz", "12.5 kHz",
-                   "20 kHz", "25 kHz", "30 kHz", "50 kHz"]
-        rs = RadioSettingValueList(
-            options, current_index=_settings.frequencyStep)
+        options = [
+            "2.5 kHz",
+            "5 kHz",
+            "6.25 kHz",
+            "10 kHz",
+            "12.5 kHz",
+            "20 kHz",
+            "25 kHz",
+            "30 kHz",
+            "50 kHz",
+        ]
+        rs = RadioSettingValueList(options, current_index=_settings.frequencyStep)
         rset = RadioSetting("settings.frequencyStep", "Frequency step", rs)
         function.append(rset)
 
@@ -1366,22 +1439,28 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         if self.HAS_VOX:
             # VOX On/Off
             rs = RadioSettingValueBoolean(_settings.voxOnOff)
-            rset = RadioSetting("settings.voxOnOff",
-                                "VOX", rs)
+            rset = RadioSetting("settings.voxOnOff", "VOX", rs)
             function.append(rset)
 
             # VOX Delay
-            options = ["0.5 S", "1.0 S", "1.5 S", "2.0 S", "2.5 S",
-                       "3.0 S", "3.5 S", "4.0 S", "4.5 S"]
-            rs = RadioSettingValueList(
-                options, current_index=_settings.voxDelay)
+            options = [
+                "0.5 S",
+                "1.0 S",
+                "1.5 S",
+                "2.0 S",
+                "2.5 S",
+                "3.0 S",
+                "3.5 S",
+                "4.0 S",
+                "4.5 S",
+            ]
+            rs = RadioSettingValueList(options, current_index=_settings.voxDelay)
             rset = RadioSetting("settings.voxDelay", "VOX delay", rs)
             function.append(rset)
 
             # VOX Level
             options = ["%s" % x for x in range(1, 10)]
-            rs = RadioSettingValueList(
-                options, current_index=_settings.voxLevel)
+            rs = RadioSettingValueList(options, current_index=_settings.voxLevel)
             rset = RadioSetting("settings.voxLevel", "VOX Level", rs)
             function.append(rset)
 
@@ -1389,127 +1468,130 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         pfkeys = RadioSettingGroup("pfkeys", "Key Assignment")
         group.append(pfkeys)
 
-        options = ["A/B", "V/M", "SQL", "VOL", "POW", "CDT", "REV", "SCN",
-                   "CAL", "TALK", "BND", "SFT", "MON", "DIR", "TRF", "RDW",
-                   "NULL"]
+        options = [
+            "A/B",
+            "V/M",
+            "SQL",
+            "VOL",
+            "POW",
+            "CDT",
+            "REV",
+            "SCN",
+            "CAL",
+            "TALK",
+            "BND",
+            "SFT",
+            "MON",
+            "DIR",
+            "TRF",
+            "RDW",
+            "NULL",
+        ]
 
         if self.HAS_VOX:
             options.insert(16, "VOX")
 
         # Key Mode 1
         # P1
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P1 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P1",
-                            "Key mode 1 P1", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P1 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P1", "Key mode 1 P1", rs)
         pfkeys.append(rset)
 
         # P2
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P2 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P2",
-                            "Key mode 1 P2", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P2 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P2", "Key mode 1 P2", rs)
         pfkeys.append(rset)
 
         # P3
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P3 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P3",
-                            "Key mode 1 P3", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P3 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P3", "Key mode 1 P3", rs)
         pfkeys.append(rset)
 
         # P4
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P4 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P4",
-                            "Key mode 1 P4", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P4 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P4", "Key mode 1 P4", rs)
         pfkeys.append(rset)
 
         # P5
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P5 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P5",
-                            "Key mode 1 P5", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P5 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P5", "Key mode 1 P5", rs)
         pfkeys.append(rset)
 
         # P6
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode1P6 - 1)
-        rset = RadioSetting("pfkeys.keyMode1P6",
-                            "Key mode 1 P6", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode1P6 - 1)
+        rset = RadioSetting("pfkeys.keyMode1P6", "Key mode 1 P6", rs)
         pfkeys.append(rset)
 
         # Key Mode 2
         # P1
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P1 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P1",
-                            "Key mode 2 P1", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P1 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P1", "Key mode 2 P1", rs)
         pfkeys.append(rset)
 
         # P2
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P2 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P2",
-                            "Key mode 2 P2", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P2 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P2", "Key mode 2 P2", rs)
         pfkeys.append(rset)
 
         # P3
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P3 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P3",
-                            "Key mode 2 P3", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P3 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P3", "Key mode 2 P3", rs)
         pfkeys.append(rset)
 
         # P4
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P4 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P4",
-                            "Key mode 2 P4", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P4 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P4", "Key mode 2 P4", rs)
         pfkeys.append(rset)
 
         # P5
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P5 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P5",
-                            "Key mode 2 P5", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P5 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P5", "Key mode 2 P5", rs)
         pfkeys.append(rset)
 
         # P6
-        rs = RadioSettingValueList(
-            options, current_index=_pfkeys.keyMode2P6 - 1)
-        rset = RadioSetting("pfkeys.keyMode2P6",
-                            "Key mode 2 P6", rs)
+        rs = RadioSettingValueList(options, current_index=_pfkeys.keyMode2P6 - 1)
+        rset = RadioSetting("pfkeys.keyMode2P6", "Key mode 2 P6", rs)
         pfkeys.append(rset)
 
-        options = ["V/M", "SQL", "VOL", "POW", "CDT", "REV", "SCN", "CAL",
-                   "TALK", "BND", "SFT", "MON", "DIR", "TRF", "RDW"]
+        options = [
+            "V/M",
+            "SQL",
+            "VOL",
+            "POW",
+            "CDT",
+            "REV",
+            "SCN",
+            "CAL",
+            "TALK",
+            "BND",
+            "SFT",
+            "MON",
+            "DIR",
+            "TRF",
+            "RDW",
+        ]
 
         if self.HAS_VOX:
             options.insert(15, "VOX")
 
         # PA
         rs = RadioSettingValueList(options, current_index=_settings.keyPA - 2)
-        rset = RadioSetting("settings.keyPA",
-                            "Key PA", rs)
+        rset = RadioSetting("settings.keyPA", "Key PA", rs)
         pfkeys.append(rset)
 
         # PB
         rs = RadioSettingValueList(options, current_index=_settings.keyPB - 2)
-        rset = RadioSetting("settings.keyPB",
-                            "Key PB", rs)
+        rset = RadioSetting("settings.keyPB", "Key PB", rs)
         pfkeys.append(rset)
 
         # PC
         rs = RadioSettingValueList(options, current_index=_settings.keyPC - 2)
-        rset = RadioSetting("settings.keyPC",
-                            "Key PC", rs)
+        rset = RadioSetting("settings.keyPC", "Key PC", rs)
         pfkeys.append(rset)
 
         # PD
         rs = RadioSettingValueList(options, current_index=_settings.keyPD - 2)
-        rset = RadioSetting("settings.keyPD",
-                            "Key PD", rs)
+        rset = RadioSetting("settings.keyPD", "Key PD", rs)
         pfkeys.append(rset)
 
         # DTMF
@@ -1517,11 +1599,15 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         group.append(dtmf)
 
         # DTMF Transmitting Time
-        options = ["50 milliseconds", "100 milliseconds", "200 milliseconds",
-                   "300 milliseconds", "500 milliseconds"]
+        options = [
+            "50 milliseconds",
+            "100 milliseconds",
+            "200 milliseconds",
+            "300 milliseconds",
+            "500 milliseconds",
+        ]
         rs = RadioSettingValueList(options, current_index=_settings.dtmfTxTime)
-        rset = RadioSetting("settings.dtmfTxTime",
-                            "DTMF transmitting time", rs)
+        rset = RadioSetting("settings.dtmfTxTime", "DTMF transmitting time", rs)
         dtmf.append(rset)
 
         # DTMF Self ID
@@ -1541,9 +1627,11 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             idx = IC_VALUES.index(_dtmf.intervalChar)
         else:
             idx = IC_VALUES.index(0x0E)
-        rs = RadioSetting("dtmf.intervalChar", "DTMF interval character",
-                          RadioSettingValueList(IC_CHOICES,
-                                                current_index=idx))
+        rs = RadioSetting(
+            "dtmf.intervalChar",
+            "DTMF interval character",
+            RadioSettingValueList(IC_CHOICES, current_index=idx),
+        )
         rs.set_apply_callback(apply_ic_listvalue, _dtmf.intervalChar)
         dtmf.append(rs)
 
@@ -1562,16 +1650,17 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             idx = GC_VALUES.index(_dtmf.groupCode)
         else:
             idx = GC_VALUES.index(0x0A)
-        rs = RadioSetting("dtmf.groupCode", "DTMF interval character",
-                          RadioSettingValueList(GC_CHOICES,
-                                                current_index=idx))
+        rs = RadioSetting(
+            "dtmf.groupCode",
+            "DTMF interval character",
+            RadioSettingValueList(GC_CHOICES, current_index=idx),
+        )
         rs.set_apply_callback(apply_gc_listvalue, _dtmf.groupCode)
         dtmf.append(rs)
 
         # Decoding Response
         options = ["None", "Beep tone", "Beep tone & respond"]
-        rs = RadioSettingValueList(
-            options, current_index=_dtmf.decodingResponse)
+        rs = RadioSettingValueList(options, current_index=_dtmf.decodingResponse)
         rset = RadioSetting("dtmf.decodingResponse", "Decoding response", rs)
         dtmf.append(rset)
 
@@ -1596,13 +1685,11 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
         # Time-Lapse After Encode
         options = ["%s" % x for x in range(10, 2510, 10)]
         rs = RadioSettingValueList(options, current_index=_dtmf.timeLapse - 1)
-        rset = RadioSetting("dtmf.timeLapse",
-                            "Time-lapse after encode(ms)", rs)
+        rset = RadioSetting("dtmf.timeLapse", "Time-lapse after encode(ms)", rs)
         dtmf.append(rset)
 
         # PTT ID Pause Time
-        options = ["Off", "-", "-", "-", "-"] + [
-                   "%s" % x for x in range(5, 76)]
+        options = ["Off", "-", "-", "-", "-"] + ["%s" % x for x in range(5, 76)]
         rs = RadioSettingValueList(options, current_index=_dtmf.pauseTime)
         rset = RadioSetting("dtmf.pauseTime", "PTT ID pause time(s)", rs)
         dtmf.append(rset)
@@ -1628,6 +1715,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.pttIdStart = code
+
         rs.set_apply_callback(apply_code, _dtmf)
         dtmf.append(rs)
 
@@ -1646,6 +1734,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.pttIdEnd = code
+
         rs.set_apply_callback(apply_code, _dtmf)
         dtmf.append(rs)
 
@@ -1664,6 +1753,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.remoteKill = code
+
         rs.set_apply_callback(apply_code, _dtmf)
         dtmf.append(rs)
 
@@ -1682,6 +1772,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.remoteStun = code
+
         rs.set_apply_callback(apply_code, _dtmf)
         dtmf.append(rs)
 
@@ -1692,8 +1783,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             val = RadioSettingValueString(0, 16, _code, False)
             val.set_charset(DTMF_CHARS)
-            rs = RadioSetting("pttid/%i.code" % i,
-                              "DTMF encode M%i" % (i + 1), val)
+            rs = RadioSetting("pttid/%i.code" % i, "DTMF encode M%i" % (i + 1), val)
 
             def apply_code(setting, obj):
                 code = []
@@ -1703,6 +1793,7 @@ class AnyTone778UVBase(chirp_common.CloneModeRadio,
                     except IndexError:
                         code.append(0xFF)
                 obj.code = code
+
             rs.set_apply_callback(apply_code, self._memobj.pttid[i])
             dtmf.append(rs)
 
@@ -1765,7 +1856,7 @@ class AnyTone778UV(AnyTone778UVBase):
     MODEL = "778UV"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'AT778UV': ['V100', 'V200']}
+    ALLOWED_RADIO_TYPES = {"AT778UV": ["V100", "V200"]}
 
 
 @directory.register
@@ -1774,7 +1865,7 @@ class RetevisRT95(AnyTone778UVBase):
     MODEL = "RT95"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'RT95': ['V100']}
+    ALLOWED_RADIO_TYPES = {"RT95": ["V100"]}
 
 
 @directory.register
@@ -1783,7 +1874,7 @@ class CRTMicronUV(AnyTone778UVBase):
     MODEL = "Micron UV"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'MICRON': ['V100']}
+    ALLOWED_RADIO_TYPES = {"MICRON": ["V100"]}
 
 
 @directory.register
@@ -1792,7 +1883,7 @@ class MidlandDBR2500(AnyTone778UVBase):
     MODEL = "DBR2500"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'DBR2500': ['V100']}
+    ALLOWED_RADIO_TYPES = {"DBR2500": ["V100"]}
 
 
 @directory.register
@@ -1801,11 +1892,12 @@ class YedroYCM04vus(AnyTone778UVBase):
     MODEL = "YC-M04VUS"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'YCM04UV': ['V100']}
+    ALLOWED_RADIO_TYPES = {"YCM04UV": ["V100"]}
 
 
 class AnyTone778UVvoxBase(AnyTone778UVBase):
-    '''AnyTone 778UV VOX, Retevis RT95 VOX and others'''
+    """AnyTone 778UV VOX, Retevis RT95 VOX and others"""
+
     NAME_LENGTH = 6
     HAS_VOX = True
 
@@ -1818,7 +1910,7 @@ class AnyTone778UVvox(AnyTone778UVvoxBase):
     MODEL = "778UV VOX"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'778UV-P': ['V100']}
+    ALLOWED_RADIO_TYPES = {"778UV-P": ["V100"]}
 
 
 @directory.register
@@ -1828,7 +1920,7 @@ class RetevisRT95vox(AnyTone778UVvoxBase):
     MODEL = "RT95 VOX"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'RT95-P': ['V100']}
+    ALLOWED_RADIO_TYPES = {"RT95-P": ["V100"]}
 
 
 @directory.register
@@ -1838,4 +1930,4 @@ class CRTMicronUVvox(AnyTone778UVvoxBase):
     MODEL = "Micron UV V2"
     # Allowed radio types is a dict keyed by model of a list of version
     # strings
-    ALLOWED_RADIO_TYPES = {'MICRONP': ['V100']}
+    ALLOWED_RADIO_TYPES = {"MICRONP": ["V100"]}

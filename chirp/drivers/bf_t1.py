@@ -27,10 +27,15 @@
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-                RadioSettingValueBoolean, RadioSettingValueList, \
-                RadioSettingValueInteger, RadioSettingValueFloat, \
-                RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
 import struct
 import logging
@@ -56,10 +61,7 @@ TONES = chirp_common.TONES
 DTCS = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
 # Special channels
-SPECIALS = {
-    "EMG": -2,
-    "RLY": -1
-    }
+SPECIALS = {"EMG": -2, "RLY": -1}
 
 # Settings vars
 TOT_LIST = ["Off"] + ["%s" % x for x in range(30, 210, 30)]
@@ -121,8 +123,7 @@ def _rawrecv(radio, amount=0):
 
         # DEBUG
         if debug is True:
-            LOG.debug("<== (%d) bytes:\n\n%s" %
-                      (len(data), util.hexprint(data)))
+            LOG.debug("<== (%d) bytes:\n\n%s" % (len(data), util.hexprint(data)))
 
         # fail if no data is received
         if len(data) == 0:
@@ -144,8 +145,7 @@ def _send(radio, data):
 
         # DEBUG
         if debug is True:
-            LOG.debug("==> (%d) bytes:\n\n%s" %
-                      (len(data), util.hexprint(data)))
+            LOG.debug("==> (%d) bytes:\n\n%s" % (len(data), util.hexprint(data)))
     except:
         raise errors.RadioError("Error sending data to radio")
 
@@ -339,7 +339,7 @@ def _upload(radio):
     # the fun start here, we use WRITE_SIZE instead of the full MEM_SIZE
     for addr in range(0, WRITE_SIZE, BLOCK_SIZE):
         # getting the block of data to send
-        d = data[addr:addr + BLOCK_SIZE]
+        d = data[addr : addr + BLOCK_SIZE]
 
         # build the frame to send
         frame = _make_frame(b"W", addr, d)
@@ -372,7 +372,7 @@ def _model_match(cls, data):
     """Match the opened/downloaded image to the correct version"""
 
     # a reliable fingerprint: the model name at
-    rid = data[0x06f8:0x0700]
+    rid = data[0x06F8:0x0700]
 
     if rid == BFT1_ident:
         return True
@@ -458,6 +458,7 @@ struct channel rly;
 @directory.register
 class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Baofeng BT-F1 radio & possibly alike radios"""
+
     VENDOR = "Baofeng"
     MODEL = "BF-T1"
     _vhf_range = (130000000, 174000000)
@@ -470,28 +471,30 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('This driver is experimental.\n'
-             '\n'
-             'Please keep a copy of your memories with the original software '
-             'if you treasure them, this driver is new and may contain'
-             ' bugs.\n'
-             '\n'
-             '"Emergent CH" & "Relay CH" are implemented via special channels,'
-             'be sure to click on the button on the interface to access them.'
-             )
+        rp.experimental = (
+            "This driver is experimental.\n"
+            "\n"
+            "Please keep a copy of your memories with the original software "
+            "if you treasure them, this driver is new and may contain"
+            " bugs.\n"
+            "\n"
+            '"Emergent CH" & "Relay CH" are implemented via special channels,'
+            "be sure to click on the button on the interface to access them."
+        )
         rp.pre_download = _(
             "Follow these instructions to download your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the download of your radio data\n")
+            "4 - Do the download of your radio data\n"
+        )
         rp.pre_upload = _(
             "Follow these instructions to upload your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the upload of your radio data\n")
+            "4 - Do the upload of your radio data\n"
+        )
         return rp
 
     def get_features(self):
@@ -513,7 +516,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         rf.has_ctone = True
         rf.has_cross = True
         rf.valid_duplexes = ["", "-", "+", "split"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_cross_modes = [
             "Tone->Tone",
             "DTCS->",
@@ -521,11 +524,12 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_skips = SKIP_VALUES
         rf.valid_dtcs_codes = DTCS
         rf.memory_bounds = (1, self._upper)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
 
         # normal dual bands
         rf.valid_bands = [self._vhf_range, self._uhf_range]
@@ -564,24 +568,24 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
 
         if val == 0:
-            return '', None, None
+            return "", None, None
         elif val < 51:  # analog tone
-            return 'Tone', TONES[val - 1], None
+            return "Tone", TONES[val - 1], None
         elif val > 50:  # digital tone
             pol = "N"
             # polarity?
             if inv == 1:
                 pol = "R"
 
-            return 'DTCS', DTCS[val - 51], pol
+            return "DTCS", DTCS[val - 51], pol
 
     def _encode_tone(self, memtone, meminv, mode, tone, pol):
         """Parse the tone data to encode from UI to mem"""
 
-        if mode == '' or mode is None:
+        if mode == "" or mode is None:
             memtone.set_value(0)
             meminv.set_value(0)
-        elif mode == 'Tone':
+        elif mode == "Tone":
             # caching errors for analog tones.
             try:
                 memtone.set_value(TONES.index(tone) + 1)
@@ -591,7 +595,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
                 LOG.error(msg)
                 raise errors.RadioError(msg)
 
-        elif mode == 'DTCS':
+        elif mode == "DTCS":
             # caching errors for digital tones.
             try:
                 memtone.set_value(DTCS.index(tone) + 51)
@@ -613,13 +617,13 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
 
     def _get_special(self, number):
         if isinstance(number, str):
-            return (getattr(self._memobj, number.lower()))
+            return getattr(self._memobj, number.lower())
         elif number < 0:
             for k, v in SPECIALS.items():
                 if number == v:
-                    return (getattr(self._memobj, k.lower()))
+                    return getattr(self._memobj, k.lower())
         else:
-            return self._memobj.channels[number-1]
+            return self._memobj.channels[number - 1]
 
     def get_memory(self, number):
         """Get the mem representation from the radio image"""
@@ -635,7 +639,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw(asbytes=False)[0] == "\xFF":
+        if _mem.get_raw(asbytes=False)[0] == "\xff":
             mem.empty = True
             return mem
 
@@ -688,7 +692,7 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         # if empty memory
         if mem.empty:
             # the channel itself
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw("\xff" * 16)
             # return it
             return mem
 
@@ -725,8 +729,9 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         _mem.noskip = SKIP_VALUES.index(mem.skip)
 
         # tone data
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self._encode_tone(_mem.txtone, _mem.ttondinv, txmode, txtone, txpol)
         self._encode_tone(_mem.rxtone, _mem.rtondinv, rxmode, rxtone, rxpol)
 
@@ -740,84 +745,108 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         group = RadioSettings(basic, fm, adv)
 
         # ## Basic Settings
-        rs = RadioSetting("tx_pwr", "TX Power",
-                          RadioSettingValueList(
-                            POWER_LIST, current_index=_settings.tx_pwr))
+        rs = RadioSetting(
+            "tx_pwr",
+            "TX Power",
+            RadioSettingValueList(POWER_LIST, current_index=_settings.tx_pwr),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("channel", "Active Channel",
-                          RadioSettingValueInteger(1, 20, _settings.channel))
+        rs = RadioSetting(
+            "channel",
+            "Active Channel",
+            RadioSettingValueInteger(1, 20, _settings.channel),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, _settings.squelch))
+        rs = RadioSetting(
+            "squelch",
+            "Squelch Level",
+            RadioSettingValueInteger(0, 9, _settings.squelch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX Level",
-                          RadioSettingValueInteger(0, 9, _settings.vox))
+        rs = RadioSetting(
+            "vox", "VOX Level", RadioSettingValueInteger(0, 9, _settings.vox)
+        )
         basic.append(rs)
 
         # volume validation, as the OEM software set 0xFF on write
         _volume = _settings.volume
         if _volume > 7:
             _volume = 7
-        rs = RadioSetting("volume", "Volume Level",
-                          RadioSettingValueInteger(0, 7, _volume))
+        rs = RadioSetting(
+            "volume", "Volume Level", RadioSettingValueInteger(0, 7, _volume)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("scantype", "Scan Type",
-                          RadioSettingValueList(SCAN_TYPE_LIST, current_index=_settings.scantype))
+        rs = RadioSetting(
+            "scantype",
+            "Scan Type",
+            RadioSettingValueList(SCAN_TYPE_LIST, current_index=_settings.scantype),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("timeout", "Time Out Timer (seconds)",
-                          RadioSettingValueList(
-                            TOT_LIST, current_index=_settings.timeout))
+        rs = RadioSetting(
+            "timeout",
+            "Time Out Timer (seconds)",
+            RadioSettingValueList(TOT_LIST, current_index=_settings.timeout),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("voice", "Voice Prompt",
-                          RadioSettingValueList(
-                            LANGUAGE_LIST, current_index=_settings.voice))
+        rs = RadioSetting(
+            "voice",
+            "Voice Prompt",
+            RadioSettingValueList(LANGUAGE_LIST, current_index=_settings.voice),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("alarm", "Alarm Time",
-                          RadioSettingValueList(
-                            TIMER_LIST, current_index=_settings.alarm))
+        rs = RadioSetting(
+            "alarm",
+            "Alarm Time",
+            RadioSettingValueList(TIMER_LIST, current_index=_settings.alarm),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("backlight", "Backlight",
-                          RadioSettingValueList(
-                            BACKLIGHT_LIST,
-                            current_index=_settings.backlight))
+        rs = RadioSetting(
+            "backlight",
+            "Backlight",
+            RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.backlight),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("blo", "Busy Lockout",
-                          RadioSettingValueBoolean(_settings.blo))
+        rs = RadioSetting(
+            "blo", "Busy Lockout", RadioSettingValueBoolean(_settings.blo)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ste", "Squelch Tail Eliminate",
-                          RadioSettingValueBoolean(_settings.ste))
+        rs = RadioSetting(
+            "ste", "Squelch Tail Eliminate", RadioSettingValueBoolean(_settings.ste)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("batsave", "Battery Save",
-                          RadioSettingValueBoolean(_settings.batsave))
+        rs = RadioSetting(
+            "batsave", "Battery Save", RadioSettingValueBoolean(_settings.batsave)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("lock", "Key Lock",
-                          RadioSettingValueBoolean(_settings.lock))
+        rs = RadioSetting("lock", "Key Lock", RadioSettingValueBoolean(_settings.lock))
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Key Beep",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting("beep", "Key Beep", RadioSettingValueBoolean(_settings.beep))
         basic.append(rs)
 
         # ## FM Settings
-        rs = RadioSetting("fm_funct", "FM Function",
-                          RadioSettingValueBoolean(_settings.fm_funct))
+        rs = RadioSetting(
+            "fm_funct", "FM Function", RadioSettingValueBoolean(_settings.fm_funct)
+        )
         fm.append(rs)
 
-        rs = RadioSetting("fmrange", "FM Range",
-                          RadioSettingValueList(
-                            FM_RANGE_LIST, current_index=_settings.fmrange))
+        rs = RadioSetting(
+            "fmrange",
+            "FM Range",
+            RadioSettingValueList(FM_RANGE_LIST, current_index=_settings.fmrange),
+        )
         fm.append(rs)
 
         # callbacks for the FM VFO
@@ -842,8 +871,9 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
             # unknown (undiscovered method or no FM chip?)
             _fm_vfo = False
         if _fm_vfo:
-            rs = RadioSetting("fm_vfo", "FM Station",
-                              RadioSettingValueFloat(65, 108, _fm_vfo))
+            rs = RadioSetting(
+                "fm_vfo", "FM Station", RadioSettingValueFloat(65, 108, _fm_vfo)
+            )
             rs.set_apply_callback(apply_fm_freq, _settings)
             fm.append(rs)
 
@@ -851,33 +881,43 @@ class BFT1(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
         def apply_limit(setting, obj):
             setattr(obj, setting.get_name(), int(setting.value) * 10)
 
-        rs = RadioSetting("vhfl", "VHF Low Limit",
-                          RadioSettingValueInteger(130, 174, int(
-                              _settings.vhfl) / 10))
+        rs = RadioSetting(
+            "vhfl",
+            "VHF Low Limit",
+            RadioSettingValueInteger(130, 174, int(_settings.vhfl) / 10),
+        )
         rs.set_apply_callback(apply_limit, _settings)
         adv.append(rs)
 
-        rs = RadioSetting("vhfh", "VHF High Limit",
-                          RadioSettingValueInteger(130, 174, int(
-                              _settings.vhfh) / 10))
+        rs = RadioSetting(
+            "vhfh",
+            "VHF High Limit",
+            RadioSettingValueInteger(130, 174, int(_settings.vhfh) / 10),
+        )
         rs.set_apply_callback(apply_limit, _settings)
         adv.append(rs)
 
-        rs = RadioSetting("uhfl", "UHF Low Limit",
-                          RadioSettingValueInteger(400, 520, int(
-                              _settings.uhfl) / 10))
+        rs = RadioSetting(
+            "uhfl",
+            "UHF Low Limit",
+            RadioSettingValueInteger(400, 520, int(_settings.uhfl) / 10),
+        )
         rs.set_apply_callback(apply_limit, _settings)
         adv.append(rs)
 
-        rs = RadioSetting("uhfh", "UHF High Limit",
-                          RadioSettingValueInteger(400, 520, int(
-                              _settings.uhfh) / 10))
+        rs = RadioSetting(
+            "uhfh",
+            "UHF High Limit",
+            RadioSettingValueInteger(400, 520, int(_settings.uhfh) / 10),
+        )
         rs.set_apply_callback(apply_limit, _settings)
         adv.append(rs)
 
-        rs = RadioSetting("relaym", "Relay Mode",
-                          RadioSettingValueList(RELAY_MODE_LIST,
-                                                current_index=_settings.relaym))
+        rs = RadioSetting(
+            "relaym",
+            "Relay Mode",
+            RadioSettingValueList(RELAY_MODE_LIST, current_index=_settings.relaym),
+        )
         adv.append(rs)
 
         return group

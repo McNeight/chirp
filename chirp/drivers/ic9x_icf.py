@@ -51,8 +51,7 @@ class IC9xICFRadio(chirp_common.CloneModeRadio):
         _icf_data, self._mmap = icf.read_file(filename)
 
     def get_sub_devices(self):
-        return [IC9xICFRadioA(self._mmap),
-                IC9xICFRadioB(self._mmap)]
+        return [IC9xICFRadioA(self._mmap), IC9xICFRadioB(self._mmap)]
 
 
 class IC9xICFRadioA(IC9xICFRadio):

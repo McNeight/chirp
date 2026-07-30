@@ -32,18 +32,17 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 class FakeIcomRadio(object):
     def __init__(self, radio, mapfile=None):
-        self._buffer = bytes(b'')
+        self._buffer = bytes(b"")
         self._radio = radio
         if not mapfile:
-            self._memory = bytes(b'\x00') * radio.get_memsize()
+            self._memory = bytes(b"\x00") * radio.get_memsize()
         else:
             self.load_from_file(mapfile)
 
     def load_from_file(self, filename):
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             self._memory = bytes(f.read())
-        LOG.debug('Initialized %i bytes from %s' % (len(self._memory),
-                                                    filename))
+        LOG.debug("Initialized %i bytes from %s" % (len(self._memory), filename))
 
     def read(self, count):
         """read() from radio, so here we synthesize responses"""
@@ -56,22 +55,29 @@ class FakeIcomRadio(object):
         self._buffer += data
 
     def make_response(self, cmd, payload):
-        return bytes([
-            0xFE, 0xFE,
-            0xEF,  # Radio
-            0xEE,  # PC
-            cmd,
-        ]) + payload + bytes([0xFD])
+        return (
+            bytes(
+                [
+                    0xFE,
+                    0xFE,
+                    0xEF,  # Radio
+                    0xEE,  # PC
+                    cmd,
+                ]
+            )
+            + payload
+            + bytes([0xFD])
+        )
 
     @property
     def address_fmt(self):
         if self._radio.get_memsize() > 0x10000:
-            return 'I'
+            return "I"
         else:
-            return 'H'
+            return "H"
 
     def do_clone_out(self):
-        LOG.debug('Clone from radio started')
+        LOG.debug("Clone from radio started")
         size = 16
         for addr in range(0, self._radio.get_memsize(), size):
             if len(self._memory[addr:]) < 4:
@@ -81,55 +87,53 @@ class FakeIcomRadio(object):
                 # if we get to the end and have a few bytes
                 # left, don't be stupid.
                 break
-            header = bytes(struct.pack('>%sB' % self.address_fmt,
-                                       addr, size))
+            header = bytes(struct.pack(">%sB" % self.address_fmt, addr, size))
             chunk = []
             cs = 0
             for byte in header:
-                chunk.extend(x for x in bytes(b'%02X' % byte))
+                chunk.extend(x for x in bytes(b"%02X" % byte))
                 cs += byte
-            for byte in self._memory[addr:addr + size]:
-                chunk.extend(x for x in bytes(b'%02X' % byte))
+            for byte in self._memory[addr : addr + size]:
+                chunk.extend(x for x in bytes(b"%02X" % byte))
                 cs += byte
 
             vx = ((cs ^ 0xFFFF) + 1) & 0xFF
-            chunk.extend(x for x in bytes(b'%02X' % vx))
+            chunk.extend(x for x in bytes(b"%02X" % vx))
             self.queue(self.make_response(icf.CMD_CLONE_DAT, bytes(chunk)))
         self.queue(self.make_response(icf.CMD_CLONE_END, bytes([])))
 
     def do_clone_in(self):
-        LOG.debug('Clone to radio started')
-        self._memory = bytes(b'')
+        LOG.debug("Clone to radio started")
+        self._memory = bytes(b"")
 
     def do_clone_data(self, payload_hex):
-        if self.address_fmt == 'I':
+        if self.address_fmt == "I":
             header_len = 5
         else:
             header_len = 3
 
         def hex_to_byte(hexchars):
-            return int('%s%s' % (chr(hexchars[0]), chr(hexchars[1])), 16)
+            return int("%s%s" % (chr(hexchars[0]), chr(hexchars[1])), 16)
 
-        payload_bytes = bytes([hex_to_byte(payload_hex[i:i+2])
-                               for i in range(0, len(payload_hex), 2)])
+        payload_bytes = bytes(
+            [hex_to_byte(payload_hex[i : i + 2]) for i in range(0, len(payload_hex), 2)]
+        )
 
         addr, size = struct.unpack(
-            '>%sB' % self.address_fmt, payload_bytes[:header_len])
+            ">%sB" % self.address_fmt, payload_bytes[:header_len]
+        )
         data = payload_bytes[header_len:-1]
         # csum = payload_bytes[-1]
 
         if len(data) != size:
-            LOG.debug('Invalid frame size: expected %i, but got %i' % (
-                size, len(data)))
+            LOG.debug("Invalid frame size: expected %i, but got %i" % (size, len(data)))
 
         expected_addr = len(self._memory)
         if addr < expected_addr:
-            LOG.debug('Frame goes back to %04x from %04x' % (addr,
-                                                             expected_addr))
+            LOG.debug("Frame goes back to %04x from %04x" % (addr, expected_addr))
         if len(self._memory) != addr:
-            LOG.debug('Filling gap between %04x and %04x' % (expected_addr,
-                                                             addr))
-            self._memory += (bytes(b'\x00') * (addr - expected_addr))
+            LOG.debug("Filling gap between %04x and %04x" % (expected_addr, addr))
+            self._memory += bytes(b"\x00") * (addr - expected_addr)
 
         # FIXME: Check checksum
 
@@ -141,10 +145,9 @@ class FakeIcomRadio(object):
     def write(self, data):
         """write() to radio, so here we process requests"""
 
-        assert isinstance(
-            data, bytes), 'Bytes required, %s received' % data.__class__
+        assert isinstance(data, bytes), "Bytes required, %s received" % data.__class__
 
-        while data.startswith(b'\xfe\xfe\xfe'):
+        while data.startswith(b"\xfe\xfe\xfe"):
             data = data[1:]
 
         # src = data[2]
@@ -153,15 +156,14 @@ class FakeIcomRadio(object):
         payload = data[5:-1]
         # end = data[-1]
 
-        LOG.debug('Received command: %x' % cmd)
-        LOG.debug('  Full frame: %r' % data)
+        LOG.debug("Received command: %x" % cmd)
+        LOG.debug("  Full frame: %r" % data)
 
-        model = self._radio.get_model() + bytes(b'\x00' * 20)
+        model = self._radio.get_model() + bytes(b"\x00" * 20)
 
         if cmd == 0xE0:  # Ident
             # FIXME
-            self.queue(self.make_response(0x01,  # Model
-                                          model))
+            self.queue(self.make_response(0x01, model))  # Model
         elif cmd == icf.CMD_CLONE_OUT:
             self.do_clone_out()
         elif cmd == icf.CMD_CLONE_IN:
@@ -171,9 +173,9 @@ class FakeIcomRadio(object):
         elif cmd == icf.CMD_CLONE_END:
             self.do_clone_end()
         elif cmd == icf.CMD_CLONE_HISPEED:
-            LOG.info('Got hispeed kicker')
+            LOG.info("Got hispeed kicker")
         else:
-            LOG.debug('Unknown command %i' % cmd)
+            LOG.debug("Unknown command %i" % cmd)
             self.queue(self.make_response(0x00, bytes([0x01])))
 
         return len(data)

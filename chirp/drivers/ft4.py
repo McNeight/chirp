@@ -22,12 +22,18 @@ CHIRP driver for Yaesu radios that use the SCU-35 cable. This includes at
 least the FT-4X, FT-4V, FT-65, and FT-25. This driver will not work with older
 Yaesu models.
 """
+
 import logging
 import struct
 import copy
 from chirp import chirp_common, directory, memmap, bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueString, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 COMM_DIRECTION_FROM = 0
@@ -235,12 +241,12 @@ def variable_len_resp(pipe):
     """
     response = b""
     i = 0
-    toolong = 256        # arbitrary
+    toolong = 256  # arbitrary
     while True:
         b = pipe.read(1)
         if not b:
             raise errors.RadioError("No response from radio")
-        if b == b'\x06':
+        if b == b"\x06":
             break
         else:
             response += b
@@ -271,8 +277,7 @@ def sendcmd(pipe, cmd, response_len, retry=0):
         msg = "Bad echo. Sent:" + util.hexprint(cmd) + ", "
         msg += "Received:" + util.hexprint(echo)
         LOG.debug(msg)
-        raise errors.RadioError(
-            "Incorrect echo on serial port. Radio off? Bad cable?")
+        raise errors.RadioError("Incorrect echo on serial port. Radio off? Bad cable?")
     if response_len is None:
         return variable_len_resp(pipe)
     if response_len > 0:
@@ -288,7 +293,7 @@ def sendcmd(pipe, cmd, response_len, retry=0):
     ack = pipe.read(1)
     if not ack:
         raise errors.RadioError("No response from radio")
-    if ack != b'\x06':
+    if ack != b"\x06":
         if retry < 5:
             LOG.debug("retry: " + str(retry))
             retry += 1
@@ -330,23 +335,19 @@ def startcomms(radio, direction):
 
     progress_messages = {
         COMM_DIRECTION_FROM: _("Cloning from radio"),
-        COMM_DIRECTION_TO: _("Cloning to radio")
+        COMM_DIRECTION_TO: _("Cloning to radio"),
     }
 
     progressbar = chirp_common.Status()
     if direction in progress_messages:
         progressbar.msg = progress_messages[direction]
     else:
-        LOG.debug(
-            f"direction parameter value is not recognised: {direction}"
-            )
-        raise errors.InvalidValueError(
-            f"Unexpected parameter received: {direction}"
-            )
+        LOG.debug(f"direction parameter value is not recognised: {direction}")
+        raise errors.InvalidValueError(f"Unexpected parameter received: {direction}")
 
     progressbar.max = radio.numblocks
     enter_clonemode(radio)
-    id_response = sendcmd(radio.pipe, b'\x02', None)
+    id_response = sendcmd(radio.pipe, b"\x02", None)
 
     # The last byte of the ID contains info about regional differences
     radio.subtype = id_response[-1]
@@ -358,17 +359,17 @@ def startcomms(radio, direction):
     id_response_mod = bytes(ba_id_response)
 
     if id_response != radio.id_str:
-        substr0 = radio.id_str[:radio.id_str.find(b'\x00')]
-        if id_response[:id_response.find(b'\x00')] != substr0:
+        substr0 = radio.id_str[: radio.id_str.find(b"\x00")]
+        if id_response[: id_response.find(b"\x00")] != substr0:
             msg = "ID mismatch.\nExpected:\n{}Received:\n{}".format(
                 util.hexprint(radio.id_str), util.hexprint(id_response_mod)
-                )
+            )
             LOG.warning(msg)
             raise errors.RadioError("Incorrect ID read from radio.")
         else:
             msg = "ID suspect.\nExpected:\n{}Received:\n{}".format(
                 util.hexprint(radio.id_str), util.hexprint(id_response_mod)
-                )
+            )
             LOG.warning(msg)
     return progressbar
 
@@ -389,10 +390,9 @@ def getblock(pipe, addr, image):
         return False
     if checkSum8(response[1:20]) != bytearray(response)[20]:
         LOG.debug("Bad checksum:\n%s" % util.hexprint(response))
-        LOG.debug('%r != %r' % (checkSum8(response[1:20]),
-                                bytearray(response)[20]))
+        LOG.debug("%r != %r" % (checkSum8(response[1:20]), bytearray(response)[20]))
         return False
-    image[addr:addr+16] = response[4:20]
+    image[addr : addr + 16] = response[4:20]
     return True
 
 
@@ -412,8 +412,7 @@ def do_download(radio):
             if getblock(pipe, 16 * blocknum, image):
                 break
             if i == 2:
-                raise errors.RadioError(
-                   "read block from radio failed 3 times")
+                raise errors.RadioError("read block from radio failed 3 times")
         progressbar.cur = blocknum
         radio.status_fn(progressbar)
     sendcmd(pipe, b"END", 0)
@@ -425,8 +424,8 @@ def putblock(pipe, addr, data):
     write a single 16-byte block to the radio
     send the command and check the response
     """
-    chkstr = struct.pack(">Hb",  addr, 16) + data
-    msg = b'W' + chkstr + struct.pack('B', checkSum8(chkstr)) + b'\x06'
+    chkstr = struct.pack(">Hb", addr, 16) + data
+    msg = b"W" + chkstr + struct.pack("B", checkSum8(chkstr)) + b"\x06"
     sendcmd(pipe, msg, 0)
 
 
@@ -441,11 +440,13 @@ def do_upload(radio):
     progressbar = startcomms(radio, COMM_DIRECTION_TO)
     data = get_mmap_data(radio)
     for _i in range(1, radio.numblocks):
-        putblock(pipe, 16*_i, data[16*_i:16*(_i+1)])
+        putblock(pipe, 16 * _i, data[16 * _i : 16 * (_i + 1)])
         progressbar.cur = _i
         radio.status_fn(progressbar)
     sendcmd(pipe, b"END", 0)
     return
+
+
 # End serial transfer utilities
 
 
@@ -493,14 +494,13 @@ class YaesuSC35GenericBankModel(chirp_common.BankModel):
 
     def add_memory_to_mapping(self, memory, bank):
         bankmem = self._radio._memobj.bankmask[bank.index]
-        store_bit(bankmem, memory.number-1, True)
+        store_bit(bankmem, memory.number - 1, True)
 
     def remove_memory_from_mapping(self, memory, bank):
         bankmem = self._radio._memobj.bankmask[bank.index]
-        if not retrieve_bit(bankmem, memory.number-1):
-            raise Exception("Memory %i is not in bank %s." %
-                            (memory.number, bank))
-        store_bit(bankmem, memory.number-1, False)
+        if not retrieve_bit(bankmem, memory.number - 1):
+            raise Exception("Memory %i is not in bank %s." % (memory.number, bank))
+        store_bit(bankmem, memory.number - 1, False)
 
     # return a list of slots in a bank
     def get_mapping_memories(self, bank):
@@ -535,25 +535,25 @@ DUPLEX_AUTO_US = [
     [146000000, 146395000, 0],
     [146600000, 146995000, 2],
     [147000000, 147395000, 0],
-    [147600000, 147995000, 2]]
+    [147600000, 147995000, 2],
+]
 # (There are no automatic duplex values in IARU-2 70CM.)
-DUPLEX_AUTO_EU = [
-    [145600000, 145800000, 2],
-    [438200000, 439425000, 2]]
+DUPLEX_AUTO_EU = [[145600000, 145800000, 2], [438200000, 439425000, 2]]
 
 SKIPS = ["S", ""]
 
 POWER_LEVELS = [
     chirp_common.PowerLevel("High", watts=5.0),  # high must be first (0)
     chirp_common.PowerLevel("Mid", watts=2.5),
-    chirp_common.PowerLevel("Low", watts=0.5)]
+    chirp_common.PowerLevel("Low", watts=0.5),
+]
 
 # these steps encode to 0-9 on all radios, but encoding #2 is disallowed
 # on the US versions (FT-4XR)
 STEP_CODE = [0, 5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0]
 VALID_STEPS = [x for x in STEP_CODE if x]
 US_LEGAL_STEPS = list(VALID_STEPS)  # copy to pass to UI on US radios
-US_LEGAL_STEPS.remove(6.25)       # euro radios just use STEP_CODE
+US_LEGAL_STEPS.remove(6.25)  # euro radios just use STEP_CODE
 
 # Map the radio image sql_type (0-6) to the CHIRP mem values.
 # Yaesu "TSQL" and "DCS" each map to different CHIRP values depending on the
@@ -567,34 +567,58 @@ US_LEGAL_STEPS.remove(6.25)       # euro radios just use STEP_CODE
 # two additional members to specify which of the radio fields to examine.
 # The map from CHIRP UI to radio image types is also built from this table.
 RADIO_TMODES = [
-        ([["", None], ], ),            # sql_type= 0. off
-        ([["Cross", "->Tone"], ], ),   # sql_type= 1. R-TONE
-        ([["Tone", None], ], ),        # sql_type= 2. T-TONE
-        ([                             # sql_type= 3. TSQL:
-          ["", None],                       # tx==0, rx==0 : invalid
-          ["TSQL", None],                   # tx==0
-          ["Tone", None],                   # rx==0
-          ["Cross", "Tone->Tone"],          # tx!=rx
-          ["TSQL", None]                    # tx==rx
-         ], "tx_ctcss", "rx_ctcss"),     # tx and rx fields to check
-        ([["TSQL-R", None], ], ),      # sql_type= 4. REV TN
-        ([                             # sql_type= 5.DCS:
-          ["", None],                       # tx==0, rx==0 : invalid
-          ["Cross", "->DTCS", "tx_dcs"],    # tx==0. suppress tx
-          ["Cross", "DTCS->", "rx_dcs"],    # rx==0. suppress rx
-          ["Cross", "DTCS->DTCS"],          # tx!=rx
-          ["DTCS", None]                    # tx==rx
-         ], "tx_dcs", "rx_dcs"),         # tx and rx fields to check
-        #                              # sql_type= 6. PAGER is a CHIRP "extra"
-        ]
+    (
+        [
+            ["", None],
+        ],
+    ),  # sql_type= 0. off
+    (
+        [
+            ["Cross", "->Tone"],
+        ],
+    ),  # sql_type= 1. R-TONE
+    (
+        [
+            ["Tone", None],
+        ],
+    ),  # sql_type= 2. T-TONE
+    (
+        [  # sql_type= 3. TSQL:
+            ["", None],  # tx==0, rx==0 : invalid
+            ["TSQL", None],  # tx==0
+            ["Tone", None],  # rx==0
+            ["Cross", "Tone->Tone"],  # tx!=rx
+            ["TSQL", None],  # tx==rx
+        ],
+        "tx_ctcss",
+        "rx_ctcss",
+    ),  # tx and rx fields to check
+    (
+        [
+            ["TSQL-R", None],
+        ],
+    ),  # sql_type= 4. REV TN
+    (
+        [  # sql_type= 5.DCS:
+            ["", None],  # tx==0, rx==0 : invalid
+            ["Cross", "->DTCS", "tx_dcs"],  # tx==0. suppress tx
+            ["Cross", "DTCS->", "rx_dcs"],  # rx==0. suppress rx
+            ["Cross", "DTCS->DTCS"],  # tx!=rx
+            ["DTCS", None],  # tx==rx
+        ],
+        "tx_dcs",
+        "rx_dcs",
+    ),  # tx and rx fields to check
+    #                              # sql_type= 6. PAGER is a CHIRP "extra"
+]
 
 # Find all legal values for the tmode and cross fields for the UI.
 # We build two dictionaries to do the lookups when encoding.
 # The reversed range is a kludge: by happenstance, earlier duplicates
 # in the above table are the preferred mapping, they override the
 # later ones when we process the table backwards.
-TONE_DICT = {}          # encode sql_type.
-CROSS_DICT = {}         # encode sql_type.
+TONE_DICT = {}  # encode sql_type.
+CROSS_DICT = {}  # encode sql_type.
 
 for sql_type in reversed(range(0, len(RADIO_TMODES))):
     sql_type_row: list = RADIO_TMODES[sql_type]
@@ -609,7 +633,7 @@ for sql_type in reversed(range(0, len(RADIO_TMODES))):
 # The keys are added to the "VALID" lists using code that puts those lists
 # in the same order as the UI's default order instead of the random dict
 # order or the arbitrary build order.
-VALID_TONE_MODES = []   # list for UI.
+VALID_TONE_MODES = []  # list for UI.
 VALID_CROSS_MODES = []  # list for UI.
 for name in chirp_common.TONE_MODES:
     if name in TONE_DICT:
@@ -623,7 +647,7 @@ DTMF_CHARS = "0123456789ABCD*#- "
 CW_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 PASSWD_CHARS = "0123456789"
 CHARSET = CW_ID_CHARS + "abcdefghijklmnopqrstuvwxyz*+-/@"
-PMSNAMES = ["%s%02d" % (c, i) for i in range(1, 11) for c in ('L', 'U')]
+PMSNAMES = ["%s%02d" % (c, i) for i in range(1, 11) for c in ("L", "U")]
 
 # Four separate arrays of special channel mems.
 # Each special has unique constraints: band, name yes/no, and pms L/U
@@ -633,23 +657,23 @@ SPECIALS_FT4 = [
     ("pms", PMSNAMES),
     ("vfo", ["VFO A UHF", "VFO A VHF", "VFO B FM", "VFO B VHF", "VFO B UHF"]),
     ("home", ["HOME FM", "HOME VHF", "HOME UHF"]),
-    ("prog", ["P1", "P2"])
-    ]
+    ("prog", ["P1", "P2"]),
+]
 SPECIALS_FT65 = SPECIALS_FT4
 FT65_PROGS = ("prog", ["P1", "P2", "P3", "P4"])
-SPECIALS_FT65[-1] = FT65_PROGS    # replace the last entry (P key names)
+SPECIALS_FT65[-1] = FT65_PROGS  # replace the last entry (P key names)
 
 
 VALID_BANDS_DUAL = [
-    (65000000, 108000000),     # broadcast FM, receive only
-    (136000000, 174000000),    # VHF
-    (400000000, 480000000)     # UHF
-    ]
+    (65000000, 108000000),  # broadcast FM, receive only
+    (136000000, 174000000),  # VHF
+    (400000000, 480000000),  # UHF
+]
 
 VALID_BANDS_VHF = [
-    (65000000, 108000000),     # broadcast FM, receive only
-    (136000000, 174000000),    # VHF
-    ]
+    (65000000, 108000000),  # broadcast FM, receive only
+    (136000000, 174000000),  # VHF
+]
 
 # bands for the five VFO and three home channel memories
 BAND_ASSIGNMENTS_DUALBAND = [2, 1, 0, 1, 2, 0, 1, 2]  # all locations used
@@ -659,30 +683,168 @@ BAND_ASSIGNMENTS_MONO_VHF = [1, 1, 0, 1, 1, 0, 1, 1]  # UHF locations unused
 # None, and 50 Tones. Use this explicit array because the
 # one in chirp_common could change and no longer describe our radio
 TONE_MAP = [
-    None, 67.0, 69.3, 71.9, 74.4, 77.0, 79.7, 82.5,
-    85.4, 88.5, 91.5, 94.8, 97.4, 100.0, 103.5,
-    107.2, 110.9, 114.8, 118.8, 123.0, 127.3,
-    131.8, 136.5, 141.3, 146.2, 151.4, 156.7,
-    159.8, 162.2, 165.5, 167.9, 171.3, 173.8,
-    177.3, 179.9, 183.5, 186.2, 189.9, 192.8,
-    196.6, 199.5, 203.5, 206.5, 210.7, 218.1,
-    225.7, 229.1, 233.6, 241.8, 250.3, 254.1
-    ]
+    None,
+    67.0,
+    69.3,
+    71.9,
+    74.4,
+    77.0,
+    79.7,
+    82.5,
+    85.4,
+    88.5,
+    91.5,
+    94.8,
+    97.4,
+    100.0,
+    103.5,
+    107.2,
+    110.9,
+    114.8,
+    118.8,
+    123.0,
+    127.3,
+    131.8,
+    136.5,
+    141.3,
+    146.2,
+    151.4,
+    156.7,
+    159.8,
+    162.2,
+    165.5,
+    167.9,
+    171.3,
+    173.8,
+    177.3,
+    179.9,
+    183.5,
+    186.2,
+    189.9,
+    192.8,
+    196.6,
+    199.5,
+    203.5,
+    206.5,
+    210.7,
+    218.1,
+    225.7,
+    229.1,
+    233.6,
+    241.8,
+    250.3,
+    254.1,
+]
 
 # None, and 104 DTCS Codes. Use this explicit array because the
 # one in chirp_common could change and no longer describe our radio
 DTCS_MAP = [
-    None, 23,  25,  26,  31,  32,  36,  43,  47,  51,  53,  54,
-    65,  71,  72,  73,  74,  114, 115, 116, 122, 125, 131,
-    132, 134, 143, 145, 152, 155, 156, 162, 165, 172, 174,
-    205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252,
-    255, 261, 263, 265, 266, 271, 274, 306, 311, 315, 325,
-    331, 332, 343, 346, 351, 356, 364, 365, 371, 411, 412,
-    413, 423, 431, 432, 445, 446, 452, 454, 455, 462, 464,
-    465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606,
-    612, 624, 627, 631, 632, 654, 662, 664, 703, 712, 723,
-    731, 732, 734, 743, 754
-    ]
+    None,
+    23,
+    25,
+    26,
+    31,
+    32,
+    36,
+    43,
+    47,
+    51,
+    53,
+    54,
+    65,
+    71,
+    72,
+    73,
+    74,
+    114,
+    115,
+    116,
+    122,
+    125,
+    131,
+    132,
+    134,
+    143,
+    145,
+    152,
+    155,
+    156,
+    162,
+    165,
+    172,
+    174,
+    205,
+    212,
+    223,
+    225,
+    226,
+    243,
+    244,
+    245,
+    246,
+    251,
+    252,
+    255,
+    261,
+    263,
+    265,
+    266,
+    271,
+    274,
+    306,
+    311,
+    315,
+    325,
+    331,
+    332,
+    343,
+    346,
+    351,
+    356,
+    364,
+    365,
+    371,
+    411,
+    412,
+    413,
+    423,
+    431,
+    432,
+    445,
+    446,
+    452,
+    454,
+    455,
+    462,
+    464,
+    465,
+    466,
+    503,
+    506,
+    516,
+    523,
+    526,
+    532,
+    546,
+    565,
+    606,
+    612,
+    624,
+    627,
+    631,
+    632,
+    654,
+    662,
+    664,
+    703,
+    712,
+    723,
+    731,
+    732,
+    734,
+    743,
+    754,
+]
 
 # The legal PAGER codes are the same as the CTCSS codes, but we
 # pass them to the UI as a list of strings
@@ -700,13 +862,15 @@ def add_paramdesc(desc_list, group, param):
             return
 
 
-class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
-                            chirp_common.ExperimentalRadio):
+class YaesuSC35GenericRadio(
+    chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio
+):
     """
     Base class for all Yaesu radios using the SCU-35 programming cable
     and its protocol. Classes for sub families extend this class and
     are found towards the end of this file.
     """
+
     VENDOR = "Yaesu"
     MODEL = "SCU-35Generic"  # No radio directly uses the base class
     BAUD_RATE = 9600
@@ -715,8 +879,8 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
 
     # These settings are common to all radios in this family.
     _valid_chars = chirp_common.CHARSET_ASCII
-    numblocks = 0x215           # number of 16-byte blocks in the radio
-    _memsize = 16 * numblocks   # used by CHIRP file loader to guess radio type
+    numblocks = 0x215  # number of 16-byte blocks in the radio
+    _memsize = 16 * numblocks  # used by CHIRP file loader to guess radio type
     MAX_MEM_SLOT = 200
 
     # ID string last byte can contain extra info. It is usually 0;
@@ -724,11 +888,11 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
     # which affects the scaler: instead of the default 50000 it's then 25000.
     @property
     def subtype(self):
-        return self.metadata.get('ft4_subtype', 0)
+        return self.metadata.get("ft4_subtype", 0)
 
     @subtype.setter
     def subtype(self, value):
-        self.metadata = {'ft4_subtype': int(value)}
+        self.metadata = {"ft4_subtype": int(value)}
 
     @classmethod
     def get_prompts(cls):
@@ -737,12 +901,11 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
             "Tested and mostly works, but may give you issues\n"
             "when using lesser common radio variants.\n"
             "Proceed at your own risk, and let us know about issues!"
-            )
+        )
 
         rp.pre_download = _(
-            "1. Connect programming cable to MIC jack.\n"
-            "2. Press OK."
-            )
+            "1. Connect programming cable to MIC jack.\n" "2. Press OK."
+        )
         rp.pre_upload = rp.pre_download
         return rp
 
@@ -767,7 +930,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         rf.can_odd_split = True
         rf.has_ctone = True
         rf.has_rx_dtcs = True
-        rf.has_dtcs_polarity = False    # REV TN reverses the tone, not the dcs
+        rf.has_dtcs_polarity = False  # REV TN reverses the tone, not the dcs
         rf.has_cross = True
         rf.has_settings = True
 
@@ -807,13 +970,13 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         lng = len(obj)
         string = (element.value.get_value() + "                ")[:lng]
         bytes = bytearray(string, "ascii")
-        for x in range(0, lng):    # memobj cannot iterate, so byte-by-byte
+        for x in range(0, lng):  # memobj cannot iterate, so byte-by-byte
             obj[x] = bytes[x]
         return
 
     # add a string value to the RadioSettings
     def get_string_setting(self, obj, valid_chars, desc1, desc2, group):
-        content = ''
+        content = ""
         maxlen = len(obj)
         for x in range(0, maxlen):
             content += chr(obj[x])
@@ -827,7 +990,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         #   parm =(paramname, paramtitle,(handler,[handler params])).
         objname, title, fparms = parm
         myparms = fparms[1]
-        obj = getattr(self._memobj.settings,  objname)
+        obj = getattr(self._memobj.settings, objname)
         self.get_string_setting(obj, myparms[0], objname, title, group)
 
     # called when found in the group_descriptions table for DTMF strings
@@ -836,8 +999,12 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         for i in range(1, 10):
             dtmf_digits = self._memobj.dtmf[i - 1].digit
             self.get_string_setting(
-                dtmf_digits, DTMF_CHARS,
-                "dtmf_%i" % i, "DTMF Autodialer Memory %i" % i, group)
+                dtmf_digits,
+                DTMF_CHARS,
+                "dtmf_%i" % i,
+                "DTMF Autodialer Memory %i" % i,
+                group,
+            )
 
     def apply_P(self, element, pnum, memobj):
         memobj.progctl[pnum].usage = element.value
@@ -867,15 +1034,41 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
             rs = RadioSetting(sname + k, longname + k, valuelist)
             rs.set_apply_callback(f_apply, i, self._memobj)
             group.append(rs)
+
         for i in range(0, self.Pkeys):
-            get_prog(i, self.USAGE_LIST,  _progctl[i].usage,
-                     "P", "Programmable key ",  self.apply_P)
-            get_prog(i, self.SETMODES, _progctl[i].parm, "modeP",
-                     "mode for Programmable key ",  self.apply_Pmode)
-            get_prog(i, ["0", "1", "2", "3"], _progctl[i].submode, "submodeP",
-                     "submode for Programmable key ",  self.apply_Psubmode)
-            get_prog(i, self.MEMLIST, _progndx[i], "memP",
-                     "mem for Programmable key ",  self.apply_Pmem)
+            get_prog(
+                i,
+                self.USAGE_LIST,
+                _progctl[i].usage,
+                "P",
+                "Programmable key ",
+                self.apply_P,
+            )
+            get_prog(
+                i,
+                self.SETMODES,
+                _progctl[i].parm,
+                "modeP",
+                "mode for Programmable key ",
+                self.apply_Pmode,
+            )
+            get_prog(
+                i,
+                ["0", "1", "2", "3"],
+                _progctl[i].submode,
+                "submodeP",
+                "submode for Programmable key ",
+                self.apply_Psubmode,
+            )
+            get_prog(
+                i,
+                self.MEMLIST,
+                _progndx[i],
+                "memP",
+                "mem for Programmable key ",
+                self.apply_Pmem,
+            )
+
     # ------------ End of special settings handlers.
 
     # list of group description tuples: [groupame,group title, [param list]].
@@ -886,63 +1079,109 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
     # class_group_descs. The FT-4 classes simply equate this, but the
     # FT-65 classes must copy and modify this.
     group_descriptions = [
-        ("misc", "Miscellaneous Settings", [    # misc
-         ("apo", "Automatic Power Off",
-          ["OFF"] + ["%0.1f" % (x * 0.5) for x in range(1, 24 + 1)]),
-         ("bclo", "Busy Channel Lock-Out", ["OFF", "ON"]),
-         ("beep", "Enable the Beeper", ["KEY+SC", "KEY", "OFF"]),
-         ("bsy_led", "Busy LED", ["ON", "OFF"]),
-         ("edg_beep", "Band Edge Beeper", ["OFF", "ON"]),
-         ("vox", "VOX", ["OFF", "ON"]),
-         ("rf_squelch", "RF Squelch Threshold",
-          ["OFF", "S-1", "S-2", "S-3", "S-4", "S-5", "S-6", "S-7", "S-FULL"]),
-         ("tot", "Timeout Timer",
-          ["OFF"] + ["%dMIN" % (x) for x in range(1, 30 + 1)]),
-         ("tx_led", "TX LED", ["OFF", "ON"]),
-         ("use_cwid", "use CW ID", ["NO", "YES"]),
-         ("cw_id",  "CW ID Callsign",  (get_strset, [CW_ID_CHARS])),  # handler
-         ("vfo_spl", "VFO Split", ["OFF", "ON"]),
-         ("wfm_rcv", "Enable Broadband FM", ["OFF", "ON"]),
-         ("passwd", "Password",  (get_strset, [PASSWD_CHARS]))  # handler
-         ]),
-        ("arts", "ARTS Settings", [  # arts
-         ("arts_beep", "ARTS BEEP", ["OFF", "INRANG", "ALWAYS"]),
-         ("arts_intv", "ARTS Polling Interval", ["25 SEC", "15 SEC"])
-         ]),
-        ("ctcss", "CTCSS/DCS/DTMF Settings", [  # ctcss
-         ("bell", "Bell Repetitions", ["OFF", "1T", "3T", "5T", "8T", "CONT"]),
-         ("dtmf_mode", "DTMF Mode", ["Manual", "Auto"]),
-         ("dtmf_delay", "DTMF Autodialer Delay Time",
-          ["50 ms", "100 ms", "250 ms", "450 ms", "750 ms", "1000 ms"]),
-         ("dtmf_speed", "DTMF Autodialer Sending Speed", ["50 ms", "100 ms"]),
-         ("dtmf", "DTMF Autodialer Memory ",  (get_dtmfs, []))  # handler
-         ]),
-        ("switch", "Switch/Knob Settings", [  # switch
-         ("lamp", "Lamp Mode", ["5SEC", "10SEC", "30SEC", "KEY", "OFF"]),
-         ("moni_tcall", "MONI Switch Function",
-          ["MONI", "1750", "2100", "1000", "1450"]),
-         ("key_lock", "Lock Function", ["KEY", "PTT", "KEY+PTT"]),
-         ("Pkeys", "Pkey fields", (get_progs, []))
-         ]),
-        ("scan", "Scan Settings", [   # scan
-         ("scan_resume", "Scan Resume Mode", ["BUSY", "HOLD", "TIME"]),
-         ("pri_rvt", "Priority Revert", ["OFF", "ON"]),
-         ("scan_lamp", "Scan Lamp", ["OFF", "ON"]),
-         ("wx_alert", "Weather Alert Scan", ["OFF", "ON"])
-         ]),
-        ("power", "Power Saver Settings", [  # power
-         ("battsave", "Receive Mode Battery Save Interval",
-          ["OFF", "200 ms", "300 ms", "500 ms", "1 s", "2 s"]),
-         ("tx_save", "Transmitter Battery Saver", ["OFF", "ON"])
-         ]),
-        ("eai", "EAI/EPCS Settings", [  # eai
-         ("pager_tx1", "TX pager frequency 1", EPCS_CODES),
-         ("pager_tx2", "TX pager frequency 2", EPCS_CODES),
-         ("pager_rx1", "RX pager frequency 1", EPCS_CODES),
-         ("pager_rx2", "RX pager frequency 2", EPCS_CODES),
-         ("pager_ack", "Pager answerback", ["NO", "YES"])
-         ])
-        ]
+        (
+            "misc",
+            "Miscellaneous Settings",
+            [  # misc
+                (
+                    "apo",
+                    "Automatic Power Off",
+                    ["OFF"] + ["%0.1f" % (x * 0.5) for x in range(1, 24 + 1)],
+                ),
+                ("bclo", "Busy Channel Lock-Out", ["OFF", "ON"]),
+                ("beep", "Enable the Beeper", ["KEY+SC", "KEY", "OFF"]),
+                ("bsy_led", "Busy LED", ["ON", "OFF"]),
+                ("edg_beep", "Band Edge Beeper", ["OFF", "ON"]),
+                ("vox", "VOX", ["OFF", "ON"]),
+                (
+                    "rf_squelch",
+                    "RF Squelch Threshold",
+                    ["OFF", "S-1", "S-2", "S-3", "S-4", "S-5", "S-6", "S-7", "S-FULL"],
+                ),
+                (
+                    "tot",
+                    "Timeout Timer",
+                    ["OFF"] + ["%dMIN" % (x) for x in range(1, 30 + 1)],
+                ),
+                ("tx_led", "TX LED", ["OFF", "ON"]),
+                ("use_cwid", "use CW ID", ["NO", "YES"]),
+                ("cw_id", "CW ID Callsign", (get_strset, [CW_ID_CHARS])),  # handler
+                ("vfo_spl", "VFO Split", ["OFF", "ON"]),
+                ("wfm_rcv", "Enable Broadband FM", ["OFF", "ON"]),
+                ("passwd", "Password", (get_strset, [PASSWD_CHARS])),  # handler
+            ],
+        ),
+        (
+            "arts",
+            "ARTS Settings",
+            [  # arts
+                ("arts_beep", "ARTS BEEP", ["OFF", "INRANG", "ALWAYS"]),
+                ("arts_intv", "ARTS Polling Interval", ["25 SEC", "15 SEC"]),
+            ],
+        ),
+        (
+            "ctcss",
+            "CTCSS/DCS/DTMF Settings",
+            [  # ctcss
+                ("bell", "Bell Repetitions", ["OFF", "1T", "3T", "5T", "8T", "CONT"]),
+                ("dtmf_mode", "DTMF Mode", ["Manual", "Auto"]),
+                (
+                    "dtmf_delay",
+                    "DTMF Autodialer Delay Time",
+                    ["50 ms", "100 ms", "250 ms", "450 ms", "750 ms", "1000 ms"],
+                ),
+                ("dtmf_speed", "DTMF Autodialer Sending Speed", ["50 ms", "100 ms"]),
+                ("dtmf", "DTMF Autodialer Memory ", (get_dtmfs, [])),  # handler
+            ],
+        ),
+        (
+            "switch",
+            "Switch/Knob Settings",
+            [  # switch
+                ("lamp", "Lamp Mode", ["5SEC", "10SEC", "30SEC", "KEY", "OFF"]),
+                (
+                    "moni_tcall",
+                    "MONI Switch Function",
+                    ["MONI", "1750", "2100", "1000", "1450"],
+                ),
+                ("key_lock", "Lock Function", ["KEY", "PTT", "KEY+PTT"]),
+                ("Pkeys", "Pkey fields", (get_progs, [])),
+            ],
+        ),
+        (
+            "scan",
+            "Scan Settings",
+            [  # scan
+                ("scan_resume", "Scan Resume Mode", ["BUSY", "HOLD", "TIME"]),
+                ("pri_rvt", "Priority Revert", ["OFF", "ON"]),
+                ("scan_lamp", "Scan Lamp", ["OFF", "ON"]),
+                ("wx_alert", "Weather Alert Scan", ["OFF", "ON"]),
+            ],
+        ),
+        (
+            "power",
+            "Power Saver Settings",
+            [  # power
+                (
+                    "battsave",
+                    "Receive Mode Battery Save Interval",
+                    ["OFF", "200 ms", "300 ms", "500 ms", "1 s", "2 s"],
+                ),
+                ("tx_save", "Transmitter Battery Saver", ["OFF", "ON"]),
+            ],
+        ),
+        (
+            "eai",
+            "EAI/EPCS Settings",
+            [  # eai
+                ("pager_tx1", "TX pager frequency 1", EPCS_CODES),
+                ("pager_tx2", "TX pager frequency 2", EPCS_CODES),
+                ("pager_rx1", "RX pager frequency 1", EPCS_CODES),
+                ("pager_rx2", "RX pager frequency 2", EPCS_CODES),
+                ("pager_ack", "Pager answerback", ["NO", "YES"]),
+            ],
+        ),
+    ]
     # ----------------end of group_descriptions
 
     # returns the current values of all the settings in the radio memory image,
@@ -968,11 +1207,9 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
                     else:
                         # setting  needs special handling. opts[0] is a
                         # function name
-                        opts[0](self,  group, parm)
+                        opts[0](self, group, parm)
                 except Exception as e:
-                    LOG.debug(
-                        "%s: cannot set %s to %s" % (e, param, repr(objval))
-                        )
+                    LOG.debug("%s: cannot set %s to %s" % (e, param, repr(objval)))
         return groups
         # end of get_settings
 
@@ -1052,18 +1289,17 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         if mem.tmode == "TSQL":
             chan.tx_ctcss = chan.rx_ctcss  # CHIRP uses ctone for TSQL
         if mem.tmode == "DTCS":
-            chan.rx_dcs = chan.tx_dcs     # CHIRP uses rx_dtcs for DTCS
+            chan.rx_dcs = chan.tx_dcs  # CHIRP uses rx_dtcs for DTCS
         # select the correct internal dictionary and key
-        mode_dict, key = [
-            (TONE_DICT, mem.tmode),
-            (CROSS_DICT, mem.cross_mode)
-            ][mem.tmode == "Cross"]
+        mode_dict, key = [(TONE_DICT, mem.tmode), (CROSS_DICT, mem.cross_mode)][
+            mem.tmode == "Cross"
+        ]
         # now look up that key in that dictionary.
         chan.sql_type, suppress = mode_dict[key]
         if suppress:
             setattr(chan, suppress, 0)
         for setting in mem.extra:
-            if (setting.get_name() == 'sql_override'):
+            if setting.get_name() == "sql_override":
                 value = str(setting.value)
                 if value == "PAGER":
                     chan.sql_type = 6
@@ -1077,7 +1313,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         array = None
         num = memref
         sname = memref
-        if isinstance(memref, str):   # named special?
+        if isinstance(memref, str):  # named special?
             num = self.MAX_MEM_SLOT + 1
             for x in self.class_specials:
                 try:
@@ -1090,7 +1326,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
                 LOG.debug("unknown Special %s", memref)
                 raise
             num += ndx
-        elif memref > self.MAX_MEM_SLOT:    # numbered special?
+        elif memref > self.MAX_MEM_SLOT:  # numbered special?
             ndx = memref - (self.MAX_MEM_SLOT + 1)
             for x in self.class_specials:
                 if ndx < len(x[1]):
@@ -1101,7 +1337,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
             if array is None:
                 LOG.debug("memref number %d out of range", memref)
                 raise
-        else:                    # regular memory slot
+        else:  # regular memory slot
             array = "memory"
             ndx = memref - 1
         memloc = getattr(self._memobj, array)[ndx]
@@ -1119,23 +1355,23 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
     # return the info for a memory channel In CHIRP canonical form
     def get_memory(self, memref):
 
-        def clean_name(obj):     # helper func to tidy up the name
-            name = ''
+        def clean_name(obj):  # helper func to tidy up the name
+            name = ""
             for x in range(0, self.namelen):
                 y = obj[x]
                 if y == 0:
                     break
-                if y == 0x7F:    # when programmed from VFO
+                if y == 0x7F:  # when programmed from VFO
                     y = 0x20
                 name += chr(y)
             return name.rstrip()
 
-        def get_duplex(freq):    # auto duplex to real duplex
+        def get_duplex(freq):  # auto duplex to real duplex
             """
             Select the duplex direction if duplex == 'auto'.
             0 is +, 2 is -, and 4 is none.
             """
-            return_value = 4     # off, if not in auto range
+            return_value = 4  # off, if not in auto range
             for x in self.DUPLEX_AUTO:
                 if freq in range(x[0], x[1]):
                     return_value = x[2]
@@ -1187,7 +1423,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
                 mem.offset = txfreq
             else:
                 mem.offset = int(_mem.offset) * 25000 * freq_offset_factor
-            if self.DUPLEX_OFF_VIA_OFFSET and mem.duplex in ['+', '-']:
+            if self.DUPLEX_OFF_VIA_OFFSET and mem.duplex in ["+", "-"]:
                 band = self.band_for_freq(mem.freq)
                 if band is not None and self.DUPLEX_OFF_VIA_OFFSET[band]:
                     sign = 1 if mem.duplex == "+" else -1
@@ -1244,7 +1480,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
         _mem.unknown1 = 0
         _mem.unknown2 = 0
 
-        txfreq = mem.freq / 10     # really. RX freq is used for TX base
+        txfreq = mem.freq / 10  # really. RX freq is used for TX base
         _mem.freq = txfreq
         self.encode_sql(mem, _mem)
         if mem.power:
@@ -1274,7 +1510,7 @@ class YaesuSC35GenericRadio(chirp_common.CloneModeRadio,
             self._memobj.names[ndx].chrs = bytearray(nametrim, "ascii")
             if duplex == "split":
                 txfreq = offset / 10
-            self._memobj.txfreqs[num-1].freq = txfreq
+            self._memobj.txfreqs[num - 1].freq = txfreq
         _mem.duplex = DUPLEX.index(duplex)
         if regtype in ["vfo", "home"]:
             self.enforce_band(_mem, mem.freq, num, sname)
@@ -1287,25 +1523,63 @@ class YaesuFT4GenericRadio(YaesuSC35GenericRadio):
     FT-4 sub family class. Classes for individual radios extend
     these classes and are found at the end of this file.
     """
+
     class_specials = SPECIALS_FT4
-    Pkeys = 2     # number of programmable keys
-    namelen = 6   # length of the mem name display on the front-panel
+    Pkeys = 2  # number of programmable keys
+    namelen = 6  # length of the mem name display on the front-panel
     freq_offset_factor = 1  # 25000 * 1
     class_group_descs = YaesuSC35GenericRadio.group_descriptions
     # names for the setmode function for the programmable keys. Mode zero means
     # that the key is programmed for a memory not a setmode.
     SETMODES = [
-        "mem", "apo", "ar bep", "ar int", "beclo",              # 00-04
-        "beep", "bell", "cw id", "cw wrt", "dc vlt",            # 05-09
-        "dcs cod", "dt dly", "dt set", "dtc spd", "edg.bep",    # 10-14
-        "lamp", "led.bsy", "led.tx", "lock", "m/t-cl",          # 15-19
-        "mem.del", "mem.tag", "pag.abk", "pag.cdr", "pag.cdt",  # 20-24
-        "pri.rvt", "pswd", "pswdwt", "rf sql", "rpt.ars",       # 25-29
-        "rpt.frq", "rpt.sft", "rxsave", "scn.lmp", "scn.rsm",   # 30-34
-        "skip", "sql.typ", "step", "tn frq", "tot",             # 35-39
-        "tx pwr", "tx save", "vfo.spl", "vox", "wfm.rcv",       # 40-44
-        "w/n.dev", "wx.alert"                                   # 45-46
-        ]
+        "mem",
+        "apo",
+        "ar bep",
+        "ar int",
+        "beclo",  # 00-04
+        "beep",
+        "bell",
+        "cw id",
+        "cw wrt",
+        "dc vlt",  # 05-09
+        "dcs cod",
+        "dt dly",
+        "dt set",
+        "dtc spd",
+        "edg.bep",  # 10-14
+        "lamp",
+        "led.bsy",
+        "led.tx",
+        "lock",
+        "m/t-cl",  # 15-19
+        "mem.del",
+        "mem.tag",
+        "pag.abk",
+        "pag.cdr",
+        "pag.cdt",  # 20-24
+        "pri.rvt",
+        "pswd",
+        "pswdwt",
+        "rf sql",
+        "rpt.ars",  # 25-29
+        "rpt.frq",
+        "rpt.sft",
+        "rxsave",
+        "scn.lmp",
+        "scn.rsm",  # 30-34
+        "skip",
+        "sql.typ",
+        "step",
+        "tn frq",
+        "tot",  # 35-39
+        "tx pwr",
+        "tx save",
+        "vfo.spl",
+        "vox",
+        "wfm.rcv",  # 40-44
+        "w/n.dev",
+        "wx.alert",  # 45-46
+    ]
 
 
 class YaesuFT65GenericRadio(YaesuSC35GenericRadio):
@@ -1313,26 +1587,58 @@ class YaesuFT65GenericRadio(YaesuSC35GenericRadio):
     FT-65 sub family class. Classes for individual radios extend
     these classes and are found at the end of this file.
     """
+
     class_specials = SPECIALS_FT65
-    Pkeys = 4     # number of programmable keys
-    namelen = 8   # length of the mem name display on the front-panel
+    Pkeys = 4  # number of programmable keys
+    namelen = 8  # length of the mem name display on the front-panel
     freq_offset_factor = 2  # 25000 * 2
     # we need a deep copy here because we are adding deeper than the top level.
     class_group_descs = copy.deepcopy(YaesuSC35GenericRadio.group_descriptions)
-    add_paramdesc(
-        class_group_descs, "misc", ("compander", "Compander", ["OFF", "ON"]))
+    add_paramdesc(class_group_descs, "misc", ("compander", "Compander", ["OFF", "ON"]))
     # names for the setmode function for the programmable keys. Mode zero means
     # that the key is programmed for a memory not a setmode.
     SETMODES = [
-        "mem", "apo", "arts", "battsave", "b-ch.l/o",              # 00-04
-        "beep", "bell", "compander", "ctcss", "cw id",             # 05-09
-        "dc volt", "dcs code", "dtmf set", "dtmf wrt", "edg bep",  # 10-14
-        "key lock", "lamp", "ledbsy", "mem del", "mon/t-cl",       # 15-19
-        "name tag", "pager", "password", "pri.rvt", "repeater",    # 20-24
-        "resume", "rf.sql", "scn.lamp", "skip", "sql type",        # 25-29
-        "step", "tot", "tx pwr", "tx save", "vfo.spl",             # 30-34
-        "vox", "wfm.rcv", "wide/nar", "wx alert", "scramble"       # 35-39
-        ]
+        "mem",
+        "apo",
+        "arts",
+        "battsave",
+        "b-ch.l/o",  # 00-04
+        "beep",
+        "bell",
+        "compander",
+        "ctcss",
+        "cw id",  # 05-09
+        "dc volt",
+        "dcs code",
+        "dtmf set",
+        "dtmf wrt",
+        "edg bep",  # 10-14
+        "key lock",
+        "lamp",
+        "ledbsy",
+        "mem del",
+        "mon/t-cl",  # 15-19
+        "name tag",
+        "pager",
+        "password",
+        "pri.rvt",
+        "repeater",  # 20-24
+        "resume",
+        "rf.sql",
+        "scn.lamp",
+        "skip",
+        "sql type",  # 25-29
+        "step",
+        "tot",
+        "tx pwr",
+        "tx save",
+        "vfo.spl",  # 30-34
+        "vox",
+        "wfm.rcv",
+        "wide/nar",
+        "wx alert",
+        "scramble",  # 35-39
+    ]
 
 
 # Classes for each individual radio.
@@ -1343,8 +1649,9 @@ class YaesuFT4XRRadio(YaesuFT4GenericRadio):
     """
     FT-4X dual band, US version
     """
+
     MODEL = "FT-4XR"
-    id_str = b'IFT-35R\x00\x00V100\x00\x00'
+    id_str = b"IFT-35R\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_DUAL
     DUPLEX_AUTO = DUPLEX_AUTO_US
     legal_steps = US_LEGAL_STEPS
@@ -1356,8 +1663,9 @@ class YaesuFT4XERadio(YaesuFT4GenericRadio):
     """
     FT-4X dual band, EU version
     """
+
     MODEL = "FT-4XE"
-    id_str = b'IFT-35R\x00\x00V100\x00\x00'
+    id_str = b"IFT-35R\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_DUAL
     DUPLEX_AUTO = DUPLEX_AUTO_EU
     legal_steps = VALID_STEPS
@@ -1369,8 +1677,9 @@ class YaesuFT4VRRadio(YaesuFT4GenericRadio):
     """
     FT-4V VHF, US version
     """
+
     MODEL = "FT-4VR"
-    id_str = b'IFT-15R\x00\x00V100\x00\x00'
+    id_str = b"IFT-15R\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_VHF
     DUPLEX_AUTO = DUPLEX_AUTO_US
     legal_steps = US_LEGAL_STEPS
@@ -1396,8 +1705,9 @@ class YaesuFT65RRadio(YaesuFT65GenericRadio):
     """
     FT-65 dual band, US/Asia version
     """
+
     MODEL = "FT-65R"
-    id_str = b'IH-420\x00\x00\x00V100\x00\x00'
+    id_str = b"IH-420\x00\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_DUAL
     DUPLEX_AUTO = DUPLEX_AUTO_US
     legal_steps = VALID_STEPS
@@ -1406,7 +1716,7 @@ class YaesuFT65RRadio(YaesuFT65GenericRadio):
         None,  # Don't modify broadcast FM memories
         ("-", 99_950_000),
         ("+", 99_950_000),
-        ]
+    ]
 
 
 @directory.register
@@ -1414,8 +1724,9 @@ class YaesuFT65ERadio(YaesuFT65GenericRadio):
     """
     FT-65 dual band, EU version
     """
+
     MODEL = "FT-65E"
-    id_str = b'IH-420\x00\x00\x00V100\x00\x00'
+    id_str = b"IH-420\x00\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_DUAL
     DUPLEX_AUTO = DUPLEX_AUTO_EU
     legal_steps = VALID_STEPS
@@ -1427,8 +1738,9 @@ class YaesuFT25RRadio(YaesuFT65GenericRadio):
     """
     FT-25 VHF, US/Asia version
     """
+
     MODEL = "FT-25R"
-    id_str = b'IFT-25R\x00\x00V100\x00\x00'
+    id_str = b"IFT-25R\x00\x00V100\x00\x00"
     valid_bands = VALID_BANDS_VHF
     DUPLEX_AUTO = DUPLEX_AUTO_US
     legal_steps = US_LEGAL_STEPS

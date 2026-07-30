@@ -69,14 +69,15 @@ TONE = ["", "", "Tone", "TSQL"]
 def _get_special():
     special = {}
     for i in range(0, 5):
-        special["M%iA" % (i+1)] = 100 + i*2
-        special["M%iB" % (i+1)] = 100 + i*2 + 1
+        special["M%iA" % (i + 1)] = 100 + i * 2
+        special["M%iB" % (i + 1)] = 100 + i * 2 + 1
     return special
 
 
 @directory.register
 class ICW32ARadio(icf.IcomCloneModeRadio):
     """Icom IC-W32A"""
+
     VENDOR = "Icom"
     MODEL = "IC-W32A"
 
@@ -100,7 +101,7 @@ class ICW32ARadio(icf.IcomCloneModeRadio):
         rf.valid_tmodes = ["", "Tone", "TSQL"]
         rf.valid_name_length = 8
         rf.valid_special_chans = sorted(_get_special().keys())
-        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + '-./'
+        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "-./"
         rf.valid_tuning_steps = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
 
         rf.has_sub_devices = self.VARIANT == ""
@@ -170,7 +171,7 @@ class ICW32ARadio(icf.IcomCloneModeRadio):
         if mem.name:
             _mem.name = mem.name.ljust(8)[:8]
         else:
-            _mem.name = "".join(["\xFF" * 8])
+            _mem.name = "".join(["\xff" * 8])
         _mem.rtone = chirp_common.TONES.index(mem.rtone)
         _mem.ctone = chirp_common.TONES.index(mem.ctone)
 
@@ -198,6 +199,7 @@ class ICW32ARadio(icf.IcomCloneModeRadio):
 
 class ICW32ARadioVHF(ICW32ARadio):
     """ICW32 VHF subdevice"""
+
     VARIANT = "VHF"
     _limits = (118000000, 174000000)
     _mem_positions = (0x0000, 0x0DC0)
@@ -205,6 +207,7 @@ class ICW32ARadioVHF(ICW32ARadio):
 
 class ICW32ARadioUHF(ICW32ARadio):
     """ICW32 UHF subdevice"""
+
     VARIANT = "UHF"
     _limits = (400000000, 470000000)
     _mem_positions = (0x06E0, 0x0E2E)
@@ -214,6 +217,7 @@ class ICW32ARadioUHF(ICW32ARadio):
 @directory.register
 class ICW32ERadio(ICW32ARadio):
     """Icom IC-W32E"""
+
     MODEL = "IC-W32E"
 
     _model = "\x18\x82\x00\x02"
@@ -233,13 +237,16 @@ class ICW32ERadio(ICW32ARadio):
     def match_model(cls, filedata, filename):
         if not len(filedata) == cls._memsize:
             return False
-        return filedata[-16 - 1: -1] == b"IcomCloneFormat3" and \
-            filedata[-1] in [0, '\x00']
+        return filedata[-16 - 1 : -1] == b"IcomCloneFormat3" and filedata[-1] in [
+            0,
+            "\x00",
+        ]
 
 
 # this is the very same as ICW32ARadioVHF but have ICW32ERadio as parent class
 class ICW32ERadioVHF(ICW32ERadio):
     """ICW32 VHF subdevice"""
+
     VARIANT = "VHF"
     _limits = (118000000, 174000000)
     _mem_positions = (0x0000, 0x0DC0)
@@ -248,6 +255,7 @@ class ICW32ERadioVHF(ICW32ERadio):
 # this is the very same as ICW32ARadioUHF but have ICW32ERadio as parent class
 class ICW32ERadioUHF(ICW32ERadio):
     """ICW32 UHF subdevice"""
+
     VARIANT = "UHF"
     _limits = (400000000, 470000000)
     _mem_positions = (0x06E0, 0x0E2E)

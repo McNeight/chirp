@@ -26,6 +26,7 @@ DEFAULT_POWER_LEVEL = chirp_common.AutoNamedPowerLevel(50)
 
 class OmittedHeaderError(Exception):
     """Internal exception to signal that a column has been omitted"""
+
     pass
 
 
@@ -37,8 +38,7 @@ def get_datum_by_header(headers, data, header):
     try:
         return data[headers.index(header)]
     except IndexError:
-        raise OmittedHeaderError("Header %s not provided on this line" %
-                                 header)
+        raise OmittedHeaderError("Header %s not provided on this line" % header)
 
 
 def write_memory(writer, mem):
@@ -50,45 +50,45 @@ def write_memory(writer, mem):
 
 def parse_cross_mode(value):
     if value not in chirp_common.CROSS_MODES:
-        raise ValueError('Invalid cross mode %r' % value)
+        raise ValueError("Invalid cross mode %r" % value)
     return value
 
 
 @directory.register
 class CSVRadio(chirp_common.FileBackedRadio):
     """A driver for Generic CSV files"""
+
     VENDOR = "Generic"
     MODEL = "CSV"
     NEEDS_COMPAT_SERIAL = True
     FILE_EXTENSION = "csv"
-    FORMATS = [directory.register_format('CSV', '*.csv')]
-    SEPCHAR = ','
+    FORMATS = [directory.register_format("CSV", "*.csv")]
+    SEPCHAR = ","
 
     ATTR_MAP = {
-        "Location":      (int,   "number"),
-        "Name":          (str,   "name"),
-        "Frequency":     (chirp_common.parse_freq, "freq"),
-        "Duplex":        (str,   "duplex"),
-        "Offset":        (chirp_common.parse_freq, "offset"),
-        "Tone":          (str,   "tmode"),
-        "rToneFreq":     (float, "rtone"),
-        "cToneFreq":     (float, "ctone"),
-        "DtcsCode":      (int,   "dtcs"),
-        "DtcsPolarity":  (str,   "dtcs_polarity"),
-        "RxDtcsCode":    (int,   "rx_dtcs"),
-        "CrossMode":     (parse_cross_mode, "cross_mode"),
-        "Mode":          (str,   "mode"),
-        "TStep":         (float, "tuning_step"),
-        "Skip":          (str,   "skip"),
-        "Power":         (chirp_common.parse_power, "power"),
-        "Comment":       (str,   "comment"),
-        }
+        "Location": (int, "number"),
+        "Name": (str, "name"),
+        "Frequency": (chirp_common.parse_freq, "freq"),
+        "Duplex": (str, "duplex"),
+        "Offset": (chirp_common.parse_freq, "offset"),
+        "Tone": (str, "tmode"),
+        "rToneFreq": (float, "rtone"),
+        "cToneFreq": (float, "ctone"),
+        "DtcsCode": (int, "dtcs"),
+        "DtcsPolarity": (str, "dtcs_polarity"),
+        "RxDtcsCode": (int, "rx_dtcs"),
+        "CrossMode": (parse_cross_mode, "cross_mode"),
+        "Mode": (str, "mode"),
+        "TStep": (float, "tuning_step"),
+        "Skip": (str, "skip"),
+        "Power": (chirp_common.parse_power, "power"),
+        "Comment": (str, "comment"),
+    }
 
     def _blank(self, setDefault=False, max_memory=999):
         self.errors = []
-        self.memories = [chirp_common.Memory(i, True)
-                         for i in range(0, max_memory + 1)]
-        if (setDefault):
+        self.memories = [chirp_common.Memory(i, True) for i in range(0, max_memory + 1)]
+        if setDefault:
             self.memories[0].empty = False
             self.memories[0].freq = 146010000
             # Default to 50W
@@ -117,7 +117,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
         rf.has_bank = False
         rf.requires_call_lists = False
         rf.has_implicit_calls = False
-        rf.memory_bounds = (0, len(self.memories)-1)
+        rf.memory_bounds = (0, len(self.memories) - 1)
         rf.has_infinite_number = True
         rf.has_nostep_tuning = True
         rf.has_comment = True
@@ -134,9 +134,11 @@ class CSVRadio(chirp_common.FileBackedRadio):
         rf.valid_skips = ["", "S"]
         rf.valid_characters = chirp_common.CHARSET_1252
         rf.valid_name_length = 999
-        rf.valid_power_levels = [chirp_common.AutoNamedPowerLevel(0.1),
-                                 DEFAULT_POWER_LEVEL,
-                                 chirp_common.AutoNamedPowerLevel(1500)]
+        rf.valid_power_levels = [
+            chirp_common.AutoNamedPowerLevel(0.1),
+            DEFAULT_POWER_LEVEL,
+            chirp_common.AutoNamedPowerLevel(1500),
+        ]
 
         return rf
 
@@ -154,7 +156,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
         return mem
 
     def _clean_tmode(self, headers, line, mem):
-        """ If there is exactly one of [rToneFreq, cToneFreq] columns in the
+        """If there is exactly one of [rToneFreq, cToneFreq] columns in the
         csv file, use it for both rtone & ctone. Makes TSQL use friendlier."""
 
         if self.file_has_rTone and not self.file_has_cTone:
@@ -197,7 +199,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
         return self._clean(headers, line, mem)
 
     def load_from(self, string):
-        self._load(io.StringIO(string, newline=''))
+        self._load(io.StringIO(string, newline=""))
 
     def load(self, filename=None):
         if filename is None and self._filename is None:
@@ -208,7 +210,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
 
         self._blank()
 
-        with open(self._filename, newline='', encoding='utf-8-sig') as f:
+        with open(self._filename, newline="", encoding="utf-8-sig") as f:
             return self._load(f)
 
     def _load(self, f):
@@ -220,8 +222,8 @@ class CSVRadio(chirp_common.FileBackedRadio):
         last_number = -1
         for line in reader:
             # Skip (but stash) comment lines that start with #
-            if line and line[0].startswith('#'):
-                self._comments.append((last_number, ' '.join(line)))
+            if line and line[0].startswith("#"):
+                self._comments.append((last_number, " ".join(line)))
                 continue
             lineno += 1
             if lineno == 1:
@@ -229,24 +231,26 @@ class CSVRadio(chirp_common.FileBackedRadio):
                 for field in header:
                     # Log unknown header names for the UI to capture and expose
                     if field not in chirp_common.Memory.CSV_FORMAT:
-                        LOG.error('Header line has unknown field %r' % field)
+                        LOG.error("Header line has unknown field %r" % field)
                 self.file_has_rTone = "rToneFreq" in header
                 self.file_has_cTone = "cToneFreq" in header
                 continue
 
             # Spreadsheets like to omit trailing empty columns in TSV
             if len(header) > len(line) and not self.SEPCHAR.isspace():
-                LOG.error("Line %i has %i columns, expected %i",
-                          lineno, len(line), len(header))
-                self.errors.append("Column number mismatch on line %i" %
-                                   lineno)
+                LOG.error(
+                    "Line %i has %i columns, expected %i",
+                    lineno,
+                    len(line),
+                    len(header),
+                )
+                self.errors.append("Column number mismatch on line %i" % lineno)
                 continue
 
             try:
                 mem = self._parse_csv_data_line(header, line)
                 if mem is None or mem.freq == 0:
-                    LOG.debug('Line %i did not contain a valid memory',
-                              lineno)
+                    LOG.debug("Line %i did not contain a valid memory", lineno)
                     continue
                 if mem.number is None:
                     raise Exception("Invalid Location field" % lineno)
@@ -270,7 +274,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
         if filename:
             self._filename = filename
 
-        with open(self._filename, "w", newline='', encoding='utf-8') as f:
+        with open(self._filename, "w", newline="", encoding="utf-8") as f:
             self._write_to(f)
 
     def _write_to(self, f):
@@ -294,7 +298,7 @@ class CSVRadio(chirp_common.FileBackedRadio):
             write_memory(writer, mem)
 
     def as_string(self):
-        string = io.StringIO(newline='')
+        string = io.StringIO(newline="")
         self._write_to(string)
         return string.getvalue()
 
@@ -338,7 +342,8 @@ class CSVRadio(chirp_common.FileBackedRadio):
             # Accept any power level because we are CSV, but convert it to
             # the class that will str() into our desired format.
             newmem.power = chirp_common.AutoNamedPowerLevel(
-                chirp_common.dBm_to_watts(float(newmem.power)))
+                chirp_common.dBm_to_watts(float(newmem.power))
+            )
         self._grow(newmem.number)
         self.memories[newmem.number] = newmem
 
@@ -349,9 +354,11 @@ class CSVRadio(chirp_common.FileBackedRadio):
         self.memories[number] = mem
 
     def get_raw_memory(self, number):
-        return ",".join(chirp_common.Memory.CSV_FORMAT) + \
-            os.linesep + \
-            self.SEPCHAR.join(self.memories[number].to_csv())
+        return (
+            ",".join(chirp_common.Memory.CSV_FORMAT)
+            + os.linesep
+            + self.SEPCHAR.join(self.memories[number].to_csv())
+        )
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -361,24 +368,25 @@ class CSVRadio(chirp_common.FileBackedRadio):
         except UnicodeDecodeError:
             # CSV files are text
             return False
-        return filename.lower().endswith("." + cls.FILE_EXTENSION) and \
-            (find_csv_header(filedata) or filedata == "")
+        return filename.lower().endswith("." + cls.FILE_EXTENSION) and (
+            find_csv_header(filedata) or filedata == ""
+        )
 
 
 def find_csv_header(filedata):
-    if filedata.startswith('\ufeff') or filedata.startswith('\ufffe'):
+    if filedata.startswith("\ufeff") or filedata.startswith("\ufffe"):
         # Skip BOM
         filedata = filedata[1:]
-    while filedata.startswith('#'):
-        filedata = filedata[filedata.find('\n') + 1:]
-    delims = ['', '"', "'"]
-    return any([filedata.startswith('%sLocation%s,' % (d, d))
-                for d in delims])
+    while filedata.startswith("#"):
+        filedata = filedata[filedata.find("\n") + 1 :]
+    delims = ["", '"', "'"]
+    return any([filedata.startswith("%sLocation%s," % (d, d)) for d in delims])
 
 
 @directory.register
 class CommanderCSVRadio(CSVRadio):
     """A driver for reading CSV files generated by KG-UV Commander software"""
+
     VENDOR = "Commander"
     MODEL = "KG-UV"
     FILE_EXTENSION = "csv"
@@ -388,18 +396,15 @@ class CommanderCSVRadio(CSVRadio):
         "WIDE": "FM",
     }
 
-    SCAN_MAP = {
-        "ON":  "",
-        "OFF": "S"
-    }
+    SCAN_MAP = {"ON": "", "OFF": "S"}
 
     ATTR_MAP = {
-        "#":            (int,   "number"),
-        "Name":         (str,   "name"),
-        "RX Freq":      (chirp_common.parse_freq, "freq"),
-        "Scan":         (lambda v: CommanderCSVRadio.SCAN_MAP.get(v), "skip"),
-        "TX Dev":       (lambda v: CommanderCSVRadio.MODE_MAP.get(v), "mode"),
-        "Group/Notes":  (str,   "comment"),
+        "#": (int, "number"),
+        "Name": (str, "name"),
+        "RX Freq": (chirp_common.parse_freq, "freq"),
+        "Scan": (lambda v: CommanderCSVRadio.SCAN_MAP.get(v), "skip"),
+        "TX Dev": (lambda v: CommanderCSVRadio.MODE_MAP.get(v), "mode"),
+        "Group/Notes": (str, "comment"),
     }
 
     def _clean_number(self, headers, line, mem):
@@ -413,7 +418,8 @@ class CommanderCSVRadio(CSVRadio):
     def _clean_duplex(self, headers, line, mem):
         try:
             txfreq = chirp_common.parse_freq(
-                get_datum_by_header(headers, line, "TX Freq"))
+                get_datum_by_header(headers, line, "TX Freq")
+            )
         except ValueError:
             mem.duplex = "off"
             return mem
@@ -452,71 +458,75 @@ class CommanderCSVRadio(CSVRadio):
     @classmethod
     def match_model(cls, filedata, filename):
         """Match files ending in .csv and using Commander column names."""
-        return filename.lower().endswith("." + cls.FILE_EXTENSION) and \
-            filedata.startswith(b"Name,RX Freq,TX Freq,Decode,Encode,TX Pwr,"
-                                b"Scan,TX Dev,Busy Lck,Group/Notes") or \
-            filedata.startswith(b'"#","Name","RX Freq","TX Freq","Decode",'
-                                b'"Encode","TX Pwr","Scan","TX Dev",'
-                                b'"Busy Lck","Group/Notes"')
+        return (
+            filename.lower().endswith("." + cls.FILE_EXTENSION)
+            and filedata.startswith(
+                b"Name,RX Freq,TX Freq,Decode,Encode,TX Pwr,"
+                b"Scan,TX Dev,Busy Lck,Group/Notes"
+            )
+            or filedata.startswith(
+                b'"#","Name","RX Freq","TX Freq","Decode",'
+                b'"Encode","TX Pwr","Scan","TX Dev",'
+                b'"Busy Lck","Group/Notes"'
+            )
+        )
 
 
 @directory.register
 class RTCSVRadio(CSVRadio):
     """A driver for reading CSV files generated by RT Systems software"""
+
     VENDOR = "RT Systems"
     MODEL = "CSV"
     FILE_EXTENSION = "csv"
 
     DUPLEX_MAP = {
-        "Minus":    "-",
-        "Plus":     "+",
-        "Simplex":  "",
-        "Split":    "split",
+        "Minus": "-",
+        "Plus": "+",
+        "Simplex": "",
+        "Split": "split",
     }
 
     SKIP_MAP = {
-        "Off":    "",
-        "On":     "S",
+        "Off": "",
+        "On": "S",
         "P Scan": "P",
-        "Skip":   "S",
-        "Scan":   "",
-        }
+        "Skip": "S",
+        "Scan": "",
+    }
 
     TMODE_MAP = {
-        "None":     "",
-        "T Sql":    "TSQL",
+        "None": "",
+        "T Sql": "TSQL",
     }
 
     BOOL_MAP = {
-        "Off":  False,
-        "On":   True,
+        "Off": False,
+        "On": True,
     }
 
     MODE_MAP = {
-        'FM Narrow': 'NFM',
+        "FM Narrow": "NFM",
     }
 
     ATTR_MAP = {
-        "Channel Number":    (int,   "number"),
+        "Channel Number": (int, "number"),
         "Receive Frequency": (chirp_common.parse_freq, "freq"),
-        "Offset Frequency":  (chirp_common.parse_freq, "offset"),
-        "Offset Direction":  (lambda v:
-                              RTCSVRadio.DUPLEX_MAP.get(v, v), "duplex"),
-        "Operating Mode":    (lambda v: RTCSVRadio.MODE_MAP.get(v, v), 'mode'),
-        "Name":              (str,   "name"),
-        "Tone Mode":         (lambda v:
-                              RTCSVRadio.TMODE_MAP.get(v, v), "tmode"),
-        "CTCSS":             (lambda v:
-                              float(v.split(" ")[0]), "rtone"),
-        "DCS":               (int,   "dtcs"),
-        "Skip":              (lambda v:
-                              RTCSVRadio.SKIP_MAP.get(v, v), "skip"),
-        "Step":              (lambda v:
-                              float(v.split(" ")[0]), "tuning_step"),
-        "Mask":              (lambda v:
-                              RTCSVRadio.BOOL_MAP.get(v, v), "empty",),
-        "Comment":           (str,   "comment"),
-        }
+        "Offset Frequency": (chirp_common.parse_freq, "offset"),
+        "Offset Direction": (lambda v: RTCSVRadio.DUPLEX_MAP.get(v, v), "duplex"),
+        "Operating Mode": (lambda v: RTCSVRadio.MODE_MAP.get(v, v), "mode"),
+        "Name": (str, "name"),
+        "Tone Mode": (lambda v: RTCSVRadio.TMODE_MAP.get(v, v), "tmode"),
+        "CTCSS": (lambda v: float(v.split(" ")[0]), "rtone"),
+        "DCS": (int, "dtcs"),
+        "Skip": (lambda v: RTCSVRadio.SKIP_MAP.get(v, v), "skip"),
+        "Step": (lambda v: float(v.split(" ")[0]), "tuning_step"),
+        "Mask": (
+            lambda v: RTCSVRadio.BOOL_MAP.get(v, v),
+            "empty",
+        ),
+        "Comment": (str, "comment"),
+    }
 
     def __init__(self, pipe):
         self._last_loaded = 0
@@ -550,12 +560,15 @@ class RTCSVRadio(CSVRadio):
         return mem
 
     def _clean_number(self, headers, line, mem):
-        if 'Channel Number' not in headers and self.memories:
+        if "Channel Number" not in headers and self.memories:
             # Some RTSystems software generates this with an empty header name?
             self._last_loaded += 1
             mem.number = self._last_loaded
-            LOG.debug('No location column, calculated %i from %r',
-                      mem.number, self.memories[-1])
+            LOG.debug(
+                "No location column, calculated %i from %r",
+                mem.number,
+                self.memories[-1],
+            )
         return mem
 
     def _parse_csv_data_line(self, headers, line):
@@ -577,15 +590,17 @@ class RTCSVRadio(CSVRadio):
             return False
 
         try:
-            firstline, rest = filedata.split('\n', 1)
-            firstline_fields = firstline.split(',')
+            firstline, rest = filedata.split("\n", 1)
+            firstline_fields = firstline.split(",")
         except Exception as e:
-            LOG.warning('Failed to detect file as RTCSV: %s', e)
+            LOG.warning("Failed to detect file as RTCSV: %s", e)
             return False
 
-        return filename.lower().endswith("." + cls.FILE_EXTENSION) and \
-            'Receive Frequency' in firstline_fields
+        return (
+            filename.lower().endswith("." + cls.FILE_EXTENSION)
+            and "Receive Frequency" in firstline_fields
+        )
 
 
 class TSVRadio(CSVRadio):
-    SEPCHAR = '\t'
+    SEPCHAR = "\t"

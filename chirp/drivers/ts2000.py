@@ -23,8 +23,7 @@ TS2000_FM_STEPS = [5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
 TS2000_DUPLEX = dict(kenwood_live.DUPLEX)
 TS2000_DUPLEX[3] = "="
 TS2000_DUPLEX[4] = "split"
-TS2000_MODES = ["?", "LSB", "USB", "CW", "FM", "AM",
-                "FSK", "CWR", "?", "FSKR"]
+TS2000_MODES = ["?", "LSB", "USB", "CW", "FM", "AM", "FSK", "CWR", "?", "FSKR"]
 TS2000_TMODES = ["", "Tone", "TSQL", "DTCS"]
 TS2000_TONES = list(chirp_common.OLD_TONES)
 TS2000_TONES.remove(69.3)
@@ -33,6 +32,7 @@ TS2000_TONES.remove(69.3)
 @directory.register
 class TS2000Radio(KenwoodLiveRadio):
     """Kenwood TS-2000"""
+
     MODEL = "TS-2000"
 
     _upper = 289
@@ -55,8 +55,8 @@ class TS2000Radio(KenwoodLiveRadio):
         # allow you to to use all printable ASCII characters at the manual
         # controls.  The radio doesn't send the name after the ";" if you
         # input one from the manual controls.
-        rf.valid_characters = chirp_common.CHARSET_ASCII.replace(';', '')
-        rf.valid_name_length = 7    # 7 character channel names
+        rf.valid_characters = chirp_common.CHARSET_ASCII.replace(";", "")
+        rf.valid_name_length = 7  # 7 character channel names
         rf.memory_bounds = (0, self._upper)
         return rf
 
@@ -95,7 +95,8 @@ class TS2000Radio(KenwoodLiveRadio):
     def get_memory(self, number):
         if number < 0 or number > self._upper:
             raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and %i" % self._upper)
+                "Number must be between 0 and %i" % self._upper
+            )
         if number in self._memcache and not NOCACHE:
             return self._memcache[number]
 
@@ -141,9 +142,9 @@ class TS2000Radio(KenwoodLiveRadio):
         # _p15 = spec[41]
         _p16 = spec[42:49]
 
-        mem.number = int(_p2 + _p3)     # concat bank num and chan num
+        mem.number = int(_p2 + _p3)  # concat bank num and chan num
 
-        if _p5 == '0':
+        if _p5 == "0":
             # NOTE(danms): Apparently some TS2000s will return unset
             # memory records with all zeroes for the fields instead of
             # NAKing the command with an N response. If that happens here,
@@ -160,7 +161,7 @@ class TS2000Radio(KenwoodLiveRadio):
         mem.ctone = self._kenwood_valid_tones[int(_p9) - 1]
         mem.dtcs = chirp_common.DTCS_CODES[int(_p10)]
         mem.duplex = TS2000_DUPLEX[int(_p12)]
-        mem.offset = int(_p13)      # 9-digit
+        mem.offset = int(_p13)  # 9-digit
         if mem.mode in ["AM", "FM"]:
             mem.tuning_step = TS2000_FM_STEPS[int(_p14)]
         else:
@@ -185,12 +186,12 @@ class TS2000Radio(KenwoodLiveRadio):
     def set_memory(self, memory):
         if memory.number < 0 or memory.number > self._upper:
             raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and %i" % self._upper)
+                "Number must be between 0 and %i" % self._upper
+            )
 
         spec = self._make_mem_spec(memory)
         spec = "".join(spec)
-        r1 = self.command(self.pipe,
-                          *self._cmd_set_memory(memory.number, spec))
+        r1 = self.command(self.pipe, *self._cmd_set_memory(memory.number, spec))
         if not iserr(r1):
             memory = memory.dupe()
             memory.name = memory.name.rstrip()
@@ -204,21 +205,18 @@ class TS2000Radio(KenwoodLiveRadio):
                 if match is not None:
                     cur_mem = int(match.group(1))
                     if cur_mem == memory.number:
-                        cur_mem = \
-                            self.command(
-                                self.pipe,
-                                *self._cmd_recall_memory(memory.number))
+                        cur_mem = self.command(
+                            self.pipe, *self._cmd_recall_memory(memory.number)
+                        )
         else:
             raise errors.InvalidDataError("Radio refused %i" % memory.number)
 
         # FIXME
         if memory.duplex == "split" and self._kenwood_split:
             spec = "".join(self._make_split_spec(memory))
-            result = self.command(self.pipe,
-                                  *self._cmd_set_split(memory.number, spec))
+            result = self.command(self.pipe, *self._cmd_set_split(memory.number, spec))
             if iserr(result):
-                raise errors.InvalidDataError("Radio refused %i" %
-                                              memory.number)
+                raise errors.InvalidDataError("Radio refused %i" % memory.number)
 
     def _make_mem_spec(self, mem):
         if mem.duplex in " +-":
@@ -242,9 +240,9 @@ class TS2000Radio(KenwoodLiveRadio):
             dtcs = 0
         else:
             # PL and T-SQL are 1 indexed, DTCS is 0 indexed
-            rtone = (self._kenwood_valid_tones.index(mem.rtone) + 1)
-            ctone = (self._kenwood_valid_tones.index(mem.ctone) + 1)
-            dtcs = (chirp_common.DTCS_CODES.index(mem.dtcs))
+            rtone = self._kenwood_valid_tones.index(mem.rtone) + 1
+            ctone = self._kenwood_valid_tones.index(mem.ctone) + 1
+            dtcs = chirp_common.DTCS_CODES.index(mem.dtcs)
 
         spec = (
             "%011i" % mem.freq,
@@ -254,11 +252,11 @@ class TS2000Radio(KenwoodLiveRadio):
             "%02i" % (rtone),
             "%02i" % (ctone),
             "%03i" % (dtcs),
-            "0",    # REVERSE status
+            "0",  # REVERSE status
             "%i" % duplex,
             "%09i" % offset,
             "%02i" % step,
-            "0",    # Memory Group number (0-9)
+            "0",  # Memory Group number (0-9)
             "%s" % mem.name,
         )
 
@@ -284,9 +282,9 @@ class TS2000Radio(KenwoodLiveRadio):
             dtcs = 0
         else:
             # PL and T-SQL are 1 indexed, DTCS is 0 indexed
-            rtone = (self._kenwood_valid_tones.index(mem.rtone) + 1)
-            ctone = (self._kenwood_valid_tones.index(mem.ctone) + 1)
-            dtcs = (chirp_common.DTCS_CODES.index(mem.dtcs))
+            rtone = self._kenwood_valid_tones.index(mem.rtone) + 1
+            ctone = self._kenwood_valid_tones.index(mem.ctone) + 1
+            dtcs = chirp_common.DTCS_CODES.index(mem.dtcs)
 
         spec = (
             "%011i" % mem.offset,
@@ -296,11 +294,11 @@ class TS2000Radio(KenwoodLiveRadio):
             "%02i" % (rtone),
             "%02i" % (ctone),
             "%03i" % (dtcs),
-            "0",    # REVERSE status
+            "0",  # REVERSE status
             "%i" % duplex,
             "%09i" % 0,
             "%02i" % step,
-            "0",    # Memory Group number (0-9)
+            "0",  # Memory Group number (0-9)
             "%s" % mem.name,
         )
 

@@ -19,28 +19,28 @@ import warnings
 from chirp import chirp_common
 
 LOG = logging.getLogger(__name__)
-BANNED_NAME_CHARACTERS = r'%'
+BANNED_NAME_CHARACTERS = r"%"
 
 
 class InvalidValueError(Exception):
-
     """An invalid value was specified for a given setting"""
+
     pass
 
 
 class InternalError(Exception):
-
     """A driver provided an invalid settings object structure"""
+
     pass
 
 
 class InvalidNameError(Exception):
     """A driver provided a setting with an invalid name"""
+
     pass
 
 
 class RadioSettingValue:
-
     """Base class for a single radio setting"""
 
     def __init__(self):
@@ -91,7 +91,7 @@ class RadioSettingValue:
     def get_value(self):
         """Gets the current value"""
         if not self.initialized:
-            LOG.error('Accessing setting value before init!')
+            LOG.error("Accessing setting value before init!")
         return self._current
 
     def __trunc__(self):
@@ -130,7 +130,6 @@ class RadioSettingValue:
 
 
 class RadioSettingValueInteger(RadioSettingValue):
-
     """An integer setting"""
 
     def __init__(self, minval, maxval, current, step=1):
@@ -146,8 +145,9 @@ class RadioSettingValueInteger(RadioSettingValue):
         except Exception:
             raise InvalidValueError("An integer is required")
         if value > self._max or value < self._min:
-            raise InvalidValueError("Value %i not in range %i-%i" %
-                                    (value, self._min, self._max))
+            raise InvalidValueError(
+                "Value %i not in range %i-%i" % (value, self._min, self._max)
+            )
         RadioSettingValue.set_value(self, value)
 
     def get_min(self):
@@ -164,7 +164,6 @@ class RadioSettingValueInteger(RadioSettingValue):
 
 
 class RadioSettingValueFloat(RadioSettingValue):
-
     """A floating-point setting"""
 
     def __init__(self, minval, maxval, current, resolution=0.001, precision=4):
@@ -188,9 +187,10 @@ class RadioSettingValueFloat(RadioSettingValue):
         except Exception:
             raise InvalidValueError("A floating point value is required")
         if value > self._max or value < self._min:
-            raise InvalidValueError("Value %s not in range %s-%s" % (
-                self.format(value),
-                self.format(self._min), self.format(self._max)))
+            raise InvalidValueError(
+                "Value %s not in range %s-%s"
+                % (self.format(value), self.format(self._min), self.format(self._max))
+            )
 
         # FIXME: honor resolution
 
@@ -205,7 +205,6 @@ class RadioSettingValueFloat(RadioSettingValue):
 
 
 class RadioSettingValueBoolean(RadioSettingValue):
-
     """A boolean setting
 
     If using MemSetting, mem_vals can be set to the False, True values
@@ -222,6 +221,7 @@ class RadioSettingValueBoolean(RadioSettingValue):
 
     def __bool__(self):
         return bool(self.get_value())
+
     __nonzero__ = __bool__
 
     def __str__(self):
@@ -234,11 +234,11 @@ class RadioSettingValueInvertedBoolean(RadioSettingValueBoolean):
     Only really useful for MemSetting, which will invert the value when
     actually setting it in memory.
     """
+
     pass
 
 
 class RadioSettingValueList(RadioSettingValue):
-
     """A list-of-strings setting"""
 
     def __init__(self, options, current=None, current_index=0):
@@ -249,11 +249,13 @@ class RadioSettingValueList(RadioSettingValue):
             # gracefully handle out-of-range values without crashing. All new
             # code should use current_index and old code should be fixed.
             warnings.warn(
-                'RadioSettingValueList should be provided with '
-                'current_index instead of current (value) for '
-                'safety', FutureWarning, stacklevel=2)
-        self.queue_current(current if current is not None
-                           else int(current_index))
+                "RadioSettingValueList should be provided with "
+                "current_index instead of current (value) for "
+                "safety",
+                FutureWarning,
+                stacklevel=2,
+            )
+        self.queue_current(current if current is not None else int(current_index))
 
     def set_value(self, value):
         if isinstance(value, int):
@@ -281,12 +283,17 @@ class RadioSettingValueList(RadioSettingValue):
 
 
 class RadioSettingValueString(RadioSettingValue):
-
     """A string setting"""
 
-    def __init__(self, minlength, maxlength, current,
-                 autopad=True, charset=chirp_common.CHARSET_ASCII,
-                 mem_pad_char=' '):
+    def __init__(
+        self,
+        minlength,
+        maxlength,
+        current,
+        autopad=True,
+        charset=chirp_common.CHARSET_ASCII,
+        mem_pad_char=" ",
+    ):
         RadioSettingValue.__init__(self)
         self._minlength = minlength
         self._maxlength = maxlength
@@ -318,12 +325,14 @@ class RadioSettingValueString(RadioSettingValue):
     def set_value(self, value):
         if len(value) < self._minlength or len(value) > self._maxlength:
             raise InvalidValueError(
-                "Value %r must be between %i and %i chars" % (
-                    value, self._minlength, self._maxlength))
+                "Value %r must be between %i and %i chars"
+                % (value, self._minlength, self._maxlength)
+            )
         for char in value:
             if char not in self._charset:
-                raise InvalidValueError(("Value %r contains invalid "
-                                         "character `%s'") % (value, char))
+                raise InvalidValueError(
+                    ("Value %r contains invalid " "character `%s'") % (value, char)
+                )
         if self._autopad:
             value = value.ljust(self._maxlength)
         RadioSettingValue.set_value(self, value)
@@ -339,7 +348,6 @@ class RadioSettingValueString(RadioSettingValue):
 
 
 class RadioSettingValueMap(RadioSettingValueList):
-
     """Map User Options to Radio Memory Values
 
     Provides User Option list for GUI, maintains state, verifies new values,
@@ -360,8 +368,9 @@ class RadioSettingValueMap(RadioSettingValueList):
         # Catch bugs early by testing tuple geometry
         for map_entry in map_entries:
             if not len(map_entry) == 2:
-                raise InvalidValueError("map_entries must be 2 el tuples "
-                                        "instead of: %s" % str(map_entry))
+                raise InvalidValueError(
+                    "map_entries must be 2 el tuples " "instead of: %s" % str(map_entry)
+                )
         user_options = [e[0] for e in map_entries]
         self._mem_vals = [e[1] for e in map_entries]
         RadioSettingValueList.__init__(self, user_options, current_index=0)
@@ -369,8 +378,9 @@ class RadioSettingValueMap(RadioSettingValueList):
             try:
                 self.queue_current(self._mem_vals.index(mem_val))
             except ValueError:
-                LOG.error('Memory value %r not in value list %r',
-                          mem_val, self._mem_vals)
+                LOG.error(
+                    "Memory value %r not in value list %r", mem_val, self._mem_vals
+                )
                 # Set this to just out of bounds so that the invalid-current
                 # handling detects it and flags it as invalid to the user.
                 self.queue_current(len(self._mem_vals))
@@ -384,8 +394,7 @@ class RadioSettingValueMap(RadioSettingValueList):
             index = self._mem_vals.index(mem_val)
             self.set_value(self._options[index])
         else:
-            raise InvalidValueError(
-                "%s is not valid for this setting" % mem_val)
+            raise InvalidValueError("%s is not valid for this setting" % mem_val)
 
     def get_mem_val(self):
         """Get the mem val corresponding to the currently selected user
@@ -448,7 +457,7 @@ class RadioSettings(list):
                 for subel in element.walk():
                     yield subel
             else:
-                raise ValueError('Unable to iterate %r' % element)
+                raise ValueError("Unable to iterate %r" % element)
 
     def apply_to(self, memobj):
         """Walk all the settings in this tree, apply the direct-to-mem ones.
@@ -467,7 +476,6 @@ class RadioSettings(list):
 
 
 class RadioSettingGroup(object):
-
     """A group of settings"""
 
     def _validate(self, element):
@@ -478,25 +486,22 @@ class RadioSettingGroup(object):
     def __init__(self, name, shortname, *elements):
         for c in BANNED_NAME_CHARACTERS:
             if c in name:
-                raise InvalidNameError(
-                    'Name must not contain %r character' % c)
-        self._name = name            # Setting identifier
+                raise InvalidNameError("Name must not contain %r character" % c)
+        self._name = name  # Setting identifier
         self._shortname = shortname  # Short human-readable name/description
-        self.__doc__ = name          # Longer explanation/documentation
+        self.__doc__ = name  # Longer explanation/documentation
         self._elements = {}
         self._element_order = []
         self._frozen = False
 
         for i, element in enumerate(elements):
             self._validate(element)
-            if (isinstance(element, RadioSettingValue) and
-                    not element.initialized):
+            if isinstance(element, RadioSettingValue) and not element.initialized:
                 # Late-initialize this value
                 try:
                     element.initialize()
                 except InvalidValueError as e:
-                    LOG.error('Failed to load %s value %i: %s',
-                              self._name, i, e)
+                    LOG.error("Failed to load %s value %i: %s", self._name, i, e)
 
             self.append(element)
 
@@ -542,12 +547,11 @@ class RadioSettingGroup(object):
     def append(self, element):
         """Adds an element to the group"""
         if self._frozen:
-            raise ValueError('Setting is frozen')
+            raise ValueError("Setting is frozen")
         self[element.get_name()] = element
 
     def __iter__(self):
         class RSGIterator:
-
             """Iterator for a RadioSettingGroup"""
 
             def __init__(self, rsg):
@@ -567,6 +571,7 @@ class RadioSettingGroup(object):
                 e = self.__rsg[self.__rsg.keys()[self.__i]]
                 self.__i += 1
                 return e
+
         return RSGIterator(self)
 
     # Dictionary interface
@@ -616,7 +621,6 @@ class RadioSettingSubGroup(RadioSettingGroup):
 
 
 class RadioSetting(RadioSettingGroup):
-
     """A single setting, which could be an array of items like a group"""
 
     def __init__(self, *args):
@@ -686,7 +690,7 @@ class RadioSetting(RadioSettingGroup):
                 return self._elements[self._element_order[0]]
             else:
                 return list(self._elements.values())
-        elif name in ('__getstate__', '__setstate__', '__deepcopy__'):
+        elif name in ("__getstate__", "__setstate__", "__deepcopy__"):
             super().__getattr__(name)
         else:
             return self.__dict__[name]
@@ -694,7 +698,7 @@ class RadioSetting(RadioSettingGroup):
     def __setattr__(self, name, value):
         if name == "value":
             if self._frozen:
-                raise ValueError('Value is frozen')
+                raise ValueError("Value is frozen")
             if len(self) == 1:
                 self._elements[self._element_order[0]].set_value(value)
             else:
@@ -732,9 +736,10 @@ class MemSetting(RadioSetting):
     :param values: The RadioSettingValue (only one allowed)
     :param *kwargs: Other kwargs to be passed to RadioSetting
     """
+
     def __init__(self, path, name, value, **kwargs):
         self._path = path
-        setting_name = path.replace('.', '_')
+        setting_name = path.replace(".", "_")
         super().__init__(setting_name, name, value, **kwargs)
 
     def apply_to_memobj(self, memobj):
@@ -744,8 +749,7 @@ class MemSetting(RadioSetting):
         set the value in memory according to this setting.
         """
         if not self.value.initialized:
-            LOG.warning('Unable to apply uninitialized value %s',
-                        self._path)
+            LOG.warning("Unable to apply uninitialized value %s", self._path)
             return
         if isinstance(self.value, RadioSettingValueInvertedBoolean):
             value = not self.value
@@ -754,8 +758,9 @@ class MemSetting(RadioSetting):
         elif isinstance(self.value, RadioSettingValueString):
             value = str(self.value)
             if self.value.autopad:
-                value = value.rstrip().ljust(self.value.maxlength,
-                                             self.value.mem_pad_char)
+                value = value.rstrip().ljust(
+                    self.value.maxlength, self.value.mem_pad_char
+                )
         else:
             value = self.value
 
@@ -765,13 +770,13 @@ class MemSetting(RadioSetting):
             value = self.value._mem_vals[int(value)]
 
         obj = memobj
-        elements = self._path.split('.')
+        elements = self._path.split(".")
         for element in elements[:-1]:
-            if '[' in element:
+            if "[" in element:
                 # foo[i] syntax
-                name, index = element.split('[', 1)
+                name, index = element.split("[", 1)
                 obj = getattr(obj, name)
-                obj = obj[int(index.replace(']', ''))]
+                obj = obj[int(index.replace("]", ""))]
             else:
                 obj = getattr(obj, element)
         setattr(obj, elements[-1], value)

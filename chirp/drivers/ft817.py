@@ -18,10 +18,15 @@
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, util, memmap, errors, directory, bitwise
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 import time
 import logging
 
@@ -32,8 +37,8 @@ CMD_ACK = 0x06
 
 @directory.register
 class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
-
     """Yaesu FT-817"""
+
     BAUD_RATE = 9600
     MODEL = "FT-817"
     _model = ""
@@ -41,17 +46,21 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
 
     DUPLEX = ["", "-", "+", "split"]
     # narrow modes has to be at end
-    MODES = ["LSB", "USB", "CW", "CWR", "AM", "FM", "DIG", "PKT", "NCW",
-             "NCWR", "NFM"]
+    MODES = ["LSB", "USB", "CW", "CWR", "AM", "FM", "DIG", "PKT", "NCW", "NCWR", "NFM"]
     TMODES = ["", "Tone", "TSQL", "DTCS"]
     STEPSFM = [5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0]
     STEPSAM = [2.5, 5.0, 9.0, 10.0, 12.5, 25.0]
     STEPSSSB = [1.0, 2.5, 5.0]
 
     # warning ranges has to be in this exact order
-    VALID_BANDS = [(100000, 33000000), (33000000, 56000000),
-                   (76000000, 108000000), (108000000, 137000000),
-                   (137000000, 154000000), (420000000, 470000000)]
+    VALID_BANDS = [
+        (100000, 33000000),
+        (33000000, 56000000),
+        (76000000, 108000000),
+        (108000000, 137000000),
+        (137000000, 154000000),
+        (420000000, 470000000),
+    ]
 
     CHARSET = list(chirp_common.CHARSET_ASCII)
     CHARSET.remove("\\")
@@ -214,11 +223,15 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
         #seekto 0x1979;
         struct mem_struct sixtymeterchannels[5];
     """
-    _CALLSIGN_CHARSET = [chr(x) for x in list(range(ord("0"), ord("9") + 1)) +
-                         list(range(ord("A"), ord("Z") + 1)) + [ord(" ")]]
+    _CALLSIGN_CHARSET = [
+        chr(x)
+        for x in list(range(ord("0"), ord("9") + 1))
+        + list(range(ord("A"), ord("Z") + 1))
+        + [ord(" ")]
+    ]
     _CALLSIGN_CHARSET_REV = dict(
-        list(zip(_CALLSIGN_CHARSET,
-                 list(range(0, len(_CALLSIGN_CHARSET))))))
+        list(zip(_CALLSIGN_CHARSET, list(range(0, len(_CALLSIGN_CHARSET)))))
+    )
 
     # WARNING Index are hard wired in memory management code !!!
     SPECIAL_MEMORIES = {
@@ -271,8 +284,9 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
 
     SPECIAL_MEMORIES.update(SPECIAL_PMS)
 
-    SPECIAL_MEMORIES_REV = dict(list(zip(list(SPECIAL_MEMORIES.values()),
-                                         list(SPECIAL_MEMORIES.keys()))))
+    SPECIAL_MEMORIES_REV = dict(
+        list(zip(list(SPECIAL_MEMORIES.values()), list(SPECIAL_MEMORIES.keys())))
+    )
 
     @classmethod
     def get_prompts(cls):
@@ -282,17 +296,19 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             "2. Connect cable to ACC jack.\n"
             "3. Press and hold in the [MODE &lt;] and [MODE &gt;] keys"
             " while\n"
-            "     turning the radio on (\"CLONE MODE\" will appear on the\n"
+            '     turning the radio on ("CLONE MODE" will appear on the\n'
             "     display).\n"
-            "4. <b>After clicking OK</b>, press the [A] key to send image.\n")
+            "4. <b>After clicking OK</b>, press the [A] key to send image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to ACC jack.\n"
             "3. Press and hold in the [MODE &lt;] and [MODE &gt;] keys"
             " while\n"
-            "     turning the radio on (\"CLONE MODE\" will appear on the\n"
+            '     turning the radio on ("CLONE MODE" will appear on the\n'
             "     display).\n"
-            "4. Press the [C] key (\"RX\" will appear on the LCD).\n")
+            '4. Press the [C] key ("RX" will appear on the LCD).\n'
+        )
         return rp
 
     def _read(self, block, blocknum, lastblock):
@@ -310,23 +326,33 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             raise errors.RadioNoResponse()
         if len(data) == block + 2 and data[0] == blocknum:
             checksum = yaesu_clone.YaesuChecksum(1, block)
-            if checksum.get_existing(data) != \
-                    checksum.get_calculated(data):
-                raise Exception("Checksum Failed [%02X<>%02X] block %02X" %
-                                (checksum.get_existing(data),
-                                 checksum.get_calculated(data), blocknum))
+            if checksum.get_existing(data) != checksum.get_calculated(data):
+                raise Exception(
+                    "Checksum Failed [%02X<>%02X] block %02X"
+                    % (
+                        checksum.get_existing(data),
+                        checksum.get_calculated(data),
+                        blocknum,
+                    )
+                )
             # Chew away the block number and the checksum
-            data = data[1:block + 1]
+            data = data[1 : block + 1]
         else:
             if lastblock and self._US_model:
-                raise Exception(_("Unable to read last block. "
-                                  "This often happens when the selected model "
-                                  "is US but the radio is a non-US one (or "
-                                  "widebanded). Please choose the correct "
-                                  "model and try again."))
+                raise Exception(
+                    _(
+                        "Unable to read last block. "
+                        "This often happens when the selected model "
+                        "is US but the radio is a non-US one (or "
+                        "widebanded). Please choose the correct "
+                        "model and try again."
+                    )
+                )
             else:
-                raise Exception("Unable to read block %02X expected %i got %i"
-                                % (blocknum, block + 2, len(data)))
+                raise Exception(
+                    "Unable to read block %02X expected %i got %i"
+                    % (blocknum, block + 2, len(data))
+                )
 
         LOG.debug("Read %i" % len(data))
         return data
@@ -362,10 +388,13 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             moredata = self.pipe.read(2)
             if moredata:
                 raise Exception(
-                    _("Radio sent data after the last awaited block, "
-                      "this happens when the selected model is a non-US "
-                      "but the radio is a US one. "
-                      "Please choose the correct model and try again."))
+                    _(
+                        "Radio sent data after the last awaited block, "
+                        "this happens when the selected model is a non-US "
+                        "but the radio is a US one. "
+                        "Please choose the correct model and try again."
+                    )
+                )
 
         LOG.info("Clone completed in %i seconds" % (time.time() - start))
 
@@ -390,15 +419,16 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             for _i in range(0, repeat):
                 time.sleep(0.01)
                 checksum = yaesu_clone.YaesuChecksum(pos, pos + block - 1)
-                LOG.debug("Block %i - will send from %i to %i byte " %
-                          (blocks, pos, pos + block))
+                LOG.debug(
+                    "Block %i - will send from %i to %i byte "
+                    % (blocks, pos, pos + block)
+                )
                 LOG.debug(util.hexprint(chr(blocks)))
-                LOG.debug(util.hexprint(self.get_mmap()[pos:pos + block]))
+                LOG.debug(util.hexprint(self.get_mmap()[pos : pos + block]))
                 LOG.debug(util.hexprint(chr(checksum.get_calculated(mmap))))
                 self.pipe.write(bytes([blocks]))
-                self.pipe.write(mmap[pos:pos + block])
-                self.pipe.write(bytes([checksum.get_calculated(
-                    self.get_mmap())]))
+                self.pipe.write(mmap[pos : pos + block])
+                self.pipe.write(bytes([checksum.get_calculated(self.get_mmap())]))
                 buf = self.pipe.read(1)
                 if not buf or buf[0] != CMD_ACK:
                     time.sleep(delay)
@@ -503,26 +533,46 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
         mem.number = self.SPECIAL_MEMORIES[number]
         mem.extd_number = number
 
-        if mem.number in range(self.FIRST_VFOA_INDEX,
-                               self.LAST_VFOA_INDEX - 1,
-                               -1):
+        if mem.number in range(self.FIRST_VFOA_INDEX, self.LAST_VFOA_INDEX - 1, -1):
             _mem = self._memobj.vfoa[-self.LAST_VFOA_INDEX + mem.number]
-            immutable = ["number", "skip", "extd_number",
-                         "name", "dtcs_polarity", "power"]
-        elif mem.number in range(self.FIRST_VFOB_INDEX,
-                                 self.LAST_VFOB_INDEX - 1,
-                                 -1):
+            immutable = [
+                "number",
+                "skip",
+                "extd_number",
+                "name",
+                "dtcs_polarity",
+                "power",
+            ]
+        elif mem.number in range(self.FIRST_VFOB_INDEX, self.LAST_VFOB_INDEX - 1, -1):
             _mem = self._memobj.vfob[-self.LAST_VFOB_INDEX + mem.number]
-            immutable = ["number", "skip", "extd_number",
-                         "name", "dtcs_polarity", "power"]
+            immutable = [
+                "number",
+                "skip",
+                "extd_number",
+                "name",
+                "dtcs_polarity",
+                "power",
+            ]
         elif mem.number in range(-2, -6, -1):
             _mem = self._memobj.home[5 + mem.number]
-            immutable = ["number", "skip", "extd_number",
-                         "name", "dtcs_polarity", "power"]
+            immutable = [
+                "number",
+                "skip",
+                "extd_number",
+                "name",
+                "dtcs_polarity",
+                "power",
+            ]
         elif mem.number == -1:
             _mem = self._memobj.qmb
-            immutable = ["number", "skip", "extd_number",
-                         "name", "dtcs_polarity", "power"]
+            immutable = [
+                "number",
+                "skip",
+                "extd_number",
+                "name",
+                "dtcs_polarity",
+                "power",
+            ]
         elif mem.number in list(self.SPECIAL_PMS.values()):
             bitindex = -self.LAST_PMS_INDEX + mem.number
             used = (self._memobj.pmsvisible >> bitindex) & 0x01
@@ -533,12 +583,25 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
                 mem.empty = True
                 return mem
             _mem = self._memobj.pms[-self.LAST_PMS_INDEX + mem.number]
-            immutable = ["number", "skip", "rtone", "ctone", "extd_number",
-                         "dtcs", "tmode", "cross_mode", "dtcs_polarity",
-                         "power", "duplex", "offset"]
+            immutable = [
+                "number",
+                "skip",
+                "rtone",
+                "ctone",
+                "extd_number",
+                "dtcs",
+                "tmode",
+                "cross_mode",
+                "dtcs_polarity",
+                "power",
+                "duplex",
+                "offset",
+            ]
         else:
-            raise Exception("Sorry, special memory index %i " % mem.number +
-                            "unknown you hit a bug!!")
+            raise Exception(
+                "Sorry, special memory index %i " % mem.number
+                + "unknown you hit a bug!!"
+            )
 
         mem = self._get_memory(mem, _mem)
         mem.immutable = immutable
@@ -553,13 +616,9 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
         cur_mem = self._get_special(self.SPECIAL_MEMORIES_REV[mem.number])
 
         # TODO add frequency range check for vfo and home memories
-        if mem.number in range(self.FIRST_VFOA_INDEX,
-                               self.LAST_VFOA_INDEX - 1,
-                               -1):
+        if mem.number in range(self.FIRST_VFOA_INDEX, self.LAST_VFOA_INDEX - 1, -1):
             _mem = self._memobj.vfoa[-self.LAST_VFOA_INDEX + mem.number]
-        elif mem.number in range(self.FIRST_VFOB_INDEX,
-                                 self.LAST_VFOB_INDEX - 1,
-                                 -1):
+        elif mem.number in range(self.FIRST_VFOB_INDEX, self.LAST_VFOB_INDEX - 1, -1):
             _mem = self._memobj.vfob[-self.LAST_VFOB_INDEX + mem.number]
         elif mem.number in range(-2, -6, -1):
             _mem = self._memobj.home[5 + mem.number]
@@ -574,53 +633,54 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             if mem.empty:
                 if wasvalid and not wasused:
                     # pylint get confused by &= operator
-                    self._memobj.pmsfilled = self._memobj.pmsfilled & \
-                        ~ (1 << bitindex)
+                    self._memobj.pmsfilled = self._memobj.pmsfilled & ~(1 << bitindex)
                 # pylint get confused by &= operator
-                self._memobj.pmsvisible = self._memobj.pmsvisible & \
-                    ~ (1 << bitindex)
+                self._memobj.pmsvisible = self._memobj.pmsvisible & ~(1 << bitindex)
                 return
             # pylint get confused by |= operator
             self._memobj.pmsvisible = self._memobj.pmsvisible | 1 << bitindex
             self._memobj.pmsfilled = self._memobj.pmsfilled | 1 << bitindex
             _mem = self._memobj.pms[-self.LAST_PMS_INDEX + mem.number]
         else:
-            raise Exception("Sorry, special memory index %i " % mem.number +
-                            "unknown you hit a bug!!")
+            raise Exception(
+                "Sorry, special memory index %i " % mem.number
+                + "unknown you hit a bug!!"
+            )
 
         for key in cur_mem.immutable:
             if key != "extd_number":
                 if cur_mem.__dict__[key] != mem.__dict__[key]:
-                    raise errors.RadioError("Editing field `%s' " % key +
-                                            "is not supported on this channel")
+                    raise errors.RadioError(
+                        "Editing field `%s' " % key + "is not supported on this channel"
+                    )
 
         self._set_memory(mem, _mem)
 
     def _get_normal(self, number):
         _mem = self._memobj.memory[number - 1]
-        used = (self._memobj.visible[(number - 1) / 8] >> (number - 1) % 8) \
-            & 0x01
-        valid = (self._memobj.filled[(number - 1) / 8] >> (number - 1) % 8) \
-            & 0x01
+        used = (self._memobj.visible[(number - 1) / 8] >> (number - 1) % 8) & 0x01
+        valid = (self._memobj.filled[(number - 1) / 8] >> (number - 1) % 8) & 0x01
 
         mem = chirp_common.Memory()
         mem.number = number
         if not used:
             mem.empty = True
-            if not valid or _mem.freq == 0xffffffff:
+            if not valid or _mem.freq == 0xFFFFFFFF:
                 return mem
 
         if mem.number == 1:
-            mem.immutable = ['empty']
+            mem.immutable = ["empty"]
 
         return self._get_memory(mem, _mem)
 
     def _set_normal(self, mem):
         _mem = self._memobj.memory[mem.number - 1]
-        wasused = (self._memobj.visible[(mem.number - 1) / 8] >>
-                   (mem.number - 1) % 8) & 0x01
-        wasvalid = (self._memobj.filled[(mem.number - 1) / 8] >>
-                    (mem.number - 1) % 8) & 0x01
+        wasused = (
+            self._memobj.visible[(mem.number - 1) / 8] >> (mem.number - 1) % 8
+        ) & 0x01
+        wasvalid = (
+            self._memobj.filled[(mem.number - 1) / 8] >> (mem.number - 1) % 8
+        ) & 0x01
 
         if mem.empty:
             if mem.number == 1:
@@ -628,19 +688,17 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
                 # if you upload an empty image you can brick your radio
                 raise Exception("Sorry, can't delete first memory")
             if wasvalid and not wasused:
-                self._memobj.filled[(mem.number - 1) // 8] &= \
-                    ~(1 << (mem.number - 1) % 8)
-                _mem.set_raw("\xFF" * (_mem.size() // 8))    # clean up
-            self._memobj.visible[(mem.number - 1) // 8] &= \
-                ~(1 << (mem.number - 1) % 8)
+                self._memobj.filled[(mem.number - 1) // 8] &= ~(
+                    1 << (mem.number - 1) % 8
+                )
+                _mem.set_raw("\xff" * (_mem.size() // 8))  # clean up
+            self._memobj.visible[(mem.number - 1) // 8] &= ~(1 << (mem.number - 1) % 8)
             return
         if not wasvalid:
-            _mem.set_raw("\x00" * (_mem.size() // 8))    # clean up
+            _mem.set_raw("\x00" * (_mem.size() // 8))  # clean up
 
-        self._memobj.visible[(mem.number - 1) // 8] |= (
-            1 << (mem.number - 1) % 8)
-        self._memobj.filled[(mem.number - 1) // 8] |= (
-            1 << (mem.number - 1) % 8)
+        self._memobj.visible[(mem.number - 1) // 8] |= 1 << (mem.number - 1) % 8
+        self._memobj.filled[(mem.number - 1) // 8] |= 1 << (mem.number - 1) % 8
         self._set_memory(mem, _mem)
 
     def _get_memory(self, mem, _mem):
@@ -682,13 +740,11 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             mem.name = ""
 
         mem.extra = RadioSettingGroup("extra", "Extra")
-        ipo = RadioSetting("ipo", "IPO",
-                           RadioSettingValueBoolean(bool(_mem.ipo)))
+        ipo = RadioSetting("ipo", "IPO", RadioSettingValueBoolean(bool(_mem.ipo)))
         ipo.set_doc("Bypass preamp")
         mem.extra.append(ipo)
 
-        att = RadioSetting("att", "ATT",
-                           RadioSettingValueBoolean(bool(_mem.att)))
+        att = RadioSetting("att", "ATT", RadioSettingValueBoolean(bool(_mem.att)))
         att.set_doc("10dB front end attenuator")
         mem.extra.append(att)
 
@@ -700,9 +756,9 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             _mem.tag_on_off = 1
         else:
             _mem.tag_on_off = 0
-        _mem.tag_default = 0       # never use default label "CH-nnn"
+        _mem.tag_default = 0  # never use default label "CH-nnn"
         self._set_duplex(mem, _mem)
-        if mem.mode[0] == "N":    # is it narrow?
+        if mem.mode[0] == "N":  # is it narrow?
             _mem.mode = self.MODES.index(mem.mode[1:])
             # here I suppose it's safe to set both
             _mem.is_fm_narrow = _mem.is_cwdig_narrow = 1
@@ -739,7 +795,7 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
             _mem.fm_step = self.STEPSFM.index(mem.tuning_step)
         except ValueError:
             pass
-        _mem.rit = 0    # not supported in chirp
+        _mem.rit = 0  # not supported in chirp
         _mem.freq = mem.freq / 10
         _mem.offset = mem.offset / 10
         # there are ft857D that have problems with short labels, see bug #937
@@ -755,11 +811,12 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
     def validate_memory(self, mem):
         msgs = yaesu_clone.YaesuCloneModeRadio.validate_memory(self, mem)
 
-        lo, hi = self.VALID_BANDS[2]    # this is fm broadcasting
+        lo, hi = self.VALID_BANDS[2]  # this is fm broadcasting
         if mem.freq >= lo and mem.freq <= hi:
             if mem.mode != "FM":
-                msgs.append(chirp_common.ValidationError(
-                    "Only FM is supported in this band"))
+                msgs.append(
+                    chirp_common.ValidationError("Only FM is supported in this band")
+                )
         # TODO check that step is valid in current mode
         return msgs
 
@@ -777,320 +834,385 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
         antenna = RadioSettingGroup("antenna", "Antenna selection")
         panelcontr = RadioSettingGroup("panelcontr", "Panel controls")
 
-        top = RadioSettings(basic, cw, packet,
-                            panelcontr, panel, extended, antenna)
+        top = RadioSettings(basic, cw, packet, panelcontr, panel, extended, antenna)
 
-        rs = RadioSetting("ars_144", "144 ARS",
-                          RadioSettingValueBoolean(_settings.ars_144))
+        rs = RadioSetting(
+            "ars_144", "144 ARS", RadioSettingValueBoolean(_settings.ars_144)
+        )
         basic.append(rs)
-        rs = RadioSetting("ars_430", "430 ARS",
-                          RadioSettingValueBoolean(_settings.ars_430))
+        rs = RadioSetting(
+            "ars_430", "430 ARS", RadioSettingValueBoolean(_settings.ars_430)
+        )
         basic.append(rs)
-        rs = RadioSetting("pkt9600_mic", "Packet 9600 mic level",
-                          RadioSettingValueInteger(0, 100,
-                                                   _settings.pkt9600_mic))
+        rs = RadioSetting(
+            "pkt9600_mic",
+            "Packet 9600 mic level",
+            RadioSettingValueInteger(0, 100, _settings.pkt9600_mic),
+        )
         packet.append(rs)
         options = ["enable", "disable"]
         rs = RadioSetting(
-            "disable_amfm_dial", "AM&FM Dial",
-            RadioSettingValueList(
-                options, current_index=_settings.disable_amfm_dial))
+            "disable_amfm_dial",
+            "AM&FM Dial",
+            RadioSettingValueList(options, current_index=_settings.disable_amfm_dial),
+        )
         panel.append(rs)
-        rs = RadioSetting("am_mic", "AM mic level",
-                          RadioSettingValueInteger(0, 100, _settings.am_mic))
+        rs = RadioSetting(
+            "am_mic", "AM mic level", RadioSettingValueInteger(0, 100, _settings.am_mic)
+        )
         basic.append(rs)
         options = ["OFF", "1h", "2h", "3h", "4h", "5h", "6h"]
         rs = RadioSetting(
-            "apo_time", "APO time",
-            RadioSettingValueList(
-                options, current_index=_settings.apo_time))
+            "apo_time",
+            "APO time",
+            RadioSettingValueList(options, current_index=_settings.apo_time),
+        )
         basic.append(rs)
         options = ["OFF", "Range", "All"]
         rs = RadioSetting(
-            "arts_beep", "ARTS beep",
-            RadioSettingValueList(
-                options, current_index=_settings.arts_beep))
+            "arts_beep",
+            "ARTS beep",
+            RadioSettingValueList(options, current_index=_settings.arts_beep),
+        )
         basic.append(rs)
         options = ["OFF", "ON", "Auto"]
         rs = RadioSetting(
-            "backlight", "Backlight",
-            RadioSettingValueList(
-                options, current_index=_settings.backlight))
+            "backlight",
+            "Backlight",
+            RadioSettingValueList(options, current_index=_settings.backlight),
+        )
         panel.append(rs)
         options = ["6h", "8h", "10h"]
         rs = RadioSetting(
-            "batt_chg", "Battery charge",
-            RadioSettingValueList(
-                options, current_index=_settings.batt_chg))
+            "batt_chg",
+            "Battery charge",
+            RadioSettingValueList(options, current_index=_settings.batt_chg),
+        )
         basic.append(rs)
         options = ["440 Hz", "880 Hz"]
         rs = RadioSetting(
-            "beep_freq", "Beep frequency",
-            RadioSettingValueList(
-                options, current_index=_settings.beep_freq))
+            "beep_freq",
+            "Beep frequency",
+            RadioSettingValueList(options, current_index=_settings.beep_freq),
+        )
         panel.append(rs)
-        rs = RadioSetting("beep_volume", "Beep volume",
-                          RadioSettingValueInteger(0, 100,
-                                                   _settings.beep_volume))
+        rs = RadioSetting(
+            "beep_volume",
+            "Beep volume",
+            RadioSettingValueInteger(0, 100, _settings.beep_volume),
+        )
         panel.append(rs)
         options = ["4800", "9600", "38400"]
         rs = RadioSetting(
-            "cat_rate", "CAT rate",
-            RadioSettingValueList(
-                options, current_index=_settings.cat_rate))
+            "cat_rate",
+            "CAT rate",
+            RadioSettingValueList(options, current_index=_settings.cat_rate),
+        )
         basic.append(rs)
         options = ["Blue", "Amber", "Violet"]
-        rs = RadioSetting("color", "Color",
-                          RadioSettingValueList(options,
-                                                current_index=_settings.color))
+        rs = RadioSetting(
+            "color",
+            "Color",
+            RadioSettingValueList(options, current_index=_settings.color),
+        )
         panel.append(rs)
-        rs = RadioSetting("contrast", "Contrast",
-                          RadioSettingValueInteger(1, 12,
-                                                   _settings.contrast - 1))
+        rs = RadioSetting(
+            "contrast",
+            "Contrast",
+            RadioSettingValueInteger(1, 12, _settings.contrast - 1),
+        )
         panel.append(rs)
-        rs = RadioSetting("cw_delay", "CW delay (*10 ms)",
-                          RadioSettingValueInteger(1, 250,
-                                                   _settings.cw_delay))
+        rs = RadioSetting(
+            "cw_delay",
+            "CW delay (*10 ms)",
+            RadioSettingValueInteger(1, 250, _settings.cw_delay),
+        )
         cw.append(rs)
-        rs = RadioSetting("cw_id", "CW id",
-                          RadioSettingValueBoolean(_settings.cw_id))
+        rs = RadioSetting("cw_id", "CW id", RadioSettingValueBoolean(_settings.cw_id))
         cw.append(rs)
         options = ["Normal", "Reverse"]
         rs = RadioSetting(
-            "cw_paddle", "CW paddle",
-            RadioSettingValueList(
-                options, current_index=_settings.cw_paddle))
+            "cw_paddle",
+            "CW paddle",
+            RadioSettingValueList(options, current_index=_settings.cw_paddle),
+        )
         cw.append(rs)
         options = ["%i Hz" % i for i in range(300, 1001, 50)]
         rs = RadioSetting(
-            "cw_pitch", "CW pitch",
-            RadioSettingValueList(
-                options, current_index=_settings.cw_pitch))
+            "cw_pitch",
+            "CW pitch",
+            RadioSettingValueList(options, current_index=_settings.cw_pitch),
+        )
         cw.append(rs)
         options = ["%i wpm" % i for i in range(4, 61)]
         rs = RadioSetting(
-            "cw_speed", "CW speed",
-            RadioSettingValueList(
-                options, current_index=_settings.cw_speed))
+            "cw_speed",
+            "CW speed",
+            RadioSettingValueList(options, current_index=_settings.cw_speed),
+        )
         cw.append(rs)
         options = ["1:%1.1f" % (i / 10) for i in range(25, 46, 1)]
         rs = RadioSetting(
-            "cw_weight", "CW weight",
-            RadioSettingValueList(
-                options, current_index=_settings.cw_weight))
+            "cw_weight",
+            "CW weight",
+            RadioSettingValueList(options, current_index=_settings.cw_weight),
+        )
         cw.append(rs)
-        rs = RadioSetting("dig_disp", "Dig disp (*10 Hz)",
-                          RadioSettingValueInteger(-300, 300,
-                                                   _settings.dig_disp))
+        rs = RadioSetting(
+            "dig_disp",
+            "Dig disp (*10 Hz)",
+            RadioSettingValueInteger(-300, 300, _settings.dig_disp),
+        )
         packet.append(rs)
-        rs = RadioSetting("dig_mic", "Dig mic",
-                          RadioSettingValueInteger(0, 100,
-                                                   _settings.dig_mic))
+        rs = RadioSetting(
+            "dig_mic", "Dig mic", RadioSettingValueInteger(0, 100, _settings.dig_mic)
+        )
         packet.append(rs)
         options = ["RTTY", "PSK31-L", "PSK31-U", "USER-L", "USER-U"]
         rs = RadioSetting(
-            "dig_mode", "Dig mode",
-            RadioSettingValueList(
-                options, current_index=_settings.dig_mode))
+            "dig_mode",
+            "Dig mode",
+            RadioSettingValueList(options, current_index=_settings.dig_mode),
+        )
         packet.append(rs)
-        rs = RadioSetting("dig_shift", "Dig shift (*10 Hz)",
-                          RadioSettingValueInteger(-300, 300,
-                                                   _settings.dig_shift))
+        rs = RadioSetting(
+            "dig_shift",
+            "Dig shift (*10 Hz)",
+            RadioSettingValueInteger(-300, 300, _settings.dig_shift),
+        )
         packet.append(rs)
-        rs = RadioSetting("fm_mic", "FM mic",
-                          RadioSettingValueInteger(0, 100,
-                                                   _settings.fm_mic))
+        rs = RadioSetting(
+            "fm_mic", "FM mic", RadioSettingValueInteger(0, 100, _settings.fm_mic)
+        )
         basic.append(rs)
         options = ["Dial", "Freq", "Panel"]
         rs = RadioSetting(
-            "lock_mode", "Lock mode",
-            RadioSettingValueList(
-                options, current_index=_settings.lock_mode))
+            "lock_mode",
+            "Lock mode",
+            RadioSettingValueList(options, current_index=_settings.lock_mode),
+        )
         panel.append(rs)
         options = ["Fine", "Coarse"]
         rs = RadioSetting(
-            "main_step", "Main step",
-            RadioSettingValueList(
-                options, current_index=_settings.main_step))
+            "main_step",
+            "Main step",
+            RadioSettingValueList(options, current_index=_settings.main_step),
+        )
         panel.append(rs)
-        rs = RadioSetting("mem_group", "Mem group",
-                          RadioSettingValueBoolean(_settings.mem_group))
+        rs = RadioSetting(
+            "mem_group", "Mem group", RadioSettingValueBoolean(_settings.mem_group)
+        )
         basic.append(rs)
-        rs = RadioSetting("mic_key", "Mic key",
-                          RadioSettingValueBoolean(_settings.mic_key))
+        rs = RadioSetting(
+            "mic_key", "Mic key", RadioSettingValueBoolean(_settings.mic_key)
+        )
         cw.append(rs)
-        rs = RadioSetting("mic_scan", "Mic scan",
-                          RadioSettingValueBoolean(_settings.mic_scan))
+        rs = RadioSetting(
+            "mic_scan", "Mic scan", RadioSettingValueBoolean(_settings.mic_scan)
+        )
         basic.append(rs)
         options = ["Off", "SSB", "CW"]
         rs = RadioSetting(
-            "op_filter", "Optional filter",
-            RadioSettingValueList(
-                options, current_index=_settings.op_filter))
+            "op_filter",
+            "Optional filter",
+            RadioSettingValueList(options, current_index=_settings.op_filter),
+        )
         basic.append(rs)
-        rs = RadioSetting("pkt_mic", "Packet mic",
-                          RadioSettingValueInteger(0, 100, _settings.pkt_mic))
+        rs = RadioSetting(
+            "pkt_mic", "Packet mic", RadioSettingValueInteger(0, 100, _settings.pkt_mic)
+        )
         packet.append(rs)
         options = ["1200", "9600"]
         rs = RadioSetting(
-            "pkt_rate", "Packet rate",
-            RadioSettingValueList(
-                options, current_index=_settings.pkt_rate))
+            "pkt_rate",
+            "Packet rate",
+            RadioSettingValueList(options, current_index=_settings.pkt_rate),
+        )
         packet.append(rs)
         options = ["Off", "3 sec", "5 sec", "10 sec"]
         rs = RadioSetting(
-            "resume_scan", "Resume scan",
-            RadioSettingValueList(
-                options, current_index=_settings.resume_scan))
+            "resume_scan",
+            "Resume scan",
+            RadioSettingValueList(options, current_index=_settings.resume_scan),
+        )
         basic.append(rs)
         options = ["Cont", "Chk"]
-        rs = RadioSetting("scope", "Scope",
-                          RadioSettingValueList(options,
-                                                current_index=_settings.scope))
+        rs = RadioSetting(
+            "scope",
+            "Scope",
+            RadioSettingValueList(options, current_index=_settings.scope),
+        )
         basic.append(rs)
-        rs = RadioSetting("sidetone", "Sidetone",
-                          RadioSettingValueInteger(0, 100, _settings.sidetone))
+        rs = RadioSetting(
+            "sidetone", "Sidetone", RadioSettingValueInteger(0, 100, _settings.sidetone)
+        )
         cw.append(rs)
         options = ["RF-Gain", "Squelch"]
         rs = RadioSetting(
-            "sql_rf_gain", "Squelch/RF-Gain",
-            RadioSettingValueList(
-                options, current_index=_settings.sql_rf_gain))
+            "sql_rf_gain",
+            "Squelch/RF-Gain",
+            RadioSettingValueList(options, current_index=_settings.sql_rf_gain),
+        )
         panel.append(rs)
-        rs = RadioSetting("ssb_mic", "SSB Mic",
-                          RadioSettingValueInteger(0, 100, _settings.ssb_mic))
+        rs = RadioSetting(
+            "ssb_mic", "SSB Mic", RadioSettingValueInteger(0, 100, _settings.ssb_mic)
+        )
         basic.append(rs)
         options = ["%i" % i for i in range(0, 21)]
         options[0] = "Off"
         rs = RadioSetting(
-            "tot_time", "Time-out timer",
-            RadioSettingValueList(
-                options, current_index=_settings.tot_time))
+            "tot_time",
+            "Time-out timer",
+            RadioSettingValueList(options, current_index=_settings.tot_time),
+        )
         basic.append(rs)
-        rs = RadioSetting("vox_delay", "VOX delay (*100 ms)",
-                          RadioSettingValueInteger(1, 25, _settings.vox_delay))
+        rs = RadioSetting(
+            "vox_delay",
+            "VOX delay (*100 ms)",
+            RadioSettingValueInteger(1, 25, _settings.vox_delay),
+        )
         basic.append(rs)
-        rs = RadioSetting("vox_gain", "VOX Gain",
-                          RadioSettingValueInteger(0, 100, _settings.vox_gain))
+        rs = RadioSetting(
+            "vox_gain", "VOX Gain", RadioSettingValueInteger(0, 100, _settings.vox_gain)
+        )
         basic.append(rs)
-        rs = RadioSetting("extended_menu", "Extended menu",
-                          RadioSettingValueBoolean(_settings.extended_menu))
+        rs = RadioSetting(
+            "extended_menu",
+            "Extended menu",
+            RadioSettingValueBoolean(_settings.extended_menu),
+        )
         extended.append(rs)
         options = ["Tn-Rn", "Tn-Riv", "Tiv-Rn", "Tiv-Riv"]
-        rs = RadioSetting("dcs_inv", "DCS coding", RadioSettingValueList(
-            options, current_index=_settings.dcs_inv))
+        rs = RadioSetting(
+            "dcs_inv",
+            "DCS coding",
+            RadioSettingValueList(options, current_index=_settings.dcs_inv),
+        )
         extended.append(rs)
-        rs = RadioSetting("r_lsb_car", "LSB Rx carrier point (*10 Hz)",
-                          RadioSettingValueInteger(-30, 30,
-                                                   _settings.r_lsb_car))
+        rs = RadioSetting(
+            "r_lsb_car",
+            "LSB Rx carrier point (*10 Hz)",
+            RadioSettingValueInteger(-30, 30, _settings.r_lsb_car),
+        )
         extended.append(rs)
-        rs = RadioSetting("r_usb_car", "USB Rx carrier point (*10 Hz)",
-                          RadioSettingValueInteger(-30, 30,
-                                                   _settings.r_usb_car))
+        rs = RadioSetting(
+            "r_usb_car",
+            "USB Rx carrier point (*10 Hz)",
+            RadioSettingValueInteger(-30, 30, _settings.r_usb_car),
+        )
         extended.append(rs)
-        rs = RadioSetting("t_lsb_car", "LSB Tx carrier point (*10 Hz)",
-                          RadioSettingValueInteger(-30, 30,
-                                                   _settings.t_lsb_car))
+        rs = RadioSetting(
+            "t_lsb_car",
+            "LSB Tx carrier point (*10 Hz)",
+            RadioSettingValueInteger(-30, 30, _settings.t_lsb_car),
+        )
         extended.append(rs)
-        rs = RadioSetting("t_usb_car", "USB Tx carrier point (*10 Hz)",
-                          RadioSettingValueInteger(-30, 30,
-                                                   _settings.t_usb_car))
+        rs = RadioSetting(
+            "t_usb_car",
+            "USB Tx carrier point (*10 Hz)",
+            RadioSettingValueInteger(-30, 30, _settings.t_usb_car),
+        )
         extended.append(rs)
 
         options = ["Hi", "L3", "L2", "L1"]
         rs = RadioSetting(
-            "tx_power", "TX power",
-            RadioSettingValueList(
-                options, current_index=_settings.tx_power))
+            "tx_power",
+            "TX power",
+            RadioSettingValueList(options, current_index=_settings.tx_power),
+        )
         basic.append(rs)
 
         options = ["Front", "Rear"]
         rs = RadioSetting(
-            "hf_antenna", "HF",
-            RadioSettingValueList(
-                options, current_index=_settings.hf_antenna))
+            "hf_antenna",
+            "HF",
+            RadioSettingValueList(options, current_index=_settings.hf_antenna),
+        )
         antenna.append(rs)
         rs = RadioSetting(
-            "sixm_antenna", "6M",
-            RadioSettingValueList(
-                options, current_index=_settings.sixm_antenna))
+            "sixm_antenna",
+            "6M",
+            RadioSettingValueList(options, current_index=_settings.sixm_antenna),
+        )
         antenna.append(rs)
         rs = RadioSetting(
-            "bc_antenna", "Broadcasting",
-            RadioSettingValueList(
-                options, current_index=_settings.bc_antenna))
+            "bc_antenna",
+            "Broadcasting",
+            RadioSettingValueList(options, current_index=_settings.bc_antenna),
+        )
         antenna.append(rs)
         rs = RadioSetting(
-            "air_antenna", "Air band",
-            RadioSettingValueList(
-                options, current_index=_settings.air_antenna))
+            "air_antenna",
+            "Air band",
+            RadioSettingValueList(options, current_index=_settings.air_antenna),
+        )
         antenna.append(rs)
         rs = RadioSetting(
-            "vhf_antenna", "VHF",
-            RadioSettingValueList(
-                options, current_index=_settings.vhf_antenna))
+            "vhf_antenna",
+            "VHF",
+            RadioSettingValueList(options, current_index=_settings.vhf_antenna),
+        )
         antenna.append(rs)
         rs = RadioSetting(
-            "uhf_antenna", "UHF",
-            RadioSettingValueList(
-                options, current_index=_settings.uhf_antenna))
+            "uhf_antenna",
+            "UHF",
+            RadioSettingValueList(options, current_index=_settings.uhf_antenna),
+        )
         antenna.append(rs)
 
-        st = RadioSettingValueString(0, 7, ''.join([self._CALLSIGN_CHARSET[x]
-                                                   for x in self._memobj.
-                                                   callsign]))
+        st = RadioSettingValueString(
+            0, 7, "".join([self._CALLSIGN_CHARSET[x] for x in self._memobj.callsign])
+        )
         st.set_charset(self._CALLSIGN_CHARSET)
         rs = RadioSetting("callsign", "Callsign", st)
         cw.append(rs)
 
-        rs = RadioSetting("spl", "Split",
-                          RadioSettingValueBoolean(_settings.spl))
+        rs = RadioSetting("spl", "Split", RadioSettingValueBoolean(_settings.spl))
         panelcontr.append(rs)
         options = ["None", "Up", "Down", "PMS"]
         rs = RadioSetting(
-            "scn_mode", "Scan mode",
-            RadioSettingValueList(
-                options, current_index=_settings.scn_mode))
+            "scn_mode",
+            "Scan mode",
+            RadioSettingValueList(options, current_index=_settings.scn_mode),
+        )
         panelcontr.append(rs)
-        rs = RadioSetting("pri", "Priority",
-                          RadioSettingValueBoolean(_settings.pri))
+        rs = RadioSetting("pri", "Priority", RadioSettingValueBoolean(_settings.pri))
         panelcontr.append(rs)
-        rs = RadioSetting("dw", "Dual watch",
-                          RadioSettingValueBoolean(_settings.dw))
+        rs = RadioSetting("dw", "Dual watch", RadioSettingValueBoolean(_settings.dw))
         panelcontr.append(rs)
-        rs = RadioSetting("art", "Auto-range transponder",
-                          RadioSettingValueBoolean(_settings.art))
+        rs = RadioSetting(
+            "art", "Auto-range transponder", RadioSettingValueBoolean(_settings.art)
+        )
         panelcontr.append(rs)
-        rs = RadioSetting("nb", "Noise blanker",
-                          RadioSettingValueBoolean(_settings.nb))
+        rs = RadioSetting("nb", "Noise blanker", RadioSettingValueBoolean(_settings.nb))
         panelcontr.append(rs)
         options = ["Auto", "Fast", "Slow", "Off"]
-        rs = RadioSetting("agc", "AGC", RadioSettingValueList(
-            options, current_index=_settings.agc))
+        rs = RadioSetting(
+            "agc", "AGC", RadioSettingValueList(options, current_index=_settings.agc)
+        )
         panelcontr.append(rs)
         options = ["PWR", "ALC", "SWR", "MOD"]
         rs = RadioSetting(
-            "pwr_meter_mode", "Power meter mode",
-            RadioSettingValueList(
-                options, current_index=_settings.pwr_meter_mode))
+            "pwr_meter_mode",
+            "Power meter mode",
+            RadioSettingValueList(options, current_index=_settings.pwr_meter_mode),
+        )
         panelcontr.append(rs)
-        rs = RadioSetting("vox", "Vox",
-                          RadioSettingValueBoolean(_settings.vox))
+        rs = RadioSetting("vox", "Vox", RadioSettingValueBoolean(_settings.vox))
         panelcontr.append(rs)
-        rs = RadioSetting("bk", "Semi break-in",
-                          RadioSettingValueBoolean(_settings.bk))
+        rs = RadioSetting("bk", "Semi break-in", RadioSettingValueBoolean(_settings.bk))
         cw.append(rs)
-        rs = RadioSetting("kyr", "Keyer",
-                          RadioSettingValueBoolean(_settings.kyr))
+        rs = RadioSetting("kyr", "Keyer", RadioSettingValueBoolean(_settings.kyr))
         cw.append(rs)
         options = ["enabled", "disabled"]
-        rs = RadioSetting("fst", "Fast", RadioSettingValueList(
-            options, current_index=_settings.fst))
+        rs = RadioSetting(
+            "fst", "Fast", RadioSettingValueList(options, current_index=_settings.fst)
+        )
         panelcontr.append(rs)
         options = ["enabled", "disabled"]
-        rs = RadioSetting("lock", "Lock",
-                          RadioSettingValueList(options,
-                                                current_index=_settings.lock))
+        rs = RadioSetting(
+            "lock", "Lock", RadioSettingValueList(options, current_index=_settings.lock)
+        )
         panelcontr.append(rs)
 
         return top
@@ -1112,17 +1234,18 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
                     obj = _settings
                     setting = element.get_name()
                 try:
-                    LOG.debug("Setting %s(%s) <= %s" % (setting,
-                                                        getattr(obj, setting),
-                                                        element.value))
+                    LOG.debug(
+                        "Setting %s(%s) <= %s"
+                        % (setting, getattr(obj, setting), element.value)
+                    )
                 except AttributeError:
                     LOG.debug("Setting %s <= %s" % (setting, element.value))
                 if setting == "contrast":
                     setattr(obj, setting, int(element.value) + 1)
                 elif setting == "callsign":
-                    self._memobj.callsign = \
-                        [self._CALLSIGN_CHARSET_REV[x] for x in
-                         str(element.value)]
+                    self._memobj.callsign = [
+                        self._CALLSIGN_CHARSET_REV[x] for x in str(element.value)
+                    ]
                 else:
                     setattr(obj, setting, element.value)
             except Exception:
@@ -1132,8 +1255,8 @@ class FT817Radio(yaesu_clone.YaesuCloneModeRadio):
 
 @directory.register
 class FT817NDRadio(FT817Radio):
-
     """Yaesu FT-817ND"""
+
     MODEL = "FT-817ND"
 
     _model = ""
@@ -1144,8 +1267,8 @@ class FT817NDRadio(FT817Radio):
 
 @directory.register
 class FT817NDUSRadio(FT817Radio):
-
     """Yaesu FT-817ND (US version)"""
+
     # seems that radios configured for 5 MHz operations send one packet
     # more than others so we have to distinguish sub models
     MODEL = "FT-817ND (US)"
@@ -1168,23 +1291,34 @@ class FT817NDUSRadio(FT817Radio):
     SPECIAL_MEMORIES = dict(FT817Radio.SPECIAL_MEMORIES)
     SPECIAL_MEMORIES.update(SPECIAL_60M)
 
-    SPECIAL_MEMORIES_REV = dict(list(zip(list(SPECIAL_MEMORIES.values()),
-                                         list(SPECIAL_MEMORIES.keys()))))
+    SPECIAL_MEMORIES_REV = dict(
+        list(zip(list(SPECIAL_MEMORIES.values()), list(SPECIAL_MEMORIES.keys())))
+    )
 
     def _get_special_60m(self, number):
         mem = chirp_common.Memory()
         mem.number = self.SPECIAL_60M[number]
         mem.extd_number = number
 
-        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX +
-                                               mem.number]
+        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX + mem.number]
 
         mem = self._get_memory(mem, _mem)
 
-        mem.immutable = ["number", "rtone", "ctone",
-                         "extd_number", "name", "dtcs", "tmode", "cross_mode",
-                         "dtcs_polarity", "power", "duplex", "offset",
-                         "empty"]
+        mem.immutable = [
+            "number",
+            "rtone",
+            "ctone",
+            "extd_number",
+            "name",
+            "dtcs",
+            "tmode",
+            "cross_mode",
+            "dtcs_polarity",
+            "power",
+            "duplex",
+            "offset",
+            "empty",
+        ]
 
         return mem
 
@@ -1197,22 +1331,25 @@ class FT817NDUSRadio(FT817Radio):
 
         for key in cur_mem.immutable:
             if cur_mem.__dict__[key] != mem.__dict__[key]:
-                raise errors.RadioError("Editing field `%s' " % key +
-                                        "is not supported on M-60x channels")
+                raise errors.RadioError(
+                    "Editing field `%s' " % key + "is not supported on M-60x channels"
+                )
 
         if mem.mode not in ["USB", "LSB", "CW", "CWR", "NCW", "NCWR", "DIG"]:
-            raise errors.RadioError("Mode {mode} is not valid "
-                                    "in 60m channels".format(mode=mem.mode))
-        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX +
-                                               mem.number]
+            raise errors.RadioError(
+                "Mode {mode} is not valid " "in 60m channels".format(mode=mem.mode)
+            )
+        _mem = self._memobj.sixtymeterchannels[-self.LAST_SPECIAL60M_INDEX + mem.number]
         self._set_memory(mem, _mem)
 
     def get_memory(self, number):
         if number in self.SPECIAL_60M.keys():
             return self._get_special_60m(number)
-        elif (isinstance(number, int) and number < 0 and
-              self.SPECIAL_MEMORIES_REV[number] in
-              list(self.SPECIAL_60M.keys())):
+        elif (
+            isinstance(number, int)
+            and number < 0
+            and self.SPECIAL_MEMORIES_REV[number] in list(self.SPECIAL_60M.keys())
+        ):
             # I can't stop delete operation from losing extd_number but
             # I know how to get it back
             return self._get_special_60m(self.SPECIAL_MEMORIES_REV[number])
@@ -1228,8 +1365,10 @@ class FT817NDUSRadio(FT817Radio):
     def get_settings(self):
         top = FT817Radio.get_settings(self)
         basic = top[0]
-        rs = RadioSetting("emergency", "Emergency",
-                          RadioSettingValueBoolean(
-                              self._memobj.settings.emergency))
+        rs = RadioSetting(
+            "emergency",
+            "Emergency",
+            RadioSettingValueBoolean(self._memobj.settings.emergency),
+        )
         basic.append(rs)
         return top

@@ -20,10 +20,15 @@ import logging
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
 from chirp import kenwood_tone
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings, \
-    RadioSettingValueString
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+    RadioSettingValueString,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -77,8 +82,10 @@ struct {
 
 CMD_ACK = b"\x06"
 
-RT22_POWER_LEVELS = [chirp_common.PowerLevel("Low",  watts=2.00),
-                     chirp_common.PowerLevel("High", watts=5.00)]
+RT22_POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=2.00),
+    chirp_common.PowerLevel("High", watts=5.00),
+]
 
 RT22_DTCS = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
@@ -86,16 +93,17 @@ PF2KEY_LIST = ["Scan", "Local Alarm", "Remote Alarm"]
 TIMEOUTTIMER_LIST = ["Off"] + ["%s seconds" % x for x in range(15, 615, 15)]
 VOICE_LIST = ["Off", "Chinese", "English"]
 VOX_LIST = ["OFF"] + ["%s" % x for x in range(1, 17)]
-VOXDELAY_LIST = ["0.5 | Off",
+VOXDELAY_LIST = [
+    "0.5 | Off",
                  "1.0 | 0",
                  "1.5 | 1",
                  "2.0 | 2",
                  "2.5 | 3",
                  "3.0 | 4",
-                 "--- | 5"]
+    "--- | 5",
+]
 
-VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-    "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
+VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
 
 
 def _ident_from_data(data):
@@ -178,7 +186,7 @@ def _rt22_enter_programming_mode(radio):
         _rt22_exit_programming_mode(radio)
         raise errors.RadioError("Error communicating with radio")
 
-    if ack != b"\x4E":
+    if ack != b"\x4e":
         _rt22_exit_programming_mode(radio)
         raise errors.RadioError("Radio refused to enter programming mode")
 
@@ -196,7 +204,7 @@ def _rt22_exit_programming_mode(radio):
 def _rt22_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -226,17 +234,18 @@ def _rt22_read_block(radio, block_addr, block_size):
     return block_data
 
 
-def _rt22_write_block(radio, block_addr, block_size, _requires_patch=False,
-                      _radio_id=""):
+def _rt22_write_block(
+    radio, block_addr, block_size, _requires_patch=False, _radio_id=""
+):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
     if _requires_patch:
         mmap = radio.get_mmap()
         data = mmap[block_addr:block_addr + block_size]
         # For some radios (RT-622 & RT22FRS) memory at 0x1b8 reads as 0, but
         # radio ID should be written instead
-        if block_addr == 0x1b8:
+        if block_addr == 0x1B8:
             for fp in _radio_id:
                 if fp in mmap[0:len(_radio_id)]:
                     data = mmap[0:len(_radio_id)] + data[len(_radio_id):]
@@ -257,8 +266,7 @@ def _rt22_write_block(radio, block_addr, block_size, _requires_patch=False,
             raise Exception("No ACK")
     except:
         _rt22_exit_programming_mode(radio)
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -300,7 +308,7 @@ def do_upload(radio):
     LOG.info("Image Ident is %s" % repr(image_ident))
 
     # Determine if upload requires patching
-    if image_ident == b"\x00\x00\x00\x00\x00\x00\xFF\xFF":
+    if image_ident == b"\x00\x00\x00\x00\x00\x00\xff\xff":
         patch_block = True
     else:
         patch_block = False
@@ -312,8 +320,7 @@ def do_upload(radio):
         for addr in range(start_addr, end_addr, block_size):
             status.cur = addr + block_size
             radio.status_fn(status)
-            _rt22_write_block(radio, addr, block_size, patch_block,
-                              radio_ident)
+            _rt22_write_block(radio, addr, block_size, patch_block, radio_ident)
 
     _rt22_exit_programming_mode(radio)
 
@@ -331,6 +338,7 @@ def model_match(cls, data):
 @directory.register
 class RT22Radio(chirp_common.CloneModeRadio):
     """Retevis RT22"""
+
     VENDOR = "Retevis"
     MODEL = "RT22"
     BAUD_RATE = 9600
@@ -343,10 +351,15 @@ class RT22Radio(chirp_common.CloneModeRadio):
               ]
     _memsize = 0x0400
     _block_size = 0x40
-    _fileid = [b"P32073", b"P3" + b"\x00\x00\x00" + b"3", b"P3207!",
-               b"\x00\x00\x00\x00\x00\x00\xF8\xFF"]
+    _fileid = [
+        b"P32073",
+        b"P3" + b"\x00\x00\x00" + b"3",
+        b"P3207!",
+        b"\x00\x00\x00\x00\x00\x00\xf8\xff",
+    ]
     _tone_model = kenwood_tone.KenwoodToneModel(
-        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000)
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000
+    )
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -360,14 +373,21 @@ class RT22Radio(chirp_common.CloneModeRadio):
         rf.has_name = False
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = RT22_POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["NFM", "FM"]  # 12.5 kHz, 25 kHz.
         rf.valid_dtcs_codes = RT22_DTCS
         rf.memory_bounds = (1, 16)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
         rf.valid_bands = [(400000000, 520000000)]
 
         return rf
@@ -385,9 +405,8 @@ class RT22Radio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -400,16 +419,15 @@ class RT22Radio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
 
     def get_memory(self, number):
-        bitpos = (1 << ((number - 1) % 8))
-        bytepos = ((number - 1) / 8)
+        bitpos = 1 << ((number - 1) % 8)
+        bytepos = (number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -426,7 +444,7 @@ class RT22Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -434,7 +452,7 @@ class RT22Radio(chirp_common.CloneModeRadio):
         if int(_mem.rxfreq) == int(_mem.txfreq):
             mem.duplex = ""
             mem.offset = 0
-        elif _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        elif _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
         else:
             mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
@@ -463,8 +481,8 @@ class RT22Radio(chirp_common.CloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << ((mem.number - 1) % 8))
-        bytepos = ((mem.number - 1) / 8)
+        bitpos = 1 << ((mem.number - 1) % 8)
+        bytepos = (mem.number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -472,17 +490,17 @@ class RT22Radio(chirp_common.CloneModeRadio):
         _skp = self._memobj.skipflags[bytepos]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
             return
 
         # Initialize the memory to a known-good state
-        _mem.fill_raw(b'\x00')
+        _mem.fill_raw(b"\x00")
         _mem.unknown5[0] = 0x80
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
-            _mem.txfreq.fill_raw(b"\xFF")
+            _mem.txfreq.fill_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -513,8 +531,11 @@ class RT22Radio(chirp_common.CloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic Settings")
         top = RadioSettings(basic)
 
-        rs = RadioSetting("squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, _settings.squelch))
+        rs = RadioSetting(
+            "squelch",
+            "Squelch Level",
+            RadioSettingValueInteger(0, 9, _settings.squelch),
+        )
         rs.set_doc(
             "Sets how strong a received signal must be before the speaker "
             "unmutes. 0 leaves the squelch open so you hear noise all the "
@@ -523,10 +544,11 @@ class RT22Radio(chirp_common.CloneModeRadio):
             "it if distant stations are being cut off.")
         basic.append(rs)
 
-        rs = RadioSetting("tot", "Time-out timer",
-                          RadioSettingValueList(
-                              TIMEOUTTIMER_LIST,
-                              current_index=_settings.tot))
+        rs = RadioSetting(
+            "tot",
+            "Time-out timer",
+            RadioSettingValueList(TIMEOUTTIMER_LIST, current_index=_settings.tot),
+        )
         rs.set_doc(
             "Limits how long a single transmission may last. When the time "
             "runs out the radio stops transmitting until PTT is released, "
@@ -534,18 +556,22 @@ class RT22Radio(chirp_common.CloneModeRadio):
             "the channel for everyone else.")
         basic.append(rs)
 
-        rs = RadioSetting("voice", "Voice Prompts",
-                          RadioSettingValueList(
-                              VOICE_LIST, current_index=_settings.voice))
+        rs = RadioSetting(
+            "voice",
+            "Voice Prompts",
+            RadioSettingValueList(VOICE_LIST, current_index=_settings.voice),
+        )
         rs.set_doc(
             "Announces the channel number out loud in the selected language "
             "each time you change channel. Useful on a radio without a "
             "display. Off silences the announcements.")
         basic.append(rs)
 
-        rs = RadioSetting("pf2key", "PF2 Key",
-                          RadioSettingValueList(
-                              PF2KEY_LIST, current_index=_settings.pf2key))
+        rs = RadioSetting(
+            "pf2key",
+            "PF2 Key",
+            RadioSettingValueList(PF2KEY_LIST, current_index=_settings.pf2key),
+        )
         rs.set_doc(
             "Chooses what the programmable key does when held down: Scan "
             "steps through the channels looking for activity, Local Alarm "
@@ -554,35 +580,38 @@ class RT22Radio(chirp_common.CloneModeRadio):
             "it here.")
         basic.append(rs)
 
-        rs = RadioSetting("vox", "Vox",
-                          RadioSettingValueBoolean(_settings.vox))
+        rs = RadioSetting("vox", "Vox", RadioSettingValueBoolean(_settings.vox))
         rs.set_doc(
             "Voice operated transmit. The radio starts transmitting when "
             "you speak towards the microphone, so hands-free conversation "
             "is possible without pressing PTT.")
         basic.append(rs)
 
-        rs = RadioSetting("voxgain", "VOX Level",
-                          RadioSettingValueList(
-                              VOX_LIST, current_index=_settings.voxgain))
+        rs = RadioSetting(
+            "voxgain",
+            "VOX Level",
+            RadioSettingValueList(VOX_LIST, current_index=_settings.voxgain),
+        )
         rs.set_doc(
             "Sets the VOX sensitivity. Too sensitive a setting keys the "
             "transmitter on the noise around the radio, too insensitive a "
             "setting fails to pick up your voice. OFF disables VOX.")
         basic.append(rs)
 
-        rs = RadioSetting("voxdelay", "VOX Delay Time (Old | New)",
-                          RadioSettingValueList(
-                              VOXDELAY_LIST,
-                              current_index=_settings.voxdelay))
+        rs = RadioSetting(
+            "voxdelay",
+            "VOX Delay Time (Old | New)",
+            RadioSettingValueList(VOXDELAY_LIST, current_index=_settings.voxdelay),
+        )
         rs.set_doc(
             "How long the transmitter stays keyed after you stop speaking. "
             "A longer delay avoids dropping the transmission during natural "
             "pauses in speech.")
         basic.append(rs)
 
-        rs = RadioSetting("save", "Battery Save",
-                          RadioSettingValueBoolean(_settings.save))
+        rs = RadioSetting(
+            "save", "Battery Save", RadioSettingValueBoolean(_settings.save)
+        )
         rs.set_doc(
             "Cuts standby power consumption by dozing the receiver once no "
             "signal has been received for a few seconds. It considerably "
@@ -590,14 +619,14 @@ class RT22Radio(chirp_common.CloneModeRadio):
             "first moment of an incoming transmission.")
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Beep",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
         rs.set_doc(
             "Sounds a short confirmation tone as you operate the radio. "
             "Turn it off when the radio has to be used discreetly.")
         basic.append(rs)
 
         if self.MODEL != "W31E":
+
             def _filter(name):
                 filtered = ""
                 for char in str(name):
@@ -608,10 +637,12 @@ class RT22Radio(chirp_common.CloneModeRadio):
                 return filtered
 
             val = str(self._memobj.radio.id_0x200)
-            if val == "\xFF" * 8:
-                rs = RadioSetting("embedded_msg.line1", "Embedded Message 1",
-                                  RadioSettingValueString(0, 32, _filter(
-                                      _message.line1)))
+            if val == "\xff" * 8:
+                rs = RadioSetting(
+                    "embedded_msg.line1",
+                    "Embedded Message 1",
+                    RadioSettingValueString(0, 32, _filter(_message.line1)),
+                )
                 rs.set_doc(
                     "Free-form text of up to 32 characters stored in the "
                     "radio, typically used as an owner or service note. The "
@@ -619,9 +650,11 @@ class RT22Radio(chirp_common.CloneModeRadio):
                     "radio itself.")
                 basic.append(rs)
 
-                rs = RadioSetting("embedded_msg.line2", "Embedded Message 2",
-                                  RadioSettingValueString(0, 32, _filter(
-                                      _message.line2)))
+                rs = RadioSetting(
+                    "embedded_msg.line2",
+                    "Embedded Message 2",
+                    RadioSettingValueString(0, 32, _filter(_message.line2)),
+                )
                 rs.set_doc(
                     "Second line of the free-form text stored in the radio.")
                 basic.append(rs)
@@ -657,7 +690,9 @@ class RT22Radio(chirp_common.CloneModeRadio):
         match_model = False
 
         # testing the file data size
-        if len(filedata) in [0x0408, ]:
+        if len(filedata) in [
+            0x0408,
+        ]:
             match_size = True
 
         # testing the model fingerprint
@@ -672,6 +707,7 @@ class RT22Radio(chirp_common.CloneModeRadio):
 @directory.register
 class KDC1(RT22Radio):
     """WLN KD-C1"""
+
     VENDOR = "WLN"
     MODEL = "KD-C1"
 
@@ -679,6 +715,7 @@ class KDC1(RT22Radio):
 @directory.register
 class ZTX6(RT22Radio):
     """Zastone ZT-X6"""
+
     VENDOR = "Zastone"
     MODEL = "ZT-X6"
 
@@ -686,6 +723,7 @@ class ZTX6(RT22Radio):
 @directory.register
 class LT316(RT22Radio):
     """Luiton LT-316"""
+
     VENDOR = "LUITON"
     MODEL = "LT-316"
 
@@ -706,12 +744,13 @@ class RT22FRS(RT22Radio):
 class RT622(RT22Radio):
     VENDOR = "Retevis"
     MODEL = "RT622"
-    _fileid = RT22Radio._fileid + [b'\xFF\xFF\xF8\xFF']
+    _fileid = RT22Radio._fileid + [b"\xff\xff\xf8\xff"]
 
 
 @directory.register
 class W31E(RT22Radio):
     """Baofeng W31E"""
+
     VENDOR = "Baofeng"
     MODEL = "W31E"
 
@@ -725,9 +764,11 @@ class W31E(RT22Radio):
 @directory.register
 class BFT20(RT22Radio):
     """Baofeng BF-T20"""
+
     VENDOR = "Baofeng"
     MODEL = "BF-T20"
 
-    _fileid = [b"P330h33",
-               b"P32073" + b"\xF8\xFF",
+    _fileid = [
+        b"P330h33",
+        b"P32073" + b"\xf8\xff",
                ]

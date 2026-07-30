@@ -90,7 +90,7 @@ def __clone_in(radio):
         if not chunk:
             raise errors.RadioNoResponse()
         if blocks == 1:
-            LOG.debug('ID block: %s' % util.hexprint(chunk))
+            LOG.debug("ID block: %s" % util.hexprint(chunk))
         if radio.status_fn:
             status.cur = len(data)
             radio.status_fn(status)
@@ -117,7 +117,7 @@ def _chunk_write(pipe, data, status_fn, block):
     delay = 0.03
     count = 0
     for i in range(0, len(data), block):
-        chunk = data[i:i+block]
+        chunk = data[i : i + block]
         pipe.write(chunk)
         count += len(chunk)
         time.sleep(delay)
@@ -150,8 +150,8 @@ def __clone_out(radio):
     for block in radio._block_lengths:
         blocks += 1
         if blocks != num_blocks or num_blocks == 1:
-            LOG.debug("Sending %i-%i" % (pos, pos+block))
-            pipe.write(mmap[pos:pos+block])
+            LOG.debug("Sending %i-%i" % (pos, pos + block))
+            pipe.write(mmap[pos : pos + block])
             buf = pipe.read(1)
             if buf and buf[0] != radio._cmd_ack:
                 buf = pipe.read(block)
@@ -160,8 +160,7 @@ def __clone_out(radio):
             if buf[-1] != radio._cmd_ack:
                 raise Exception("Radio did not ack block %i" % blocks)
         else:
-            _chunk_write(pipe, mmap[pos:],
-                         radio.status_fn, radio._block_size)
+            _chunk_write(pipe, mmap[pos:], radio.status_fn, radio._block_size)
         pos += block
         _status()
 
@@ -181,6 +180,7 @@ def _clone_out(radio):
 
 class YaesuChecksum:
     """A Yaesu Checksum Object"""
+
     def __init__(self, start, stop, address=None):
         self._start = start
         self._stop = stop
@@ -191,7 +191,7 @@ class YaesuChecksum:
 
     @staticmethod
     def _asbytes(mmap):
-        if hasattr(mmap, 'get_byte_compatible'):
+        if hasattr(mmap, "get_byte_compatible"):
             return mmap.get_byte_compatible()
         elif isinstance(mmap, bytes):
             # NOTE: this won't work for update(), but nothing should be calling
@@ -201,10 +201,10 @@ class YaesuChecksum:
             # NOTE: this won't work for update(), but nothing should be calling
             # this with a literal expecting that to work
             return memmap.MemoryMap(
-                bitwise.string_straight_encode(mmap)).get_byte_compatible()
+                bitwise.string_straight_encode(mmap)
+            ).get_byte_compatible()
         else:
-            raise TypeError('Unable to convert %s to bytes' % (
-                type(mmap).__name__))
+            raise TypeError("Unable to convert %s to bytes" % (type(mmap).__name__))
 
     def get_existing(self, mmap):
         """Return the existing checksum in mmap"""
@@ -214,7 +214,7 @@ class YaesuChecksum:
         """Return the calculated value of the checksum"""
         mmap = self._asbytes(mmap)
         cs = 0
-        for i in range(self._start, self._stop+1):
+        for i in range(self._start, self._stop + 1):
             # NOTE: mmap[i] returns a slice'd bytes, not an int like a
             # bytes does
             cs += mmap[i][0]
@@ -226,13 +226,12 @@ class YaesuChecksum:
         mmap[self._address] = self.get_calculated(mmap)
 
     def __str__(self):
-        return "%04X-%04X (@%04X)" % (self._start,
-                                      self._stop,
-                                      self._address)
+        return "%04X-%04X (@%04X)" % (self._start, self._stop, self._address)
 
 
 class YaesuCloneModeRadio(chirp_common.CloneModeRadio):
     """Base class for all Yaesu clone-mode radios"""
+
     _block_lengths = [8, 65536]
     _block_size = 8
     _cmd_ack = CMD_ACK
@@ -247,12 +246,14 @@ class YaesuCloneModeRadio(chirp_common.CloneModeRadio):
             "1. Turn radio off.\n"
             "2. Connect data cable.\n"
             "3. Prepare radio for clone.\n"
-            "4. <b>After clicking OK</b>, press the key to send image.\n")
+            "4. <b>After clicking OK</b>, press the key to send image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect data cable.\n"
             "3. Prepare radio for clone.\n"
-            "4. Press the key to receive the image.\n")
+            "4. Press the key to receive the image.\n"
+        )
         return rp
 
     def _checksums(self):
@@ -267,8 +268,7 @@ class YaesuCloneModeRadio(chirp_common.CloneModeRadio):
     def check_checksums(self):
         """Validate the checksums stored in the memory map"""
         for checksum in self._checksums():
-            if checksum.get_existing(self._mmap) != \
-                    checksum.get_calculated(self._mmap):
+            if checksum.get_existing(self._mmap) != checksum.get_calculated(self._mmap):
                 raise errors.RadioError("Checksum Failed [%s]" % checksum)
             LOG.debug("Checksum %s: OK" % checksum)
 

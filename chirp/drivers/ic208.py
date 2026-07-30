@@ -65,35 +65,43 @@ TMODES = ["", "Tone", "TSQL", "DTCS"]
 DUPLEX = ["", "", "-", "+"]
 DTCS_POL = ["NN", "NR", "RN", "RR"]
 STEPS = [5.0, 10.0, 12.5, 15, 20.0, 25.0, 30.0, 50.0, 100.0, 200.0]
-POWER = [chirp_common.PowerLevel("High", watts=50),
-         chirp_common.PowerLevel("Low", watts=5),
-         chirp_common.PowerLevel("Mid", watts=15),
-         ]
+POWER = [
+    chirp_common.PowerLevel("High", watts=50),
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=15),
+]
 
 IC208_SPECIAL = []
 for i in range(1, 6):
     IC208_SPECIAL.append("%iA" % i)
     IC208_SPECIAL.append("%iB" % i)
 
-CHARSET = dict(list(zip([0x00, 0x08, 0x09, 0x0a, 0x0b, 0x0d, 0x0f],
-                        " ()*+-/")) +
-               list(zip(list(range(0x10, 0x1a)), "0123456789")) +
-               [(0x1c, '|'), (0x1d, '=')] +
-               list(zip(list(range(0x21, 0x3b)),
-                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ")))
+CHARSET = dict(
+    list(zip([0x00, 0x08, 0x09, 0x0A, 0x0B, 0x0D, 0x0F], " ()*+-/"))
+    + list(zip(list(range(0x10, 0x1A)), "0123456789"))
+    + [(0x1C, "|"), (0x1D, "=")]
+    + list(zip(list(range(0x21, 0x3B)), "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+)
 CHARSET_REV = dict(list(zip(list(CHARSET.values()), list(CHARSET.keys()))))
 
 
 def get_name(_mem):
     """Decode the name from @_mem"""
+
     def _get_char(val):
         try:
             return CHARSET[int(val)]
         except KeyError:
             return "*"
 
-    name_bytes = [_mem.name1, _mem.name2, _mem.name3,
-                  _mem.name4, _mem.name5, _mem.name6]
+    name_bytes = [
+        _mem.name1,
+        _mem.name2,
+        _mem.name3,
+        _mem.name4,
+        _mem.name5,
+        _mem.name6,
+    ]
     name = ""
     for val in name_bytes:
         name += _get_char(val)
@@ -103,6 +111,7 @@ def get_name(_mem):
 
 def set_name(_mem, name):
     """Encode @name in @_mem"""
+
     def _get_index(char):
         try:
             return CHARSET_REV[char]
@@ -126,6 +135,7 @@ def set_name(_mem, name):
 @directory.register
 class IC208Radio(icf.IcomCloneModeRadio):
     """Icom IC800"""
+
     VENDOR = "Icom"
     MODEL = "IC-208H"
 
@@ -148,9 +158,11 @@ class IC208Radio(icf.IcomCloneModeRadio):
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_power_levels = list(POWER)
         rf.valid_skips = ["", "S", "P"]
-        rf.valid_bands = [(118000000, 174000000),
-                          (230000000, 550000000),
-                          (810000000, 999995000)]
+        rf.valid_bands = [
+            (118000000, 174000000),
+            (230000000, 550000000),
+            (810000000, 999995000),
+        ]
         rf.valid_special_chans = ["C1", "C2"] + sorted(IC208_SPECIAL)
         rf.valid_characters = "".join(list(CHARSET.values()))
         return rf
@@ -163,14 +175,14 @@ class IC208Radio(icf.IcomCloneModeRadio):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def _get_bank(self, loc):
-        _flg = self._memobj.flags[loc-1]
+        _flg = self._memobj.flags[loc - 1]
         if _flg.bank >= 0x0A:
             return None
         else:
             return _flg.bank
 
     def _set_bank(self, loc, bank):
-        _flg = self._memobj.flags[loc-1]
+        _flg = self._memobj.flags[loc - 1]
         if bank is None:
             _flg.bank = 0x0A
         else:
@@ -221,8 +233,7 @@ class IC208Radio(icf.IcomCloneModeRadio):
         mem.dtcs_polarity = DTCS_POL[_mem.dtcs_polarity]
         mem.duplex = DUPLEX[_mem.duplex]
         mem.tmode = TMODES[_mem.tmode]
-        mem.mode = ((not _mem.is_wide and "N" or "") +
-                    (_mem.is_fm and "FM" or "AM"))
+        mem.mode = (not _mem.is_wide and "N" or "") + (_mem.is_fm and "FM" or "AM")
         mem.tuning_step = STEPS[_mem.tuning_step]
         mem.name = get_name(_mem)
         mem.power = POWER[_mem.power]

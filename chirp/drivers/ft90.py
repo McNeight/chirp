@@ -16,9 +16,14 @@
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, bitwise, memmap, directory, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean, \
-    RadioSettingValueString, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 import time
 import traceback
@@ -26,10 +31,9 @@ import string
 import re
 import logging
 
-
 LOG = logging.getLogger(__name__)
 
-CMD_ACK = b'\x06'
+CMD_ACK = b"\x06"
 
 FT90_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0]
 FT90_MODES = ["AM", "FM", "Auto"]
@@ -38,29 +42,40 @@ FT90_TMODES = ["", "Tone", "TSQL", "", "DTCS"]
 FT90_TONES = list(chirp_common.TONES)
 for tone in [165.5, 171.3, 177.3]:
     FT90_TONES.remove(tone)
-FT90_POWER_LEVELS_VHF = [chirp_common.PowerLevel("Hi", watts=50),
-                         chirp_common.PowerLevel("Mid1", watts=20),
-                         chirp_common.PowerLevel("Mid2", watts=10),
-                         chirp_common.PowerLevel("Low", watts=5)]
+FT90_POWER_LEVELS_VHF = [
+    chirp_common.PowerLevel("Hi", watts=50),
+    chirp_common.PowerLevel("Mid1", watts=20),
+    chirp_common.PowerLevel("Mid2", watts=10),
+    chirp_common.PowerLevel("Low", watts=5),
+]
 
-FT90_POWER_LEVELS_UHF = [chirp_common.PowerLevel("Hi", watts=35),
-                         chirp_common.PowerLevel("Mid1", watts=20),
-                         chirp_common.PowerLevel("Mid2", watts=10),
-                         chirp_common.PowerLevel("Low", watts=5)]
+FT90_POWER_LEVELS_UHF = [
+    chirp_common.PowerLevel("Hi", watts=35),
+    chirp_common.PowerLevel("Mid1", watts=20),
+    chirp_common.PowerLevel("Mid2", watts=10),
+    chirp_common.PowerLevel("Low", watts=5),
+]
 
 FT90_DUPLEX = ["", "-", "+", "split"]
-FT90_CWID_CHARS = list(string.digits) + list(string.ascii_uppercase) \
-                  + list(" ")
+FT90_CWID_CHARS = list(string.digits) + list(string.ascii_uppercase) + list(" ")
 FT90_DTMF_CHARS = list("0123456789ABCD*#")
-FT90_SPECIAL = ["vfo_vhf", "home_vhf", "vfo_uhf", "home_uhf",
-                "pms_1L", "pms_1U", "pms_2L", "pms_2U"]
+FT90_SPECIAL = [
+    "vfo_vhf",
+    "home_vhf",
+    "vfo_uhf",
+    "home_uhf",
+    "pms_1L",
+    "pms_1U",
+    "pms_2L",
+    "pms_2U",
+]
 
 
 @directory.register
 class FT90Radio(yaesu_clone.YaesuCloneModeRadio):
     VENDOR = "Yaesu"
     MODEL = "FT-90"
-    ID = b"\x8E\xF6"
+    ID = b"\x8e\xf6"
 
     _memsize = 4063
     # block 03 (200 Bytes long) repeats 18 times; channel memories
@@ -193,17 +208,19 @@ struct  {
         rp.pre_download = _(
             "1. Turn radio off.\n"
             "2. Connect mic and hold [ACC] on mic while powering on.\n"
-            "    (\"CLONE\" will appear on the display)\n"
+            '    ("CLONE" will appear on the display)\n'
             "3. Replace mic with PC programming cable.\n"
             "4. <b>After clicking OK</b>, press the [SET] key to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect mic and hold [ACC] on mic while powering on.\n"
-            "    (\"CLONE\" will appear on the display)\n"
+            '    ("CLONE" will appear on the display)\n'
             "3. Replace mic with PC programming cable.\n"
             "4. Press the [DISP/SS] key\n"
-            "    (\"R\" will appear on the lower left of LCD).\n")
+            '    ("R" will appear on the lower left of LCD).\n'
+        )
         rp.display_pre_upload_prompt_before_opening_port = False
         return rp
 
@@ -230,19 +247,20 @@ struct  {
         rf.valid_special_chans = FT90_SPECIAL
         rf.valid_tones = FT90_TONES
         rf.memory_bounds = (1, 180)
-        rf.valid_bands = [(100000000, 230000000),
-                          (300000000, 530000000),
-                          (810000000, 999975000)]
+        rf.valid_bands = [
+            (100000000, 230000000),
+            (300000000, 530000000),
+            (810000000, 999975000),
+        ]
 
         return rf
 
     def _read(self, blocksize, blocknum):
-        data = self.pipe.read(blocksize+2)
+        data = self.pipe.read(blocksize + 2)
         if not data:
             if blocknum == 0:
                 raise errors.RadioNoResponse()
-            raise errors.RadioError(
-                "No response reading block %02X" % blocknum)
+            raise errors.RadioError("No response reading block %02X" % blocknum)
 
         # chew echo'd ack
         self.pipe.write(CMD_ACK)
@@ -252,17 +270,23 @@ struct  {
         if len(data) == blocksize + 2 and data[0] == blocknum:
             checksum = yaesu_clone.YaesuChecksum(1, blocksize)
             if checksum.get_existing(data) != checksum.get_calculated(data):
-                raise Exception("Checksum Failed [%02X<>%02X] block %02X, "
-                                "data len: %i" %
-                                (checksum.get_existing(data),
-                                 checksum.get_calculated(data),
-                                 blocknum, len(data)))
-            data = data[1:blocksize + 1]  # Chew blocknum and checksum
+                raise Exception(
+                    "Checksum Failed [%02X<>%02X] block %02X, "
+                    "data len: %i"
+                    % (
+                        checksum.get_existing(data),
+                        checksum.get_calculated(data),
+                        blocknum,
+                        len(data),
+                    )
+                )
+            data = data[1 : blocksize + 1]  # Chew blocknum and checksum
 
         else:
-            raise Exception("Unable to read blocknum %02X "
-                            "expected blocksize %i got %i." %
-                            (blocknum, blocksize+2, len(data)))
+            raise Exception(
+                "Unable to read blocknum %02X "
+                "expected blocksize %i got %i." % (blocknum, blocksize + 2, len(data))
+            )
 
         return data
 
@@ -283,8 +307,10 @@ struct  {
             status.cur = blocknum
             self.status_fn(status)
 
-        LOG.info("Clone completed in %i seconds, blocks read: %i" %
-                 (time.time() - start, blocknum))
+        LOG.info(
+            "Clone completed in %i seconds, blocks read: %i"
+            % (time.time() - start, blocknum)
+        )
 
         return memmap.MemoryMapBytes(data)
 
@@ -302,12 +328,14 @@ struct  {
         status.max = len(self._block_lengths)
 
         for blocksize in self._block_lengths:
-            checksum = yaesu_clone.YaesuChecksum(pos, pos+blocksize-1)
+            checksum = yaesu_clone.YaesuChecksum(pos, pos + blocksize - 1)
             blocknumbyte = bytes([blocknum])
-            payloadbytes = self.get_mmap()[pos:pos+blocksize]
+            payloadbytes = self.get_mmap()[pos : pos + blocksize]
             checksumbyte = bytes([checksum.get_calculated(self.get_mmap())])
-            LOG.debug("Block %i - will send from %i to %i byte " %
-                      (blocknum, pos, pos + blocksize))
+            LOG.debug(
+                "Block %i - will send from %i to %i byte "
+                % (blocknum, pos, pos + blocksize)
+            )
             LOG.debug(util.hexprint(blocknumbyte))
             LOG.debug(util.hexprint(payloadbytes))
             LOG.debug(util.hexprint(checksumbyte))
@@ -327,8 +355,7 @@ struct  {
             if not buf:
                 if blocknum == 0:
                     raise errors.RadioNoResponse()
-                raise errors.RadioError(
-                    "Radio did not ack block %i" % blocknum)
+                raise errors.RadioError("Radio did not ack block %i" % blocknum)
             if buf != CMD_ACK:
                 raise Exception("Radio did not ack block %i" % blocknum)
             pos += blocksize
@@ -345,8 +372,7 @@ struct  {
             raise
         except Exception:
             trace = traceback.format_exc()
-            raise errors.RadioError(
-                    "Failed to communicate with radio: %s" % trace)
+            raise errors.RadioError("Failed to communicate with radio: %s" % trace)
         self.process_mmap()
 
     def sync_out(self):
@@ -356,8 +382,7 @@ struct  {
             raise
         except Exception:
             trace = traceback.format_exc()
-            raise errors.RadioError(
-                    "Failed to communicate with radio: %s" % trace)
+            raise errors.RadioError("Failed to communicate with radio: %s" % trace)
 
     def process_mmap(self):
         self._memobj = bitwise.parse(self.mem_format, self._mmap)
@@ -388,9 +413,9 @@ struct  {
         if isinstance(number, str):
             # special channel
             _mem = getattr(self._memobj, number)
-            mem.number = - len(FT90_SPECIAL) + FT90_SPECIAL.index(number)
+            mem.number = -len(FT90_SPECIAL) + FT90_SPECIAL.index(number)
             mem.extd_number = number
-            if re.match('^pms', mem.extd_number):
+            if re.match("^pms", mem.extd_number):
                 # enable pms_XY channel flag
                 _special_enables = self._memobj.special_enables
                 # Disabled in 2023 because this doesn't pass tests and I'm
@@ -399,7 +424,7 @@ struct  {
                 #                         mem.extd_number + "_enable")
         else:
             # regular memory
-            _mem = self._memobj.memory[number-1]
+            _mem = self._memobj.memory[number - 1]
             mem.number = number
             mem.empty = not self._get_chan_enable(number)
         if mem.empty:
@@ -419,12 +444,11 @@ struct  {
             mem.power = FT90_POWER_LEVELS_VHF[_mem.power]
 
         # radio has a known bug with 5 kHz step and squelch
-        if _mem.step == 0 or _mem.step > len(FT90_STEPS)-1:
+        if _mem.step == 0 or _mem.step > len(FT90_STEPS) - 1:
             _mem.step = 2
         mem.tuning_step = FT90_STEPS[_mem.step]
         mem.skip = _mem.skip and "S" or ""
-        if not all(char in chirp_common.CHARSET_ASCII
-                   for char in str(_mem.name)):
+        if not all(char in chirp_common.CHARSET_ASCII for char in str(_mem.name)):
             # don't display blank/junk name
             mem.name = ""
         else:
@@ -432,12 +456,12 @@ struct  {
         return mem
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def set_memory(self, mem):
-        if mem.number < 0:      # special channels
+        if mem.number < 0:  # special channels
             _mem = getattr(self._memobj, mem.extd_number)
-            if re.match('^pms', mem.extd_number):
+            if re.match("^pms", mem.extd_number):
                 # enable pms_XY channel flag
                 _special_enables = self._memobj.special_enables
                 setattr(_special_enables, mem.extd_number + "_enable", True)
@@ -481,7 +505,7 @@ struct  {
                 _mem.power = FT90_POWER_LEVELS_UHF.index(mem.power)
         else:
             _mem.power = 3  # default to low power
-        if (len(mem.name) == 0):
+        if len(mem.name) == 0:
             _mem.name = bytearray.fromhex("80ffffffffffff")
             _mem.showname = 0
         else:
@@ -511,16 +535,16 @@ struct  {
     def _bbcd2dtmf(self, bcdarr, strlen=16):
         # doing bbcd, but with support for ABCD*#
         LOG.debug(bcdarr.get_value())
-        string = ''.join("%02X" % b for b in bcdarr)
+        string = "".join("%02X" % b for b in bcdarr)
         LOG.debug("@_bbcd2dtmf, received: %s" % string)
-        string = string.replace('E', '*').replace('F', '#')
+        string = string.replace("E", "*").replace("F", "#")
         if strlen <= 16:
             string = string[:strlen]
         return string
 
     def _dtmf2bbcd(self, dtmf):
         dtmfstr = dtmf.get_value()
-        dtmfstr = dtmfstr.replace('*', 'E').replace('#', 'F')
+        dtmfstr = dtmfstr.replace("*", "E").replace("#", "F")
         dtmfstr = str.ljust(dtmfstr.strip(), 16, "0")
         bcdarr = list(bytearray.fromhex(dtmfstr))
         LOG.debug("@_dtmf2bbcd, sending: %s" % bcdarr)
@@ -534,42 +558,40 @@ struct  {
 
         top = RadioSettings(basic, keymaps, autodial)
 
-        rs = RadioSetting(
-                "beep", "Beep",
-                RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
+        basic.append(rs)
+        rs = RadioSetting("lock", "Lock", RadioSettingValueBoolean(_settings.lock))
         basic.append(rs)
         rs = RadioSetting(
-                "lock", "Lock",
-                RadioSettingValueBoolean(_settings.lock))
+            "ars", "Auto Repeater Shift", RadioSettingValueBoolean(_settings.ars)
+        )
         basic.append(rs)
         rs = RadioSetting(
-                "ars", "Auto Repeater Shift",
-                RadioSettingValueBoolean(_settings.ars))
+            "txpwrsave", "TX Power Save", RadioSettingValueBoolean(_settings.txpwrsave)
+        )
         basic.append(rs)
         rs = RadioSetting(
-                "txpwrsave", "TX Power Save",
-                RadioSettingValueBoolean(_settings.txpwrsave))
-        basic.append(rs)
-        rs = RadioSetting(
-                "txnarrow", "TX Narrow",
-                RadioSettingValueBoolean(_settings.txnarrow))
+            "txnarrow", "TX Narrow", RadioSettingValueBoolean(_settings.txnarrow)
+        )
         basic.append(rs)
         options = ["Off", "S-3", "S-5", "S-Full"]
         rs = RadioSetting(
-            "rfsqlvl", "RF Squelch Level",
-            RadioSettingValueList(
-                options, current_index=_settings.rfsqlvl))
+            "rfsqlvl",
+            "RF Squelch Level",
+            RadioSettingValueList(options, current_index=_settings.rfsqlvl),
+        )
         basic.append(rs)
         options = ["Off", "Band A", "Band B", "Both"]
         rs = RadioSetting(
-            "pttlock", "PTT Lock",
-            RadioSettingValueList(
-                options, current_index=_settings.pttlock))
+            "pttlock",
+            "PTT Lock",
+            RadioSettingValueList(options, current_index=_settings.pttlock),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "cwid_en", "CWID Enable",
-                RadioSettingValueBoolean(_settings.cwid_en))
+            "cwid_en", "CWID Enable", RadioSettingValueBoolean(_settings.cwid_en)
+        )
         basic.append(rs)
 
         cwid = RadioSettingValueString(0, 7, self._decode_cwid(_settings.cwid))
@@ -577,88 +599,119 @@ struct  {
         rs = RadioSetting("cwid", "CWID", cwid)
         basic.append(rs)
 
-        options = ["OFF"] + [str(x) for x in (range(1, 12+1))]
+        options = ["OFF"] + [str(x) for x in (range(1, 12 + 1))]
         rs = RadioSetting(
-                "apo", "APO time (hrs)",
-                RadioSettingValueList(options, current_index=_settings.apo))
+            "apo",
+            "APO time (hrs)",
+            RadioSettingValueList(options, current_index=_settings.apo),
+        )
         basic.append(rs)
 
-        options = ["Off"] + [str(x) for x in (range(1, 60+1))]
+        options = ["Off"] + [str(x) for x in (range(1, 60 + 1))]
         rs = RadioSetting(
-                "tot", "Time Out Timer (mins)",
-                RadioSettingValueList(options, current_index=_settings.tot))
+            "tot",
+            "Time Out Timer (mins)",
+            RadioSettingValueList(options, current_index=_settings.tot),
+        )
         basic.append(rs)
 
         options = ["off", "Auto/TX", "Auto", "TX"]
         rs = RadioSetting(
-            "fancontrol", "Fan Control",
-            RadioSettingValueList(
-                options, current_index=_settings.fancontrol))
+            "fancontrol",
+            "Fan Control",
+            RadioSettingValueList(options, current_index=_settings.fancontrol),
+        )
         basic.append(rs)
 
-        keyopts = ["Scan Up", "Scan Down", "Repeater", "Reverse", "Tone Burst",
-                   "Tx Power", "Home Ch", "VFO/MR", "Tone", "Priority"]
+        keyopts = [
+            "Scan Up",
+            "Scan Down",
+            "Repeater",
+            "Reverse",
+            "Tone Burst",
+            "Tx Power",
+            "Home Ch",
+            "VFO/MR",
+            "Tone",
+            "Priority",
+        ]
         rs = RadioSetting(
-                "key_lt", "Left Key",
-                RadioSettingValueList(keyopts, current_index=_settings.key_lt))
+            "key_lt",
+            "Left Key",
+            RadioSettingValueList(keyopts, current_index=_settings.key_lt),
+        )
         keymaps.append(rs)
         rs = RadioSetting(
-                "key_rt", "Right Key",
-                RadioSettingValueList(keyopts, current_index=_settings.key_rt))
+            "key_rt",
+            "Right Key",
+            RadioSettingValueList(keyopts, current_index=_settings.key_rt),
+        )
         keymaps.append(rs)
         rs = RadioSetting(
-                "key_p1", "P1 Key",
-                RadioSettingValueList(keyopts, current_index=_settings.key_p1))
+            "key_p1",
+            "P1 Key",
+            RadioSettingValueList(keyopts, current_index=_settings.key_p1),
+        )
         keymaps.append(rs)
         rs = RadioSetting(
-                "key_p2", "P2 Key",
-                RadioSettingValueList(keyopts, current_index=_settings.key_p2))
+            "key_p2",
+            "P2 Key",
+            RadioSettingValueList(keyopts, current_index=_settings.key_p2),
+        )
         keymaps.append(rs)
         rs = RadioSetting(
-            "key_acc", "ACC Key",
-            RadioSettingValueList(
-                keyopts, current_index=_settings.key_acc))
+            "key_acc",
+            "ACC Key",
+            RadioSettingValueList(keyopts, current_index=_settings.key_acc),
+        )
         keymaps.append(rs)
 
-        options = [str(x) for x in range(0, 12+1)]
+        options = [str(x) for x in range(0, 12 + 1)]
         rs = RadioSetting(
-            "lcdcontrast", "LCD Contrast",
-            RadioSettingValueList(
-                options, current_index=_settings.lcdcontrast))
+            "lcdcontrast",
+            "LCD Contrast",
+            RadioSettingValueList(options, current_index=_settings.lcdcontrast),
+        )
         basic.append(rs)
 
         options = ["off", "d4", "d3", "d2", "d1"]
         rs = RadioSetting(
-                "dimmer", "Dimmer",
-                RadioSettingValueList(options, current_index=_settings.dimmer))
+            "dimmer",
+            "Dimmer",
+            RadioSettingValueList(options, current_index=_settings.dimmer),
+        )
         basic.append(rs)
 
         options = ["TRX Normal", "RX Reverse", "TX Reverse", "TRX Reverse"]
         rs = RadioSetting(
-            "dcsmode", "DCS Mode",
-            RadioSettingValueList(
-                options, current_index=_settings.dcsmode))
+            "dcsmode",
+            "DCS Mode",
+            RadioSettingValueList(options, current_index=_settings.dcsmode),
+        )
         basic.append(rs)
 
         options = ["50 ms", "100 ms"]
         rs = RadioSetting(
-            "dtmfspeed", "DTMF Speed",
-            RadioSettingValueList(
-                options, current_index=_settings.dtmfspeed))
+            "dtmfspeed",
+            "DTMF Speed",
+            RadioSettingValueList(options, current_index=_settings.dtmfspeed),
+        )
         autodial.append(rs)
 
         options = ["50 ms", "250 ms", "450 ms", "750 ms", "1 sec"]
         rs = RadioSetting(
-            "dtmftxdelay", "DTMF TX Delay",
-            RadioSettingValueList(
-                options, current_index=_settings.dtmftxdelay))
+            "dtmftxdelay",
+            "DTMF TX Delay",
+            RadioSettingValueList(options, current_index=_settings.dtmftxdelay),
+        )
         autodial.append(rs)
 
         options = [str(x) for x in range(1, 8 + 1)]
         rs = RadioSetting(
-            "dtmf_active", "DTMF Active",
-            RadioSettingValueList(
-                options, current_index=_settings.dtmf_active))
+            "dtmf_active",
+            "DTMF Active",
+            RadioSettingValueList(options, current_index=_settings.dtmf_active),
+        )
         autodial.append(rs)
 
         # setup 8 dtmf autodial entries
@@ -688,7 +741,7 @@ struct  {
                 newval = element.value
                 if setting == "cwid":
                     newval = self._encode_cwid(newval)
-                if re.match(r'dtmf\d', setting):
+                if re.match(r"dtmf\d", setting):
                     # set dtmf length field and then get bcd dtmf
                     dtmfstrlen = len(str(newval).strip())
                     setattr(_settings, setting + "_len", dtmfstrlen)

@@ -23,9 +23,14 @@ from chirp import chirp_common
 from chirp import directory
 from chirp import bitwise
 from chirp.drivers import icf
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueFloat
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueFloat,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -307,13 +312,19 @@ APPEAR_CHOICE = ["Appear", "Inhibit"]
 ENABLE_CHOICE = ["Disable", "Enable"]
 INVERSE_CHOICE = ["Normal", "Inverse"]
 NO_YES_CHOICE = ["No", "Yes"]
-ON_CHOICE = ["", "On"]          # ["OFF", "ON"]
+ON_CHOICE = ["", "On"]  # ["OFF", "ON"]
 ON_OFF_CHOICE = ["Off", "On"]
 YES_CHOICE = ["", "Yes"]
 
-MODES = ["FM", "NFM"]           # Supported emission (or receive) modes
+MODES = ["FM", "NFM"]  # Supported emission (or receive) modes
 
-TMODES = ["", "Tone", "TSQL", "DTCS", "Cross", ]
+TMODES = [
+    "",
+    "Tone",
+    "TSQL",
+    "DTCS",
+    "Cross",
+]
 CROSS_MODES = [
     "Tone->Tone",
     "Tone->DTCS",
@@ -322,18 +333,61 @@ CROSS_MODES = [
     "->Tone",
     "->DTCS",
     "DTCS->DTCS",
-    ]
+]
 
 TONES = [
-    67.0, 69.3, 71.0, 71.9, 74.4, 77.0, 79.7, 82.5,
-    85.4, 88.5, 91.5, 94.8, 97.4, 100.0, 103.5,
-    107.2, 110.9, 114.8, 118.8, 123.0, 127.3,
-    131.8, 136.5, 141.3, 146.2, 151.4, 156.7,
-    159.8, 162.2, 165.5, 167.9, 171.3, 173.8,
-    177.3, 179.9, 183.5, 186.2, 189.9, 192.8,
-    196.6, 199.5, 203.5, 206.5, 210.7, 218.1,
-    225.7, 229.1, 233.6, 241.8, 250.3, 254.1,
-    ]
+    67.0,
+    69.3,
+    71.0,
+    71.9,
+    74.4,
+    77.0,
+    79.7,
+    82.5,
+    85.4,
+    88.5,
+    91.5,
+    94.8,
+    97.4,
+    100.0,
+    103.5,
+    107.2,
+    110.9,
+    114.8,
+    118.8,
+    123.0,
+    127.3,
+    131.8,
+    136.5,
+    141.3,
+    146.2,
+    151.4,
+    156.7,
+    159.8,
+    162.2,
+    165.5,
+    167.9,
+    171.3,
+    173.8,
+    177.3,
+    179.9,
+    183.5,
+    186.2,
+    189.9,
+    192.8,
+    196.6,
+    199.5,
+    203.5,
+    206.5,
+    210.7,
+    218.1,
+    225.7,
+    229.1,
+    233.6,
+    241.8,
+    250.3,
+    254.1,
+]
 
 DUPLEX = ["", "+", "-", "split", "off"]
 
@@ -394,7 +448,7 @@ KEY_FUNC = [
     "OPT1 Momentary",
     "OPT2 Momentary",
     "OPT3 Momentary",
-    ]
+]
 
 # List of valid conventional keys
 # in the order they should be presented to the user.
@@ -438,7 +492,7 @@ KEY_CONV = [
     "OPT3 Momentary",
     "Sp. Func 1",
     "Sp. Func 2",
-    ]
+]
 
 # List of valid trunk keys
 # in the order they should be presented to the user.
@@ -457,24 +511,24 @@ KEY_TRUNK = [
     "Compander",
     "Sp. Func 1",
     "Sp. Func 2",
-    ]
+]
 
 AUDIO_FILTER_RX_OPTIONS = [
     "Normal",
     "Low Cut",
-    ]
+]
 
 RF_POWER_SELECTION_OPTIONS = [
     "MR CH Individual",
     "Override",
-    ]
+]
 
 BACKLIGHT_VALUES = [
     "Off",
     "Dim",
     "Auto",
     "On",
-    ]
+]
 
 BEEP_LEVEL_VALUES = [
     "",
@@ -483,14 +537,14 @@ BEEP_LEVEL_VALUES = [
     "3",
     "4",
     "5",
-    ]
+]
 
 AUDIO_FILTER_VALUES = [
     "300-3000 Hz",
     "0-3000 Hz",
     "300-3400 Hz",
     "0-3400 Hz",
-    ]
+]
 
 # Valid values for Mic Gain.
 # Hex numbers are used for unknown functions.
@@ -501,7 +555,7 @@ MIC_GAIN_FUNC = [
     "3",
     "4",
     "5 Max",
-    ]
+]
 
 # List of valid Mic Gain choices
 # in the order they should be presented to the user.
@@ -511,37 +565,37 @@ MIC_GAIN_CHOICE = [
     "3",
     "4",
     "5 Max",
-    ]
+]
 
-LOCKOUT_VALUES = [              # CS-F500 equivalent
-    "",                         # OFF
-    "Repeater",                 # Repeater Lockout
-    "Busy",                     # Busy Lockout
-    ]
+LOCKOUT_VALUES = [  # CS-F500 equivalent
+    "",  # OFF
+    "Repeater",  # Repeater Lockout
+    "Busy",  # Busy Lockout
+]
 
-LOG_IN_OUT_VALUES = [           # CS-F500 equivalent
-    "",                         # OFF
-    "L-IN",                     # Log IN
-    "L-OFF",                    # Log OFF
-    "Both",                     # Log IN/OFF
-    ]
+LOG_IN_OUT_VALUES = [  # CS-F500 equivalent
+    "",  # OFF
+    "L-IN",  # Log IN
+    "L-OFF",  # Log OFF
+    "Both",  # Log IN/OFF
+]
 
 RESET_TIMERS_VALUES = [
     "Timer B",
     "Timer A",
-    ]
+]
 
 SCRAMBLER_TYPE_VALUES = [
     "Rolling",
     "Non-rolling",
-    ]
+]
 
 SCRAMBLER_GCODE_VALUES = [
     "1",
     "2",
     "3",
     "4",
-    ]
+]
 
 # Valid values for Scrambler Synchronous Capture.
 # Hex numbers are used for unknown functions.
@@ -550,26 +604,26 @@ SYN_CAPTURE_FUNC = [
     "0x01",
     "0x02",
     "Continuous",
-    ]
+]
 
 # List of valid Scrambler Synchronous Capture choices
 # in the order they should be presented to the user.
 SYN_CAPTURE_CHOICE = [
     "Standard",
     "Continuous",
-    ]
+]
 
 TONE_BURST_VALUES = [
     "Notone",
     "Phase",
-    ]
+]
 
 TONE_STIMING_VALUES = [
     "Off",
     "300 ms",
     "600 ms",
     "1100 ms",
-    ]
+]
 
 
 def kf_kc(i):
@@ -641,6 +695,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
     """
     Icom IC-F621-2 UHF Land Mobile Radio
     """
+
     VENDOR = "Icom"
     MODEL = "IC-F621-2"
 
@@ -650,9 +705,9 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
     _power_low2 = chirp_common.PowerLevel("Low2", watts=20)
     _power_high = chirp_common.PowerLevel("High", watts=45)
 
-    _model = "\x25\x26\x02\x00"     # 4 byte model (don't use Byte String)
+    _model = "\x25\x26\x02\x00"  # 4 byte model (don't use Byte String)
     _memsize = 0x3000
-    _endframe = "Icom Inc."         # \x49\x63\x6F\x6D\x20\x49\x6E\x63\x2E
+    _endframe = "Icom Inc."  # \x49\x63\x6F\x6D\x20\x49\x6E\x63\x2E
 
     # Ranges of the mmap to send to the radio
     _ranges = [(0x0100, 0x3000, 16)]
@@ -705,8 +760,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
 
         # RF Power
         rf.has_variable_power = False
-        rf.valid_power_levels = [
-            self._power_high, self._power_low2, self._power_low1]
+        rf.valid_power_levels = [self._power_high, self._power_low2, self._power_low1]
 
         # Scanning
         rf.valid_skips = []
@@ -747,8 +801,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
             memory.duplex = ""
             memory.offset = 0
         else:
-            chirp_common.split_to_offset(
-                memory, int(_mem.freq_rx), int(_mem.freq_tx))
+            chirp_common.split_to_offset(memory, int(_mem.freq_rx), int(_mem.freq_tx))
 
         # Modes
         if _mem.narrow:
@@ -794,48 +847,54 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         else:
             memory.power = self._power_low1
 
-        memory.extra = RadioSettingGroup('extra', 'Extra')
+        memory.extra = RadioSettingGroup("extra", "Extra")
 
         # Mask (Don't display) channel on radio.
         # This is referred as Inhibit in the CS-F500 software.
         _disp_inhibit = RadioSetting(
-            "disp_inhibit", "Mask",
-            RadioSettingValueList(
-                YES_CHOICE, current_index=int(_mem.disp_inhibit)))
+            "disp_inhibit",
+            "Mask",
+            RadioSettingValueList(YES_CHOICE, current_index=int(_mem.disp_inhibit)),
+        )
         _disp_inhibit.set_doc(
             "Prevent the radio from displaying the channel.  This "
             "prevents use of the channel but CHIRP will still download "
-            "the channel information.")
+            "the channel information."
+        )
         memory.extra.append(_disp_inhibit)
 
         _compander_on = RadioSetting(
-            "compander_on", "Compander",
-            RadioSettingValueList(
-                ON_CHOICE, current_index=int(
-                    _mem.compander_on)))
+            "compander_on",
+            "Compander",
+            RadioSettingValueList(ON_CHOICE, current_index=int(_mem.compander_on)),
+        )
         _compander_on.set_doc("Compander On")
         memory.extra.append(_compander_on)
 
         _tot_on = RadioSetting(
-            "tot_on", "TOT",
-            RadioSettingValueList(
-                ON_CHOICE, current_index=int(_mem.tot_on)))
+            "tot_on",
+            "TOT",
+            RadioSettingValueList(ON_CHOICE, current_index=int(_mem.tot_on)),
+        )
         _tot_on.set_doc("Time Out Timer On")
         memory.extra.append(_tot_on)
 
         _auto_reset_timer = RadioSetting(
-            "auto_reset_timer", "Auto Reset Timer",
+            "auto_reset_timer",
+            "Auto Reset Timer",
             RadioSettingValueList(
-                RESET_TIMERS_VALUES, current_index=int(
-                    _mem.auto_reset)))
+                RESET_TIMERS_VALUES, current_index=int(_mem.auto_reset)
+            ),
+        )
         _auto_reset_timer.set_doc("Auto Reset Timer Selection")
         memory.extra.append(_auto_reset_timer)
 
         _lockout_bits = (_mem.lockout_busy << 1) | _mem.lockout_repeater
         _lockout = RadioSetting(
-            "lockout", "Lockout",
-            RadioSettingValueList(
-                LOCKOUT_VALUES, current_index=int(_lockout_bits)))
+            "lockout",
+            "Lockout",
+            RadioSettingValueList(LOCKOUT_VALUES, current_index=int(_lockout_bits)),
+        )
         _lockout.set_doc("Transmit Lockout")
         memory.extra.append(_lockout)
 
@@ -848,9 +907,12 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         elif _log_in_out_bits == 0x0F:
             _log_in_out_index = 3
         _log_in_out = RadioSetting(
-            "log_in_out", "Log",
+            "log_in_out",
+            "Log",
             RadioSettingValueList(
-                LOG_IN_OUT_VALUES, current_index=int(_log_in_out_index)))
+                LOG_IN_OUT_VALUES, current_index=int(_log_in_out_index)
+            ),
+        )
         _log_in_out.set_doc("Log in and Log out")
         memory.extra.append(_log_in_out)
 
@@ -900,8 +962,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
             _mem.narrow = 0
 
         # Name (alpha tag)
-        _mem.name = str(memory.name).ljust(rf.valid_name_length)[
-            :rf.valid_name_length]
+        _mem.name = str(memory.name).ljust(rf.valid_name_length)[: rf.valid_name_length]
         _mem.text_on = 1
 
         # Tone
@@ -949,18 +1010,18 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         _mem.log_out = 0
 
         if memory.extra:
-            _mem.disp_inhibit = memory.extra['disp_inhibit'].value
-            _mem.compander_on = memory.extra['compander_on'].value
-            _mem.tot_on = memory.extra['tot_on'].value
-            _mem.auto_reset = memory.extra['auto_reset_timer'].value
+            _mem.disp_inhibit = memory.extra["disp_inhibit"].value
+            _mem.compander_on = memory.extra["compander_on"].value
+            _mem.tot_on = memory.extra["tot_on"].value
+            _mem.auto_reset = memory.extra["auto_reset_timer"].value
 
-            _lockout = int(memory.extra['lockout'].value)
+            _lockout = int(memory.extra["lockout"].value)
             _mem.lockout_repeater = _lockout & 1
             _mem.lockout_busy = (_lockout >> 1) & 1
 
             # There are two bits each for log in and log out/off.
             # 0 is off and 3 is on.  1 and 2 remain a mystery
-            _log_in_out = int(memory.extra['log_in_out'].value)
+            _log_in_out = int(memory.extra["log_in_out"].value)
             _mem.log_in = 0
             _mem.log_out = 0
             if _log_in_out == 1:
@@ -984,7 +1045,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
             _mem.rx_tone_digital = 0
             _mem.rx_tone = 0
 
-# Radio Settings
+    # Radio Settings
 
     # Build the "DTMF" menu.
     # TODO: This menu is not even started.
@@ -992,31 +1053,48 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
     # Build the "Continuous Tone" menu.
     # TODO: This menu is not complete.
     def _get_continuous_tone_group(self):
-        _group = RadioSettingGroup(
-            "group_continuous_tone", "Continuous Tone")
+        _group = RadioSettingGroup("group_continuous_tone", "Continuous Tone")
         # 9 custom CTCSS pairs
-        _group.append(RadioSetting(
-            "tone_burst_phase_on", "Tone Burst",
-            RadioSettingValueList(
-                TONE_BURST_VALUES, current_index=int(
-                    self._memobj.tone_burst_phase_on))))
+        _group.append(
+            RadioSetting(
+                "tone_burst_phase_on",
+                "Tone Burst",
+                RadioSettingValueList(
+                    TONE_BURST_VALUES,
+                    current_index=int(self._memobj.tone_burst_phase_on),
+                ),
+            )
+        )
         # "CTCSS Reverse Burst Timer"
         #  "User CTCSS Freq (Hz)"
-        _group.append(RadioSetting(
-            "tx_dtcs_inverse", "TX DTCS Inverse",
-            RadioSettingValueList(
-                INVERSE_CHOICE, current_index=int(
-                    self._memobj.tx_dtcs_inverse))))
-        _group.append(RadioSetting(
-            "rx_dtcs_inverse", "RX DTCS Inverse",
-            RadioSettingValueList(
-                INVERSE_CHOICE, current_index=int(
-                    self._memobj.rx_dtcs_inverse))))
-        _group.append(RadioSetting(
-            "rx_af_filter_low_cut_on", "RX AF Filter",
-            RadioSettingValueList(
-                AUDIO_FILTER_RX_OPTIONS, current_index=int(
-                    self._memobj.rx_af_filter_low_cut_on))))
+        _group.append(
+            RadioSetting(
+                "tx_dtcs_inverse",
+                "TX DTCS Inverse",
+                RadioSettingValueList(
+                    INVERSE_CHOICE, current_index=int(self._memobj.tx_dtcs_inverse)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "rx_dtcs_inverse",
+                "RX DTCS Inverse",
+                RadioSettingValueList(
+                    INVERSE_CHOICE, current_index=int(self._memobj.rx_dtcs_inverse)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "rx_af_filter_low_cut_on",
+                "RX AF Filter",
+                RadioSettingValueList(
+                    AUDIO_FILTER_RX_OPTIONS,
+                    current_index=int(self._memobj.rx_af_filter_low_cut_on),
+                ),
+            )
+        )
         return _group
 
     # Build the "Scan" menu.
@@ -1028,11 +1106,15 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         # timer.scan_resume "Resume"
         # timer.scan_fast   "Fast Scan
         # timer.scan_slow   "Slow Scan"
-        _group.append(RadioSetting(
-            "poweron_scan_on", "Power on Scan",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.poweron_scan_on))))
+        _group.append(
+            RadioSetting(
+                "poweron_scan_on",
+                "Power on Scan",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.poweron_scan_on)
+                ),
+            )
+        )
         return _group
 
     # Build the "2TONE" menu
@@ -1041,131 +1123,227 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
     # Build the "Conventional Key" menu.
     def _get_conv_key_group(self):
         _group = RadioSettingGroup("conv_keys", "Conventional Keys")
-        _group.append(RadioSetting(
-            "conv_key_lup", "L-Up",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.lup))))
-        _group.append(RadioSetting(
-            "conv_key_ldown", "L-Down",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.ldown))))
-        _group.append(RadioSetting(
-            "conv_key_rup", "R-Up",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.rup))))
-        _group.append(RadioSetting(
-            "conv_key_rdown", "R-Down",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.rdown))))
-        _group.append(RadioSetting(
-            "conv_key_p0", "P0",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.p0))))
-        _group.append(RadioSetting(
-            "conv_key_p1", "P1",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.p1))))
-        _group.append(RadioSetting(
-            "conv_key_p2", "P2",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.p2))))
-        _group.append(RadioSetting(
-            "conv_key_p3", "P3",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.p3))))
-        _group.append(RadioSetting(
-            "conv_key_p4", "P4",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.p4))))
-        _group.append(RadioSetting(
-            "conv_key_opf0", "OPF0",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.opf0))))
-        _group.append(RadioSetting(
-            "conv_key_opf1", "OPF1",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.opf1))))
-        _group.append(RadioSetting(
-            "conv_key_opf2", "OPF2",
-            RadioSettingValueList(
-                KEY_CONV, current_index=kc_kf(
-                    self._memobj.conv_key.opf2))))
+        _group.append(
+            RadioSetting(
+                "conv_key_lup",
+                "L-Up",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.lup)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_ldown",
+                "L-Down",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.ldown)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_rup",
+                "R-Up",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.rup)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_rdown",
+                "R-Down",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.rdown)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_p0",
+                "P0",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.p0)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_p1",
+                "P1",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.p1)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_p2",
+                "P2",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.p2)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_p3",
+                "P3",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.p3)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_p4",
+                "P4",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.p4)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_opf0",
+                "OPF0",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.opf0)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_opf1",
+                "OPF1",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.opf1)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "conv_key_opf2",
+                "OPF2",
+                RadioSettingValueList(
+                    KEY_CONV, current_index=kc_kf(self._memobj.conv_key.opf2)
+                ),
+            )
+        )
         return _group
 
     # Build the "SmarTrunk Key" menu.
     def _get_trunk_key_group(self):
         _group = RadioSettingGroup("trunk_keys", "SmarTrunk Keys")
-        _group.append(RadioSetting(
-            "trunk_key_lup", "L-Up",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.lup))))
-        _group.append(RadioSetting(
-            "trunk_key_ldown", "L-Down",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.ldown))))
-        _group.append(RadioSetting(
-            "trunk_key_rup", "R-Up",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.rup))))
-        _group.append(RadioSetting(
-            "trunk_key_rdown", "R-Down",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.rdown))))
-        _group.append(RadioSetting(
-            "trunk_key_p0", "P0",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.p0))))
-        _group.append(RadioSetting(
-            "trunk_key_p1", "P1",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.p1))))
-        _group.append(RadioSetting(
-            "trunk_key_p2", "P2",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.p2))))
-        _group.append(RadioSetting(
-            "trunk_key_p3", "P3",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.p3))))
-        _group.append(RadioSetting(
-            "trunk_key_p4", "P4",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.p4))))
-        _group.append(RadioSetting(
-            "trunk_key_opf0", "OPF0",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.opf0))))
-        _group.append(RadioSetting(
-            "trunk_key_opf1", "OPF1",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.opf1))))
-        _group.append(RadioSetting(
-            "trunk_key_opf2", "OPF2",
-            RadioSettingValueList(
-                KEY_TRUNK, current_index=kt_kf(
-                    self._memobj.trunk_key.opf2))))
+        _group.append(
+            RadioSetting(
+                "trunk_key_lup",
+                "L-Up",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.lup)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_ldown",
+                "L-Down",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.ldown)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_rup",
+                "R-Up",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.rup)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_rdown",
+                "R-Down",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.rdown)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_p0",
+                "P0",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.p0)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_p1",
+                "P1",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.p1)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_p2",
+                "P2",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.p2)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_p3",
+                "P3",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.p3)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_p4",
+                "P4",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.p4)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_opf0",
+                "OPF0",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.opf0)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_opf1",
+                "OPF1",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.opf1)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "trunk_key_opf2",
+                "OPF2",
+                RadioSettingValueList(
+                    KEY_TRUNK, current_index=kt_kf(self._memobj.trunk_key.opf2)
+                ),
+            )
+        )
         return _group
 
     # Build the "Display" menu.
@@ -1177,51 +1355,96 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         _pria = int(self._memobj.poweron_priority_a)
 
         _group = RadioSettingGroup("group_display", "Display")
-        _group.append(RadioSetting(
-            "beep_frequency_low", "Beep Low Freq",
-            RadioSettingValueFloat(
-                400.0, 3000.0, _freq_lo, precision=0)))
-        _group.append(RadioSetting(
-            "beep_frequency_high", "Beep High Freq",
-            RadioSettingValueFloat(
-                400.0, 3000.0, _freq_hi, precision=0)))
-        _group.append(RadioSetting(
-            "opening_text", "Opening Text",
-            RadioSettingValueString(
-                0, 10, str(self._memobj.opening_text).rstrip(), False)))
-        _group.append(RadioSetting(
-            "rf_power_selection", "RF Power",
-            RadioSettingValueList(
-                RF_POWER_SELECTION_OPTIONS, current_index=int(
-                    self._memobj.rf_power_selection))))
-        _group.append(RadioSetting(
-            "poweron_selection_off", "Power Switch Selection",
-            RadioSettingValueList(APPEAR_CHOICE, current_index=_psw)))
-        _group.append(RadioSetting(
-            "ignition_switch_on", "Ignition Switch",
-            RadioSettingValueList(APPEAR_CHOICE, current_index=_isw)))
-        _group.append(RadioSetting(
-            "ignition_switch_delay", "Ignition Switch Delay Timer",
-            RadioSettingValueInteger(
-                0, 240, self._memobj.timer.ignition_switch_delay)))
-        _group.append(RadioSetting(
-            "poweron_priority_a", "Power On Priority A Channel",
-            RadioSettingValueList(ENABLE_CHOICE, current_index=_pria)))
-        _group.append(RadioSetting(
-            "hookoff_priority_a", "Hook Off Priority A Channel",
-            RadioSettingValueList(
-                ENABLE_CHOICE, current_index=int(
-                    self._memobj.hookoff_priority_a))))
-        _group.append(RadioSetting(
-            "hookoff_monitor_on", "Hook Off Monitor",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.hookoff_monitor_on))))
-        _group.append(RadioSetting(
-            "hookon_scan_on", "Hook on Scan",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.hookon_scan_on))))
+        _group.append(
+            RadioSetting(
+                "beep_frequency_low",
+                "Beep Low Freq",
+                RadioSettingValueFloat(400.0, 3000.0, _freq_lo, precision=0),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "beep_frequency_high",
+                "Beep High Freq",
+                RadioSettingValueFloat(400.0, 3000.0, _freq_hi, precision=0),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "opening_text",
+                "Opening Text",
+                RadioSettingValueString(
+                    0, 10, str(self._memobj.opening_text).rstrip(), False
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "rf_power_selection",
+                "RF Power",
+                RadioSettingValueList(
+                    RF_POWER_SELECTION_OPTIONS,
+                    current_index=int(self._memobj.rf_power_selection),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "poweron_selection_off",
+                "Power Switch Selection",
+                RadioSettingValueList(APPEAR_CHOICE, current_index=_psw),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "ignition_switch_on",
+                "Ignition Switch",
+                RadioSettingValueList(APPEAR_CHOICE, current_index=_isw),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "ignition_switch_delay",
+                "Ignition Switch Delay Timer",
+                RadioSettingValueInteger(
+                    0, 240, self._memobj.timer.ignition_switch_delay
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "poweron_priority_a",
+                "Power On Priority A Channel",
+                RadioSettingValueList(ENABLE_CHOICE, current_index=_pria),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "hookoff_priority_a",
+                "Hook Off Priority A Channel",
+                RadioSettingValueList(
+                    ENABLE_CHOICE, current_index=int(self._memobj.hookoff_priority_a)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "hookoff_monitor_on",
+                "Hook Off Monitor",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.hookoff_monitor_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "hookon_scan_on",
+                "Hook on Scan",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.hookon_scan_on)
+                ),
+            )
+        )
         return _group
 
     # Build the "Set Mode" menu.
@@ -1229,83 +1452,145 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         _hrn = int(not self._memobj.horn_off)
 
         _group = RadioSettingGroup("set_mode_group", "Set Mode")
-        _group.append(RadioSetting(
-            "backlight", "Backlight",
-            RadioSettingValueList(
-                BACKLIGHT_VALUES, current_index=int(
-                    self._memobj.backlight))))
-        _group.append(RadioSetting(
-            "backlight_set_enable", "Enable Backlight",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.backlight_set_enable))))
-        _group.append(RadioSetting(
-            "beep_on", "Beep",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.beep_on))))
-        _group.append(RadioSetting(
-            "beep_set_enable", "Enable Beep",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.beep_set_enable))))
-        _group.append(RadioSetting(
-            "beep_level", "Beep Level",
-            RadioSettingValueList(
-                BEEP_LEVEL_VALUES, current_index=int(
-                    self._memobj.beep_level))))
-        _group.append(RadioSetting(
-            "beep_level_set_enable", "Enable Beep Level",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.beep_level_set_enable))))
-        _group.append(RadioSetting(
-            "squelch_level", "Squelch Level",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.squelch_level)))
-        _group.append(RadioSetting(
-            "squelch_level_set_enable", "Enable Squelch Level",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.squelch_level_set_enable))))
-        _group.append(RadioSetting(
-            "volume_min_level", "Volume Minimum Level",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.volume_min_level)))
-        _group.append(RadioSetting(
-            "volume_min_level_set_enable", "Enable Volume Minimum Level",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.volume_min_level_set_enable))))
-        _group.append(RadioSetting(
-            "audio_filter", "Audio Filter",
-            RadioSettingValueList(
-                AUDIO_FILTER_VALUES, current_index=int(
-                    self._memobj.audio_filter))))
-        _group.append(RadioSetting(
-            "audio_filter_set_enable", "Enable Audio Filter",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.audio_filter_set_enable))))
-        _group.append(RadioSetting(
-            "mic_gain", "Mic Gain",
-            RadioSettingValueList(
-                MIC_GAIN_CHOICE, current_index=mc_mf(
-                    self._memobj.mic_gain))))
-        _group.append(RadioSetting(
-            "mic_gain_set_enable", "Enable Mic Gain",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.mic_gain_set_enable))))
-        _group.append(RadioSetting(
-            "horn_off", "Horn",
-            RadioSettingValueList(
-                ON_CHOICE, current_index=_hrn)))
-        _group.append(RadioSetting(
-            "horn_set_enable", "Enable Horn",
-            RadioSettingValueList(
-                NO_YES_CHOICE, current_index=int(
-                    self._memobj.horn_set_enable))))
+        _group.append(
+            RadioSetting(
+                "backlight",
+                "Backlight",
+                RadioSettingValueList(
+                    BACKLIGHT_VALUES, current_index=int(self._memobj.backlight)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "backlight_set_enable",
+                "Enable Backlight",
+                RadioSettingValueList(
+                    NO_YES_CHOICE, current_index=int(self._memobj.backlight_set_enable)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "beep_on",
+                "Beep",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.beep_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "beep_set_enable",
+                "Enable Beep",
+                RadioSettingValueList(
+                    NO_YES_CHOICE, current_index=int(self._memobj.beep_set_enable)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "beep_level",
+                "Beep Level",
+                RadioSettingValueList(
+                    BEEP_LEVEL_VALUES, current_index=int(self._memobj.beep_level)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "beep_level_set_enable",
+                "Enable Beep Level",
+                RadioSettingValueList(
+                    NO_YES_CHOICE, current_index=int(self._memobj.beep_level_set_enable)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "squelch_level",
+                "Squelch Level",
+                RadioSettingValueInteger(0, 255, self._memobj.squelch_level),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "squelch_level_set_enable",
+                "Enable Squelch Level",
+                RadioSettingValueList(
+                    NO_YES_CHOICE,
+                    current_index=int(self._memobj.squelch_level_set_enable),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "volume_min_level",
+                "Volume Minimum Level",
+                RadioSettingValueInteger(0, 255, self._memobj.volume_min_level),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "volume_min_level_set_enable",
+                "Enable Volume Minimum Level",
+                RadioSettingValueList(
+                    NO_YES_CHOICE,
+                    current_index=int(self._memobj.volume_min_level_set_enable),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "audio_filter",
+                "Audio Filter",
+                RadioSettingValueList(
+                    AUDIO_FILTER_VALUES, current_index=int(self._memobj.audio_filter)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "audio_filter_set_enable",
+                "Enable Audio Filter",
+                RadioSettingValueList(
+                    NO_YES_CHOICE,
+                    current_index=int(self._memobj.audio_filter_set_enable),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "mic_gain",
+                "Mic Gain",
+                RadioSettingValueList(
+                    MIC_GAIN_CHOICE, current_index=mc_mf(self._memobj.mic_gain)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "mic_gain_set_enable",
+                "Enable Mic Gain",
+                RadioSettingValueList(
+                    NO_YES_CHOICE, current_index=int(self._memobj.mic_gain_set_enable)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "horn_off", "Horn", RadioSettingValueList(ON_CHOICE, current_index=_hrn)
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "horn_set_enable",
+                "Enable Horn",
+                RadioSettingValueList(
+                    NO_YES_CHOICE, current_index=int(self._memobj.horn_set_enable)
+                ),
+            )
+        )
         return _group
 
     # Build the "Common" menu.
@@ -1316,97 +1601,189 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         _timer_es_off = self._memobj.timer.emergency_switch_off / 10.0
 
         _group = RadioSettingGroup("common_group", "Common")
-        _group.append(RadioSetting(
-            "clone_comment", "Clone Comment",
-            RadioSettingValueString(
-                0, 32, str(self._memobj.clone_comment).rstrip(), False)))
-        _group.append(RadioSetting(
-            "password_on", "Power-on Password",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.password_on))))
-        _group.append(RadioSetting(
-            "data_out_on", "Transceiver Data Out",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.data_out_on))))
-        _group.append(RadioSetting(
-            "timer_auto_reset_a", "Auto Reset Timer A",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.auto_reset_a)))
-        _group.append(RadioSetting(
-            "timer_auto_reset_b", "Auto Reset Timer B",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.auto_reset_b)))
-        _group.append(RadioSetting(
-            "timer_time_out", "Time Out Timer",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.time_out)))
-        _group.append(RadioSetting(
-            "timer_penalty", "Penalty Timer",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.penalty)))
-        _group.append(RadioSetting(
-            "dtmf_id_out_on", "DTMF ID Out",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.dtmf_id_out_on))))
-        _group.append(RadioSetting(
-            "time_out_timer_beep_on", "Time Out Timer Beep",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.time_out_timer_beep_on))))
-        _group.append(RadioSetting(
-            "timer_lockout_penalty", "Lockout Penalty Timer",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.lockout_penalty)))
-        _group.append(RadioSetting(
-            "timer_eptt_delay", "EPTT Delay Timer",
-            RadioSettingValueFloat(0, 25.5, _timer_eptt, precision=1)))
-        _group.append(RadioSetting(
-            "tone_mute_eptt_on", "Tone Mute EPTT",
-            RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(
-                    self._memobj.tone_mute_eptt_on))))
-        _group.append(RadioSetting(
-            "exo_on", "EXO", RadioSettingValueList(
-                ON_OFF_CHOICE, current_index=int(self._memobj.exo_on))))
-        _group.append(RadioSetting(
-            "timer_exo_delay", "EXO Delay Timer",
-            RadioSettingValueFloat(0, 25.5, _timer_exo, precision=1)))
-        _group.append(RadioSetting(
-            "timer_horn", "EXO/Horn Timer",
-            RadioSettingValueInteger(0, 255, self._memobj.timer.horn)))
-        _group.append(RadioSetting(
-            "scrambler_non_rolling", "Scrambler Type",
-            RadioSettingValueList(
-                SCRAMBLER_TYPE_VALUES, current_index=int(
-                    self._memobj.scrambler_non_rolling))))
-        _group.append(RadioSetting(
-            "scrambler_group_code", "Scrambler Group Code",
-            RadioSettingValueList(
-                SCRAMBLER_GCODE_VALUES, current_index=int(
-                    self._memobj.scrambler_group_code))))
-        _group.append(RadioSetting(
-            "scrambler_syn_capture", "Scrambler Synchronous Capture",
-            RadioSettingValueList(
-                SYN_CAPTURE_CHOICE, current_index=sc_sf(
-                    self._memobj.scrambler_syn_capture))))
-        _group.append(RadioSetting(
-            "scrambler_tone_start_timing", "Scrambler Tone Start Timing",
-            RadioSettingValueList(
-                TONE_STIMING_VALUES, current_index=int(
-                    self._memobj.scrambler_tone_start_timing))))
-        _group.append(RadioSetting(
-            "timer_emergency_switch_on", "Emergency Switch On Timer",
-            RadioSettingValueFloat(0, 25.5, _timer_es_on, precision=1)))
-        _group.append(RadioSetting(
-            "timer_emergency_switch_off", "Emergency Switch Off Timer",
-            RadioSettingValueFloat(0, 25.5, _timer_es_off, precision=1)))
-        _group.append(RadioSetting(
-            "emergency_start_repeat", "Emergency Start/Repeat",
-            RadioSettingValueInteger(
-                0, 255, self._memobj.timer.emergency_start_repeat)))
+        _group.append(
+            RadioSetting(
+                "clone_comment",
+                "Clone Comment",
+                RadioSettingValueString(
+                    0, 32, str(self._memobj.clone_comment).rstrip(), False
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "password_on",
+                "Power-on Password",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.password_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "data_out_on",
+                "Transceiver Data Out",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.data_out_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_auto_reset_a",
+                "Auto Reset Timer A",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.auto_reset_a),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_auto_reset_b",
+                "Auto Reset Timer B",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.auto_reset_b),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_time_out",
+                "Time Out Timer",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.time_out),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_penalty",
+                "Penalty Timer",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.penalty),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "dtmf_id_out_on",
+                "DTMF ID Out",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.dtmf_id_out_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "time_out_timer_beep_on",
+                "Time Out Timer Beep",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE,
+                    current_index=int(self._memobj.time_out_timer_beep_on),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_lockout_penalty",
+                "Lockout Penalty Timer",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.lockout_penalty),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_eptt_delay",
+                "EPTT Delay Timer",
+                RadioSettingValueFloat(0, 25.5, _timer_eptt, precision=1),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "tone_mute_eptt_on",
+                "Tone Mute EPTT",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.tone_mute_eptt_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "exo_on",
+                "EXO",
+                RadioSettingValueList(
+                    ON_OFF_CHOICE, current_index=int(self._memobj.exo_on)
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_exo_delay",
+                "EXO Delay Timer",
+                RadioSettingValueFloat(0, 25.5, _timer_exo, precision=1),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_horn",
+                "EXO/Horn Timer",
+                RadioSettingValueInteger(0, 255, self._memobj.timer.horn),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "scrambler_non_rolling",
+                "Scrambler Type",
+                RadioSettingValueList(
+                    SCRAMBLER_TYPE_VALUES,
+                    current_index=int(self._memobj.scrambler_non_rolling),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "scrambler_group_code",
+                "Scrambler Group Code",
+                RadioSettingValueList(
+                    SCRAMBLER_GCODE_VALUES,
+                    current_index=int(self._memobj.scrambler_group_code),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "scrambler_syn_capture",
+                "Scrambler Synchronous Capture",
+                RadioSettingValueList(
+                    SYN_CAPTURE_CHOICE,
+                    current_index=sc_sf(self._memobj.scrambler_syn_capture),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "scrambler_tone_start_timing",
+                "Scrambler Tone Start Timing",
+                RadioSettingValueList(
+                    TONE_STIMING_VALUES,
+                    current_index=int(self._memobj.scrambler_tone_start_timing),
+                ),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_emergency_switch_on",
+                "Emergency Switch On Timer",
+                RadioSettingValueFloat(0, 25.5, _timer_es_on, precision=1),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "timer_emergency_switch_off",
+                "Emergency Switch Off Timer",
+                RadioSettingValueFloat(0, 25.5, _timer_es_off, precision=1),
+            )
+        )
+        _group.append(
+            RadioSetting(
+                "emergency_start_repeat",
+                "Emergency Start/Repeat",
+                RadioSettingValueInteger(
+                    0, 255, self._memobj.timer.emergency_start_repeat
+                ),
+            )
+        )
         return _group
 
     # Build the top menu.
@@ -1416,14 +1793,17 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
         setting knobs and dials that can be adjusted on the radio."""
         return list(
             RadioSettingGroup(
-                "top", "LMR",
+                "top",
+                "LMR",
                 self._get_continuous_tone_group(),
                 self._get_scan_group(),
                 self._get_conv_key_group(),
                 self._get_trunk_key_group(),
                 self._get_display_group(),
                 self._get_set_mode_group(),
-                self._get_common_group()))
+                self._get_common_group(),
+            )
+        )
 
     def set_settings(self, settings):
         """Accepts the top-level RadioSettingGroup returned from get_settings()
@@ -1505,8 +1885,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
             elif element.get_name() == "beep_frequency_high":
                 self._memobj.beep_frequency_high = element.value * 10.0
             elif element.get_name() == "opening_text":
-                self._memobj.opening_text = str(
-                    element.value).ljust(10)[:10]
+                self._memobj.opening_text = str(element.value).ljust(10)[:10]
             elif element.get_name() == "rf_power_selection":
                 self._memobj.rf_power_selection = element.value
             elif element.get_name() == "poweron_selection_off":
@@ -1560,8 +1939,7 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
 
             # "Common" items
             elif element.get_name() == "clone_comment":
-                self._memobj.clone_comment = str(
-                    element.value).ljust(32)[:32]
+                self._memobj.clone_comment = str(element.value).ljust(32)[:32]
             elif element.get_name() == "password_on":
                 self._memobj.password_on = element.value
             elif element.get_name() == "data_out_on":
@@ -1607,4 +1985,5 @@ class ICF621_2Radio(icf.IcomCloneModeRadio):
             else:
                 LOG.warning(
                     'Attempt to set _memobj.%s to "%s"'
-                    % (element.get_name(), element.value))
+                    % (element.get_name(), element.value)
+                )

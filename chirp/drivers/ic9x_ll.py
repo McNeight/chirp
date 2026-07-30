@@ -21,9 +21,7 @@ from chirp.memmap import MemoryMapBytes
 
 LOG = logging.getLogger(__name__)
 
-TUNING_STEPS = [
-    5.0, 6.25, 8.33,  9.0, 10.0, 12.5, 15, 20, 25, 30, 50, 100, 125, 200
-    ]
+TUNING_STEPS = [5.0, 6.25, 8.33, 9.0, 10.0, 12.5, 15, 20, 25, 30, 50, 100, 125, 200]
 
 MODES = ["FM", "NFM", "WFM", "AM", "DV"]
 DUPLEX = ["", "-", "+"]
@@ -37,6 +35,7 @@ DV_MEM_LEN = 60
 # Dirty hack until I clean up this IC9x mess
 class IC9xMemory(chirp_common.Memory):
     """A dirty hack to stash bank information in a memory"""
+
     _bank = None
     _bank_index = 0
 
@@ -46,6 +45,7 @@ class IC9xMemory(chirp_common.Memory):
 
 class IC9xDVMemory(chirp_common.DVMemory):
     """See above dirty hack"""
+
     _bank = None
     _bank_index = 0
 
@@ -81,7 +81,7 @@ def _ic9x_parse_frames(buf):
 
 def ic9x_recv(pipe):
     data = b""
-    while b'\xfd' not in data:
+    while b"\xfd" not in data:
         buf = pipe.read(1)
         if not buf:
             break
@@ -107,6 +107,7 @@ def ic9x_send(pipe, buf):
 
 class IC92Frame:
     """IC9x frame base class"""
+
     def get_vfo(self):
         """Return the vfo number"""
         return ord(self._map[0])
@@ -136,8 +137,7 @@ class IC92Frame:
         return self._map.get_byte_compatible().get_packed()
 
     def __str__(self):
-        string = "Frame VFO=%i (len = %i)\n" % (self.get_vfo(),
-                                                len(self.get_payload()))
+        string = "Frame VFO=%i (len = %i)\n" % (self.get_vfo(), len(self.get_payload()))
         string += util.hexprint(self.get_payload())
         string += "\n"
 
@@ -149,10 +149,14 @@ class IC92Frame:
             LOG.debug("Sending:\n%s" % util.hexprint(self.get_raw()))
 
         response = ic9x_send(pipe, self.get_raw())
-        while (response and len(response[0].get_raw()) > 4 and
-               response[0].get_raw()[4] != self.get_raw()[4]):
-            LOG.warning('Skipping unexpected frame:\n%s',
-                        util.hexprint(response[0].get_raw()))
+        while (
+            response
+            and len(response[0].get_raw()) > 4
+            and response[0].get_raw()[4] != self.get_raw()[4]
+        ):
+            LOG.warning(
+                "Skipping unexpected frame:\n%s", util.hexprint(response[0].get_raw())
+            )
             response = ic9x_recv(pipe)
 
         if not response:
@@ -161,17 +165,18 @@ class IC92Frame:
         return response[0]
 
     def __setitem__(self, start, value):
-        self._map[start+4] = value
+        self._map[start + 4] = value
 
     def __getitem__(self, index):
         return self.get_payload()[index]
 
     def __getslice__(self, start, end):
-        return self._map[start+4:end+4]
+        return self._map[start + 4 : end + 4]
 
 
 class IC92GetBankFrame(IC92Frame):
     """A frame for requesting bank information"""
+
     def __init__(self):
         IC92Frame.__init__(self, 0x09)
 
@@ -186,6 +191,7 @@ class IC92GetBankFrame(IC92Frame):
 
 class IC92BankFrame(IC92Frame):
     """A frame for bank information"""
+
     def __init__(self):
         # 1 byte for identifier
         # 8 bytes for name
@@ -210,6 +216,7 @@ class IC92BankFrame(IC92Frame):
 
 class IC92MemClearFrame(IC92Frame):
     """A frame for clearing (erasing) a memory"""
+
     def __init__(self, loc):
         # 2 bytes for location
         # 1 byte for 0xFF
@@ -220,6 +227,7 @@ class IC92MemClearFrame(IC92Frame):
 
 class IC92MemGetFrame(IC92Frame):
     """A frame for requesting a memory"""
+
     def __init__(self, loc, iscall=False):
         # 2 bytes for location
         IC92Frame.__init__(self, 0x00, 3)
@@ -234,6 +242,7 @@ class IC92MemGetFrame(IC92Frame):
 
 class IC92GetCallsignFrame(IC92Frame):
     """A frame for getting callsign information"""
+
     def __init__(self, calltype, number):
         IC92Frame.__init__(self, calltype, 1, 0x1D)
 
@@ -242,33 +251,37 @@ class IC92GetCallsignFrame(IC92Frame):
 
 class IC92CallsignFrame(IC92Frame):
     """A frame to communicate callsign information"""
+
     command = 0  # Invalid
     width = 8
 
     def __init__(self, number=0, callsign=""):
         # 1 byte for index
         # $width bytes for callsign
-        IC92Frame.__init__(self, self.command, self.width+1, 0x1D)
+        IC92Frame.__init__(self, self.command, self.width + 1, 0x1D)
 
-        self[0] = chr(number) + callsign[:self.width].ljust(self.width)
+        self[0] = chr(number) + callsign[: self.width].ljust(self.width)
 
     def get_callsign(self):
         """Return the actual callsign"""
-        return self[1:self.width+1].rstrip()
+        return self[1 : self.width + 1].rstrip()
 
 
 class IC92YourCallsignFrame(IC92CallsignFrame):
     """URCALL frame"""
+
     command = 6  # Your
 
 
 class IC92RepeaterCallsignFrame(IC92CallsignFrame):
     """RPTCALL frame"""
+
     command = 7  # Repeater
 
 
 class IC92MyCallsignFrame(IC92CallsignFrame):
     """MYCALL frame"""
+
     command = 8  # My
     width = 12  # 4 bytes for /STID
 
@@ -308,6 +321,7 @@ struct {
 
 class IC92MemoryFrame(IC92Frame):
     """A frame for communicating memory information"""
+
     def __init__(self):
         IC92Frame.__init__(self, 0, DV_MEM_LEN)
 
@@ -315,15 +329,16 @@ class IC92MemoryFrame(IC92Frame):
         # at 146.010 FM.  Since the 9x will complain if any bits
         # are invalid, it's easiest to start with a known-good one
         # since we don't set everything.
-        self[0] = \
-            b"\x01\x00\x03\x00\x00\x01\x46\x01" + \
-            b"\x00\x00\x60\x00\x00\x08\x85\x08" + \
-            b"\x85\x00\x23\x22\x80\x06\x00\x00" + \
-            b"\x00\x00\x20\x20\x20\x20\x20\x20" + \
-            b"\x20\x20\x00\x00\x20\x20\x20\x20" + \
-            b"\x20\x20\x20\x20\x4b\x44\x37\x52" + \
-            b"\x45\x58\x20\x43\x43\x51\x43\x51" + \
-            b"\x43\x51\x20\x20"
+        self[0] = (
+            b"\x01\x00\x03\x00\x00\x01\x46\x01"
+            + b"\x00\x00\x60\x00\x00\x08\x85\x08"
+            + b"\x85\x00\x23\x22\x80\x06\x00\x00"
+            + b"\x00\x00\x20\x20\x20\x20\x20\x20"
+            + b"\x20\x20\x00\x00\x20\x20\x20\x20"
+            + b"\x20\x20\x20\x20\x4b\x44\x37\x52"
+            + b"\x45\x58\x20\x43\x43\x51\x43\x51"
+            + b"\x43\x51\x20\x20"
+        )
 
     def set_vfo(self, vfo):
         IC92Frame.set_vfo(self, vfo)
@@ -346,8 +361,7 @@ class IC92MemoryFrame(IC92Frame):
         if mem.number < 0:
             self.set_iscall(True)
             number = abs(mem.number) - 1
-            LOG.debug("Memory is %i (call %s)" %
-                      (mem.number, self.get_iscall()))
+            LOG.debug("Memory is %i (call %s)" % (mem.number, self.get_iscall()))
         else:
             number = mem.number
 
@@ -448,14 +462,15 @@ def get_memory(pipe, vfo, number):
     if len(rframe.get_payload()) < 1:
         raise errors.RadioError("Unexpected empty response from radio")
 
-    if rframe.get_payload()[3] == b'\xff':
+    if rframe.get_payload()[3] == b"\xff":
         raise errors.InvalidMemoryLocation("Radio says location is empty")
 
     mf = IC92MemoryFrame()
     mf.from_frame(rframe)
     if mf.get_memory().number != number:
-        raise errors.RadioError('get_memory() wanted %i got %i' % (
-            number, mf.get_memory().number))
+        raise errors.RadioError(
+            "get_memory() wanted %i got %i" % (number, mf.get_memory().number)
+        )
 
     return mf.get_memory()
 
@@ -471,9 +486,10 @@ def set_memory(pipe, vfo, memory):
 
     rframe = frame.send(pipe)
 
-    if rframe.get_raw()[2] != 0xfb:
-        raise errors.InvalidDataError("Radio reported error:\n%s" %
-                                      util.hexprint(rframe.get_payload()))
+    if rframe.get_raw()[2] != 0xFB:
+        raise errors.InvalidDataError(
+            "Radio reported error:\n%s" % util.hexprint(rframe.get_payload())
+        )
 
 
 def erase_memory(pipe, vfo, number):
@@ -482,7 +498,7 @@ def erase_memory(pipe, vfo, number):
     frame.set_vfo(vfo)
 
     rframe = frame.send(pipe)
-    if rframe.get_raw()[2] != 0xfb:
+    if rframe.get_raw()[2] != 0xFB:
         raise errors.InvalidDataError("Radio reported error")
 
 
@@ -500,7 +516,7 @@ def get_banks(pipe, vfo):
 
     banks = []
 
-    for i in range(base, base+26):
+    for i in range(base, base + 26):
         bframe = IC92BankFrame()
         bframe.from_frame(rframes[i])
 

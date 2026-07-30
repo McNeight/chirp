@@ -15,8 +15,13 @@
 
 from chirp import chirp_common, directory, bitwise
 from chirp.drivers import icf
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 # The Icom IC-2300H is a 65W, 144 MHz mobile transceiver based on the IC-2200H.
 # Unlike the IC-2200H, this model does not accept Icom's UT-118 D-STAR board.
@@ -106,10 +111,12 @@ DUPLEX = ["", "-", "+"]
 DTCSP = ["NN", "NR", "RN", "RR"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
 
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=65),
-                chirp_common.PowerLevel("Low", watts=5),
-                chirp_common.PowerLevel("MidLow", watts=10),
-                chirp_common.PowerLevel("Mid", watts=25)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=65),
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("MidLow", watts=10),
+    chirp_common.PowerLevel("Mid", watts=25),
+]
 
 
 def _wipe_memory(mem, char):
@@ -119,6 +126,7 @@ def _wipe_memory(mem, char):
 @directory.register
 class IC2300Radio(icf.IcomCloneModeRadio):
     """Icom IC-2300"""
+
     VENDOR = "Icom"
     MODEL = "IC-2300H"
 
@@ -126,7 +134,7 @@ class IC2300Radio(icf.IcomCloneModeRadio):
     _memsize = 6304
     _endframe = "Icom Inc.C5\xfd"
     _can_hispeed = True
-    _ranges = [(0x0000, 0x18a0, 32)]  # upload entire memory for now
+    _ranges = [(0x0000, 0x18A0, 32)]  # upload entire memory for now
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -146,7 +154,7 @@ class IC2300Radio(icf.IcomCloneModeRadio):
 
     def _get_bank(self, loc):
         _flag = self._memobj.flags[loc]
-        if _flag.bank == 0x0a:
+        if _flag.bank == 0x0A:
             return None
         else:
             return _flag.bank
@@ -154,7 +162,7 @@ class IC2300Radio(icf.IcomCloneModeRadio):
     def _set_bank(self, loc, bank):
         _flag = self._memobj.flags[loc]
         if bank is None:
-            _flag.bank = 0x0a
+            _flag.bank = 0x0A
         else:
             _flag.bank = bank
 
@@ -167,8 +175,8 @@ class IC2300Radio(icf.IcomCloneModeRadio):
             mem.empty = True
             return mem
         mult = int(TUNING_STEPS[_mem.tuning_step] * 1000)
-        mem.freq = (_mem.frequency * mult)
-        mem.offset = (_mem.offset * mult)
+        mem.freq = _mem.frequency * mult
+        mem.offset = _mem.offset * mult
         mem.name = str(_mem.name).rstrip()
         mem.rtone = chirp_common.TONES[_mem.repeater_tone]
         mem.ctone = chirp_common.TONES[_mem.ctcss_tone]
@@ -183,23 +191,28 @@ class IC2300Radio(icf.IcomCloneModeRadio):
 
         # Reverse duplex
         mem.extra = RadioSettingGroup("extra", "Extra")
-        rev = RadioSetting("reverse_duplex", "Reverse duplex",
-                           RadioSettingValueBoolean(bool(_mem.reverse_duplex)))
+        rev = RadioSetting(
+            "reverse_duplex",
+            "Reverse duplex",
+            RadioSettingValueBoolean(bool(_mem.reverse_duplex)),
+        )
         rev.set_doc("Reverse duplex")
         mem.extra.append(rev)
 
         # Tx inhibit
-        tx_inhibit = RadioSetting("tx_inhibit", "TX inhibit",
-                                  RadioSettingValueBoolean(
-                                      bool(_mem.tx_inhibit)))
+        tx_inhibit = RadioSetting(
+            "tx_inhibit", "TX inhibit", RadioSettingValueBoolean(bool(_mem.tx_inhibit))
+        )
         tx_inhibit.set_doc("TX inhibit")
         mem.extra.append(tx_inhibit)
 
         # Memory display style
         opt = ["Frequency", "Label"]
-        dsp = RadioSetting("display_style", "Display style",
-                           RadioSettingValueList(
-                               opt, current_index=_mem.display_style))
+        dsp = RadioSetting(
+            "display_style",
+            "Display style",
+            RadioSettingValueList(opt, current_index=_mem.display_style),
+        )
         dsp.set_doc("Memory display style")
         mem.extra.append(dsp)
 
@@ -220,7 +233,7 @@ class IC2300Radio(icf.IcomCloneModeRadio):
         if was_empty:
             _wipe_memory(_mem, "\x00")
         mult = mem.tuning_step * 1000
-        _mem.frequency = (mem.freq / mult)
+        _mem.frequency = mem.freq / mult
         _mem.offset = mem.offset / mult
         _mem.name = mem.name.ljust(6)
         _mem.repeater_tone = chirp_common.TONES.index(mem.rtone)
@@ -247,142 +260,173 @@ class IC2300Radio(icf.IcomCloneModeRadio):
         top = RadioSettings(basic, front_panel)
 
         # Transmit timeout
-        opt = ['Disabled', '1 minute'] + \
-              [s + ' minutes' for s in map(str, range(2, 31))]
+        opt = ["Disabled", "1 minute"] + [
+            s + " minutes" for s in map(str, range(2, 31))
+        ]
         rs = RadioSetting(
-            "tx_timeout", "Transmit timeout (min)",
-            RadioSettingValueList(opt, current_index=_settings.tx_timeout))
+            "tx_timeout",
+            "Transmit timeout (min)",
+            RadioSettingValueList(opt, current_index=_settings.tx_timeout),
+        )
         basic.append(rs)
 
         # Auto Repeater (USA model only)
         opt = ["Disabled", "Duplex Only", "Duplex and tone"]
         rs = RadioSetting(
-            "auto_repeater", "Auto repeater",
-            RadioSettingValueList(
-                opt, current_index=_settings.auto_repeater))
+            "auto_repeater",
+            "Auto repeater",
+            RadioSettingValueList(opt, current_index=_settings.auto_repeater),
+        )
         basic.append(rs)
 
         # Auto Power Off
         opt = ["Disabled", "30 minutes", "60 minutes", "120 minutes"]
         rs = RadioSetting(
-            "auto_power_off", "Auto power off",
-            RadioSettingValueList(
-                opt, current_index=_settings.auto_power_off))
+            "auto_power_off",
+            "Auto power off",
+            RadioSettingValueList(opt, current_index=_settings.auto_power_off),
+        )
         basic.append(rs)
 
         # Squelch Delay
         opt = ["Short", "Long"]
         rs = RadioSetting(
-            "squelch_delay", "Squelch delay",
-            RadioSettingValueList(
-                opt, current_index=_settings.squelch_delay))
+            "squelch_delay",
+            "Squelch delay",
+            RadioSettingValueList(opt, current_index=_settings.squelch_delay),
+        )
         basic.append(rs)
 
         # Squelch Type
         opt = ["Noise squelch", "S-meter squelch", "Squelch attenuator"]
         rs = RadioSetting(
-            "squelch_type", "Squelch type",
-            RadioSettingValueList(
-                opt, current_index=_settings.squelch_type))
+            "squelch_type",
+            "Squelch type",
+            RadioSettingValueList(opt, current_index=_settings.squelch_type),
+        )
         basic.append(rs)
 
         # Repeater Lockout
         opt = ["Disabled", "Repeater lockout", "Busy lockout"]
         rs = RadioSetting(
-            "repeater_lockout", "Repeater lockout",
-            RadioSettingValueList(
-                opt, current_index=_settings.repeater_lockout))
+            "repeater_lockout",
+            "Repeater lockout",
+            RadioSettingValueList(opt, current_index=_settings.repeater_lockout),
+        )
         basic.append(rs)
 
         # DTMF Speed
-        opt = ["100ms interval, 5.0 cps",
-               "200ms interval, 2.5 cps",
-               "300ms interval, 1.6 cps",
-               "500ms interval, 1.0 cps"]
-        rs = RadioSetting("dtmf_speed", "DTMF speed",
-                          RadioSettingValueList(
-                              opt, current_index=_settings.dtmf_speed))
+        opt = [
+            "100ms interval, 5.0 cps",
+            "200ms interval, 2.5 cps",
+            "300ms interval, 1.6 cps",
+            "500ms interval, 1.0 cps",
+        ]
+        rs = RadioSetting(
+            "dtmf_speed",
+            "DTMF speed",
+            RadioSettingValueList(opt, current_index=_settings.dtmf_speed),
+        )
         basic.append(rs)
 
         # Scan pause timer
-        opt = [s + ' seconds' for s in map(str, range(2, 22, 2))] + ['Hold']
-        rs = RadioSetting("scan_pause_timer", "Scan pause timer",
-                          RadioSettingValueList(
-                              opt, current_index=_settings.scan_pause_timer))
+        opt = [s + " seconds" for s in map(str, range(2, 22, 2))] + ["Hold"]
+        rs = RadioSetting(
+            "scan_pause_timer",
+            "Scan pause timer",
+            RadioSettingValueList(opt, current_index=_settings.scan_pause_timer),
+        )
         basic.append(rs)
 
         # Scan Resume Timer
-        opt = ['Immediate'] + \
-              [s + ' seconds' for s in map(str, range(1, 6))] + ['Hold']
-        rs = RadioSetting("scan_resume_timer", "Scan resume timer",
-                          RadioSettingValueList(
-                              opt, current_index=_settings.scan_resume_timer))
+        opt = ["Immediate"] + [s + " seconds" for s in map(str, range(1, 6))] + ["Hold"]
+        rs = RadioSetting(
+            "scan_resume_timer",
+            "Scan resume timer",
+            RadioSettingValueList(opt, current_index=_settings.scan_resume_timer),
+        )
         basic.append(rs)
 
         # Weather Alert (USA model only)
-        rs = RadioSetting("weather_alert", "Weather alert",
-                          RadioSettingValueBoolean(_settings.weather_alert))
+        rs = RadioSetting(
+            "weather_alert",
+            "Weather alert",
+            RadioSettingValueBoolean(_settings.weather_alert),
+        )
         basic.append(rs)
 
         # Tone Burst
-        rs = RadioSetting("tone_burst", "Tone burst",
-                          RadioSettingValueBoolean(_settings.tone_burst))
+        rs = RadioSetting(
+            "tone_burst", "Tone burst", RadioSettingValueBoolean(_settings.tone_burst)
+        )
         basic.append(rs)
 
         # Memory Display Type
         opt = ["Frequency", "Channel", "Name"]
         rs = RadioSetting(
-            "display_type", "Memory display",
-            RadioSettingValueList(
-                opt, current_index=_settings.display_type))
+            "display_type",
+            "Memory display",
+            RadioSettingValueList(opt, current_index=_settings.display_type),
+        )
         front_panel.append(rs)
 
         # Display backlight brightness;
         opt = ["1 (dimmest)", "2", "3", "4 (brightest)"]
-        rs = RadioSetting("display_brightness", "Backlight brightness",
-                          RadioSettingValueList(
-                              opt,
-                              current_index=_settings.display_brightness))
+        rs = RadioSetting(
+            "display_brightness",
+            "Backlight brightness",
+            RadioSettingValueList(opt, current_index=_settings.display_brightness),
+        )
         front_panel.append(rs)
 
         # Display backlight color
         opt = ["Amber", "Yellow", "Green"]
         rs = RadioSetting(
-            "display_color", "Backlight color",
-            RadioSettingValueList(
-                opt, current_index=_settings.display_color))
+            "display_color",
+            "Backlight color",
+            RadioSettingValueList(opt, current_index=_settings.display_color),
+        )
         front_panel.append(rs)
 
         # Display contrast
         opt = ["1 (lightest)", "2", "3", "4 (darkest)"]
-        rs = RadioSetting("display_contrast", "Display contrast",
-                          RadioSettingValueList(
-                              opt,
-                              current_index=_settings.display_contrast))
+        rs = RadioSetting(
+            "display_contrast",
+            "Display contrast",
+            RadioSettingValueList(opt, current_index=_settings.display_contrast),
+        )
         front_panel.append(rs)
 
         # Auto dimmer
         opt = ["Disabled", "Backlight off", "1 (dimmest)", "2", "3"]
-        rs = RadioSetting("auto_dimmer", "Auto dimmer",
-                          RadioSettingValueList(
-                              opt, current_index=_settings.auto_dimmer))
+        rs = RadioSetting(
+            "auto_dimmer",
+            "Auto dimmer",
+            RadioSettingValueList(opt, current_index=_settings.auto_dimmer),
+        )
         front_panel.append(rs)
 
         # Microphone gain
         opt = ["Low", "High"]
-        rs = RadioSetting("mic_gain", "Microphone gain",
-                          RadioSettingValueList(
-                              opt, current_index=_settings.mic_gain))
+        rs = RadioSetting(
+            "mic_gain",
+            "Microphone gain",
+            RadioSettingValueList(opt, current_index=_settings.mic_gain),
+        )
         front_panel.append(rs)
 
         # Key press beep
-        rs = RadioSetting("key_beep", "Key press beep",
-                          RadioSettingValueBoolean(_settings.key_beep))
+        rs = RadioSetting(
+            "key_beep", "Key press beep", RadioSettingValueBoolean(_settings.key_beep)
+        )
         front_panel.append(rs)
 
         # Voltage Display;
-        rs = RadioSetting("voltage_display", "Voltage display",
-                          RadioSettingValueBoolean(_settings.voltage_display))
+        rs = RadioSetting(
+            "voltage_display",
+            "Voltage display",
+            RadioSettingValueBoolean(_settings.voltage_display),
+        )
         front_panel.append(rs)
 
         # TODO: Add Bank Links settings to GUI

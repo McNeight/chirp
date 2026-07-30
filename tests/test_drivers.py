@@ -1,7 +1,7 @@
 from chirp import directory
 from tests import load_tests
 
-__builtins__['_'] = lambda s: s
+__builtins__["_"] = lambda s: s
 
 
 class TestSuiteAdapter(object):

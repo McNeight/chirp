@@ -20,31 +20,38 @@ import struct
 import logging
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 from chirp.drivers import kenwood_live
 
 LOG = logging.getLogger(__name__)
 
 BAUD = 0
 STIMEOUT = 0.2
-TERM = b'\x0d'         # Cmd write terminator (CR)
-ACK = b'\x06'           # Data write acknowledge char
-W8S = 0.001      # short wait, secs
-W8L = 0.1       # long wait
+TERM = b"\x0d"  # Cmd write terminator (CR)
+ACK = b"\x06"  # Data write acknowledge char
+W8S = 0.001  # short wait, secs
+W8L = 0.1  # long wait
 TMD710_DUPLEX = ["", "+", "-", "", "split"]
 TMD710_SKIP = ["", "S"]
 TMD710_MODES = ["FM", "NFM", "AM"]
-TMD710_BANDS = [(118000000, 135995000),
-                (136000000, 199995000),
-                (200000000, 299995000),
-                (300000000, 399995000),
-                (400000000, 523995000),
-                (800000000, 1299995000)]
-TMD710_STEPS = [5.0, 6.25, 8.33, 10.0, 12.5, 15.0, 20.0, 25.0,
-                30.0, 50.0, 100.0]
+TMD710_BANDS = [
+    (118000000, 135995000),
+    (136000000, 199995000),
+    (200000000, 299995000),
+    (300000000, 399995000),
+    (400000000, 523995000),
+    (800000000, 1299995000),
+]
+TMD710_STEPS = [5.0, 6.25, 8.33, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
 # Need string list of those steps for mem.extra value list
 STEPS_STR = []
 for val in TMD710_STEPS:
@@ -62,14 +69,14 @@ TMD710_TONES.remove(189.9)
 TMD710_TONES.remove(196.6)
 TMD710_TONES.remove(199.5)
 TMD710_CHARS = chirp_common.CHARSET_ASCII
-TMD710_CHARS += chr(34)     # "
+TMD710_CHARS += chr(34)  # "
 
 
 def _command(ser, cmd, rsplen, w8t=0.01):
     """Send cmd to radio via ser port
     cmd is output string with possible terminator
     rsplen is expected response char count, NOT incl prefix and term
-    If rsplen = 0 then do not0 read after write """
+    If rsplen = 0 then do not0 read after write"""
     ser.write(cmd)
     time.sleep(w8t)
     result = b""
@@ -83,11 +90,11 @@ def _connect_radio(radio):
     global BAUD
     xid = "D710" + radio.SHORT
     resp = kenwood_live.KenwoodLiveRadio(None).get_id(radio.pipe)
-    BAUD = radio.pipe.baudrate      # As detected by kenwood_live
+    BAUD = radio.pipe.baudrate  # As detected by kenwood_live
     LOG.debug("Got [%s] at %i Baud." % (resp, BAUD))
-    resp = resp[3:]     # Strip "ID " prefix
-    if len(resp) > 2:   # Got something from "ID"
-        if resp == xid:     # Good comms
+    resp = resp[3:]  # Strip "ID " prefix
+    if len(resp) > 2:  # Got something from "ID"
+        if resp == xid:  # Good comms
             return
         else:
             stx = "Radio responded as %s, not %s." % (resp, xid)
@@ -98,7 +105,7 @@ def _connect_radio(radio):
 
 
 def _update_status(self, status, step=1):
-    """ Increment status bar """
+    """Increment status bar"""
     status.cur += step
     self.status_fn(status)
     return
@@ -108,10 +115,10 @@ def _val_list(setting, opts, obj, atrb, fix=0, ndx=-1):
     """Callback:from ValueList. Set the integer index.
     This function is here to be available to get_mem and get_set
     fix is optional additive offset to the list index
-    ndx is optional obj[ndx] array index """
+    ndx is optional obj[ndx] array index"""
     value = opts.index(str(setting.value))
     value += fix
-    if ndx >= 0:    # indexed obj
+    if ndx >= 0:  # indexed obj
         setattr(obj[ndx], atrb, value)
     else:
         setattr(obj, atrb, value)
@@ -119,42 +126,59 @@ def _val_list(setting, opts, obj, atrb, fix=0, ndx=-1):
 
 
 class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
-    """ Base class for TMD-710 """
+    """Base class for TMD-710"""
+
     VENDOR = "Kenwood"
     MODEL = "TM-x710"
-    SHORT = "X"       # Short model ID code
+    SHORT = "X"  # Short model ID code
 
-    _upper = 999         # Number of normal chans
+    _upper = 999  # Number of normal chans
 
     # Put Special memory channels after normal ones
-    SPECIAL_MEMORIES = {"Scan-0Lo": 1000, "Scan-0Hi": 1001,
-                        "Scan-1Lo": 1002, "Scan-1Hi": 1003,
-                        "Scan-2Lo": 1004, "Scan-2Hi": 1005,
-                        "Scan-3Lo": 1006, "Scan-3Hi": 1007,
-                        "Scan-4Lo": 1008, "Scan-4Hi": 1009,
-                        "Scan-5Lo": 1010, "Scan-5Hi": 1011,
-                        "Scan-6Lo": 1012, "Scan-6Hi": 1013,
-                        "Scan-7Lo": 1014, "Scan-7Hi": 1015,
-                        "Scan-8Lo": 1016, "Scan-8Hi": 1017,
-                        "Scan-9Lo": 1018, "Scan-9Hi": 1019,
-                        "WX-1": 1020, "WX-2": 1021,
-                        "WX-3": 1022, "WX-4": 1023,
-                        "WX-5": 1024, "WX-6": 1025,
-                        "WX-7": 1026, "WX-8": 1027,
-                        "WX-9": 1028, "WX-10": 1029,
-                        "Call C0": 1030, "Call C1": 1031
-                        }
+    SPECIAL_MEMORIES = {
+        "Scan-0Lo": 1000,
+        "Scan-0Hi": 1001,
+        "Scan-1Lo": 1002,
+        "Scan-1Hi": 1003,
+        "Scan-2Lo": 1004,
+        "Scan-2Hi": 1005,
+        "Scan-3Lo": 1006,
+        "Scan-3Hi": 1007,
+        "Scan-4Lo": 1008,
+        "Scan-4Hi": 1009,
+        "Scan-5Lo": 1010,
+        "Scan-5Hi": 1011,
+        "Scan-6Lo": 1012,
+        "Scan-6Hi": 1013,
+        "Scan-7Lo": 1014,
+        "Scan-7Hi": 1015,
+        "Scan-8Lo": 1016,
+        "Scan-8Hi": 1017,
+        "Scan-9Lo": 1018,
+        "Scan-9Hi": 1019,
+        "WX-1": 1020,
+        "WX-2": 1021,
+        "WX-3": 1022,
+        "WX-4": 1023,
+        "WX-5": 1024,
+        "WX-6": 1025,
+        "WX-7": 1026,
+        "WX-8": 1027,
+        "WX-9": 1028,
+        "WX-10": 1029,
+        "Call C0": 1030,
+        "Call C1": 1031,
+    }
     # _REV dict is used to retrieve name given number
-    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(),
-                                    SPECIAL_MEMORIES.keys()))
+    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(), SPECIAL_MEMORIES.keys()))
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
         rf.can_odd_split = True
         rf.has_dtcs = True
         rf.has_dtcs_polarity = False
-        if self.SHORT == "G":             # NOT for D710
-            rf.has_rx_dtcs = True       # Enable DTCS Rx Code column
+        if self.SHORT == "G":  # NOT for D710
+            rf.has_rx_dtcs = True  # Enable DTCS Rx Code column
             rf.has_cross = True
             rf.valid_cross_modes = TMD710_CROSS
         rf.has_bank = False
@@ -173,7 +197,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rf.valid_name_length = 8
         rf.valid_skips = TMD710_SKIP
         rf.valid_bands = TMD710_BANDS
-        rf.memory_bounds = (0, 999)        # including special chans 1000-1029
+        rf.memory_bounds = (0, 999)  # including special chans 1000-1029
         rf.valid_special_chans = sorted(self.SPECIAL_MEMORIES.keys())
         return rf
 
@@ -182,10 +206,12 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rp = chirp_common.RadioPrompts()
         rp.pre_download = _(
             "Connect your interface cable to the PC Port on the\n"
-            "back of the 'TX/RX' unit. NOT the Com Port on the head.\n")
+            "back of the 'TX/RX' unit. NOT the Com Port on the head.\n"
+        )
         rp.pre_upload = _(
             "Connect your interface cable to the PC Port on the\n"
-            "back of the 'TX/RX' unit. NOT the Com Port on the head.\n")
+            "back of the 'TX/RX' unit. NOT the Com Port on the head.\n"
+        )
         return rp
 
     def sync_in(self):
@@ -199,9 +225,8 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = memmap.MemoryMapBytes(data)
         self.process_mmap()
 
@@ -215,9 +240,8 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def process_mmap(self):
         """Process the mem map into the mem object"""
@@ -239,16 +263,16 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
                 mem.name = self.SPECIAL_MEMORIES_REV[number]
                 mem.extd_number = mem.name
             else:
-                mem.name = number   # Spcl chns 1st var
+                mem.name = number  # Spcl chns 1st var
                 mem.number = self.SPECIAL_MEMORIES[number]
-                mem.extd_number = number    # Uses name as LOC
+                mem.extd_number = number  # Uses name as LOC
                 mem.immutable = ["name"]
-            if mem.number < 1030:       # Scan edges, WX
+            if mem.number < 1030:  # Scan edges, WX
                 _mem = self._memobj.ch_mem[mem.number]
                 _map = self._memobj.chmap[mem.number]
-            else:                       # Call chans
+            else:  # Call chans
                 _mem = self._memobj.call[mem.number - 1030]
-        else:       # Normal mem chans
+        else:  # Normal mem chans
             _mem = self._memobj.ch_mem[number]
             _nam = self._memobj.ch_nam[number]
             _map = self._memobj.chmap[number]
@@ -258,11 +282,11 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
                 if int(char) < 127:
                     mnx += chr(int(char))
             mem.name = mnx.rstrip()
-        if _mem.rxfreq == 0x0ffffffff or _mem.rxfreq == 0:
+        if _mem.rxfreq == 0x0FFFFFFFF or _mem.rxfreq == 0:
             mem.empty = True
             return mem
         mem.empty = False
-        if mem.number < 1030 and _map.skip != 0x0ff:      # empty
+        if mem.number < 1030 and _map.skip != 0x0FF:  # empty
             mem.skip = TMD710_SKIP[_map.skip]
         mem.freq = int(_mem.rxfreq)
         mem.duplex = TMD710_DUPLEX[_mem.duplex]
@@ -270,29 +294,29 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         # Duplex = 4 (split); offset contains the TX freq
         mem.mode = TMD710_MODES[_mem.mode]
         # _mem.tmode is 4-bit pattern, not number
-        mx = 0      # No tone
+        mx = 0  # No tone
         mem.cross_mode = TMD710_CROSS[0]
         mem.rx_dtcs = TMD710_DTSC[_mem.dtcs]
         mem.dtcs = TMD710_DTSC[_mem.dtcs]
         if self.SHORT == "G":
-            if _mem.tmode & 8:     # Tone
+            if _mem.tmode & 8:  # Tone
                 mx = 1
-            if _mem.tmode & 4:     # Tsql
+            if _mem.tmode & 4:  # Tsql
                 mx = 2
-            if _mem.tmode & 2:     # Dtcs
+            if _mem.tmode & 2:  # Dtcs
                 mx = 3
-            if _mem.tmode & 1:     # Cross
+            if _mem.tmode & 1:  # Cross
                 mx = 4
-                if _mem.cross == 1:     # Tone->DTCS
+                if _mem.cross == 1:  # Tone->DTCS
                     mem.cross_mode = TMD710_CROSS[1]
-                if _mem.cross == 2:     # DTCS->Tone
+                if _mem.cross == 2:  # DTCS->Tone
                     mem.cross_mode = TMD710_CROSS[2]
-        else:           # D710; may have bit 8 set
-            if _mem.tmode & 4:     # Tone
+        else:  # D710; may have bit 8 set
+            if _mem.tmode & 4:  # Tone
                 mx = 1
-            if _mem.tmode & 2:     # Tsql
+            if _mem.tmode & 2:  # Tsql
                 mx = 2
-            if _mem.tmode & 1:     # Dtcs
+            if _mem.tmode & 1:  # Dtcs
                 mx = 3
                 mem.dtcs = TMD710_DTSC[_mem.dtcs]
         mem.tmode = TMD710_TONE_MODES[mx]
@@ -300,7 +324,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         mem.rtone = TMD710_TONES[_mem.rtone]
         mem.tuning_step = TMD710_STEPS[_mem.tstep]
 
-        if self.SHORT == "G":         # Only the 710G
+        if self.SHORT == "G":  # Only the 710G
             rx = RadioSettingValueList(STEPS_STR, current_index=_mem.splitstep)
             sx = "Split TX step (kHz)"
             rset = RadioSetting("splitstep", sx, rx)
@@ -310,11 +334,11 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
 
     def set_memory(self, mem):
         """Convert UI column data (mem) into MEM_FORMAT memory (_mem)"""
-        if mem.number > 999:      # Special chans
-            if mem.number < 1030:        # Scan, Wx
+        if mem.number > 999:  # Special chans
+            if mem.number < 1030:  # Scan, Wx
                 _mem = self._memobj.ch_mem[mem.number]
                 _map = self._memobj.chmap[mem.number]
-            else:                        # Call chans
+            else:  # Call chans
                 _mem = self._memobj.call[mem.number - 1030]
             _nam = None
         else:
@@ -326,24 +350,24 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
                 if ix < nx:
                     _nam.name[ix] = mem.name[ix]
                 else:
-                    _nam.name[ix] = chr(0x0ff)    # needs 8 chrs
+                    _nam.name[ix] = chr(0x0FF)  # needs 8 chrs
         if mem.empty:
-            _mem.rxfreq = 0x0ffffffff
-            _mem.offset = 0x0ffffff
-            _mem.duplex = 0x0f
-            _mem.tstep = 0x0ff
-            _mem.tmode = 0x0f
-            _mem.mode = 0x0ff
-            _mem.rtone = 0x0ff
-            _mem.ctone = 0x0ff
-            _mem.dtcs = 0x0ff
-            _map.skip = 0x0ff
-            _map.band = 0x0ff
+            _mem.rxfreq = 0x0FFFFFFFF
+            _mem.offset = 0x0FFFFFF
+            _mem.duplex = 0x0F
+            _mem.tstep = 0x0FF
+            _mem.tmode = 0x0F
+            _mem.mode = 0x0FF
+            _mem.rtone = 0x0FF
+            _mem.ctone = 0x0FF
+            _mem.dtcs = 0x0FF
+            _map.skip = 0x0FF
+            _map.band = 0x0FF
             if _nam:
                 for ix in range(8):
-                    _nam.name[ix] = chr(0x0ff)
+                    _nam.name[ix] = chr(0x0FF)
             return
-        if _mem.rxfreq == 0x0ffffffff:    # New Channel needs defaults
+        if _mem.rxfreq == 0x0FFFFFFFF:  # New Channel needs defaults
             _mem.rxfreq = 144000000
             _map.band = 5
             _map.skip = 0
@@ -364,10 +388,11 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             _tone = mem.ctone
             _mem.ctone = TMD710_TONES.index(mem.ctone)
         except ValueError:
-            raise errors.UnsupportedToneError("This radio does not support " +
-                                              "tone %.1fHz" % _tone)
+            raise errors.UnsupportedToneError(
+                "This radio does not support " + "tone %.1fHz" % _tone
+            )
         _mem.dtcs = TMD710_DTSC.index(mem.dtcs)
-        _mem.tmode = 0      # None
+        _mem.tmode = 0  # None
         _mem.cross = 0
         if self.SHORT == "G":
             if mem.tmode == "Tone":
@@ -379,19 +404,19 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             if mem.tmode == "Cross":
                 _mem.tmode = 1
                 mx = TMD710_CROSS.index(mem.cross_mode)
-                _mem.cross = 3          # t -t
+                _mem.cross = 3  # t -t
                 if mx == 1:
-                    _mem.cross = 1      # t-d
+                    _mem.cross = 1  # t-d
                     _mem.dtcs = TMD710_DTSC.index(mem.rx_dtcs)
                 if mx == 2:
-                    _mem.cross = 2      # d-t
+                    _mem.cross = 2  # d-t
                     _mem.dtcs = TMD710_DTSC.index(mem.dtcs)
         else:
-            _mem.tmode = 0x80       # None
+            _mem.tmode = 0x80  # None
             if mem.tmode == "Tone":
-                _mem.tmode = 0x0c
+                _mem.tmode = 0x0C
             if mem.tmode == "TSQL":
-                _mem.tmode = 0x0a
+                _mem.tmode = 0x0A
             if mem.tmode == "DTCS":
                 _mem.tmode = 0x09
         _mem.duplex = TMD710_DUPLEX.index(mem.duplex)
@@ -401,9 +426,8 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         if mem.number < 1030:
             _map.band = 5
             val = mem.freq
-            for mx in range(6):     # Band codes are 0, 5, 6, 7, 8, 9
-                if val >= TMD710_BANDS[mx][0] and \
-                        val <= TMD710_BANDS[mx][1]:
+            for mx in range(6):  # Band codes are 0, 5, 6, 7, 8, 9
+                if val >= TMD710_BANDS[mx][0] and val <= TMD710_BANDS[mx][1]:
                     _map.band = mx
                     if mx > 0:
                         _map.band = mx + 4
@@ -424,28 +448,29 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             _bmp = self._memobj.bitmap
         _blk1 = self._memobj.block1
         _blk1a = self._memobj.block1a
-        _pmg = self._memobj.pmg     # array[6] of settings
+        _pmg = self._memobj.pmg  # array[6] of settings
         _dtmc = self._memobj.dtmc
         _dtmn = self._memobj.dtmn
         _com = self._memobj.mcpcom
         _skyc = self._memobj.skycmd
         basic = RadioSettingGroup("basic", "Basic")
-        disp = RadioSettingGroup("disp", "PM0: Display")    # PM[0] settings
+        disp = RadioSettingGroup("disp", "PM0: Display")  # PM[0] settings
         aud = RadioSettingGroup("aud", "PM0: Audio")
         aux = RadioSettingGroup("aux", "PM0: Aux")
         txrx = RadioSettingGroup("txrc", "PM0: Transmit/Receive")
         memz = RadioSettingGroup("memz", "PM0: Memory")
         pfk = RadioSettingGroup("pfk", "PM0: PF Keys")
         pvfo = RadioSettingGroup("pvfo", "PM0: Programmable VFO")
-        bmsk = RadioSettingGroup("bmsk", "PM0: Band Masks")    # end PM[0]
+        bmsk = RadioSettingGroup("bmsk", "PM0: Band Masks")  # end PM[0]
         rptr = RadioSettingGroup("rptr", "Repeater")
         dtmf = RadioSettingGroup("dtmf", "DTMF")
         skyk = RadioSettingGroup("skyk", "Sky Command")
         pmm = RadioSettingGroup("pmm", "PM Groups 1-5(Partial)")
-        group = RadioSettings(basic, disp, aud, aux, txrx, memz, pvfo, pfk,
-                              bmsk, rptr, dtmf, skyk, pmm)
+        group = RadioSettings(
+            basic, disp, aud, aux, txrx, memz, pvfo, pfk, bmsk, rptr, dtmf, skyk, pmm
+        )
 
-        mhz1 = 1000000.   # Raw freq is stored with 0.1 Hz resolution
+        mhz1 = 1000000.0  # Raw freq is stored with 0.1 Hz resolution
 
         def _adjraw(setting, obj, atrb, fix=0, ndx=-1):
             """Callback for Integer add or subtract fix from value."""
@@ -460,13 +485,13 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             return
 
         def _mhz_val(setting, obj, atrb, ndx=-1, ndy=-1):
-            """ Callback to set freq back to Hz """
+            """Callback to set freq back to Hz"""
             vx = float(str(setting.value))
             vx = int(vx * mhz1)
             if ndx < 0:
                 setattr(obj, atrb, vx)
             else:
-                if atrb[0:7] == "progvfo":      # 2-deep
+                if atrb[0:7] == "progvfo":  # 2-deep
                     stx = atrb.split(".")
                     setattr(obj[ndx].progvfo[ndy], stx[1], vx)
                 else:
@@ -474,7 +499,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             return
 
         def _char_to_str(chrx):
-            """ Remove ff pads from char array """
+            """Remove ff pads from char array"""
             #  chrx is char array
             str1 = ""
             for sx in chrx:
@@ -483,20 +508,20 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             return str1
 
         def _pswd_vfy(setting, obj, atrb):
-            """ Verify password is 1-6 chars, numbers 1-5 """
-            str1 = str(setting.value).strip()   # initial
-            str2 = ''.join(filter(lambda c: c in '12345', str1))  # valid chars
+            """Verify password is 1-6 chars, numbers 1-5"""
+            str1 = str(setting.value).strip()  # initial
+            str2 = "".join(filter(lambda c: c in "12345", str1))  # valid chars
             if str1 != str2:
                 # Two lines due to python 73 char limit
                 sx = "Bad characters in Password"
                 raise errors.RadioError(sx)
-            str2 = str1.ljust(6, chr(255))      # pad to 6 with ff's
+            str2 = str1.ljust(6, chr(255))  # pad to 6 with ff's
             setattr(obj, atrb, str2)
             return
 
         def _pad_str(setting, lenstr, padchr, obj, atrb, ndx=-1):
-            """ pad string to lenstr with padchr  """
-            str1 = str(setting.value).strip()      # initial string
+            """pad string to lenstr with padchr"""
+            str1 = str(setting.value).strip()  # initial string
             str2 = str1.ljust(lenstr, padchr)
             if ndx < 0:
                 setattr(obj, atrb, str2)
@@ -535,7 +560,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rset = RadioSetting("pmg/0.pwron", sx, rx)
         disp.append(rset)
 
-        if self.SHORT == "G":         # TMD-710G
+        if self.SHORT == "G":  # TMD-710G
             rx = RadioSettingValueBoolean(bool(_bmp.bmpon))
             sx = "PM0: Custom display bitmap"
             rset = RadioSetting("bitmap.bmpon", sx, rx)
@@ -623,7 +648,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rset = RadioSetting("pmg/0.beepon", sx, rx)
         aud.append(rset)
 
-        val = _pmg[0].beepvol + 1     # 1-7 downloads as 0-6
+        val = _pmg[0].beepvol + 1  # 1-7 downloads as 0-6
         rx = RadioSettingValueInteger(1, 7, val)
         sx = "Beep volume (1 - 7)"
         rset = RadioSetting("pmg/0.beepvol", sx, rx)
@@ -746,8 +771,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rset.set_apply_callback(_adjraw, _pmg[0], "scncot", -1)
         aux.append(rset)
 
-        opts = ["Mode 1: 1ch", "Mode 2: 61ch", "Mode 3: 91ch",
-                "Mode 4: 181ch"]
+        opts = ["Mode 1: 1ch", "Mode 2: 61ch", "Mode 3: 91ch", "Mode 4: 181ch"]
         rx = RadioSettingValueList(opts, current_index=_pmg[0].vsmode)
         sx = "Visual scan"
         rset = RadioSetting("pmg/0.vsmode", sx, rx)
@@ -971,9 +995,21 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             pvfo.append(rset)
 
         # ===== PFK GROUP =====
-        opts = ["WX CH", "FRQ.BAND", "CTRL", "MONITOR", "VGS", "VOICE",
-                "GROUP UP", "MENU", "MUTE", "SHIFT", "DUAL", "M>V",
-                "1750 Tone"]
+        opts = [
+            "WX CH",
+            "FRQ.BAND",
+            "CTRL",
+            "MONITOR",
+            "VGS",
+            "VOICE",
+            "GROUP UP",
+            "MENU",
+            "MUTE",
+            "SHIFT",
+            "DUAL",
+            "M>V",
+            "1750 Tone",
+        ]
         rx = RadioSettingValueList(opts, current_index=_pmg[0].pf1key)
         sx = "Front panel PF1 key"
         rset = RadioSetting("pmg/0.pf1key", sx, rx)
@@ -986,12 +1022,40 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         rset.set_apply_callback(_val_list, opts, _pmg[0], "pf2key")
         pfk.append(rset)
 
-        opts = ["WX CH", "FRQ.BAND", "CTRL", "MONITOR", "VGS", "VOICE",
-                "GROUP UP", "MENU", "MUTE", "SHIFT", "DUAL", "M>V",
-                "VFO", "MR", "CALL", "MHz", "TONE", "REV", "LOW",
-                "LOCK", "A/B", "ENTER", "1750 Tone", "M.LIST",
-                "S.LIST", "MSG.NEW", "REPLY", "POS", "P.MONI",
-                "BEACON", "DX", "WX"]
+        opts = [
+            "WX CH",
+            "FRQ.BAND",
+            "CTRL",
+            "MONITOR",
+            "VGS",
+            "VOICE",
+            "GROUP UP",
+            "MENU",
+            "MUTE",
+            "SHIFT",
+            "DUAL",
+            "M>V",
+            "VFO",
+            "MR",
+            "CALL",
+            "MHz",
+            "TONE",
+            "REV",
+            "LOW",
+            "LOCK",
+            "A/B",
+            "ENTER",
+            "1750 Tone",
+            "M.LIST",
+            "S.LIST",
+            "MSG.NEW",
+            "REPLY",
+            "POS",
+            "P.MONI",
+            "BEACON",
+            "DX",
+            "WX",
+        ]
         rx = RadioSettingValueList(opts, current_index=_pmg[0].micpf1)
         sx = "Microphone PF1 key"
         rset = RadioSetting("pmg/0.micpf1", sx, rx)
@@ -1094,18 +1158,17 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
         # Only showing limited settings for now...
         _pmn = self._memobj.pm_name
         for ix in range(1, 6):
-            nx = ix - 1          # Names are [0-4]
+            nx = ix - 1  # Names are [0-4]
             rx = RadioSettingValueString(0, 16, _char_to_str(_pmn[nx].pmname))
             sx = "PM Group %i Name" % ix
             rset = RadioSetting("pm_name/%i.pmname" % nx, sx, rx)
-            rset.set_apply_callback(_pad_str, 16, chr(0xff), _pmn,
-                                    "pmname", nx)
+            rset.set_apply_callback(_pad_str, 16, chr(0xFF), _pmn, "pmname", nx)
             pmm.append(rset)
 
             rx = RadioSettingValueString(0, 8, _char_to_str(_pmg[ix].pwron))
             sx = "-   Power-On Message"
             rset = RadioSetting("pmg/%i.pwron" % ix, sx, rx)
-            rset.set_apply_callback(_pad_str, 8, chr(0xff), _pmg, "pwron", ix)
+            rset.set_apply_callback(_pad_str, 8, chr(0xFF), _pmg, "pwron", ix)
             pmm.append(rset)
 
             opts = ["VFO", "Mem Recall"]
@@ -1162,7 +1225,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             rset = RadioSetting("pmg/%i.beepon" % ix, sx, rx)
             pmm.append(rset)
 
-            val = _pmg[ix].beepvol + 1     # 1-7 downloads as 0-6
+            val = _pmg[ix].beepvol + 1  # 1-7 downloads as 0-6
             rx = RadioSettingValueInteger(1, 7, val)
             sx = "-   Beep volume (1 - 7)"
             rset = RadioSetting("pmg/%i.beepvol" % ix, sx, rx)
@@ -1194,12 +1257,16 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
             rset.set_apply_callback(_val_list, opts, _pmg[ix], "b_pwr")
             pmm.append(rset)
 
-        return group       # END get_settings()
+        return group  # END get_settings()
 
     def set_settings(self, settings):
-        """ Convert UI modified changes into mem_format values """
-        blks = (self._memobj.block1, self._memobj.block1a,
-                self._memobj.pmg, self._memobj.pm_name)
+        """Convert UI modified changes into mem_format values"""
+        blks = (
+            self._memobj.block1,
+            self._memobj.block1a,
+            self._memobj.pmg,
+            self._memobj.pm_name,
+        )
         for _settings in blks:
             for element in settings:
                 if not isinstance(element, RadioSetting):
@@ -1227,8 +1294,7 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
                             LOG.debug("Using apply callback")
                             element.run_apply_callback()
                         elif element.value.get_mutable():
-                            LOG.debug("Setting %s = %s"
-                                      % (setting, element.value))
+                            LOG.debug("Setting %s = %s" % (setting, element.value))
                             setattr(obj, setting, element.value)
                     except Exception:
                         LOG.debug(element.get_name())
@@ -1237,19 +1303,20 @@ class KenwoodTMx710Radio(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, fdata, fyle):
-        """ Included to prevent 'File > New' error """
+        """Included to prevent 'File > New' error"""
         return False
 
 
 @directory.register
 class KenwoodTMD710Radio(KenwoodTMx710Radio):
-    """ Kenwood TM-D710 VHF/UHF/APRS Radio model. """
+    """Kenwood TM-D710 VHF/UHF/APRS Radio model."""
+
     VENDOR = "Kenwood"
     MODEL = "TM-D710_CloneMode"
-    SHORT = ""       # Quick model code
+    SHORT = ""  # Quick model code
 
     _num_blocks = 3
-    _num_packets = [0x9c, 1, 1]
+    _num_packets = [0x9C, 1, 1]
 
     MEM_FORMAT = """
     struct chns {            // 16 bytes channel structure
@@ -1530,7 +1597,7 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
     """
 
     def _read_mem(radio):
-        """ Load the memory map """
+        """Load the memory map"""
         global BAUD
         status = chirp_common.Status()
         status.cur = 0
@@ -1546,10 +1613,10 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
         radio.pipe.baudrate = BAUD
         cmc = b"0M PROGRAM" + TERM
         resp0 = _command(radio.pipe, cmc, 3, W8S)
-        junk = radio.pipe.read(16)       # flushit
-        for bkx in range(0, 0x09c):
-            if bkx != 0x07f:            # Skip block 7f !!??
-                cmc = struct.pack('>cHB', b'R', bkx << 8, 0)
+        junk = radio.pipe.read(16)  # flushit
+        for bkx in range(0, 0x09C):
+            if bkx != 0x07F:  # Skip block 7f !!??
+                cmc = struct.pack(">cHB", b"R", bkx << 8, 0)
                 resp0 = _command(radio.pipe, cmc, 260, W8S)
                 junk = _command(radio.pipe, ACK, 1, W8S)
                 if len(resp0) < 260:
@@ -1559,30 +1626,30 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
                     LOG.error(sx)
                     sx = "Block read error! Check debug.log"
                     raise errors.RadioError(sx)
-                if bkx == 0:   # 1st packet of 1st block
-                    mht = resp0[4:7]   # [57 00 00 00] 03 4b 01 ff ff ...
+                if bkx == 0:  # 1st packet of 1st block
+                    mht = resp0[4:7]  # [57 00 00 00] 03 4b 01 ff ff ...
                     data = resp0[5:6]  # 2nd byte (4b) replaces 1st
                     data += resp0[5:]  # then bytes 2 on (4b 4b 01 ff ...)
                 else:
-                    data += resp0[4:]       # skip cmd echo
-                _update_status(radio, status)        # UI Update
-        cmc = struct.pack('>cHB', b'R', 0xFEF0, 0x10)
+                    data += resp0[4:]  # skip cmd echo
+                _update_status(radio, status)  # UI Update
+        cmc = struct.pack(">cHB", b"R", 0xFEF0, 0x10)
         resp0 = _command(radio.pipe, cmc, 0x014, W8S)
         data += resp0[4:]
         junk = _command(radio.pipe, ACK, 1, W8S)
         _update_status(radio, status)
-        cmc = struct.pack('>cHB', b'R', 0xFF00, 0x90)
+        cmc = struct.pack(">cHB", b"R", 0xFF00, 0x90)
         resp0 = _command(radio.pipe, cmc, 0x094, W8S)
         data += resp0[4:]
         junk = _command(radio.pipe, ACK, 1, W8S)
         _update_status(radio, status)
         # Exit Prog mode, no TERM
-        resp = _command(radio.pipe, b"E", 2, W8S)     # Rtns 06 0d
+        resp = _command(radio.pipe, b"E", 2, W8S)  # Rtns 06 0d
         radio.pipe.baudrate = BAUD
         return data
 
     def _write_mem(radio):
-        """ PROG MCP Blocks Send """
+        """PROG MCP Blocks Send"""
         global BAUD
         # UI progress
         status = chirp_common.Status()
@@ -1600,45 +1667,45 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
         # Read block 0 magic header thingy, save it
         cmc = b"R" + bytes([0, 0, 4])
         resp0 = _command(radio.pipe, cmc, 8, W8S)
-        mht0 = resp0[4:]    # Expecting [57 00 00 04] 03 4b 01 ff
+        mht0 = resp0[4:]  # Expecting [57 00 00 04] 03 4b 01 ff
         junk = _command(radio.pipe, ACK, 1, W8S)
-        cmc = b"W" + bytes([0, 0, 1, 0xff])
-        junk = _command(radio.pipe, cmc, 1, W8S)     # responds ACK
+        cmc = b"W" + bytes([0, 0, 1, 0xFF])
+        junk = _command(radio.pipe, cmc, 1, W8S)  # responds ACK
         cmc = b"R" + bytes([0x80, 0, 3])
-        resp = _command(radio.pipe, cmc, 7, W8S)   # [57 80 00 03] 00 33 00
+        resp = _command(radio.pipe, cmc, 7, W8S)  # [57 80 00 03] 00 33 00
         mht1 = resp[4:]
         junk = _command(radio.pipe, ACK, 1, W8S)
-        cmc = b"W" + bytes([0x80, 0, 1, 0xff])
+        cmc = b"W" + bytes([0x80, 0, 1, 0xFF])
         junk = _command(radio.pipe, cmc, 1, W8S)
-        imgadr = 4      # After 03 4b 01 ff
+        imgadr = 4  # After 03 4b 01 ff
         for bkx in range(0, radio._num_packets[0]):
             cmc = b"W" + bytes([bkx, 0, 0])
             imgstep = 256
             if bkx == 0:
-                imgstep = 0x0fc
+                imgstep = 0x0FC
                 cmc = b"W" + bytes([0, 4, imgstep])
-                cmc += radio.get_mmap()[imgadr:imgadr + imgstep]
-            else:       # after first packet
-                cmc += radio.get_mmap()[imgadr:imgadr + imgstep]
-            if bkx != 0x07f:        # don't send 7f !
+                cmc += radio.get_mmap()[imgadr : imgadr + imgstep]
+            else:  # after first packet
+                cmc += radio.get_mmap()[imgadr : imgadr + imgstep]
+            if bkx != 0x07F:  # don't send 7f !
                 resp0 = _command(radio.pipe, cmc, 1, W8S)
                 if resp0 != ACK:
                     LOG.error("Packet 0x%x Write error, no ACK." % bkx)
                     sx = "Radio failed to acknowledge upload packet!"
                     raise errors.RadioError(sx)
                 imgadr += imgstep
-            _update_status(radio, status)        # UI Update
+            _update_status(radio, status)  # UI Update
         # write fe and ff blocks
-        cmc = b"W" + bytes([0xfe, 0xf0, 16])
-        cmc += radio.get_mmap()[imgadr:imgadr + 16]
+        cmc = b"W" + bytes([0xFE, 0xF0, 16])
+        cmc += radio.get_mmap()[imgadr : imgadr + 16]
         resp0 = _command(radio.pipe, cmc, 1, W8S)
         if resp0 != ACK:
             LOG.error("Packet 0xfe Write error, no ACK.")
             sx = "Radio failed to acknowledge upload packet!"
             raise errors.RadioError(sx)
         imgadr += 16
-        cmc = b"W" + bytes([0xff, 0, 0x90])
-        cmc += radio.get_mmap()[imgadr:imgadr + 0x090]
+        cmc = b"W" + bytes([0xFF, 0, 0x90])
+        cmc += radio.get_mmap()[imgadr : imgadr + 0x090]
         resp0 = _command(radio.pipe, cmc, 1, W8S)
         if resp0 != ACK:
             LOG.error("Packet 0xff Write error, no ACK.")
@@ -1665,15 +1732,16 @@ class KenwoodTMD710Radio(KenwoodTMx710Radio):
 
 @directory.register
 class KenwoodTMD710GRadio(KenwoodTMx710Radio):
-    """ Kenwood TM-D710G VHF/UHF/GPS/APRS Radio model. """
+    """Kenwood TM-D710G VHF/UHF/GPS/APRS Radio model."""
+
     VENDOR = "Kenwood"
     MODEL = "TM-D710G_CloneMode"
-    SHORT = "G"       # Quick model code 1 for G
+    SHORT = "G"  # Quick model code 1 for G
 
-    _num_blocks = 2                # Only reading first 2, not GPS logs
+    _num_blocks = 2  # Only reading first 2, not GPS logs
     _packet_size = [261, 261, 261]
-    _block_addr = [0, 0x100, 0x200]       # starting addr, each block
-    _num_packets = [0x7f, 0x0fe, 0x200]   # num packets per block, 0-based
+    _block_addr = [0, 0x100, 0x200]  # starting addr, each block
+    _num_packets = [0x7F, 0x0FE, 0x200]  # num packets per block, 0-based
 
     MEM_FORMAT = """
     struct chns {            // 16 bytes channel structure
@@ -1964,12 +2032,12 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
                     // 2nd block ends @ 0x017cff
     """
 
-    def _make_command(self, cmd, addr, length, data=b''):
-        cmc = struct.pack('>IB', addr, length)
+    def _make_command(self, cmd, addr, length, data=b""):
+        cmc = struct.pack(">IB", addr, length)
         return cmd + cmc[1:] + data
 
     def _read_mem(radio):
-        """ Load the memory map """
+        """Load the memory map"""
         global BAUD
         status = chirp_common.Status()
         status.cur = 0
@@ -1983,20 +2051,23 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
         data = b""
 
         radio.pipe.baudrate = BAUD
-        resp0 = radio.pipe.read(16)     # flush
+        resp0 = radio.pipe.read(16)  # flush
         cmc = b"0M PROGRAM" + TERM
         resp0 = _command(radio.pipe, cmc, 3, W8S)
-        if resp0[:1] == "?":        # try once more
+        if resp0[:1] == "?":  # try once more
             resp0 = _command(radio.pipe, cmc, 3, W8S)
-        radio.pipe.baudrate = 57600     # PROG mode is always 57.6
+        radio.pipe.baudrate = 57600  # PROG mode is always 57.6
         LOG.debug("Switching to 57600 baud download.")
-        junk = radio.pipe.read(1)       # trailing byte
+        junk = radio.pipe.read(1)  # trailing byte
         for blkn in range(0, radio._num_blocks):
             for bkx in range(0, radio._num_packets[blkn]):
                 addr = (radio._block_addr[blkn] << 8) | (bkx << 8)
-                resp0 = _command(radio.pipe,
-                                 radio._make_command(b'R', addr, 0),
-                                 radio._packet_size[blkn], W8S)
+                resp0 = _command(
+                    radio.pipe,
+                    radio._make_command(b"R", addr, 0),
+                    radio._packet_size[blkn],
+                    W8S,
+                )
                 if len(resp0) < radio._packet_size[blkn]:
                     junk = _command(radio.pipe, b"E", 0, W8S)
                     lb = len(resp0)
@@ -2006,21 +2077,21 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
                     LOG.error(sx)
                     sx = "Block read error! Check debug.log"
                     raise errors.RadioError(sx)
-                if blkn == 0 and bkx == 0:   # 1st packet of 1st block
-                    mht = resp0[5:9]   # Magic Header Thingy after cmd echo
+                if blkn == 0 and bkx == 0:  # 1st packet of 1st block
+                    mht = resp0[5:9]  # Magic Header Thingy after cmd echo
                     data += mht[0:1]
-                    data += b'\xff\xff\xff'
+                    data += b"\xff\xff\xff"
                     data += resp0[9:]
                 else:
-                    data += resp0[5:]       # skip cmd echo
-                _update_status(radio, status)        # UI Update
+                    data += resp0[5:]  # skip cmd echo
+                _update_status(radio, status)  # UI Update
         # Exit Prog mode, no TERM
         resp = _command(radio.pipe, b"E", 0, W8S)
         radio.pipe.baudrate = BAUD
         return data
 
     def _write_mem(radio):
-        """ PROG MCP Blocks Send """
+        """PROG MCP Blocks Send"""
         global BAUD
         # UI progress
         status = chirp_common.Status()
@@ -2040,30 +2111,24 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
         junk = radio.pipe.read(1)
         # Read block 0 magic header thingy, save it
         addr = radio._block_addr[0] << 8
-        resp0 = _command(radio.pipe,
-                         radio._make_command(b'R', addr, 4),
-                         16, W8S)
+        resp0 = _command(radio.pipe, radio._make_command(b"R", addr, 4), 16, W8S)
         mht0 = resp0[5:]
         # Now get block 1 mht
         addr = radio._block_addr[1] << 8
-        resp0 = _command(radio.pipe,
-                         radio._make_command(b'R', addr, 5),
-                         16, W8S)
+        resp0 = _command(radio.pipe, radio._make_command(b"R", addr, 5), 16, W8S)
         mht1 = resp0[5:]
         for blkn in range(0, radio._num_blocks):
             for bkx in range(0, radio._num_packets[blkn]):
                 addr = (radio._block_addr[blkn] << 8) | (bkx << 8)
 
-                if bkx == 0:    # First packet of the block includes mht
+                if bkx == 0:  # First packet of the block includes mht
                     if blkn == 0:
-                        data = (b'\xff\x4b\x01\x32' +
-                                radio.get_mmap()[4:imgadr + 256])
+                        data = b"\xff\x4b\x01\x32" + radio.get_mmap()[4 : imgadr + 256]
                     elif blkn == 1:
-                        data = mht1 + radio.get_mmap()[imgadr + 5:imgadr +
-                                                       256]
-                else:       # after first packet
-                    data = radio.get_mmap()[imgadr:imgadr + 256]
-                cmc = radio._make_command(b'W', addr, 0, data)
+                        data = mht1 + radio.get_mmap()[imgadr + 5 : imgadr + 256]
+                else:  # after first packet
+                    data = radio.get_mmap()[imgadr : imgadr + 256]
+                cmc = radio._make_command(b"W", addr, 0, data)
 
                 resp0 = _command(radio.pipe, cmc, 6, W8S)
                 if bkx > 0 and resp0 != ACK:
@@ -2072,14 +2137,15 @@ class KenwoodTMD710GRadio(KenwoodTMx710Radio):
                     sx += "See debug.log"
                     raise errors.RadioError(sx)
                 imgadr += 256
-                _update_status(radio, status)        # UI Update
+                _update_status(radio, status)  # UI Update
         # Re-write magic headers
-        cmc = radio._make_command(b'W', (radio._block_addr[0] << 8) | 1, 3,
-                                  mht0[1:3] + b'\x32')
+        cmc = radio._make_command(
+            b"W", (radio._block_addr[0] << 8) | 1, 3, mht0[1:3] + b"\x32"
+        )
         resp0 = _command(radio.pipe, cmc, 1, W8S)
-        cmc = radio._make_command(b'W', radio._block_addr[1] << 8, 5, mht1)
+        cmc = radio._make_command(b"W", radio._block_addr[1] << 8, 5, mht1)
         resp0 = _command(radio.pipe, cmc, 1, W8S)
-        cmc = radio._make_command(b'Z', radio._block_addr[0], 1, mht0[0:1])
+        cmc = radio._make_command(b"Z", radio._block_addr[0], 1, mht0[0:1])
         resp0 = _command(radio.pipe, cmc, 16, W8S)
         # Write E to Exit PROG mode
         resp = _command(radio.pipe, b"E", 0, W8S)

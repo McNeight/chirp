@@ -12,31 +12,30 @@ from chirp import settings
 class FMRadioTest(base.BaseTest):
     IMAGE = None
     RADIO_CLASS = None
-    MEMOBJ = 'element'
-    SETTINGS_INDEX = (0, 'element')
+    MEMOBJ = "element"
+    SETTINGS_INDEX = (0, "element")
 
     def setUp(self):
         if self.IMAGE is None:
-            self.skipTest('Base test')
+            self.skipTest("Base test")
 
-        img = os.path.join(os.path.dirname(__file__),
-                           '..', 'images', self.IMAGE)
+        img = os.path.join(os.path.dirname(__file__), "..", "images", self.IMAGE)
         self.radio = self.RADIO_CLASS(img)
 
         return super().setUp()
 
     def set_fmvfo_raw(self, value):
         """Set FM VFO as integer directly in memory"""
-        val_bytes = struct.pack('>H', value)
+        val_bytes = struct.pack(">H", value)
         obj = self.radio._memobj
-        for element in self.MEMOBJ.split('.'):
+        for element in self.MEMOBJ.split("."):
             obj = getattr(obj, element)
         obj.set_raw(val_bytes)
 
     def get_fmvfo_raw(self):
         """Get FM VFO as integer directly from memory"""
         obj = self.radio._memobj
-        for element in self.MEMOBJ.split('.'):
+        for element in self.MEMOBJ.split("."):
             obj = getattr(obj, element)
         return int(obj)
 
@@ -129,8 +128,7 @@ class FMRadioTest(base.BaseTest):
                 self.set_fmvfo_raw(default)
 
                 # We should not be able to set this out-of-range value
-                self.assertRaises(settings.InvalidValueError,
-                                  self.set_fmvfo, dial)
+                self.assertRaises(settings.InvalidValueError, self.set_fmvfo, dial)
 
                 # Can't physically set this in memory
                 if dial <= 65:
@@ -140,8 +138,7 @@ class FMRadioTest(base.BaseTest):
                 self.set_fmvfo_raw(int((dial - 65) * 10))
 
                 # Make sure we do not interpret it incorrectly
-                self.assertRaises(KeyError,
-                                  self.check_fmvfo, dial)
+                self.assertRaises(KeyError, self.check_fmvfo, dial)
 
     def test_edges_original(self):
         self._test_edges(False)
@@ -151,15 +148,15 @@ class FMRadioTest(base.BaseTest):
 
 
 class TestBFT1(FMRadioTest):
-    IMAGE = 'Baofeng_BF-T1.img'
+    IMAGE = "Baofeng_BF-T1.img"
     RADIO_CLASS = bf_t1.BFT1
-    SETTINGS_INDEX = (1, 'fm_vfo')
-    MEMOBJ = 'settings.fm_vfo'
+    SETTINGS_INDEX = (1, "fm_vfo")
+    MEMOBJ = "settings.fm_vfo"
 
 
-@pytest.mark.skip('This radio needs fixing')
+@pytest.mark.skip("This radio needs fixing")
 class TestUV5R(FMRadioTest):
-    IMAGE = 'Baofeng_UV-5R.img'
+    IMAGE = "Baofeng_UV-5R.img"
     RADIO_CLASS = uv5r.BaofengUV5R
-    SETTINGS_INDEX = (3, 'fm_presets')
-    MEMOBJ = 'fm_presets'
+    SETTINGS_INDEX = (3, "fm_presets")
+    MEMOBJ = "fm_presets"

@@ -15,8 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from chirp import chirp_common, directory
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+)
 from chirp.drivers import baofeng_uv17Pro, baofeng_uv17
 
 LOG = logging.getLogger(__name__)
@@ -25,9 +29,10 @@ LOG = logging.getLogger(__name__)
 @directory.register
 class RT620(baofeng_uv17.UV17):
     """Radtel RT-620"""
+
     VENDOR = "Radtel"
     MODEL = "RT-620"
-    _radio_memsize = 0x2efff
+    _radio_memsize = 0x2EFFF
     _has_workmode_support = True
     _has_gps = True
     _vfoscan = True
@@ -48,31 +53,46 @@ class RT620(baofeng_uv17.UV17):
     _uhf_range = (300000000, 559999999)
     VALID_BANDS = [_airband, _vhf_range, _uhf_range]
     _fingerprint = b"\x06" + b"PROGR6F"
-    _magics2 = [(b"\x06", 1),
-                (b"\xFF\xFF\xFF\xFF\x0CPROGR6F", 1),
-                (b"\02", 8),
-                (b"\x06", 1)]
+    _magics2 = [
+        (b"\x06", 1),
+        (b"\xff\xff\xff\xff\x0cPROGR6F", 1),
+        (b"\02", 8),
+        (b"\x06", 1),
+    ]
     CHANNELS = 999
     MODES = ["NFM", "FM", "WFM"]
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("Mid",  watts=5.00),
-                    chirp_common.PowerLevel("High",  watts=10.00)]
-    LIST_MODE = ["VFO", "Channel Number",
-                 "Frequency + Channel Number", "Name + Channel Number"]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("Mid", watts=5.00),
+        chirp_common.PowerLevel("High", watts=10.00),
+    ]
+    LIST_MODE = [
+        "VFO",
+        "Channel Number",
+        "Frequency + Channel Number",
+        "Name + Channel Number",
+    ]
     LIST_BEEP = ["Off", "On"]
     LIST_VOX_LEVEL = baofeng_uv17Pro.LIST_VOX_LEVEL
     LIST_ALARMMODE = baofeng_uv17Pro.LIST_ALARMMODE
     LIST_PILOT_TONE = baofeng_uv17Pro.LIST_PILOT_TONE
-    LIST_VOX_DELAY_TIME = ["Off"] + ["%s ms" %
-                                     x for x in range(500, 2100, 100)]
-    LIST_NOAA = ["NOAA OFF", "NOAA Forecast",
-                 "NOAA Alarm", "NOAA Both"]  # NOAA here
+    LIST_VOX_DELAY_TIME = ["Off"] + ["%s ms" % x for x in range(500, 2100, 100)]
+    LIST_NOAA = ["NOAA OFF", "NOAA Forecast", "NOAA Alarm", "NOAA Both"]  # NOAA here
     LIST_100ms = ["%s ms" % x for x in range(100, 1100, 100)]
     LIST_AB = ["A", "B"]
     LIST_BRIGHTNESS = ["%i" % x for x in range(1, 6)]
     LIST_MENU_QUIT_TIME = ["Off"] + ["%s sec" % x for x in range(1, 31)]
-    LIST_KEYS = ["None", "Monitor", "Sweep", "Scan", "Voltage",
-                 "Emergency", "Scrambler", "FM Radio", "Compander"]
+    LIST_KEYS = [
+        "None",
+        "Monitor",
+        "Sweep",
+        "Scan",
+        "Voltage",
+        "Emergency",
+        "Scrambler",
+        "FM Radio",
+        "Compander",
+    ]
     MEM_DEFS = """
     struct channel {
       lbcd rxfreq[4];
@@ -214,7 +234,7 @@ class RT620(baofeng_uv17.UV17):
     struct dtmfen dtmf;
     """
     MEM_FORMAT = MEM_DEFS + MEM_LAYOUT
-    REMOVE_SETTINGS = ['settings.scanmode']
+    REMOVE_SETTINGS = ["settings.scanmode"]
 
     def remove_extras(self, settings):
         for element in settings:
@@ -242,123 +262,173 @@ class RT620(baofeng_uv17.UV17):
         top.append(extra)
         if self._has_gps:
             gps = RadioSettingGroup("gps", "GPS Settings")
-            rs = RadioSetting("gps.state", "GPS Enable",
-                              RadioSettingValueBoolean(_mem.gps.state))
+            rs = RadioSetting(
+                "gps.state", "GPS Enable", RadioSettingValueBoolean(_mem.gps.state)
+            )
             gps.append(rs)
-            rs = RadioSetting("gps.tzadd12", "GPS Timezone",
-                              RadioSettingValueList(
-                                  baofeng_uv17Pro.LIST_GPS_TIMEZONE,
-                                  current_index=_mem.gps.tzadd12))
+            rs = RadioSetting(
+                "gps.tzadd12",
+                "GPS Timezone",
+                RadioSettingValueList(
+                    baofeng_uv17Pro.LIST_GPS_TIMEZONE, current_index=_mem.gps.tzadd12
+                ),
+            )
             gps.append(rs)
             top.append(gps)
         return top
 
     def get_settings_extra(self, extra, _mem):
-        rs = RadioSetting("settings.absel", "Selected Channel",
-                          RadioSettingValueList(
-                              self.LIST_AB, current_index=_mem.settings.absel))
+        rs = RadioSetting(
+            "settings.absel",
+            "Selected Channel",
+            RadioSettingValueList(self.LIST_AB, current_index=_mem.settings.absel),
+        )
         extra.append(rs)
         if _mem.settings.chbsquelch >= len(self.SQUELCH_LIST):
             val = 0x00
         else:
             val = _mem.settings.chbsquelch
-        rs = RadioSetting("settings.chbsquelch", "Channel B Squelch",
-                          RadioSettingValueList(
-                              self.SQUELCH_LIST, current_index=val))
+        rs = RadioSetting(
+            "settings.chbsquelch",
+            "Channel B Squelch",
+            RadioSettingValueList(self.SQUELCH_LIST, current_index=val),
+        )
         extra.append(rs)
         # Settings menu 4
-        rs = RadioSetting("settings.vox", "Vox Level",
-                          RadioSettingValueList(
-                              self.LIST_VOX_LEVEL,
-                              current_index=_mem.settings.vox))
+        rs = RadioSetting(
+            "settings.vox",
+            "Vox Level",
+            RadioSettingValueList(self.LIST_VOX_LEVEL, current_index=_mem.settings.vox),
+        )
         extra.append(rs)
         # Settings menu 5
-        rs = RadioSetting("settings.voxdlytime", "Vox Delay Time",
-                          RadioSettingValueList(
-                              self.LIST_VOX_DELAY_TIME,
-                              current_index=_mem.settings.voxdlytime))
+        rs = RadioSetting(
+            "settings.voxdlytime",
+            "Vox Delay Time",
+            RadioSettingValueList(
+                self.LIST_VOX_DELAY_TIME, current_index=_mem.settings.voxdlytime
+            ),
+        )
         extra.append(rs)
         # Settings menu 12
-        rs = RadioSetting("settings.backlightbr", "Backlight Brightnes",
-                          RadioSettingValueList(
-                              self.LIST_BRIGHTNESS,
-                              current_index=_mem.settings.backlightbr))
+        rs = RadioSetting(
+            "settings.backlightbr",
+            "Backlight Brightnes",
+            RadioSettingValueList(
+                self.LIST_BRIGHTNESS, current_index=_mem.settings.backlightbr
+            ),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.chedit", "Allow Channel Editing",
-                          RadioSettingValueBoolean(_mem.settings.chedit))
+        rs = RadioSetting(
+            "settings.chedit",
+            "Allow Channel Editing",
+            RadioSettingValueBoolean(_mem.settings.chedit),
+        )
         extra.append(rs)
         # Settings menu 22
-        rs = RadioSetting("settings.tail", "CTCSS Tail Revert",
-                          RadioSettingValueBoolean(_mem.settings.tail))
+        rs = RadioSetting(
+            "settings.tail",
+            "CTCSS Tail Revert",
+            RadioSettingValueBoolean(_mem.settings.tail),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.tailrevert", "Repeater Tail Revert Time",
-                          RadioSettingValueList(
-                              self.LIST_100ms,
-                              current_index=_mem.settings.tailrevert))
+        rs = RadioSetting(
+            "settings.tailrevert",
+            "Repeater Tail Revert Time",
+            RadioSettingValueList(
+                self.LIST_100ms, current_index=_mem.settings.tailrevert
+            ),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.taildelay", "Repeater Tail Delay Time",
-                          RadioSettingValueList(
-                              self.LIST_100ms,
-                              current_index=_mem.settings.taildelay))
+        rs = RadioSetting(
+            "settings.taildelay",
+            "Repeater Tail Delay Time",
+            RadioSettingValueList(
+                self.LIST_100ms, current_index=_mem.settings.taildelay
+            ),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.fminterrupt", "FM radio Interruption",
-                          RadioSettingValueBoolean(_mem.settings.fminterrupt))
+        rs = RadioSetting(
+            "settings.fminterrupt",
+            "FM radio Interruption",
+            RadioSettingValueBoolean(_mem.settings.fminterrupt),
+        )
         extra.append(rs)
         # Settings menu 21
-        rs = RadioSetting("settings.alarmmode", "Alarm Mode",
-                          RadioSettingValueList(
-                              self.LIST_ALARMMODE,
-                              current_index=_mem.settings.alarmmode))
+        rs = RadioSetting(
+            "settings.alarmmode",
+            "Alarm Mode",
+            RadioSettingValueList(
+                self.LIST_ALARMMODE, current_index=_mem.settings.alarmmode
+            ),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.alarmtone", "Sound Alarm",
-                          RadioSettingValueBoolean(_mem.settings.alarmtone))
+        rs = RadioSetting(
+            "settings.alarmtone",
+            "Sound Alarm",
+            RadioSettingValueBoolean(_mem.settings.alarmtone),
+        )
         extra.append(rs)
-        rs = RadioSetting("settings.menuquittime", "Menu Quit Timer",
-                          RadioSettingValueList(
-                              self.LIST_MENU_QUIT_TIME,
-                              current_index=_mem.settings.menuquittime))
+        rs = RadioSetting(
+            "settings.menuquittime",
+            "Menu Quit Timer",
+            RadioSettingValueList(
+                self.LIST_MENU_QUIT_TIME, current_index=_mem.settings.menuquittime
+            ),
+        )
         extra.append(rs)
         if self._has_pilot_tone:
-            rs = RadioSetting("settings.tone", "Pilot Tone",
-                              RadioSettingValueList(
-                                  self.LIST_PILOT_TONE,
-                                  current_index=_mem.settings.tone))
+            rs = RadioSetting(
+                "settings.tone",
+                "Pilot Tone",
+                RadioSettingValueList(
+                    self.LIST_PILOT_TONE, current_index=_mem.settings.tone
+                ),
+            )
             extra.append(rs)
         # Settings menu 27
         if _mem.settings.sk1short >= len(self.LIST_KEYS):
             val = 0x00
         else:
             val = _mem.settings.sk1short
-        rs = RadioSetting("settings.sk1short", "Side Key 1 Short Press",
-                          RadioSettingValueList(
-                              self.LIST_KEYS, current_index=val))
+        rs = RadioSetting(
+            "settings.sk1short",
+            "Side Key 1 Short Press",
+            RadioSettingValueList(self.LIST_KEYS, current_index=val),
+        )
         extra.append(rs)
         # Settings menu 28
         if _mem.settings.sk1long >= len(self.LIST_KEYS):
             val = 0x00
         else:
             val = _mem.settings.sk1long
-        rs = RadioSetting("settings.sk1long", "Side Key 1 Long Press",
-                          RadioSettingValueList(
-                              self.LIST_KEYS, current_index=val))
+        rs = RadioSetting(
+            "settings.sk1long",
+            "Side Key 1 Long Press",
+            RadioSettingValueList(self.LIST_KEYS, current_index=val),
+        )
         extra.append(rs)
         # Settings menu 29
         if _mem.settings.sk2short >= len(self.LIST_KEYS):
             val = 0x00
         else:
             val = _mem.settings.sk2short
-        rs = RadioSetting("settings.sk2short", "Side Key 2 Short Press",
-                          RadioSettingValueList(
-                              self.LIST_KEYS, current_index=val))
+        rs = RadioSetting(
+            "settings.sk2short",
+            "Side Key 2 Short Press",
+            RadioSettingValueList(self.LIST_KEYS, current_index=val),
+        )
         extra.append(rs)
         # Settings menu 30
         if _mem.settings.sk2long >= len(self.LIST_KEYS):
             val = 0x00
         else:
             val = _mem.settings.sk2long
-        rs = RadioSetting("settings.sk2long", "Side Key 2 Long Press",
-                          RadioSettingValueList(
-                              self.LIST_KEYS, current_index=val))
+        rs = RadioSetting(
+            "settings.sk2long",
+            "Side Key 2 Long Press",
+            RadioSettingValueList(self.LIST_KEYS, current_index=val),
+        )
         extra.append(rs)
         # Official CPS sets this, but radio does not have top key
         # Probably the non-GPS version or some other clone uses it so
@@ -368,24 +438,29 @@ class RT620(baofeng_uv17.UV17):
                 val = 0x00
             else:
                 val = _mem.settings.topshort
-            rs = RadioSetting("settings.topshort", "Top Key Short Press",
-                              RadioSettingValueList(
-                                  self.LIST_KEYS, current_index=val))
+            rs = RadioSetting(
+                "settings.topshort",
+                "Top Key Short Press",
+                RadioSettingValueList(self.LIST_KEYS, current_index=val),
+            )
             extra.append(rs)
             # Settings menu 30
             if _mem.settings.toplong >= len(self.LIST_KEYS):
                 val = 0x00
             else:
                 val = _mem.settings.toplong
-            rs = RadioSetting("settings.toplong", "Top Key Long Press",
-                              RadioSettingValueList(
-                                  self.LIST_KEYS, current_index=val))
+            rs = RadioSetting(
+                "settings.toplong",
+                "Top Key Long Press",
+                RadioSettingValueList(self.LIST_KEYS, current_index=val),
+            )
             extra.append(rs)
         # NOAA menu
-        rs = RadioSetting("settings.noaa", "NOAA Weather mode",
-                          RadioSettingValueList(
-                              self.LIST_NOAA,
-                              current_index=_mem.settings.noaa))
+        rs = RadioSetting(
+            "settings.noaa",
+            "NOAA Weather mode",
+            RadioSettingValueList(self.LIST_NOAA, current_index=_mem.settings.noaa),
+        )
         extra.append(rs)
 
     def _get_raw_memory(self, number):
@@ -399,10 +474,10 @@ class RT620(baofeng_uv17.UV17):
     def get_memory(self, number):
         mem = super().get_memory(number)
         _mem = self._get_raw_memory(number)
-        if hasattr(mem.extra, "keys") and \
-                "compander" not in mem.extra.keys():
-            rs = RadioSetting("compander", "Compander",
-                              RadioSettingValueBoolean(_mem.compander))
+        if hasattr(mem.extra, "keys") and "compander" not in mem.extra.keys():
+            rs = RadioSetting(
+                "compander", "Compander", RadioSettingValueBoolean(_mem.compander)
+            )
             mem.extra.append(rs)
         mem.tuning_step = self.STEPS[_mem.step] or self.STEPS[0]
         if _mem.wide < len(self.MODES):

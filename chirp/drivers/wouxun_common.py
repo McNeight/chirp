@@ -39,8 +39,9 @@ def do_download(radio, start, end, blocksize):
         resp = radio.pipe.read(length)
         if len(resp) != (len(cmd) + blocksize):
             LOG.debug(util.hexprint(resp))
-            raise Exception("Failed to read full block (%i!=%i)" %
-                            (len(resp), len(cmd) + blocksize))
+            raise Exception(
+                "Failed to read full block (%i!=%i)" % (len(resp), len(cmd) + blocksize)
+            )
 
         radio.pipe.write(b"\x06")
         radio.pipe.read(1)
@@ -61,7 +62,7 @@ def do_upload(radio, start, end, blocksize):
     ptr = start
     for i in range(start, end, blocksize):
         cmd = struct.pack(">cHb", b"W", i, blocksize)
-        chunk = radio.get_mmap()[ptr:ptr+blocksize]
+        chunk = radio.get_mmap()[ptr : ptr + blocksize]
         ptr += blocksize
         radio.pipe.write(cmd + chunk)
         LOG.debug(util.hexprint(cmd + chunk))

@@ -34,15 +34,15 @@ LOG = logging.getLogger(__name__)
 # GA510 and SHX8800 also have DTCS code 645
 DTCS_CODES = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
-DTMFCHARS = '0123456789ABCD*#'
+DTMFCHARS = "0123456789ABCD*#"
 AIRBAND = (108000000, 136000000)
 
 
 def reset(radio):
     try:
-        radio.pipe.write(b'E')
+        radio.pipe.write(b"E")
     except Exception as e:
-        LOG.error('Failed to reset radio: %s' % e)
+        LOG.error("Failed to reset radio: %s" % e)
 
 
 def start_program(radio):
@@ -52,18 +52,18 @@ def start_program(radio):
     ack = radio.pipe.read(256)
     if not ack:
         raise errors.RadioNoResponse()
-    if not ack.endswith(b'\x06'):
-        LOG.debug('Ack was %r' % ack)
-        raise errors.RadioError('Unexpected response to clone request')
+    if not ack.endswith(b"\x06"):
+        LOG.debug("Ack was %r" % ack)
+        raise errors.RadioError("Unexpected response to clone request")
 
-    radio.pipe.write(b'F')
+    radio.pipe.write(b"F")
 
     ident = radio.pipe.read(8)
     if not ident:
         raise errors.RadioNoResponse()
     if len(ident) != 8:
-        raise errors.RadioError('Radio sent short ident response')
-    LOG.debug('Radio ident string is %r' % ident)
+        raise errors.RadioError("Radio sent short ident response")
+    LOG.debug("Radio ident string is %r" % ident)
 
     return ident
 
@@ -72,29 +72,32 @@ def do_download(radio):
     # No start_program() here because it was done in detect_from_serial()
 
     s = chirp_common.Status()
-    s.msg = 'Downloading'
+    s.msg = "Downloading"
     s.max = 0x1C00
 
     data = bytes()
     for addr in range(0, 0x1C40, 0x40):
-        cmd = struct.pack('>cHB', b'R', addr, 0x40)
-        radio.pipe.log('Reading block at %04x' % addr)
+        cmd = struct.pack(">cHB", b"R", addr, 0x40)
+        radio.pipe.log("Reading block at %04x" % addr)
         radio.pipe.write(cmd)
 
         block = radio.pipe.read(0x44)
         if not block:
             raise errors.RadioNoResponse()
         if len(block) < 4:
-            raise errors.RadioError('Radio sent short block header')
+            raise errors.RadioError("Radio sent short block header")
         header = block[:4]
-        rcmd, raddr, rlen = struct.unpack('>BHB', header)
+        rcmd, raddr, rlen = struct.unpack(">BHB", header)
         block = block[4:]
         if raddr != addr:
-            raise errors.RadioError('Radio send address %04x, expected %04x' %
-                                    (raddr, addr))
+            raise errors.RadioError(
+                "Radio send address %04x, expected %04x" % (raddr, addr)
+            )
         if rlen != 0x40 or len(block) != 0x40:
-            raise errors.RadioError('Radio sent %02x (%02x) bytes, '
-                                    'expected %02x' % (rlen, len(block), 0x40))
+            raise errors.RadioError(
+                "Radio sent %02x (%02x) bytes, "
+                "expected %02x" % (rlen, len(block), 0x40)
+            )
 
         data += block
 
@@ -108,24 +111,24 @@ def do_upload(radio):
     ident = start_program(radio)
 
     s = chirp_common.Status()
-    s.msg = 'Uploading'
+    s.msg = "Uploading"
     s.max = 0x1C00
 
     # The factory software downloads 0x40 for the block
     # at 0x1C00, but only uploads 0x20 there. Mimic that
     # here.
     for addr in range(0, 0x1C20, 0x20):
-        cmd = struct.pack('>cHB', b'W', addr, 0x20)
-        radio.pipe.log('Writing block at %04x' % addr)
-        block = radio._mmap[addr:addr + 0x20]
+        cmd = struct.pack(">cHB", b"W", addr, 0x20)
+        radio.pipe.log("Writing block at %04x" % addr)
+        block = radio._mmap[addr : addr + 0x20]
         radio.pipe.write(cmd)
         radio.pipe.write(block)
 
         ack = radio.pipe.read(1)
         if not ack:
             raise errors.RadioNoResponse()
-        if ack != b'\x06':
-            raise errors.RadioError('Radio refused block at addr %04x' % addr)
+        if ack != b"\x06":
+            raise errors.RadioError("Radio refused block at addr %04x" % addr)
 
         s.cur = addr
         radio.status_fn(s)
@@ -344,7 +347,7 @@ struct {
 
 """
 
-PTTID = ['Off', 'BOT', 'EOT', 'Both']
+PTTID = ["Off", "BOT", "EOT", "Both"]
 SIGNAL = [str(i) for i in range(1, 16)]
 WORKMODE_LIST = ["VFO", "CH"]
 SHIFTD_LIST = ["Off", "+", "-"]
@@ -357,16 +360,17 @@ BANDWIDTH_LIST = ["Wide", "Narrow"]
 
 @directory.register
 class RadioddityGA510Radio(chirp_common.CloneModeRadio):
-    VENDOR = 'Radioddity'
-    MODEL = 'GA-510'
+    VENDOR = "Radioddity"
+    MODEL = "GA-510"
     BAUD_RATE = 9600
     POWER_LEVELS = [
-        chirp_common.PowerLevel('H', watts=10),
-        chirp_common.PowerLevel('L', watts=1),
-        chirp_common.PowerLevel('M', watts=5)]
+        chirp_common.PowerLevel("H", watts=10),
+        chirp_common.PowerLevel("L", watts=1),
+        chirp_common.PowerLevel("M", watts=5),
+    ]
 
     _mem_format = MODEL_GA510_FORMAT
-    _magic = (b'PROGROMBFHU')
+    _magic = b"PROGROMBFHU"
 
     _gmrs = False
 
@@ -382,12 +386,12 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 else:
                     ident = start_program(radio)
             except errors.RadioNoResponse:
-                LOG.debug('No response from radio with %s', rcls)
+                LOG.debug("No response from radio with %s", rcls)
                 pipe.read(256)
                 continue
             except errors.RadioError:
                 saw_data = True
-                LOG.debug('Unexpected response from radio with %s', rcls)
+                LOG.debug("Unexpected response from radio with %s", rcls)
                 pipe.read(256)
                 continue
             if ident:
@@ -395,7 +399,7 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 return rcls
             saw_data = True
         if saw_data:
-            raise errors.RadioError('Unexpected response from radio')
+            raise errors.RadioError("Unexpected response from radio")
         raise errors.RadioNoResponse()
 
     def sync_in(self):
@@ -405,8 +409,8 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('General failure')
-            raise errors.RadioError('Failed to download from radio: %s' % e)
+            LOG.exception("General failure")
+            raise errors.RadioError("Failed to download from radio: %s" % e)
         finally:
             reset(self)
         self.process_mmap()
@@ -417,14 +421,13 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('General failure')
-            raise errors.RadioError('Failed to upload to radio: %s' % e)
+            LOG.exception("General failure")
+            raise errors.RadioError("Failed to upload to radio: %s" % e)
         finally:
             reset(self)
 
     def process_mmap(self):
-        self._memobj = bitwise.parse(BASE_FORMAT + self._mem_format,
-                                     self._mmap)
+        self._memobj = bitwise.parse(BASE_FORMAT + self._mem_format, self._mmap)
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -438,22 +441,40 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         rf.has_dtcs_polarity = True
         rf.has_rx_dtcs = True
         rf.can_odd_split = True
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ['Tone->Tone', 'DTCS->', '->DTCS', 'Tone->DTCS',
-                                'DTCS->Tone', '->Tone', 'DTCS->DTCS']
-        rf.valid_modes = ['FM', 'NFM']
-        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 12.5, 10.0, 15.0, 20.0,
-                                 25.0, 50.0, 100.0]
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->",
+            "->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "DTCS->DTCS",
+        ]
+        rf.valid_modes = ["FM", "NFM"]
+        rf.valid_tuning_steps = [
+            2.5,
+            5.0,
+            6.25,
+            12.5,
+            10.0,
+            15.0,
+            20.0,
+            25.0,
+            50.0,
+            100.0,
+        ]
         rf.valid_dtcs_codes = DTCS_CODES
-        rf.valid_duplexes = ['', '-', '+', 'split', 'off']
+        rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_name_length = 10
-        rf.valid_characters = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                               'abcdefghijklmnopqrstuvwxyz'
-                               '0123456789'
-                               '!"#$%&\'()~+-,./:;<=>?@[\\]^`{}*| ')
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 480000000)]
+        rf.valid_characters = (
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz"
+            "0123456789"
+            "!\"#$%&'()~+-,./:;<=>?@[\\]^`{}*| "
+        )
+        rf.valid_bands = [(136000000, 174000000), (400000000, 480000000)]
         return rf
 
     def get_raw_memory(self, num):
@@ -462,70 +483,72 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
     @staticmethod
     def _decode_tone(toneval):
         if toneval in (0, 0xFFFF):
-            LOG.debug('no tone value: %s' % toneval)
-            return '', None, None
+            LOG.debug("no tone value: %s" % toneval)
+            return "", None, None
         elif toneval < 670:
             toneval = toneval - 1
             index = toneval % len(DTCS_CODES)
             if index != int(toneval):
-                pol = 'R'
+                pol = "R"
                 # index -= 1
             else:
-                pol = 'N'
-            return 'DTCS', DTCS_CODES[index], pol
+                pol = "N"
+            return "DTCS", DTCS_CODES[index], pol
         else:
-            return 'Tone', toneval / 10.0, 'N'
+            return "Tone", toneval / 10.0, "N"
 
     @staticmethod
     def _encode_tone(mode, val, pol):
         if not mode:
             return 0x0000
-        elif mode == 'Tone':
+        elif mode == "Tone":
             return int(val * 10)
-        elif mode == 'DTCS':
+        elif mode == "DTCS":
             index = DTCS_CODES.index(val)
-            if pol == 'R':
+            if pol == "R":
                 index += len(DTCS_CODES)
             index += 1
-            LOG.debug('Encoded dtcs %s/%s to %04x' % (val, pol, index))
+            LOG.debug("Encoded dtcs %s/%s to %04x" % (val, pol, index))
             return index
         else:
-            raise errors.RadioError('Unsupported tone mode %r' % mode)
+            raise errors.RadioError("Unsupported tone mode %r" % mode)
 
     def _get_extra(self, _mem):
-        group = RadioSettingGroup('extra', 'Extra')
+        group = RadioSettingGroup("extra", "Extra")
 
-        s = RadioSetting('bcl', 'Busy Channel Lockout',
-                         RadioSettingValueBoolean(_mem.bcl))
+        s = RadioSetting(
+            "bcl", "Busy Channel Lockout", RadioSettingValueBoolean(_mem.bcl)
+        )
         group.append(s)
 
-        s = RadioSetting('fhss', 'FHSS',
-                         RadioSettingValueBoolean(_mem.fhss))
+        s = RadioSetting("fhss", "FHSS", RadioSettingValueBoolean(_mem.fhss))
         group.append(s)
 
         # pttid, signal
 
-        s = RadioSetting('pttid', 'PTTID',
-                         RadioSettingValueList(PTTID, int(_mem.pttid)))
+        s = RadioSetting(
+            "pttid", "PTTID", RadioSettingValueList(PTTID, int(_mem.pttid))
+        )
         group.append(s)
 
-        s = RadioSetting('signal', 'Signal',
-                         RadioSettingValueList(SIGNAL, int(_mem.signal)))
+        s = RadioSetting(
+            "signal", "Signal", RadioSettingValueList(SIGNAL, int(_mem.signal))
+        )
         group.append(s)
 
         return group
 
     def _set_extra(self, _mem, mem):
-        _mem.bcl = int(mem.extra['bcl'].value)
-        _mem.fhss = int(mem.extra['fhss'].value)
-        _mem.pttid = int(mem.extra['pttid'].value)
-        _mem.signal = int(mem.extra['signal'].value)
+        _mem.bcl = int(mem.extra["bcl"].value)
+        _mem.fhss = int(mem.extra["fhss"].value)
+        _mem.pttid = int(mem.extra["pttid"].value)
+        _mem.signal = int(mem.extra["signal"].value)
 
     def _is_txinh(self, _mem):
         raw_tx = ""
         for i in range(0, 4):
             raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+        return raw_tx == "\xff\xff\xff\xff"
 
     def _get_mem(self, num):
         return self._memobj.memories[num]
@@ -542,35 +565,34 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        mem.name = ''.join([str(c) for c in _nam.name
-                            if ord(str(c)) < 127]).rstrip()
+        mem.name = "".join([str(c) for c in _nam.name if ord(str(c)) < 127]).rstrip()
         mem.freq = int(_mem.rxfreq) * 10
         offset = (int(_mem.txfreq) - int(_mem.rxfreq)) * 10
         if self._is_txinh(_mem):
-            mem.duplex = 'off'
+            mem.duplex = "off"
             mem.offset = 0
         elif offset == 0:
-            mem.duplex = ''
+            mem.duplex = ""
         elif abs(offset) < 100000000:
-            mem.duplex = offset < 0 and '-' or '+'
+            mem.duplex = offset < 0 and "-" or "+"
             mem.offset = abs(offset)
         else:
-            mem.duplex = 'split'
+            mem.duplex = "split"
             mem.offset = int(_mem.txfreq) * 10
 
         mem.power = self.POWER_LEVELS[_mem.power]
-        mem.mode = 'NFM' if _mem.narrow else 'FM'
-        mem.skip = '' if _mem.scan else 'S'
+        mem.mode = "NFM" if _mem.narrow else "FM"
+        mem.skip = "" if _mem.scan else "S"
 
-        LOG.debug('got txtone: %s' % repr(self._decode_tone(_mem.txtone)))
-        LOG.debug('got rxtone: %s' % repr(self._decode_tone(_mem.rxtone)))
-        chirp_common.split_tone_decode(mem,
-                                       self._decode_tone(_mem.txtone),
-                                       self._decode_tone(_mem.rxtone))
+        LOG.debug("got txtone: %s" % repr(self._decode_tone(_mem.txtone)))
+        LOG.debug("got rxtone: %s" % repr(self._decode_tone(_mem.rxtone)))
+        chirp_common.split_tone_decode(
+            mem, self._decode_tone(_mem.txtone), self._decode_tone(_mem.rxtone)
+        )
         try:
             mem.extra = self._get_extra(_mem)
         except:
-            LOG.exception('Failed to get extra for %i' % num)
+            LOG.exception("Failed to get extra for %i" % num)
 
         return mem
 
@@ -585,13 +607,13 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         _nam = self._set_nam(mem.number)
 
         if mem.empty:
-            _mem.set_raw(b'\xff' * 16)
-            _nam.set_raw(b'\xff' * 16)
+            _mem.set_raw(b"\xff" * 16)
+            _nam.set_raw(b"\xff" * 16)
             return
 
         if int(_mem.rxfreq) == 166666665:
-            LOG.debug('Initializing new memory %i' % mem.number)
-            _mem.set_raw(b'\x00' * 16)
+            LOG.debug("Initializing new memory %i" % mem.number)
+            _mem.set_raw(b"\x00" * 16)
 
         _nam.name = mem.name.ljust(10)
 
@@ -599,25 +621,25 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             _mem.allow_tx = True
 
         _mem.rxfreq = mem.freq // 10
-        if mem.duplex == '':
+        if mem.duplex == "":
             _mem.txfreq = mem.freq // 10
-        elif mem.duplex == 'split':
+        elif mem.duplex == "split":
             _mem.txfreq = mem.offset // 10
-        elif mem.duplex == 'off':
+        elif mem.duplex == "off":
             if isinstance(self, Senhaix8800Radio):
                 _mem.allow_tx = False
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw(b'\xFF')
-        elif mem.duplex == '-':
+                _mem.txfreq[i].set_raw(b"\xff")
+        elif mem.duplex == "-":
             _mem.txfreq = (mem.freq - mem.offset) // 10
-        elif mem.duplex == '+':
+        elif mem.duplex == "+":
             _mem.txfreq = (mem.freq + mem.offset) // 10
         else:
-            raise errors.RadioError('Unsupported duplex mode %r' % mem.duplex)
+            raise errors.RadioError("Unsupported duplex mode %r" % mem.duplex)
 
         txtone, rxtone = chirp_common.split_tone_encode(mem)
-        LOG.debug('tx tone is %s' % repr(txtone))
-        LOG.debug('rx tone is %s' % repr(rxtone))
+        LOG.debug("tx tone is %s" % repr(txtone))
+        LOG.debug("rx tone is %s" % repr(rxtone))
         _mem.txtone = self._encode_tone(*txtone)
         _mem.rxtone = self._encode_tone(*rxtone)
 
@@ -625,55 +647,54 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             _mem.power = self.POWER_LEVELS.index(mem.power)
         except ValueError:
             _mem.power = 0
-        _mem.narrow = mem.mode == 'NFM'
-        _mem.scan = mem.skip != 'S'
+        _mem.narrow = mem.mode == "NFM"
+        _mem.scan = mem.skip != "S"
         if mem.extra:
             self._set_extra(_mem, mem)
 
     def get_settings(self):
         _set = self._memobj.settings
 
-        basic = RadioSettingGroup('basic', 'Basic')
-        adv = RadioSettingGroup('advanced', 'Advanced')
-        dtmf = RadioSettingGroup('dtmf', 'DTMF')
+        basic = RadioSettingGroup("basic", "Basic")
+        adv = RadioSettingGroup("advanced", "Advanced")
+        dtmf = RadioSettingGroup("dtmf", "DTMF")
 
         radioddity_settings = {
-            'savemode': ['Off', 'Mode 1', 'Mode 2', 'Mode 3'],
-            'cha_disp': ['CH+Name', 'CH+Freq'],
-            'chb_disp': ['CH+Name', 'CH+Freq'],
-            'txundertdr': ['Off', 'Band A', 'Band B'],
-            'rptnoiseclr': ['Off'] + ['%i' % i for i in range(100, 1001, 100)],
-            'rptnoisedet': ['Off'] + ['%i' % i for i in range(100, 1001, 100)],
+            "savemode": ["Off", "Mode 1", "Mode 2", "Mode 3"],
+            "cha_disp": ["CH+Name", "CH+Freq"],
+            "chb_disp": ["CH+Name", "CH+Freq"],
+            "txundertdr": ["Off", "Band A", "Band B"],
+            "rptnoiseclr": ["Off"] + ["%i" % i for i in range(100, 1001, 100)],
+            "rptnoisedet": ["Off"] + ["%i" % i for i in range(100, 1001, 100)],
         }
 
         retevis_settings = {
-            'savemode': ['Off', 'On'],
-            'cha_disp': ['CH', 'CH+Name'],
-            'chb_disp': ['CH', 'CH+Name'],
+            "savemode": ["Off", "On"],
+            "cha_disp": ["CH", "CH+Name"],
+            "chb_disp": ["CH", "CH+Name"],
         }
 
         language_setting = {
-            'language': ['English', 'Chinese'],
+            "language": ["English", "Chinese"],
         }
 
         ga_workmode = {
-            'workmode': ['VFO', 'Chan'],
+            "workmode": ["VFO", "Chan"],
         }
 
         shx_workmode = {
-            'workmodea': ['VFO', 'Chan'],
-            'workmodeb': ['VFO', 'Chan'],
+            "workmodea": ["VFO", "Chan"],
+            "workmodeb": ["VFO", "Chan"],
         }
 
         choice_settings = {
-            'vox': ['Off'] + ['%i' % i for i in range(1, 11)],
-            'backlight': ['Off'] + ['%i' % i for i in range(1, 11)],
-            'timeout': ['Off'] + ['%i' % i for i in range(15, 615, 15)],
-            'dtmfst': ['OFF', 'KB Side Tone', 'ANI Side Tone',
-                       'KB ST+ANI ST', 'Both'],
-            'scanmode': ['TO', 'CO', 'SE'],
-            'pttid': ['Off', 'BOT', 'EOT', 'Both'],
-            'alarm_mode': ['Site', 'Tone', 'Code'],
+            "vox": ["Off"] + ["%i" % i for i in range(1, 11)],
+            "backlight": ["Off"] + ["%i" % i for i in range(1, 11)],
+            "timeout": ["Off"] + ["%i" % i for i in range(15, 615, 15)],
+            "dtmfst": ["OFF", "KB Side Tone", "ANI Side Tone", "KB ST+ANI ST", "Both"],
+            "scanmode": ["TO", "CO", "SE"],
+            "pttid": ["Off", "BOT", "EOT", "Both"],
+            "alarm_mode": ["Site", "Tone", "Code"],
         }
 
         if isinstance(self, Senhaix8800Radio):
@@ -688,78 +709,103 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             choice_settings.update(radioddity_settings)
 
         if isinstance(self, Senhaix8800Radio):
-            basic_settings = ['timeout', 'vox', 'backlight',
-                              'cha_disp', 'chb_disp', 'workmodea',
-                              'workmodeb']
+            basic_settings = [
+                "timeout",
+                "vox",
+                "backlight",
+                "cha_disp",
+                "chb_disp",
+                "workmodea",
+                "workmodeb",
+            ]
         else:
-            basic_settings = ['timeout', 'vox', 'backlight', 'language',
-                              'cha_disp', 'chb_disp', 'workmode']
+            basic_settings = [
+                "timeout",
+                "vox",
+                "backlight",
+                "language",
+                "cha_disp",
+                "chb_disp",
+                "workmode",
+            ]
         titles = {
-            'savemode': 'Save Mode',
-            'vox': 'VOX',
-            'backlight': 'Auto Backlight',
-            'timeout': 'Time Out Timer (s)',
-            'language': 'Language',
-            'dtmfst': 'DTMF-ST',
-            'scanmode': 'Scan Mode',
-            'pttid': 'PTT-ID',
-            'cha_disp': 'Channel A Display',
-            'chb_disp': 'Channel B Display',
-            'alarm_mode': 'Alarm Mode',
-            'txundertdr': 'TX Under TDR',
-            'rptnoiseclr': 'RPT Noise Clear (ms)',
-            'rptnoisedet': 'RPT Noise Detect (ms)',
-            'workmode': 'Work Mode',
-            'workmodea': 'Work Mode A',
-            'workmodeb': 'Work Mode B',
+            "savemode": "Save Mode",
+            "vox": "VOX",
+            "backlight": "Auto Backlight",
+            "timeout": "Time Out Timer (s)",
+            "language": "Language",
+            "dtmfst": "DTMF-ST",
+            "scanmode": "Scan Mode",
+            "pttid": "PTT-ID",
+            "cha_disp": "Channel A Display",
+            "chb_disp": "Channel B Display",
+            "alarm_mode": "Alarm Mode",
+            "txundertdr": "TX Under TDR",
+            "rptnoiseclr": "RPT Noise Clear (ms)",
+            "rptnoisedet": "RPT Noise Detect (ms)",
+            "workmode": "Work Mode",
+            "workmodea": "Work Mode A",
+            "workmodeb": "Work Mode B",
         }
 
         basic.append(
-            RadioSetting('squelch', 'Squelch Level',
-                         RadioSettingValueInteger(0, 9, int(_set.squelch))))
+            RadioSetting(
+                "squelch",
+                "Squelch Level",
+                RadioSettingValueInteger(0, 9, int(_set.squelch)),
+            )
+        )
         adv.append(
-            RadioSetting('pttdelay', 'PTT Delay',
-                         RadioSettingValueInteger(0, 30, int(_set.pttdelay))))
+            RadioSetting(
+                "pttdelay",
+                "PTT Delay",
+                RadioSettingValueInteger(0, 30, int(_set.pttdelay)),
+            )
+        )
+        adv.append(RadioSetting("tdr", "TDR", RadioSettingValueBoolean(int(_set.tdr))))
         adv.append(
-            RadioSetting('tdr', 'TDR',
-                         RadioSettingValueBoolean(
-                             int(_set.tdr))))
-        adv.append(
-            RadioSetting('beep', 'Beep',
-                         RadioSettingValueBoolean(
-                             int(_set.beep))))
+            RadioSetting("beep", "Beep", RadioSettingValueBoolean(int(_set.beep)))
+        )
         basic.append(
-            RadioSetting('voice', 'Voice Enable',
-                         RadioSettingValueBoolean(
-                             int(_set.voice))))
+            RadioSetting(
+                "voice", "Voice Enable", RadioSettingValueBoolean(int(_set.voice))
+            )
+        )
+        adv.append(RadioSetting("bcl", "BCL", RadioSettingValueBoolean(int(_set.bcl))))
         adv.append(
-            RadioSetting('bcl', 'BCL',
-                         RadioSettingValueBoolean(
-                             int(_set.bcl))))
+            RadioSetting(
+                "autolock", "Auto Lock", RadioSettingValueBoolean(int(_set.autolock))
+            )
+        )
         adv.append(
-            RadioSetting('autolock', 'Auto Lock',
-                         RadioSettingValueBoolean(
-                             int(_set.autolock))))
+            RadioSetting(
+                "alarmsound",
+                "Alarm Sound",
+                RadioSettingValueBoolean(int(_set.alarmsound)),
+            )
+        )
         adv.append(
-            RadioSetting('alarmsound', 'Alarm Sound',
-                         RadioSettingValueBoolean(
-                             int(_set.alarmsound))))
+            RadioSetting(
+                "tailnoiseclear",
+                "Tail Noise Clear",
+                RadioSettingValueBoolean(int(_set.tailnoiseclear)),
+            )
+        )
         adv.append(
-            RadioSetting('tailnoiseclear', 'Tail Noise Clear',
-                         RadioSettingValueBoolean(
-                             int(_set.tailnoiseclear))))
+            RadioSetting("roger", "Roger", RadioSettingValueBoolean(int(_set.roger)))
+        )
         adv.append(
-            RadioSetting('roger', 'Roger',
-                         RadioSettingValueBoolean(
-                             int(_set.roger))))
+            RadioSetting(
+                "fmradio",
+                "FM Radio Disabled",
+                RadioSettingValueBoolean(int(_set.fmradio)),
+            )
+        )
         adv.append(
-            RadioSetting('fmradio', 'FM Radio Disabled',
-                         RadioSettingValueBoolean(
-                             int(_set.fmradio))))
-        adv.append(
-            RadioSetting('kblock', 'KB Lock',
-                         RadioSettingValueBoolean(
-                             int(_set.kblock))))
+            RadioSetting(
+                "kblock", "KB Lock", RadioSettingValueBoolean(int(_set.kblock))
+            )
+        )
 
         for key in sorted(choice_settings):
             choices = choice_settings[key]
@@ -773,24 +819,25 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             try:
                 cur = choices[val]
             except IndexError:
-                LOG.error('Value %i for %s out of range for list (%i): %s' % (
-                    val, key, len(choices), choices))
+                LOG.error(
+                    "Value %i for %s out of range for list (%i): %s"
+                    % (val, key, len(choices), choices)
+                )
                 raise
             group.append(
-                RadioSetting(key, title,
-                             RadioSettingValueList(
-                                 choices,
-                                 current_index=val)))
+                RadioSetting(
+                    key, title, RadioSettingValueList(choices, current_index=val)
+                )
+            )
 
         if self.VENDOR == "Retevis":
             # Side Keys
             _skey = self._memobj.skey
-            SK_CHOICES = ['OFF', 'LAMP', 'SOS', 'FM', 'NOAA', 'MONI', 'SEARCH']
+            SK_CHOICES = ["OFF", "LAMP", "SOS", "FM", "NOAA", "MONI", "SEARCH"]
             SK_VALUES = [0xFF, 0x08, 0x03, 0x07, 0x0C, 0x05, 0x1D]
 
             def apply_sk_listvalue(setting, obj):
-                LOG.debug("Setting value: " + str(setting.value) +
-                          " from list")
+                LOG.debug("Setting value: " + str(setting.value) + " from list")
                 val = str(setting.value)
                 index = SK_CHOICES.index(val)
                 val = SK_VALUES[index]
@@ -801,9 +848,11 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 idx = SK_VALUES.index(_skey.skey1sp)
             else:
                 idx = SK_VALUES.index(0xFF)
-            rs = RadioSetting('skey.skey1sp', 'Side Key 1 - Short Press',
-                              RadioSettingValueList(SK_CHOICES,
-                                                    current_index=idx))
+            rs = RadioSetting(
+                "skey.skey1sp",
+                "Side Key 1 - Short Press",
+                RadioSettingValueList(SK_CHOICES, current_index=idx),
+            )
             rs.set_apply_callback(apply_sk_listvalue, _skey.skey1sp)
             adv.append(rs)
 
@@ -812,9 +861,11 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 idx = SK_VALUES.index(_skey.skey1lp)
             else:
                 idx = SK_VALUES.index(0xFF)
-            rs = RadioSetting('skey.skey1lp', 'Side Key 1 - Long Press',
-                              RadioSettingValueList(SK_CHOICES,
-                                                    current_index=idx))
+            rs = RadioSetting(
+                "skey.skey1lp",
+                "Side Key 1 - Long Press",
+                RadioSettingValueList(SK_CHOICES, current_index=idx),
+            )
             rs.set_apply_callback(apply_sk_listvalue, _skey.skey1lp)
             adv.append(rs)
 
@@ -823,9 +874,11 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 idx = SK_VALUES.index(_skey.skey2sp)
             else:
                 idx = SK_VALUES.index(0xFF)
-            rs = RadioSetting('skey.skey2sp', 'Side Key 2 - Short Press',
-                              RadioSettingValueList(SK_CHOICES,
-                                                    current_index=idx))
+            rs = RadioSetting(
+                "skey.skey2sp",
+                "Side Key 2 - Short Press",
+                RadioSettingValueList(SK_CHOICES, current_index=idx),
+            )
             rs.set_apply_callback(apply_sk_listvalue, _skey.skey2sp)
             adv.append(rs)
 
@@ -834,25 +887,28 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 idx = SK_VALUES.index(_skey.skey2lp)
             else:
                 idx = SK_VALUES.index(0xFF)
-            rs = RadioSetting('skey.skey2lp', 'Side Key 2 - Long Press',
-                              RadioSettingValueList(SK_CHOICES,
-                                                    current_index=idx))
+            rs = RadioSetting(
+                "skey.skey2lp",
+                "Side Key 2 - Long Press",
+                RadioSettingValueList(SK_CHOICES, current_index=idx),
+            )
             rs.set_apply_callback(apply_sk_listvalue, _skey.skey2lp)
             adv.append(rs)
 
         for i in range(1, 16):
-            cur = ''.join(
-                DTMFCHARS[i]
-                for i in self._memobj.dtmfgroup[i - 1].code if int(i) < 0xF)
+            cur = "".join(
+                DTMFCHARS[i] for i in self._memobj.dtmfgroup[i - 1].code if int(i) < 0xF
+            )
             dtmf.append(
                 RadioSetting(
-                    'dtmf.code@%i' % i, 'DTMF Group %i' % i,
-                    RadioSettingValueString(0, 5, cur,
-                                            autopad=False,
-                                            charset=DTMFCHARS)))
-        cur = ''.join(
-            '%X' % i
-            for i in self._memobj.anicode.code if int(i) < 0xE)
+                    "dtmf.code@%i" % i,
+                    "DTMF Group %i" % i,
+                    RadioSettingValueString(
+                        0, 5, cur, autopad=False, charset=DTMFCHARS
+                    ),
+                )
+            )
+        cur = "".join("%X" % i for i in self._memobj.anicode.code if int(i) < 0xE)
 
         anicode = self._memobj.anicode
 
@@ -879,60 +935,77 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
             try:
                 current_group = DTMFCHARS[int(anicode.groupcode)]
             except IndexError:
-                LOG.warning('ANI group code index %i out of range',
-                            anicode.groupcode)
+                LOG.warning("ANI group code index %i out of range", anicode.groupcode)
                 current_group = DTMFCHARS[0]
             dtmf.append(
                 RadioSetting(
-                    "anicode.groupcode", "Group Code",
-                    RadioSettingValueList(list(DTMFCHARS),
-                                          current_group)))
+                    "anicode.groupcode",
+                    "Group Code",
+                    RadioSettingValueList(list(DTMFCHARS), current_group),
+                )
+            )
 
         else:
             dtmf.append(
                 RadioSetting(
-                    'anicode.code', 'ANI Code',
-                    RadioSettingValueString(0, 5, cur,
-                                            autopad=False,
-                                            charset=DTMFCHARS)))
+                    "anicode.code",
+                    "ANI Code",
+                    RadioSettingValueString(
+                        0, 5, cur, autopad=False, charset=DTMFCHARS
+                    ),
+                )
+            )
             dtmf.append(
                 RadioSetting(
-                    'anicode.groupcode', 'Group Code',
+                    "anicode.groupcode",
+                    "Group Code",
                     RadioSettingValueList(
-                        list(DTMFCHARS),
-                        DTMFCHARS[int(anicode.groupcode)])))
+                        list(DTMFCHARS), DTMFCHARS[int(anicode.groupcode)]
+                    ),
+                )
+            )
             dtmf.append(
                 RadioSetting(
-                    'anicode.releasetosend', 'Release To Send',
-                    RadioSettingValueBoolean(
-                        int(anicode.releasetosend))))
+                    "anicode.releasetosend",
+                    "Release To Send",
+                    RadioSettingValueBoolean(int(anicode.releasetosend)),
+                )
+            )
             dtmf.append(
                 RadioSetting(
-                    'anicode.presstosend', 'Press To Send',
-                    RadioSettingValueBoolean(
-                        int(anicode.presstosend))))
+                    "anicode.presstosend",
+                    "Press To Send",
+                    RadioSettingValueBoolean(int(anicode.presstosend)),
+                )
+            )
 
         cur = int(anicode.dtmfspeedon) * 10 + 80
         dtmf.append(
             RadioSetting(
-                'anicode.dtmfspeedon', 'DTMF Speed (on time in ms)',
-                RadioSettingValueInteger(60, 2000, cur, 10)))
+                "anicode.dtmfspeedon",
+                "DTMF Speed (on time in ms)",
+                RadioSettingValueInteger(60, 2000, cur, 10),
+            )
+        )
         cur = int(anicode.dtmfspeedoff) * 10 + 80
         dtmf.append(
             RadioSetting(
-                'anicode.dtmfspeedoff', 'DTMF Speed (off time in ms)',
-                RadioSettingValueInteger(60, 2000, cur, 10)))
+                "anicode.dtmfspeedoff",
+                "DTMF Speed (off time in ms)",
+                RadioSettingValueInteger(60, 2000, cur, 10),
+            )
+        )
 
         top = RadioSettings(basic, adv, dtmf)
         return top
 
     def set_settings(self, settings):
         for element in settings:
-            if element.get_name().startswith('anicode.'):
+            if element.get_name().startswith("anicode."):
                 self._set_anicode(element)
-            elif element.get_name().startswith('dtmf.code'):
+            elif element.get_name().startswith("dtmf.code"):
                 self._set_dtmfcode(element)
-            elif element.get_name().startswith('skey.'):
+            elif element.get_name().startswith("skey."):
                 self._set_skey(element)
             elif not isinstance(element, RadioSetting):
                 self.set_settings(element)
@@ -947,8 +1020,8 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
         setattr(self._memobj.settings, key, int(val))
 
     def _set_anicode(self, setting):
-        name = setting.get_name().split('.', 1)[1]
-        if name == 'code':
+        name = setting.get_name().split(".", 1)[1]
+        if name == "code":
             val = [DTMFCHARS.index(c) for c in str(setting.value)]
             for i in range(0, 5):
                 try:
@@ -956,14 +1029,13 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
                 except IndexError:
                     value = 0xFF
                 self._memobj.anicode.code[i] = value
-        elif name.startswith('dtmfspeed'):
-            setattr(self._memobj.anicode, name,
-                    (int(setting.value) - 80) // 10)
+        elif name.startswith("dtmfspeed"):
+            setattr(self._memobj.anicode, name, (int(setting.value) - 80) // 10)
         else:
             setattr(self._memobj.anicode, name, int(setting.value))
 
     def _set_dtmfcode(self, setting):
-        index = int(setting.get_name().split('@', 1)[1]) - 1
+        index = int(setting.get_name().split("@", 1)[1]) - 1
         val = [DTMFCHARS.index(c) for c in str(setting.value)]
         for i in range(0, 5):
             try:
@@ -980,20 +1052,20 @@ class RadioddityGA510Radio(chirp_common.CloneModeRadio):
 
 @directory.register
 class RetevisRA685Radio(RadioddityGA510Radio):
-    VENDOR = 'Retevis'
-    MODEL = 'RA685'
+    VENDOR = "Retevis"
+    MODEL = "RA685"
     POWER_LEVELS = [
-        chirp_common.PowerLevel('H', watts=5),
-        chirp_common.PowerLevel('L', watts=1),
-        chirp_common.PowerLevel('M', watts=3)]
+        chirp_common.PowerLevel("H", watts=5),
+        chirp_common.PowerLevel("L", watts=1),
+        chirp_common.PowerLevel("M", watts=3),
+    ]
 
-    _magic = b'PROGROMWLTU'
+    _magic = b"PROGROMWLTU"
 
     def get_features(self):
         rf = RadioddityGA510Radio.get_features(self)
         rf.memory_bounds = (1, 128)
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 520000000)]
+        rf.valid_bands = [(136000000, 174000000), (400000000, 520000000)]
         return rf
 
     def _get_mem(self, num):
@@ -1014,20 +1086,20 @@ class RetevisRA685Radio(RadioddityGA510Radio):
 
 @directory.register
 class RetevisRA85Radio(RadioddityGA510Radio):
-    VENDOR = 'Retevis'
-    MODEL = 'RA85'
+    VENDOR = "Retevis"
+    MODEL = "RA85"
     POWER_LEVELS = [
-        chirp_common.PowerLevel('H', watts=5),
-        chirp_common.PowerLevel('L', watts=0.5),
-        chirp_common.PowerLevel('M', watts=0.6)]
+        chirp_common.PowerLevel("H", watts=5),
+        chirp_common.PowerLevel("L", watts=0.5),
+        chirp_common.PowerLevel("M", watts=0.6),
+    ]
 
-    _magic = b'PROGROMWLTU'
+    _magic = b"PROGROMWLTU"
 
     def get_features(self):
         rf = RadioddityGA510Radio.get_features(self)
         rf.memory_bounds = (1, 128)
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 520000000)]
+        rf.valid_bands = [(136000000, 174000000), (400000000, 520000000)]
         return rf
 
     def _get_mem(self, num):
@@ -1050,54 +1122,64 @@ class TDH6Radio(RadioddityGA510Radio):
 
     def get_features(self):
         rf = super().get_features()
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 520000000)]
+        rf.valid_bands = [(136000000, 174000000), (400000000, 520000000)]
         return rf
 
 
 @directory.register
 class Senhaix8800Radio(RadioddityGA510Radio):
     """Senhaix 8800"""
+
     VENDOR = "SenhaiX"
     MODEL = "8800"
 
     POWER_LEVELS = [
-        chirp_common.PowerLevel('H', watts=5),
-        chirp_common.PowerLevel('L', watts=1)]
+        chirp_common.PowerLevel("H", watts=5),
+        chirp_common.PowerLevel("L", watts=1),
+    ]
     _mem_format = MODEL_SHX8800_FORMAT
-    _magic = b'PROGROMSHXU'
+    _magic = b"PROGROMSHXU"
 
     def get_features(self):
         rf = super().get_features()
         rf.valid_bands = rf.valid_bands + [AIRBAND]
-        rf.valid_modes = rf.valid_modes + ['AM']
+        rf.valid_modes = rf.valid_modes + ["AM"]
         return rf
 
     def get_memory(self, number):
         m = super().get_memory(number)
         if chirp_common.in_range(m.freq, [AIRBAND]):
-            m.mode = 'AM'
+            m.mode = "AM"
         return m
 
     def validate_memory(self, mem):
         msgs = []
         if chirp_common.in_range(mem.freq, [AIRBAND]):
-            if not mem.mode == 'AM':
-                msgs.append(chirp_common.ValidationWarning(
-                    _('Frequency in this range requires AM mode')))
+            if not mem.mode == "AM":
+                msgs.append(
+                    chirp_common.ValidationWarning(
+                        _("Frequency in this range requires AM mode")
+                    )
+                )
             if mem.duplex or mem.tmode:
-                msgs.append(chirp_common.ValidationError(
-                    _('AM mode does not allow duplex or tone')))
-        elif not chirp_common.in_range(
-                mem.freq, [AIRBAND]) and mem.mode == 'AM':
-            msgs.append(chirp_common.ValidationWarning(
-                _('Frequency in this range must not be AM mode')))
+                msgs.append(
+                    chirp_common.ValidationError(
+                        _("AM mode does not allow duplex or tone")
+                    )
+                )
+        elif not chirp_common.in_range(mem.freq, [AIRBAND]) and mem.mode == "AM":
+            msgs.append(
+                chirp_common.ValidationWarning(
+                    _("Frequency in this range must not be AM mode")
+                )
+            )
         return msgs + super().validate_memory(mem)
 
 
 @directory.register
 class RadioddityGS5BRadio(Senhaix8800Radio):
     """Radioddity GS-5B"""
+
     VENDOR = "Radioddity"
     MODEL = "GS-5B"
 
@@ -1106,6 +1188,7 @@ class RadioddityGS5BRadio(Senhaix8800Radio):
 @directory.register
 class CignusXTR5Radio(Senhaix8800Radio):
     """Cignus XTR-5"""
+
     VENDOR = "Cignus"
     MODEL = "XTR-5"
 
@@ -1113,28 +1196,32 @@ class CignusXTR5Radio(Senhaix8800Radio):
 @directory.register
 class AnysecuAC580Radio(Senhaix8800Radio):
     """Anysecu AC-580"""
+
     VENDOR = "Anysecu"
     MODEL = "AC-580"
 
 
 @directory.register
 class AbbreeARF5Radio(RadioddityGA510Radio):
-    VENDOR = 'Abbree'
-    MODEL = 'AR-F5'
+    VENDOR = "Abbree"
+    MODEL = "AR-F5"
     POWER_LEVELS = [
-        chirp_common.PowerLevel('H', watts=5),
-        chirp_common.PowerLevel('L', watts=1),
-        chirp_common.PowerLevel('M', watts=2)]
+        chirp_common.PowerLevel("H", watts=5),
+        chirp_common.PowerLevel("L", watts=1),
+        chirp_common.PowerLevel("M", watts=2),
+    ]
 
-    _magic = b'PROGROMWLTU'
+    _magic = b"PROGROMWLTU"
 
     def get_features(self):
         rf = RadioddityGA510Radio.get_features(self)
         rf.memory_bounds = (1, 128)
-        rf.valid_bands = [(136000000, 174000000),
-                          (200000000, 300000000),
-                          (300000000, 400000000),
-                          (400000000, 520000000)]
+        rf.valid_bands = [
+            (136000000, 174000000),
+            (200000000, 300000000),
+            (300000000, 400000000),
+            (400000000, 520000000),
+        ]
         return rf
 
     def _get_mem(self, num):
@@ -1154,6 +1241,7 @@ class AbbreeARF5Radio(RadioddityGA510Radio):
 @directory.detected_by(RadioddityGA510Radio)
 class RadioddityGA510v2(baofeng_uv17.UV17):
     """Baofeng UV-17"""
+
     VENDOR = "Radioddity"
     MODEL = "GA-510"
     VARIANT = "V2"
@@ -1168,13 +1256,21 @@ class RadioddityGA510v2(baofeng_uv17.UV17):
 
     _idents = [b"PSEARCH"]
     _magic_response_length = 8
-    _magics = [(b"PASSSTA", 3), (b"SYSINFO", 1),
-               (b"\x56\x00\x00\x0A\x0D", 13), (b"\x06", 1),
-               (b"\x56\x00\x10\x0A\x0D", 13), (b"\x06", 1),
-               (b"\x56\x00\x20\x0A\x0D", 13), (b"\x06", 1),
-               (b"\x56\x00\x00\x00\x0A", 11), (b"\x06", 1),
-               (b"\xFF\xFF\xFF\xFF\x0C\x44\x4d\x52\x31\x37\x30\x32", 1),
-               (b"\02", 8), (b"\x06", 1)]
+    _magics = [
+        (b"PASSSTA", 3),
+        (b"SYSINFO", 1),
+        (b"\x56\x00\x00\x0a\x0d", 13),
+        (b"\x06", 1),
+        (b"\x56\x00\x10\x0a\x0d", 13),
+        (b"\x06", 1),
+        (b"\x56\x00\x20\x0a\x0d", 13),
+        (b"\x06", 1),
+        (b"\x56\x00\x00\x00\x0a", 11),
+        (b"\x06", 1),
+        (b"\xff\xff\xff\xff\x0c\x44\x4d\x52\x31\x37\x30\x32", 1),
+        (b"\02", 8),
+        (b"\x06", 1),
+    ]
     _magic_memsize = []
     _radio_memsize = 0x10000
     _magics2 = []
@@ -1182,9 +1278,11 @@ class RadioddityGA510v2(baofeng_uv17.UV17):
     _scode_offset = 1
 
     _tri_band = False
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("Medium", watts=5.00),
-                    chirp_common.PowerLevel("High",  watts=10.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("Medium", watts=5.00),
+        chirp_common.PowerLevel("High", watts=10.00),
+    ]
 
     LENGTH_NAME = 8
     SCODE_LIST = ["%s" % x for x in range(1, 16)]

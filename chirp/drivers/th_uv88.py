@@ -21,10 +21,16 @@ import logging
 import math
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -272,9 +278,11 @@ STIMEOUT = 2
 BAUDRATE = 57600
 
 # Channel power: 3 levels
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                chirp_common.PowerLevel("Mid", watts=2.50),
-                chirp_common.PowerLevel("Low", watts=0.50)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=5.00),
+    chirp_common.PowerLevel("Mid", watts=2.50),
+    chirp_common.PowerLevel("Low", watts=0.50),
+]
 
 SCRAMBLE_LIST = ["OFF", "1", "2", "3", "4", "5", "6", "7", "8"]
 B_LOCK_LIST = ["OFF", "Sub", "Carrier"]
@@ -319,17 +327,17 @@ def _rawsend(radio, data):
 
 
 def _make_read_frame(addr, length):
-    frame = b"\xFE\xFE\xEE\xEF\xEB"
+    frame = b"\xfe\xfe\xee\xef\xeb"
     """Pack the info in the header format"""
     frame += struct.pack(">ih", addr, length)
 
-    frame += b"\xFD"
+    frame += b"\xfd"
     # Return the data
     return frame
 
 
 def _make_write_frame(addr, length, data=""):
-    frame = b"\xFE\xFE\xEE\xEF\xE4"
+    frame = b"\xfe\xfe\xee\xef\xe4"
 
     """Pack the info in the header format"""
     output = struct.pack(">ih", addr, length)
@@ -340,7 +348,7 @@ def _make_write_frame(addr, length, data=""):
     frame += output
     frame += _calculate_checksum(output)
 
-    frame += b"\xFD"
+    frame += b"\xfd"
     # Return the data
     return frame
 
@@ -357,7 +365,7 @@ def _calculate_checksum(data):
 
 
 def _recv(radio, addr, length):
-    """Get data from the radio """
+    """Get data from the radio"""
 
     data = _rawrecv(radio, length)
 
@@ -391,7 +399,7 @@ def _do_ident(radio):
         _exit_program_mode(radio)
         msg = "Error reading from radio: not the amount of data we want."
         raise errors.RadioError(msg)
-    if not ack.startswith(radio._fingerprint) or not ack.endswith(b"\xFD"):
+    if not ack.startswith(radio._fingerprint) or not ack.endswith(b"\xfd"):
         _exit_program_mode(radio)
         LOG.debug(repr(ack))
         raise errors.RadioError("Unexpected response from radio")
@@ -416,7 +424,7 @@ def _download(radio):
     magic = radio._magic2
     _rawsend(radio, magic)
     ack = _rawrecv(radio, 7)
-    if ack != b"\xFE\xFE\xEF\xEE\xE6\x00\xFD":
+    if ack != b"\xfe\xfe\xef\xee\xe6\x00\xfd":
         _exit_program_mode(radio)
         if ack:
             LOG.debug(repr(ack))
@@ -443,9 +451,9 @@ def _download(radio):
 
         LOG.debug("Response Data= " + util.hexprint(d))
 
-        if not d.startswith(b"\xFE\xFE\xEF\xEE\xE4"):
+        if not d.startswith(b"\xfe\xfe\xef\xee\xe4"):
             LOG.warning("Incorrect start")
-        if not d.endswith(b"\xFD"):
+        if not d.endswith(b"\xfd"):
             LOG.warning("Incorrect end")
         # could validate the block data
 
@@ -470,7 +478,7 @@ def _upload(radio):
     magic = radio._magic3
     _rawsend(radio, magic)
     ack = _rawrecv(radio, 7)
-    if ack != b"\xFE\xFE\xEF\xEE\xE6\x00\xFD":
+    if ack != b"\xfe\xfe\xef\xee\xe6\x00\xfd":
         _exit_program_mode(radio)
         if ack:
             LOG.debug(repr(ack))
@@ -490,7 +498,7 @@ def _upload(radio):
             continue
 
         # Sending the data
-        data = radio.get_mmap()[addr:addr + BLOCK_SIZE]
+        data = radio.get_mmap()[addr : addr + BLOCK_SIZE]
 
         frame = _make_write_frame(addr, BLOCK_SIZE, data)
         LOG.warning("Frame:%s:" % util.hexprint(frame))
@@ -499,7 +507,7 @@ def _upload(radio):
         ack = _rawrecv(radio, 7)
         LOG.debug("Response Data= " + util.hexprint(ack))
 
-        if not ack.startswith(b"\xFE\xFE\xEF\xEE\xE6\x00\xFD"):
+        if not ack.startswith(b"\xfe\xfe\xef\xee\xe6\x00\xfd"):
             LOG.warning("Unexpected response")
             _exit_program_mode(radio)
             msg = "Bad ack writing block 0x%04x" % addr
@@ -521,11 +529,11 @@ def _do_map(chn, sclr, mary):
     bv = (chn - 1) % 8
     msk = 1 << bv
     mapbit = sclr
-    if sclr == 1:    # Set the bit
+    if sclr == 1:  # Set the bit
         mary[ndx] = mary[ndx] | msk
     elif sclr == 0:  # clear
-        mary[ndx] = mary[ndx] & (~ msk)     # ~ is complement
-    else:       # return current bit state
+        mary[ndx] = mary[ndx] & (~msk)  # ~ is complement
+    else:  # return current bit state
         mapbit = 0
         if (mary[ndx] & msk) > 0:
             mapbit = 1
@@ -535,9 +543,10 @@ def _do_map(chn, sclr, mary):
 @directory.register
 class THUV88Radio(chirp_common.CloneModeRadio):
     """TYT UV88 Radio"""
+
     VENDOR = "TYT"
     MODEL = "TH-UV88"
-    MODES = ['WFM', 'FM', 'NFM']
+    MODES = ["WFM", "FM", "NFM"]
     # 62.5 is a non standard tone listed in the official programming software
     # 169.9 is a non standard tone listed in the official programming software
     # probably by mistake instead of 167.9
@@ -552,25 +561,23 @@ class THUV88Radio(chirp_common.CloneModeRadio):
     _hasManDown = False
     _hasLCD = True
     # Valid chars on the LCD
-    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-        "`!\"#$%&'()*+,-./:;<=>?@[]^_"
+    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "`!\"#$%&'()*+,-./:;<=>?@[]^_"
 
-    _magic0 = b"\xFE\xFE\xEE\xEF\xE0" + b"UV88" + b"\xFD"
-    _magic2 = b"\xFE\xFE\xEE\xEF\xE2" + b"UV88" + b"\xFD"
-    _magic3 = b"\xFE\xFE\xEE\xEF\xE3" + b"UV88" + b"\xFD"
-    _magic5 = b"\xFE\xFE\xEE\xEF\xE5" + b"UV88" + b"\xFD"
-    _fingerprint = b"\xFE\xFE\xEF\xEE\xE1" + b"UV88"
+    _magic0 = b"\xfe\xfe\xee\xef\xe0" + b"UV88" + b"\xfd"
+    _magic2 = b"\xfe\xfe\xee\xef\xe2" + b"UV88" + b"\xfd"
+    _magic3 = b"\xfe\xfe\xee\xef\xe3" + b"UV88" + b"\xfd"
+    _magic5 = b"\xfe\xfe\xee\xef\xe5" + b"UV88" + b"\xfd"
+    _fingerprint = b"\xfe\xfe\xef\xee\xe1" + b"UV88"
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.info = \
-            (cls.VENDOR + ' ' + cls.MODEL + '\n')
+        rp.info = cls.VENDOR + " " + cls.MODEL + "\n"
 
-        rp.pre_download = _(
-            "This is an early stage beta driver\n")
+        rp.pre_download = _("This is an early stage beta driver\n")
         rp.pre_upload = _(
-            "This is an early stage beta driver - upload at your own risk\n")
+            "This is an early stage beta driver - upload at your own risk\n"
+        )
         return rp
 
     def get_features(self):
@@ -578,7 +585,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         rf.has_settings = True
         rf.has_bank = False
         rf.has_comment = False
-        rf.has_tuning_step = False      # Not as chan feature
+        rf.has_tuning_step = False  # Not as chan feature
         rf.valid_tuning_steps = STEPS
         rf.can_odd_split = True
         rf.has_name = True
@@ -594,10 +601,16 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         rf.valid_modes = self.MODES
         rf.valid_characters = self.VALID_CHARS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ["Tone->Tone", "DTCS->", "->DTCS",
-                                "Tone->DTCS", "DTCS->Tone", "->Tone",
-                                "DTCS->DTCS"]
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->",
+            "->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "DTCS->DTCS",
+        ]
         rf.valid_skips = []
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_tones = self.TONES
@@ -617,9 +630,8 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = memmap.MemoryMapBytes(data)
         self.process_mmap()
 
@@ -633,9 +645,8 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def process_mmap(self):
         """Process the mem map into the mem object"""
@@ -703,17 +714,16 @@ class THUV88Radio(chirp_common.CloneModeRadio):
             mem.duplex = ""
             mem.offset = 0
         else:
-            mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) \
-                and "-" or "+"
+            mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
             mem.offset = abs(int(_mem.rxfreq) - int(_mem.txfreq)) * 10
 
         mem.name = ""
-        for i in range(6):   # 0 - 6
+        for i in range(6):  # 0 - 6
             mem.name += chr(_mem.name[i])
         for i in range(10):
             mem.name += chr(_name.extra_name[i])
 
-        mem.name = mem.name.rstrip()    # remove trailing spaces
+        mem.name = mem.name.rstrip()  # remove trailing spaces
 
         # ########## TONE ##########
 
@@ -726,7 +736,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         else:
             # DTSC
             txmode = "DTCS"
-            mem.dtcs = int(format(int(_mem.txtone), 'o'))
+            mem.dtcs = int(format(int(_mem.txtone), "o"))
 
         if _mem.rxtone > 2600:
             rxmode = ""
@@ -735,10 +745,9 @@ class THUV88Radio(chirp_common.CloneModeRadio):
             mem.ctone = int(_mem.rxtone) / 10.0
         else:
             rxmode = "DTCS"
-            mem.rx_dtcs = int(format(int(_mem.rxtone), 'o'))
+            mem.rx_dtcs = int(format(int(_mem.rxtone), "o"))
 
-        mem.dtcs_polarity = ("N", "R")[_mem.encodeDSCI] + (
-                             "N", "R")[_mem.decodeDSCI]
+        mem.dtcs_polarity = ("N", "R")[_mem.encodeDSCI] + ("N", "R")[_mem.decodeDSCI]
 
         mem.tmode = ""
         if txmode == "Tone" and not rxmode:
@@ -756,41 +765,45 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         mem.mode = self.MODES[_mem.wide]
         mem.power = POWER_LEVELS[int(_mem.power)]
 
-        rs = RadioSettingValueList(B_LOCK_LIST,
-                                   current_index=min(_mem.b_lock, 0x02))
+        rs = RadioSettingValueList(B_LOCK_LIST, current_index=min(_mem.b_lock, 0x02))
         b_lock = RadioSetting("b_lock", "B_Lock", rs)
         mem.extra.append(b_lock)
 
-        step = RadioSetting("step", "Step",
-                            RadioSettingValueList(LIST_STEPS,
-                                                  current_index=_mem.step))
+        step = RadioSetting(
+            "step", "Step", RadioSettingValueList(LIST_STEPS, current_index=_mem.step)
+        )
         mem.extra.append(step)
 
         scramble_value = _mem.scramble
         if self.MODEL == "RA89":
             if scramble_value >= 2:
                 scramble_value = 0
-            rs = RadioSetting("scramble", "Scramble",
-                              RadioSettingValueBoolean(_mem.scramble))
+            rs = RadioSetting(
+                "scramble", "Scramble", RadioSettingValueBoolean(_mem.scramble)
+            )
             mem.extra.append(rs)
         else:
-            if scramble_value >= 8:     # Looks like OFF is 0x0f ** CONFIRM
+            if scramble_value >= 8:  # Looks like OFF is 0x0f ** CONFIRM
                 scramble_value = 0
             scramble = RadioSetting(
-                "scramble", "Scramble",
-                RadioSettingValueList(
-                    SCRAMBLE_LIST, current_index=scramble_value))
+                "scramble",
+                "Scramble",
+                RadioSettingValueList(SCRAMBLE_LIST, current_index=scramble_value),
+            )
             mem.extra.append(scramble)
 
-        optsig = RadioSetting("signal", "Optional signaling",
-                              RadioSettingValueList(
-                                  OPTSIG_LIST,
-                                  current_index=_mem.signal))
+        optsig = RadioSetting(
+            "signal",
+            "Optional signaling",
+            RadioSettingValueList(OPTSIG_LIST, current_index=_mem.signal),
+        )
         mem.extra.append(optsig)
 
-        rs = RadioSetting("pttid", "PTT ID",
-                          RadioSettingValueList(PTTID_LIST,
-                                                current_index=_mem.pttid))
+        rs = RadioSetting(
+            "pttid",
+            "PTT ID",
+            RadioSettingValueList(PTTID_LIST, current_index=_mem.pttid),
+        )
         mem.extra.append(rs)
 
         return mem
@@ -812,13 +825,13 @@ class THUV88Radio(chirp_common.CloneModeRadio):
 
         out_name = mem.name.ljust(16)
 
-        for i in range(6):   # 0 - 6
+        for i in range(6):  # 0 - 6
             _mem.name[i] = ord(out_name[i])
         for i in range(10):
-            _name.extra_name[i] = ord(out_name[i+6])
+            _name.extra_name[i] = ord(out_name[i + 6])
 
         if mem.name != "":
-            _mem.displayName = 1    # Name only displayed if this is set on
+            _mem.displayName = 1  # Name only displayed if this is set on
         else:
             _mem.displayName = 0
 
@@ -885,10 +898,8 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         # Menu 02 - TX Channel Select
         if self._hasLCD:
             options = ["Last Channel", "Main Channel"]
-            rx = RadioSettingValueList(
-                options, current_index=_settings.txChSelect)
-            rset = RadioSetting("basicsettings.txChSelect",
-                                "Priority Transmit", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.txChSelect)
+            rset = RadioSetting("basicsettings.txChSelect", "Priority Transmit", rx)
             basic.append(rset)
 
         # Menu 03 - VOX Level
@@ -905,29 +916,24 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         # Menu 06 - Dual Wait
         if self._hasLCD:
             rx = RadioSettingValueBoolean(_settings.dualWait)
-            rset = RadioSetting("basicsettings.dualWait",
-                                "Dual Wait/Standby", rx)
+            rset = RadioSetting("basicsettings.dualWait", "Dual Wait/Standby", rx)
             basic.append(rset)
 
         # Menu 07 - LED Mode
         if self._hasLCD:
             if self.MODEL == "RA89":
-                options = ["Off", "On", "5s", "10s", "15s", "20s", "25s",
-                           "30s"]
+                options = ["Off", "On", "5s", "10s", "15s", "20s", "25s", "30s"]
             else:
                 options = ["Off", "On", "Auto"]
-            rx = RadioSettingValueList(
-                options, current_index=_settings.ledMode)
-            rset = RadioSetting("basicsettings.ledMode",
-                                "LED Display Mode", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.ledMode)
+            rset = RadioSetting("basicsettings.ledMode", "LED Display Mode", rx)
             basic.append(rset)
 
         # Menu 08 - Light
         if self._hasLCD:
             options = ["%s" % x for x in range(1, 8)]
             rx = RadioSettingValueList(options, current_index=_settings.light)
-            rset = RadioSetting("basicsettings.light",
-                                "Background Light Color", rx)
+            rset = RadioSetting("basicsettings.light", "Background Light Color", rx)
             basic.append(rset)
 
         # Menu 09 - Beep
@@ -938,8 +944,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         # Menu 11 - TOT
         options = ["Off"] + ["%s seconds" % x for x in range(30, 300, 30)]
         rx = RadioSettingValueList(options, current_index=_settings.tot)
-        rset = RadioSetting("basicsettings.tot",
-                            "Transmission Time-out Timer", rx)
+        rset = RadioSetting("basicsettings.tot", "Transmission Time-out Timer", rx)
         basic.append(rset)
 
         # Menu 13 - VOX Switch
@@ -982,29 +987,24 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         # Menu 20 - Intro Screen
         if self._hasLCD:
             if self.MODEL == "RA89":
-                options = ["Off", "Voltage", "Character String",
-                           "Startup Logo"]
+                options = ["Off", "Voltage", "Character String", "Startup Logo"]
             else:
                 options = ["Off", "Voltage", "Character String"]
-            rx = RadioSettingValueList(
-                options, current_index=_settings.introScreen)
-            rset = RadioSetting("basicsettings.introScreen",
-                                "Intro Screen", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.introScreen)
+            rset = RadioSetting("basicsettings.introScreen", "Intro Screen", rx)
             basic.append(rset)
 
         # Menu 32 - Key Mode
         if self._hasLCD:
             options = ["ALL", "PTT", "KEY", "Key & Side Key"]
-            rx = RadioSettingValueList(
-                options, current_index=_settings.keyMode)
+            rx = RadioSettingValueList(options, current_index=_settings.keyMode)
             rset = RadioSetting("basicsettings.keyMode", "Key Lock Mode", rx)
             basic.append(rset)
 
         # Menu 33 - Display Mode
         if self._hasLCD:
-            options = ['Frequency', 'Channel #', 'Name']
-            rx = RadioSettingValueList(
-                options, current_index=_settings.disMode)
+            options = ["Frequency", "Channel #", "Name"]
+            rx = RadioSettingValueList(options, current_index=_settings.disMode)
             rset = RadioSetting("basicsettings.disMode", "Display Mode", rx)
             basic.append(rset)
 
@@ -1018,11 +1018,10 @@ class THUV88Radio(chirp_common.CloneModeRadio):
 
         # software only
         if self.MODEL in ["RA89", "P2", "P62"]:
-            options = ['Frequency', '120', '180', '240']
+            options = ["Frequency", "120", "180", "240"]
         else:
-            options = ['Off', 'Frequency']
-        rx = RadioSettingValueList(
-            options, current_index=_settings.endToneElim)
+            options = ["Off", "Frequency"]
+        rx = RadioSettingValueList(options, current_index=_settings.endToneElim)
         rset = RadioSetting("basicsettings.endToneElim", "End Tone Elim", rx)
         advanced.append(rset)
 
@@ -1050,43 +1049,51 @@ class THUV88Radio(chirp_common.CloneModeRadio):
 
         # software only
         if self._hasLCD:
-            rx = RadioSettingValueString(0, 16,
-                                         _char_to_name(_openradioname.name1))
+            rx = RadioSettingValueString(0, 16, _char_to_name(_openradioname.name1))
             rx.set_validate_callback(_name_validate)
             rset = RadioSetting("openradioname.name1", "Intro Line 1", rx)
 
             # On model others than RA89 store a truncated name1 into
             # basicsettings
             if self.MODEL != "RA89":
-                rset.set_apply_callback(_name_apply, _settings, "introScreen1",
-                                        _openradioname, "name1")
+                rset.set_apply_callback(
+                    _name_apply, _settings, "introScreen1", _openradioname, "name1"
+                )
 
             advanced.append(rset)
 
         # software only
         if self._hasLCD:
-            rx = RadioSettingValueString(0, 16,
-                                         _char_to_name(_openradioname.name2))
+            rx = RadioSettingValueString(0, 16, _char_to_name(_openradioname.name2))
             rx.set_validate_callback(_name_validate)
             rset = RadioSetting("openradioname.name2", "Intro Line 2", rx)
             advanced.append(rset)
 
         # software only
-        options = ['0.5S', '1.0S', '1.5S', '2.0S', '2.5S', '3.0S', '3.5S',
-                   '4.0S', '4.5S', '5.0S']
+        options = [
+            "0.5S",
+            "1.0S",
+            "1.5S",
+            "2.0S",
+            "2.5S",
+            "3.0S",
+            "3.5S",
+            "4.0S",
+            "4.5S",
+            "5.0S",
+        ]
         rx = RadioSettingValueList(options, current_index=_settings.voxDelay)
         rset = RadioSetting("basicsettings.voxDelay", "VOX Delay", rx)
         advanced.append(rset)
 
-        options = ['Unlocked', 'Unknown 1', 'Unknown 2', 'EU', 'US']
+        options = ["Unlocked", "Unknown 1", "Unknown 2", "EU", "US"]
         # extend option list with unknown description for values 5 - 15.
         for ix in range(len(options), _settings2.region + 1):
-            item_to_add = 'Unknown {region_code}'.format(region_code=ix)
+            item_to_add = "Unknown {region_code}".format(region_code=ix)
             options.append(item_to_add)
         # log unknown region codes greater than 4
         if _settings2.region > 4:
-            LOG.debug("Unknown region code: {value}".
-                      format(value=_settings2.region))
+            LOG.debug("Unknown region code: {value}".format(value=_settings2.region))
         rx = RadioSettingValueList(options, current_index=_settings2.region)
         rx.set_mutable(False)
         rset = RadioSetting("settings2.region", "Region", rx)
@@ -1094,38 +1101,52 @@ class THUV88Radio(chirp_common.CloneModeRadio):
 
         if self._hasSideKeys:
             if self.MODEL == "RA89":
-                options = ["None", "VOX", "Dual Wait",
-                           "Scan", "Moni", "1750 Tone",
-                           "Flashlight", "Power Level", "Alarm",
-                           "Noise Cancelaton", "Temp Monitor", "FM Radio",
-                           "Talk Around", "Frequency Reverse"]
+                options = [
+                    "None",
+                    "VOX",
+                    "Dual Wait",
+                    "Scan",
+                    "Moni",
+                    "1750 Tone",
+                    "Flashlight",
+                    "Power Level",
+                    "Alarm",
+                    "Noise Cancelaton",
+                    "Temp Monitor",
+                    "FM Radio",
+                    "Talk Around",
+                    "Frequency Reverse",
+                ]
             elif self.MODEL in ["P2", "P62"]:
-                options = ["None", "VOX", "ManDown Sw",
-                           "Scan", "Moni", "1750 Tone",
-                           "Power Level", "Alarm", "Noise Cancelaton",
-                           "Temp Monitor", "FM Radio", "Talk Around",
-                           "Frequency Reverse"]
-            rx = RadioSettingValueList(
-                options, current_index=_settings.sideKey1)
+                options = [
+                    "None",
+                    "VOX",
+                    "ManDown Sw",
+                    "Scan",
+                    "Moni",
+                    "1750 Tone",
+                    "Power Level",
+                    "Alarm",
+                    "Noise Cancelaton",
+                    "Temp Monitor",
+                    "FM Radio",
+                    "Talk Around",
+                    "Frequency Reverse",
+                ]
+            rx = RadioSettingValueList(options, current_index=_settings.sideKey1)
             rset = RadioSetting("basicsettings.sideKey1", "Side Key 1", rx)
             advanced.append(rset)
 
-            rx = RadioSettingValueList(options,
-                                       current_index=_settings.sideKey1_long)
-            rset = RadioSetting("basicsettings.sideKey1_long",
-                                "Side Key 1 Long", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.sideKey1_long)
+            rset = RadioSetting("basicsettings.sideKey1_long", "Side Key 1 Long", rx)
             advanced.append(rset)
 
-            rx = RadioSettingValueList(options,
-                                       current_index=_settings.sideKey2)
-            rset = RadioSetting("basicsettings.sideKey2",
-                                "Side Key 2", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.sideKey2)
+            rset = RadioSetting("basicsettings.sideKey2", "Side Key 2", rx)
             advanced.append(rset)
 
-            rx = RadioSettingValueList(options,
-                                       current_index=_settings.sideKey2_long)
-            rset = RadioSetting("basicsettings.sideKey2_long",
-                                "Side Key 2 Long", rx)
+            rx = RadioSettingValueList(options, current_index=_settings.sideKey2_long)
+            rset = RadioSetting("basicsettings.sideKey2_long", "Side Key 2 Long", rx)
             advanced.append(rset)
 
         if self._hasManDown:
@@ -1143,18 +1164,14 @@ class THUV88Radio(chirp_common.CloneModeRadio):
 
             # Toggle with [#] key
             options = ["Frequency", "Channel"]
-            rx = RadioSettingValueList(
-                options, current_index=_workmode.vfomrmode)
-            rset = RadioSetting("workmodesettings.vfomrmode",
-                                "VFO/MR Mode", rx)
+            rx = RadioSettingValueList(options, current_index=_workmode.vfomrmode)
+            rset = RadioSetting("workmodesettings.vfomrmode", "VFO/MR Mode", rx)
             workmode.append(rset)
 
             # Toggle with [#] key
             options = ["Frequency", "Channel"]
-            rx = RadioSettingValueList(
-                options, current_index=_workmode.vfomrmodeb)
-            rset = RadioSetting("workmodesettings.vfomrmodeb",
-                                "VFO/MR Mode B", rx)
+            rx = RadioSettingValueList(options, current_index=_workmode.vfomrmodeb)
+            rset = RadioSetting("workmodesettings.vfomrmodeb", "VFO/MR Mode B", rx)
             workmode.append(rset)
 
             # Toggle with [A/B] key
@@ -1175,7 +1192,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
         group.append(fmb)
 
         def myset_mask(setting, obj, atrb, nx):
-            if bool(setting.value):     # Enabled = 1
+            if bool(setting.value):  # Enabled = 1
                 vx = 1
             else:
                 vx = 0
@@ -1183,7 +1200,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
             return
 
         def myset_fmfrq(setting, obj, atrb, nx):
-            """ Callback to set xx.x FM freq in memory as xx.x * 100000"""
+            """Callback to set xx.x FM freq in memory as xx.x * 100000"""
             # in-valid even kHz freqs are allowed; to satisfy run_tests
             vx = float(str(setting.value))
             vx = int(vx * 100000)
@@ -1191,7 +1208,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
             return
 
         def myset_freq(setting, obj, atrb, mult):
-            """ Callback to set frequency by applying multiplier"""
+            """Callback to set frequency by applying multiplier"""
             value = int(float(str(setting.value)) * mult)
             setattr(obj, atrb, value)
             return
@@ -1218,7 +1235,7 @@ class THUV88Radio(chirp_common.CloneModeRadio):
                 val = 88.0
                 fmset = False
             else:
-                val = (float(int(val)) / 100000)
+                val = float(int(val)) / 100000
                 # get fmmap bit value: 1 = enabled
                 ndx = int(math.floor((j) / 8))
                 bv = j % 8
@@ -1226,19 +1243,19 @@ class THUV88Radio(chirp_common.CloneModeRadio):
                 vx = _fmap.fmset[ndx]
                 fmset = bool(vx & msk)
             rx = RadioSettingValueBoolean(fmset)
-            rset = RadioSetting("fmmap.fmset/%d" % j,
-                                "FM Preset %02d" % (j + 1), rx)
+            rset = RadioSetting("fmmap.fmset/%d" % j, "FM Preset %02d" % (j + 1), rx)
             rset.set_apply_callback(myset_mask, _fmap, "fmset", j)
             fmb.append(rset)
 
             rx = RadioSettingValueFloat(64.0, 108.0, val, 0.1, 1)
-            rset = RadioSetting("fm_stations/%d.rxfreq" % j,
-                                "    Preset %02d Freq" % (j + 1), rx)
+            rset = RadioSetting(
+                "fm_stations/%d.rxfreq" % j, "    Preset %02d Freq" % (j + 1), rx
+            )
             # This callback uses the array index
             rset.set_apply_callback(myset_fmfrq, _fmfrq, "rxfreq", j)
             fmb.append(rset)
 
-        return group       # END get_settings()
+        return group  # END get_settings()
 
     def set_settings(self, settings):
         _settings = self._memobj.basicsettings
@@ -1295,11 +1312,11 @@ class RA89(THUV88Radio):
 
     _hasSideKeys = True
 
-    _magic0 = b"\xFE\xFE\xEE\xEF\xE0" + b"UV99" + b"\xFD"
-    _magic2 = b"\xFE\xFE\xEE\xEF\xE2" + b"UV99" + b"\xFD"
-    _magic3 = b"\xFE\xFE\xEE\xEF\xE3" + b"UV99" + b"\xFD"
-    _magic5 = b"\xFE\xFE\xEE\xEF\xE5" + b"UV99" + b"\xFD"
-    _fingerprint = b"\xFE\xFE\xEF\xEE\xE1" + b"UV99"
+    _magic0 = b"\xfe\xfe\xee\xef\xe0" + b"UV99" + b"\xfd"
+    _magic2 = b"\xfe\xfe\xee\xef\xe2" + b"UV99" + b"\xfd"
+    _magic3 = b"\xfe\xfe\xee\xef\xe3" + b"UV99" + b"\xfd"
+    _magic5 = b"\xfe\xfe\xee\xef\xe5" + b"UV99" + b"\xfd"
+    _fingerprint = b"\xfe\xfe\xef\xee\xe1" + b"UV99"
 
     def process_mmap(self):
         """Process the mem map into the mem object"""
@@ -1312,11 +1329,11 @@ class QRZ1(THUV88Radio):
     VENDOR = "Explorer"
     MODEL = "QRZ-1"
 
-    _magic0 = b"\xFE\xFE\xEE\xEF\xE0" + b"UV78" + b"\xFD"
-    _magic2 = b"\xFE\xFE\xEE\xEF\xE2" + b"UV78" + b"\xFD"
-    _magic3 = b"\xFE\xFE\xEE\xEF\xE3" + b"UV78" + b"\xFD"
-    _magic5 = b"\xFE\xFE\xEE\xEF\xE5" + b"UV78" + b"\xFD"
-    _fingerprint = b"\xFE\xFE\xEF\xEE\xE1" + b"UV78"
+    _magic0 = b"\xfe\xfe\xee\xef\xe0" + b"UV78" + b"\xfd"
+    _magic2 = b"\xfe\xfe\xee\xef\xe2" + b"UV78" + b"\xfd"
+    _magic3 = b"\xfe\xfe\xee\xef\xe3" + b"UV78" + b"\xfd"
+    _magic5 = b"\xfe\xfe\xee\xef\xe5" + b"UV78" + b"\xfd"
+    _fingerprint = b"\xfe\xfe\xef\xee\xe1" + b"UV78"
 
 
 @directory.register
@@ -1328,11 +1345,11 @@ class P2(THUV88Radio):
     _hasManDown = True
     _hasLCD = False
 
-    _magic0 = b"\xFE\xFE\xEE\xEF\xE0" + b"UV29" + b"\xFD"
-    _magic2 = b"\xFE\xFE\xEE\xEF\xE2" + b"UV29" + b"\xFD"
-    _magic3 = b"\xFE\xFE\xEE\xEF\xE3" + b"UV29" + b"\xFD"
-    _magic5 = b"\xFE\xFE\xEE\xEF\xE5" + b"UV29" + b"\xFD"
-    _fingerprint = b"\xFE\xFE\xEF\xEE\xE1" + b"UV29"
+    _magic0 = b"\xfe\xfe\xee\xef\xe0" + b"UV29" + b"\xfd"
+    _magic2 = b"\xfe\xfe\xee\xef\xe2" + b"UV29" + b"\xfd"
+    _magic3 = b"\xfe\xfe\xee\xef\xe3" + b"UV29" + b"\xfd"
+    _magic5 = b"\xfe\xfe\xee\xef\xe5" + b"UV29" + b"\xfd"
+    _fingerprint = b"\xfe\xfe\xef\xee\xe1" + b"UV29"
 
     def process_mmap(self):
         """Process the mem map into the mem object"""
@@ -1349,11 +1366,12 @@ class P62(P2):
 @directory.register
 class THUV98Radio(THUV88Radio):
     """TYT UV98 Radio"""
+
     VENDOR = "TYT"
     MODEL = "TH-UV98"
 
-    _magic0 = b"\xFE\xFE\xEE\xEF\xE0" + b"UV98" + b"\xFD"
-    _magic2 = b"\xFE\xFE\xEE\xEF\xE2" + b"UV98" + b"\xFD"
-    _magic3 = b"\xFE\xFE\xEE\xEF\xE3" + b"UV98" + b"\xFD"
-    _magic5 = b"\xFE\xFE\xEE\xEF\xE5" + b"UV98" + b"\xFD"
-    _fingerprint = b"\xFE\xFE\xEF\xEE\xE1" + b"UV98"
+    _magic0 = b"\xfe\xfe\xee\xef\xe0" + b"UV98" + b"\xfd"
+    _magic2 = b"\xfe\xfe\xee\xef\xe2" + b"UV98" + b"\xfd"
+    _magic3 = b"\xfe\xfe\xee\xef\xe3" + b"UV98" + b"\xfd"
+    _magic5 = b"\xfe\xfe\xee\xef\xe5" + b"UV98" + b"\xfd"
+    _fingerprint = b"\xfe\xfe\xef\xee\xe1" + b"UV98"

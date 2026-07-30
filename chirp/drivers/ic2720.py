@@ -60,14 +60,17 @@ DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
 STEPS = [5.0, 10.0, 12.5, 15, 20, 25, 30, 50]
 MODES = ["FM", "AM"]
 DUPLEX = ["", "", "-", "+"]
-POWER_LEVELS_VHF = [chirp_common.PowerLevel("High", watts=50),
-                    chirp_common.PowerLevel("Low", watts=5),
-                    chirp_common.PowerLevel("Mid", watts=15)]
+POWER_LEVELS_VHF = [
+    chirp_common.PowerLevel("High", watts=50),
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=15),
+]
 
 
 @directory.register
 class IC2720Radio(icf.IcomCloneModeRadio):
     """Icom IC-2720"""
+
     VENDOR = "Icom"
     MODEL = "IC-2720H"
 
@@ -118,8 +121,8 @@ class IC2720Radio(icf.IcomCloneModeRadio):
         return repr(self._memobj.memory[number])
 
     def get_memory(self, number):
-        bitpos = (1 << (number % 8))
-        bytepos = (number / 8)
+        bitpos = 1 << (number % 8)
+        bytepos = number / 8
 
         _mem = self._memobj.memory[number]
         _skp = self._memobj.skips[bytepos]
@@ -150,8 +153,8 @@ class IC2720Radio(icf.IcomCloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << (mem.number % 8))
-        bytepos = (mem.number / 8)
+        bitpos = 1 << (mem.number % 8)
+        bytepos = mem.number / 8
 
         _mem = self._memobj.memory[mem.number]
         _skp = self._memobj.skips[bytepos]

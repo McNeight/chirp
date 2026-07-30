@@ -26,21 +26,20 @@ from chirp.wxui import memedit
 CONF = config.get()
 
 
-if platform.system() == 'Linux':
-    BANK_SET_VALUE = 'X'
+if platform.system() == "Linux":
+    BANK_SET_VALUE = "X"
 else:
-    BANK_SET_VALUE = '1'
+    BANK_SET_VALUE = "1"
 
 
 class ChirpBankToggleColumn(memedit.ChirpMemoryColumn):
     def __init__(self, bank, radio):
         self.bank = bank
-        super().__init__('bank-%s' % bank.get_index(), radio)
+        super().__init__("bank-%s" % bank.get_index(), radio)
 
     @property
     def label(self):
-        return '%s(%s)' % (self.bank.get_name(),
-                           self.bank.get_index())
+        return "%s(%s)" % (self.bank.get_name(), self.bank.get_index())
 
     def hidden_for(self, memory):
         return False
@@ -55,11 +54,11 @@ class ChirpBankToggleColumn(memedit.ChirpMemoryColumn):
 class ChirpBankIndexColumn(memedit.ChirpMemoryColumn):
     def __init__(self, model, radio):
         self.model = model
-        super().__init__('bank_index', radio)
+        super().__init__("bank_index", radio)
 
     @property
     def label(self):
-        return _('Index')
+        return _("Index")
 
     def get_editor(self):
         lower, upper = self.model.get_index_bounds()
@@ -78,10 +77,11 @@ class ChirpBankEdit(common.ChirpEditor):
 
         self._grid = memedit.ChirpMemoryGrid(self)
         self._grid.CreateGrid(
-            self._features.memory_bounds[1] - self._features.memory_bounds[0] +
-            1, len(self._col_defs))
+            self._features.memory_bounds[1] - self._features.memory_bounds[0] + 1,
+            len(self._col_defs),
+        )
         # GridSelectNone only available in >=4.2.0
-        if hasattr(wx.grid.Grid, 'GridSelectNone'):
+        if hasattr(wx.grid.Grid, "GridSelectNone"):
             self._grid.SetSelectionMode(wx.grid.Grid.GridSelectNone)
         self._grid.DisableDragRowSize()
         self._grid.SetFocus()
@@ -90,21 +90,27 @@ class ChirpBankEdit(common.ChirpEditor):
         sizer.Add(self._grid, proportion=1, flag=wx.EXPAND)
         self.SetSizer(sizer)
 
-        self._fixed_font = wx.Font(pointSize=10,
-                                   family=wx.FONTFAMILY_TELETYPE,
-                                   style=wx.FONTSTYLE_NORMAL,
-                                   weight=wx.FONTWEIGHT_NORMAL)
+        self._fixed_font = wx.Font(
+            pointSize=10,
+            family=wx.FONTFAMILY_TELETYPE,
+            style=wx.FONTSTYLE_NORMAL,
+            weight=wx.FONTWEIGHT_NORMAL,
+        )
         self._variable_font = self._grid.GetDefaultCellFont()
         self.update_font(False)
 
         for col, col_def in enumerate(self._col_defs):
             self._grid.SetColLabelValue(col, col_def.label)
             attr = wx.grid.GridCellAttr()
-            if platform.system() != 'Linux':
+            if platform.system() != "Linux":
                 attr.SetEditor(col_def.get_editor())
                 attr.SetRenderer(col_def.get_renderer())
-            attr.SetReadOnly(not (isinstance(col_def, ChirpBankToggleColumn) or
-                                  isinstance(col_def, ChirpBankIndexColumn)))
+            attr.SetReadOnly(
+                not (
+                    isinstance(col_def, ChirpBankToggleColumn)
+                    or isinstance(col_def, ChirpBankIndexColumn)
+                )
+            )
             attr.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
             self._grid.SetColAttr(col, attr)
 
@@ -113,12 +119,13 @@ class ChirpBankEdit(common.ChirpEditor):
         self._grid.Bind(wx.grid.EVT_GRID_CELL_CHANGING, self._cell_changing)
         self._grid.Bind(wx.grid.EVT_GRID_CELL_LEFT_CLICK, self._cell_changing)
         self._grid.Bind(wx.grid.EVT_GRID_LABEL_LEFT_DCLICK, self._label_click)
-        self._grid.GetGridColLabelWindow().Bind(wx.EVT_MOTION,
-                                                self._colheader_mouseover)
+        self._grid.GetGridColLabelWindow().Bind(
+            wx.EVT_MOTION, self._colheader_mouseover
+        )
 
     def update_font(self, refresh=True):
-        fixed = CONF.get_bool('font_fixed', 'state', False)
-        large = CONF.get_bool('font_large', 'state', False)
+        fixed = CONF.get_bool("font_fixed", "state", False)
+        large = CONF.get_bool("font_large", "state", False)
         if fixed:
             font = self._fixed_font
         else:
@@ -147,11 +154,10 @@ class ChirpBankEdit(common.ChirpEditor):
 
     def _setup_columns(self):
         defs = [
-            memedit.ChirpFrequencyColumn('freq', self._radio),
-            memedit.ChirpMemoryColumn('name', self._radio),
+            memedit.ChirpFrequencyColumn("freq", self._radio),
+            memedit.ChirpMemoryColumn("name", self._radio),
         ]
-        if isinstance(self._bankmodel,
-                      chirp_common.MappingModelIndexInterface):
+        if isinstance(self._bankmodel, chirp_common.MappingModelIndexInterface):
             defs.append(ChirpBankIndexColumn(self._bankmodel, self._radio))
 
         self._meta_cols = len(defs)
@@ -167,7 +173,7 @@ class ChirpBankEdit(common.ChirpEditor):
 
     def col2bank(self, col):
         if col < self._meta_cols:
-            raise RuntimeError('Error: column %i is not a bank' % col)
+            raise RuntimeError("Error: column %i is not a bank" % col)
         return col - self._meta_cols
 
     def bank2col(self, bank):
@@ -183,11 +189,11 @@ class ChirpBankEdit(common.ChirpEditor):
         x = event.GetX()
         y = event.GetY()
         col = self._grid.XToCol(x, y)
-        tip = ''
+        tip = ""
         if col >= self._meta_cols:
             bank = self._bankmodel.get_mappings()[self.col2bank(col)]
-            if hasattr(bank, 'set_name'):
-                tip = _('Double-click to change bank name')
+            if hasattr(bank, "set_name"):
+                tip = _("Double-click to change bank name")
         self._grid.GetGridColLabelWindow().SetToolTip(tip)
 
     def _label_click(self, event):
@@ -197,12 +203,13 @@ class ChirpBankEdit(common.ChirpEditor):
             # Row labels do not change
             return
         bank = self._bankmodel.get_mappings()[self.col2bank(col)]
-        if not hasattr(bank, 'set_name'):
+        if not hasattr(bank, "set_name"):
             return
-        d = wx.TextEntryDialog(self,
-                               _('Enter a new name for bank %s:') % (
-                                   bank.get_index()),
-                               _('Rename bank'))
+        d = wx.TextEntryDialog(
+            self,
+            _("Enter a new name for bank %s:") % (bank.get_index()),
+            _("Rename bank"),
+        )
         d.SetValue(bank.get_name())
         if d.ShowModal() == wx.ID_OK:
             self.change_bank_name(col, bank, d.GetValue())
@@ -226,24 +233,24 @@ class ChirpBankEdit(common.ChirpEditor):
         # if activating a checkbox with spacebar, treat it like a click
         elif isinstance(self._col_defs[col], ChirpBankToggleColumn):
             gridCellValue = self._grid.GetCellValue(row, col)
-            self._change_memory_mapping(self.row2mem(row),
-                                        self.col2bank(col),
-                                        gridCellValue != BANK_SET_VALUE)
+            self._change_memory_mapping(
+                self.row2mem(row), self.col2bank(col), gridCellValue != BANK_SET_VALUE
+            )
         else:
             event.Skip()
 
     def _change_memory_index(self, number, index):
         for i, bank_index in enumerate(self._bank_index_order):
-            if self._grid.GetCellValue(self.mem2row(number),
-                                       self.bank2col(i)) == BANK_SET_VALUE:
+            if (
+                self._grid.GetCellValue(self.mem2row(number), self.bank2col(i))
+                == BANK_SET_VALUE
+            ):
                 member_bank = self._bank_indexes[bank_index]
                 break
         else:
-            raise Exception(_('Memory must be in a bank to be edited'))
+            raise Exception(_("Memory must be in a bank to be edited"))
 
-        self._bankmodel.set_memory_index(self._memory_cache[number],
-                                         member_bank,
-                                         index)
+        self._bankmodel.set_memory_index(self._memory_cache[number], member_bank, index)
 
         wx.PostEvent(self, common.EditorChanged(self.GetId()))
 
@@ -262,37 +269,37 @@ class ChirpBankEdit(common.ChirpEditor):
     @common.error_proof()
     def _refresh_memory(self, mem):
         self._memory_cache[mem.number] = mem
-        self._grid.SetRowLabelValue(self.mem2row(mem.number),
-                                    '%i' % mem.number)
+        self._grid.SetRowLabelValue(self.mem2row(mem.number), "%i" % mem.number)
 
         bank_index = None
-        member = [bank.get_index()
-                  for bank in self._bankmodel.get_memory_mappings(mem)]
+        member = [bank.get_index() for bank in self._bankmodel.get_memory_mappings(mem)]
         for i, bank in enumerate(self._bank_indexes.values()):
             present = bank.get_index() in member and not mem.empty
-            self._grid.SetCellValue(self.mem2row(mem.number),
-                                    self.bank2col(i),
-                                    present and BANK_SET_VALUE or '')
-            if present and isinstance(self._bankmodel,
-                                      chirp_common.MappingModelIndexInterface):
+            self._grid.SetCellValue(
+                self.mem2row(mem.number),
+                self.bank2col(i),
+                present and BANK_SET_VALUE or "",
+            )
+            if present and isinstance(
+                self._bankmodel, chirp_common.MappingModelIndexInterface
+            ):
                 # NOTE: if this is somehow an indexed many-to-one model,
                 # we will only get the last index!
                 bank_index = self._bankmodel.get_memory_index(mem, bank)
 
         for i in range(0, self._meta_cols):
             meta_col = self._col_defs[i]
-            if meta_col.name == 'freq':
-                freq = '' if mem.empty else chirp_common.format_freq(mem.freq)
+            if meta_col.name == "freq":
+                freq = "" if mem.empty else chirp_common.format_freq(mem.freq)
+                self._grid.SetCellValue(self.mem2row(mem.number), i, freq)
+            elif meta_col.name == "name":
                 self._grid.SetCellValue(
-                    self.mem2row(mem.number), i, freq)
-            elif meta_col.name == 'name':
+                    self.mem2row(mem.number), i, "" if mem.empty else mem.name
+                )
+            elif meta_col.name == "bank_index" and bank_index is not None:
                 self._grid.SetCellValue(
-                    self.mem2row(mem.number),
-                    i, '' if mem.empty else mem.name)
-            elif meta_col.name == 'bank_index' and bank_index is not None:
-                self._grid.SetCellValue(
-                    self.mem2row(mem.number),
-                    i, '' if mem.empty else '%i' % bank_index)
+                    self.mem2row(mem.number), i, "" if mem.empty else "%i" % bank_index
+                )
 
 
 class ChirpBankEditSync(ChirpBankEdit, common.ChirpSyncEditor):

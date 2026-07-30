@@ -233,7 +233,7 @@ DUPLEX_NEGSPLIT = 0x02
 
 VALID_CHARS = chirp_common.CHARSET_UPPER_NUMERIC + "-/"
 DUPLEX = ["", "+", "-"]
-TUNING_STEPS = [5., 6.25, 10., 12.5, 15., 20., 25., 30., 50., 100.]
+TUNING_STEPS = [5.0, 6.25, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
 
 
 def _enter_programming_mode_download(radio):
@@ -316,14 +316,14 @@ def _enter_programming_mode_upload(radio):
         raise errors.RadioError("Radio refused to enter programming mode")
 
     try:
-        serial.write(b"\x52\x1F\x05\x01")
+        serial.write(b"\x52\x1f\x05\x01")
         if radio._echo:
             serial.read(4)  # Chew the echo
         ident = serial.read(5)
     except Exception:
         raise errors.RadioError("Error communicating with radio")
 
-    if ident != b"\x57\x1F\x05\x01\xA5":
+    if ident != b"\x57\x1f\x05\x01\xa5":
         LOG.debug("Incorrect model ID, got this:\n\n" + util.hexprint(ident))
         raise errors.RadioError("Radio identification failed.")
 
@@ -352,7 +352,7 @@ def _exit_programming_mode(radio):
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -375,8 +375,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -388,8 +388,7 @@ def _write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -437,18 +436,20 @@ def do_upload(radio):
 
 class RA87StyleRadio(chirp_common.CloneModeRadio):
     """Retevis RA87"""
+
     VENDOR = "Retevis"
     BAUD_RATE = 9600
     BLOCK_SIZE = 0x40
-    CMD_EXIT = b"EZ" + b"\xA5" + b"2#E" + b"\xF2"
+    CMD_EXIT = b"EZ" + b"\xa5" + b"2#E" + b"\xf2"
     NAME_LENGTH = 6
 
     VALID_BANDS = [(400000000, 480000000)]
 
     _magic = b"PROGRAM"
-    _fingerprint = [b"\xFF\xFF\xFF\xFF\xFF\xA5\x2C\xFF",
-                    b"\xFF\xFF\xFF\xFF\xFF\xA5\x26\xFF",
-                    ]
+    _fingerprint = [
+        b"\xff\xff\xff\xff\xff\xa5\x2c\xff",
+        b"\xff\xff\xff\xff\xff\xa5\x26\xff",
+    ]
     _upper = 99
     _gmrs = True
     _echo = True
@@ -479,7 +480,8 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
             "Tone->DTCS",
             "DTCS->Tone",
             "->Tone",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_duplexes = DUPLEX + ["split"]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_modes = ["NFM", "FM"]  # 12.5 kHz, 25 kHz.
@@ -503,8 +505,8 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('General failure')
-            raise errors.RadioError('Failed to download from radio: %s' % e)
+            LOG.exception("General failure")
+            raise errors.RadioError("Failed to download from radio: %s" % e)
         finally:
             _exit_programming_mode(self)
         self.process_mmap()
@@ -515,8 +517,8 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('General failure')
-            raise errors.RadioError('Failed to upload to radio: %s' % e)
+            LOG.exception("General failure")
+            raise errors.RadioError("Failed to upload to radio: %s" % e)
         finally:
             _exit_programming_mode(self)
 
@@ -536,7 +538,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
 
         mem.number = number
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -552,17 +554,16 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
             mem.duplex = "split"
             mem.offset = int(_mem.txfreq) * 10
         elif _mem.duplex == DUPLEX_POSSPLIT:
-            mem.duplex = '+'
+            mem.duplex = "+"
             mem.offset = int(_mem.offset) * 1000
         elif _mem.duplex == DUPLEX_NEGSPLIT:
-            mem.duplex = '-'
+            mem.duplex = "-"
             mem.offset = int(_mem.offset) * 1000
         elif _mem.duplex == DUPLEX_NOSPLIT:
-            mem.duplex = ''
+            mem.duplex = ""
             mem.offset = 0
         else:
-            LOG.error('%s: get_mem: unhandled duplex: %02x' %
-                      (mem.name, _mem.duplex))
+            LOG.error("%s: get_mem: unhandled duplex: %02x" % (mem.name, _mem.duplex))
 
         mem.tuning_step = TUNING_STEPS[_mem.step]
 
@@ -570,7 +571,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
 
         mem.skip = _mem.skip and "S" or ""
 
-        mem.name = str(_mem.name).strip("\xFF")
+        mem.name = str(_mem.name).strip("\xff")
 
         dtcs_pol = ["N", "N"]
 
@@ -628,8 +629,9 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         elif _mem.txpower == TXPOWER_LOW:
             mem.power = _levels[0]
         else:
-            LOG.error('%s: get_mem: unhandled power level: 0x%02x' %
-                      (mem.name, _mem.txpower))
+            LOG.error(
+                "%s: get_mem: unhandled power level: 0x%02x" % (mem.name, _mem.txpower)
+            )
 
         mem.extra = RadioSettingGroup("Extra", "extra")
         rs = RadioSettingValueBoolean(_mem.beatshift)
@@ -640,8 +642,16 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         rset = RadioSetting("compand", "Compand", rs)
         mem.extra.append(rset)
 
-        options = ['Off', 'Freq 1', 'Freq 2', 'Freq 3',
-                   'Freq 4', 'Freq 5', 'Freq 6', 'User']
+        options = [
+            "Off",
+            "Freq 1",
+            "Freq 2",
+            "Freq 3",
+            "Freq 4",
+            "Freq 5",
+            "Freq 6",
+            "User",
+        ]
         rs = RadioSettingValueList(options, current_index=_mem.scramble)
         rset = RadioSetting("scramble", "Scramble", rs)
         mem.extra.append(rset)
@@ -661,27 +671,26 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         _mem = self._memory_obj()[mem.number]
 
         if mem.empty:
-            _mem.set_raw(b"\xFF" * 31 + b"\x80")
+            _mem.set_raw(b"\xff" * 31 + b"\x80")
 
             return
 
-        _mem.set_raw(b"\x00" * 25 + b"\xFF" * 6 + b"\x00")
+        _mem.set_raw(b"\x00" * 25 + b"\xff" * 6 + b"\x00")
 
         _mem.rxfreq = mem.freq
 
-        if mem.duplex == 'split':
+        if mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
-        elif mem.duplex == '+':
+        elif mem.duplex == "+":
             _mem.duplex = DUPLEX_POSSPLIT
             _mem.offset = mem.offset / 1000
-        elif mem.duplex == '-':
+        elif mem.duplex == "-":
             _mem.duplex = DUPLEX_NEGSPLIT
             _mem.offset = mem.offset / 1000
-        elif mem.duplex == '':
+        elif mem.duplex == "":
             _mem.duplex = DUPLEX_NOSPLIT
         else:
-            LOG.error('%s: set_mem: unhandled duplex: %s' %
-                      (mem.name, mem.duplex))
+            LOG.error("%s: set_mem: unhandled duplex: %s" % (mem.name, mem.duplex))
 
         rxmode = ""
         txmode = ""
@@ -732,7 +741,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
             _mem.txtone = self._set_dcs(mem.dtcs)
 
         # name TAG of the channel
-        _mem.name = mem.name.rstrip().ljust(6, "\xFF")
+        _mem.name = mem.name.rstrip().ljust(6, "\xff")
 
         _levels = self.POWER_LEVELS
         if mem.power is None:
@@ -748,10 +757,9 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         elif mem.power == _levels[4]:
             _mem.txpower = TXPOWER_HIGH
         else:
-            LOG.error('%s: set_mem: unhandled power level: %s' %
-                      (mem.name, mem.power))
+            LOG.error("%s: set_mem: unhandled power level: %s" % (mem.name, mem.power))
 
-        _mem.narrow = 'N' in mem.mode
+        _mem.narrow = "N" in mem.mode
         _mem.skip = mem.skip == "S"
         _mem.step = TUNING_STEPS.index(mem.tuning_step)
 
@@ -801,8 +809,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # menu 12 - SCAN
-        options = ["Time Operated (TO)", "Carrier Operated (CO)",
-                   "SEarch (SE)"]
+        options = ["Time Operated (TO)", "Carrier Operated (CO)", "SEarch (SE)"]
         rs = RadioSettingValueList(options, current_index=_settings.scan)
         rset = RadioSetting("scan", "Scan Resume Method", rs)
         rset.set_doc("Menu 12")
@@ -865,7 +872,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
             return filtered
 
         # menu 22 - P.ON.MSG
-        name = str(_settings2.ponmsg).strip("\xFF")
+        name = str(_settings2.ponmsg).strip("\xff")
         rs = RadioSettingValueString(0, 6, _filter(name))
         rs.set_charset(VALID_CHARS)
         rset = RadioSetting("settings2.ponmsg", "Power On Message", rs)
@@ -920,22 +927,39 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         rset = RadioSetting("settings2.keyl", "Radio Key Lock", rs)
         basic.append(rset)
 
-        name = str(_settings2.lower).strip("\xFF")
+        name = str(_settings2.lower).strip("\xff")
         rs = RadioSettingValueString(0, 4, _filter(name))
         rs.set_mutable(False)
         rset = RadioSetting("settings2.lower", "Lower Band Limit", rs)
         basic.append(rset)
 
-        name = str(_settings2.upper).strip("\xFF")
+        name = str(_settings2.upper).strip("\xff")
         rs = RadioSettingValueString(0, 4, _filter(name))
         rs.set_mutable(False)
         rset = RadioSetting("settings2.upper", "Upper Band Limit", rs)
         basic.append(rset)
 
         # PF Key Options
-        options = ["MONI", "ENTER", "1750", "VFO", "MR", "CALL", "MHZ", "REV",
-                   "SQL", "M-V", "M.IN", "C IN", "MENU", "SHIFT", "LOW",
-                   "CONTR", "LOCK", "STEP"]
+        options = [
+            "MONI",
+            "ENTER",
+            "1750",
+            "VFO",
+            "MR",
+            "CALL",
+            "MHZ",
+            "REV",
+            "SQL",
+            "M-V",
+            "M.IN",
+            "C IN",
+            "MENU",
+            "SHIFT",
+            "LOW",
+            "CONTR",
+            "LOCK",
+            "STEP",
+        ]
         # menu 39: - PF 1
         rs = RadioSettingValueList(options, current_index=_settings.pf1)
         rset = RadioSetting("pf1", "PF Key 1", rs)
@@ -1040,10 +1064,42 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         lcd.append(rset)
 
         # DTMF
-        LIST_DTMF_DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7",
-                            "8", "9", "A", "B", "C", "D", "*", "#"]
-        LIST_DTMF_VALUES = [0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
-                            0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46]
+        LIST_DTMF_DIGITS = [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "A",
+            "B",
+            "C",
+            "D",
+            "*",
+            "#",
+        ]
+        LIST_DTMF_VALUES = [
+            0x30,
+            0x31,
+            0x32,
+            0x33,
+            0x34,
+            0x35,
+            0x36,
+            0x37,
+            0x38,
+            0x39,
+            0x41,
+            0x42,
+            0x43,
+            0x44,
+            0x45,
+            0x46,
+        ]
         CHARSET_DTMF_DIGITS = "0123456789AaBbCcDd#*"
         CHARSET_NUMERIC = "0123456789"
 
@@ -1066,21 +1122,13 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         rset = RadioSetting("pttid", "When to send PTT ID", rs)
         dtmf_enc.append(rset)
 
-        tmp = (str(_dtmfe.bot)
-               .strip("\xFF")
-               .replace('E', '*')
-               .replace('F', '#')
-               )
+        tmp = str(_dtmfe.bot).strip("\xff").replace("E", "*").replace("F", "#")
         rs = RadioSettingValueString(0, 16, tmp, False, CHARSET_DTMF_DIGITS)
         rset = RadioSetting("dtmfe.bot", "BOT PTT-ID", rs)
         rset.set_apply_callback(apply_dmtf_frame, _dtmfe.bot, 16)
         dtmf_enc.append(rset)
 
-        tmp = (str(_dtmfe.eot)
-               .strip("\xFF")
-               .replace('E', '*')
-               .replace('F', '#')
-               )
+        tmp = str(_dtmfe.eot).strip("\xff").replace("E", "*").replace("F", "#")
         rs = RadioSettingValueString(0, 16, tmp, False, CHARSET_DTMF_DIGITS)
         rset = RadioSetting("dtmfe.eot", "EOT PTT-ID", rs)
         rset.set_apply_callback(apply_dmtf_frame, _dtmfe.eot, 16)
@@ -1118,9 +1166,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         dtmf_enc.append(rset)
 
         # DTMF - Decode
-        tmp = (str(_dtmfd.idcode)
-               .strip("\xFF")
-               )
+        tmp = str(_dtmfd.idcode).strip("\xff")
         rs = RadioSettingValueString(0, 16, tmp, False, CHARSET_NUMERIC)
         rset = RadioSetting("dtmfd.idcode", "ID Code", rs)
         rset.set_apply_callback(apply_dmtf_frame, _dtmfd.idcode, 10)
@@ -1143,9 +1189,7 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         rset = RadioSetting("dani", "ANI", rs)
         dtmf_dec.append(rset)
 
-        tmp = (str(_dtmfd.stuncode)
-               .strip("\xFF")
-               )
+        tmp = str(_dtmfd.stuncode).strip("\xff")
         rs = RadioSettingValueString(0, 16, tmp, False, CHARSET_NUMERIC)
         rset = RadioSetting("dtmfd.stuncode", "Stun Code", rs)
         rset.set_apply_callback(apply_dmtf_frame, _dtmfd.stuncode, 10)
@@ -1161,15 +1205,11 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
         codes = self._memobj.dtmf_codes
         i = 1
         for dtmfcode in codes:
-            tmp = (str(dtmfcode.code)
-                   .strip("\xFF")
-                   .replace('E', '*')
-                   .replace('F', '#')
-                   )
-            rs = RadioSettingValueString(0, 16, tmp, False,
-                                         CHARSET_DTMF_DIGITS)
-            rset = RadioSetting("dtmf_code_" + str(i) + "_code",
-                                "Code " + str(i-1), rs)
+            tmp = str(dtmfcode.code).strip("\xff").replace("E", "*").replace("F", "#")
+            rs = RadioSettingValueString(0, 16, tmp, False, CHARSET_DTMF_DIGITS)
+            rset = RadioSetting(
+                "dtmf_code_" + str(i) + "_code", "Code " + str(i - 1), rs
+            )
             rset.set_apply_callback(apply_dmtf_frame, dtmfcode.code, 16)
             dtmf_autodial.append(rset)
             i = i + 1
@@ -1197,14 +1237,23 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
                         LOG.debug("Using apply callback")
                         element.run_apply_callback()
                     elif setting == "line":
-                        setattr(obj, setting, str(element.value).rstrip(
-                            " ").ljust(6, "\xFF"))
+                        setattr(
+                            obj,
+                            setting,
+                            str(element.value).rstrip(" ").ljust(6, "\xff"),
+                        )
                     elif setting == "bot":
-                        setattr(obj, setting, str(element.value).rstrip(
-                            " ").ljust(16, "\xFF"))
+                        setattr(
+                            obj,
+                            setting,
+                            str(element.value).rstrip(" ").ljust(16, "\xff"),
+                        )
                     elif setting == "eot":
-                        setattr(obj, setting, str(element.value).rstrip(
-                            " ").ljust(16, "\xFF"))
+                        setattr(
+                            obj,
+                            setting,
+                            str(element.value).rstrip(" ").ljust(16, "\xff"),
+                        )
                     elif setting == "wfclr":
                         setattr(obj, setting, int(element.value) - 1)
                     elif setting == "rxclr":
@@ -1230,22 +1279,27 @@ class RA87StyleRadio(chirp_common.CloneModeRadio):
 @directory.register
 class RA87Radio(RA87StyleRadio):
     """Retevis RA87"""
+
     MODEL = "RA87"
 
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=5.00),
-                    chirp_common.PowerLevel("Low2", watts=10.00),
-                    chirp_common.PowerLevel("Low3", watts=15.00),
-                    chirp_common.PowerLevel("Mid", watts=20.00),
-                    chirp_common.PowerLevel("High", watts=40.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=5.00),
+        chirp_common.PowerLevel("Low2", watts=10.00),
+        chirp_common.PowerLevel("Low3", watts=15.00),
+        chirp_common.PowerLevel("Mid", watts=20.00),
+        chirp_common.PowerLevel("High", watts=40.00),
+    ]
 
 
 class RA87RadioLeft(RA87Radio):
     """Retevis RA87 Left VFO subdevice"""
+
     VARIANT = "Left"
     _vfo = "left"
 
 
 class RA87RadioRight(RA87Radio):
     """Retevis RA87 Right VFO subdevice"""
+
     VARIANT = "Right"
     _vfo = "right"

@@ -19,9 +19,14 @@ import logging
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -92,8 +97,10 @@ CMD_ALT_ACK = b"\x53"
 CMD_STX = b"\x02"
 CMD_ENQ = b"\x05"
 
-POWER_LEVELS = [chirp_common.PowerLevel("Low",  watts=0.50),
-                chirp_common.PowerLevel("High", watts=3.00)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=0.50),
+    chirp_common.PowerLevel("High", watts=3.00),
+]
 TIMEOUT_LIST = ["Off"] + ["%s seconds" % x for x in range(30, 330, 30)]
 SCANMODE_LIST = ["Carrier", "Timer"]
 VOICE_LIST = ["Off", "Chinese", "English"]
@@ -104,20 +111,49 @@ MODE_LIST = ["FM", "NFM"]
 TONES = chirp_common.TONES
 DTCS_CODES = chirp_common.DTCS_CODES
 
-FRS16_FREQS = [462562500, 462587500, 462612500, 462637500,
-               462662500, 462625000, 462725000, 462687500,
-               462712500, 462550000, 462575000, 462600000,
-               462650000, 462675000, 462700000, 462725000]
+FRS16_FREQS = [
+    462562500,
+    462587500,
+    462612500,
+    462637500,
+    462662500,
+    462625000,
+    462725000,
+    462687500,
+    462712500,
+    462550000,
+    462575000,
+    462600000,
+    462650000,
+    462675000,
+    462700000,
+    462725000,
+]
 
-PMR_FREQS1 = [446006250, 446018750, 446031250, 446043750, 446056250,
-              446068750, 446081250, 446093750]
-PMR_FREQS2 = [446106250, 446118750, 446131250, 446143750, 446156250,
-              446168750, 446181250, 446193750]
+PMR_FREQS1 = [
+    446006250,
+    446018750,
+    446031250,
+    446043750,
+    446056250,
+    446068750,
+    446081250,
+    446093750,
+]
+PMR_FREQS2 = [
+    446106250,
+    446118750,
+    446131250,
+    446143750,
+    446156250,
+    446168750,
+    446181250,
+    446193750,
+]
 
 PMR_FREQS = PMR_FREQS1 + PMR_FREQS2
 
-VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-    "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
+VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "`{|}!\"#$%&'()*+,-./:;<=>?@[]^_"
 
 
 def _r2_enter_programming_mode(radio):
@@ -128,7 +164,7 @@ def _r2_enter_programming_mode(radio):
     serial.write(CMD_STX)
     for i in range(0, 5):
         for j in range(0, len(magic)):
-            serial.write(magic[j:j + 1])
+            serial.write(magic[j : j + 1])
         ack = serial.read(1)
         if ack == CMD_ACK:
             exito = True
@@ -177,7 +213,7 @@ def _r2_enter_programming_mode(radio):
         raise errors.RadioError("Error communicating with radio")
 
     # we will only read if no password is set
-    if ack != b"\xFF\xFF\xFF\xFF\xFF\xFF":
+    if ack != b"\xff\xff\xff\xff\xff\xff":
         _r2_exit_programming_mode(radio)
         raise errors.RadioError("Radio is password protected")
     try:
@@ -210,14 +246,14 @@ def _r2_exit_programming_mode(radio):
 def _r2_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
     try:
         for j in range(0, len(cmd)):
             time.sleep(0.005)
-            serial.write(cmd[j:j + 1])
+            serial.write(cmd[j : j + 1])
 
         response = serial.read(4 + block_size)
         if response[:4] != expectedresponse:
@@ -243,23 +279,22 @@ def _r2_read_block(radio, block_addr, block_size):
 def _r2_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing block %04x..." % (block_addr))
     LOG.debug(util.hexprint(cmd + data))
 
     try:
         for j in range(0, len(cmd)):
-            serial.write(cmd[j:j + 1])
+            serial.write(cmd[j : j + 1])
         for j in range(0, len(data)):
-            serial.write(data[j:j + 1])
+            serial.write(data[j : j + 1])
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
         _r2_exit_programming_mode(radio)
-        raise errors.RadioError("Failed to send block "
-                                "%04x to radio" % block_addr)
+        raise errors.RadioError("Failed to send block " "%04x to radio" % block_addr)
 
 
 def do_download(radio):
@@ -310,15 +345,13 @@ def do_upload(radio):
 @directory.register
 class RadioddityR2(chirp_common.CloneModeRadio):
     """Radioddity R2"""
+
     VENDOR = "Radioddity"
     MODEL = "R2"
     BAUD_RATE = 9600
 
     # definitions on how to read StartAddr EndAddr BlockZize
-    _ranges = [
-               (0x0000, 0x01F8, 0x08),
-               (0x01F8, 0x03F0, 0x08)
-              ]
+    _ranges = [(0x0000, 0x01F8, 0x08), (0x01F8, 0x03F0, 0x08)]
     _memsize = 0x03F0
     # never read more than 8 bytes at once
     _block_size = 0x08
@@ -327,7 +360,7 @@ class RadioddityR2(chirp_common.CloneModeRadio):
     # maximum 16 channels
     _upper = 16
     _mem_params = {
-        'memnum': _upper,  # number of channels
+        "memnum": _upper,  # number of channels
     }
 
     _frs16 = _pmr = False
@@ -360,7 +393,8 @@ class RadioddityR2(chirp_common.CloneModeRadio):
             "Tone->Tone",
             "->DTCS",
             "DTCS->",
-            "DTCS->DTCS"]
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_skips = ["", "S"]
         rf.valid_bands = [self._range]
@@ -383,9 +417,8 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -398,9 +431,8 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
@@ -408,40 +440,40 @@ class RadioddityR2(chirp_common.CloneModeRadio):
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
-            return '', None, None
+        if val.get_raw(asbytes=False) == "\xff\xff":
+            return "", None, None
 
         val = int(val)
 
         if val >= 12000:
             a = val - 12000
-            return 'DTCS', a, 'R'
+            return "DTCS", a, "R"
 
         elif val >= 8000:
             a = val - 8000
-            return 'DTCS', a, 'N'
+            return "DTCS", a, "N"
 
         else:
             a = val / 10.0
-            return 'Tone', a, None
+            return "Tone", a, None
 
     def encode_tone(self, memval, mode, value, pol):
         """Parse the tone data to encode from UI to mem"""
-        if mode == '':
+        if mode == "":
             memval[0].set_raw(0xFF)
             memval[1].set_raw(0xFF)
-        elif mode == 'Tone':
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
-            flag = 0x80 if pol == 'N' else 0xC0
+        elif mode == "DTCS":
+            flag = 0x80 if pol == "N" else 0xC0
             memval.set_value(value)
             memval[1].set_bits(flag)
         else:
             raise Exception("Internal error: invalid mode `%s'" % mode)
 
     def get_memory(self, number):
-        bitpos = (1 << ((number - 1) % 8))
-        bytepos = ((number - 1) / 8)
+        bitpos = 1 << ((number - 1) % 8)
+        bytepos = (number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -458,7 +490,7 @@ class RadioddityR2(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rx_freq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.rx_freq.get_raw(asbytes=False) == "\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -498,19 +530,21 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         # extra settings are unfortunately inverted
         mem.extra = RadioSettingGroup("extra", "Extra")
 
-        bclo = RadioSetting("bclo", "Busy Lockout",
-                            RadioSettingValueBoolean(not bool(_mem.bclo)))
+        bclo = RadioSetting(
+            "bclo", "Busy Lockout", RadioSettingValueBoolean(not bool(_mem.bclo))
+        )
         bclo.set_doc("Busy Lockout")
         mem.extra.append(bclo)
 
-        scramb = RadioSetting("scramb", "Scramble",
-                              RadioSettingValueBoolean(not bool(_mem.scramb)))
+        scramb = RadioSetting(
+            "scramb", "Scramble", RadioSettingValueBoolean(not bool(_mem.scramb))
+        )
         scramb.set_doc("Scramble Audio Signal")
         mem.extra.append(scramb)
 
-        compand = RadioSetting("compand", "Compander",
-                               RadioSettingValueBoolean(
-                                   not bool(_mem.compand)))
+        compand = RadioSetting(
+            "compand", "Compander", RadioSettingValueBoolean(not bool(_mem.compand))
+        )
         compand.set_doc("Compress Audio for TX")
         mem.extra.append(compand)
 
@@ -521,7 +555,7 @@ class RadioddityR2(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 16:
                     FRS_FREQ = FRS16_FREQS[mem.number - 1]
                     mem.freq = FRS_FREQ
-                mem.duplex == ''
+                mem.duplex == ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 immutable = ["empty", "freq", "duplex", "offset", "mode"]
@@ -530,20 +564,19 @@ class RadioddityR2(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 16:
                     PMR_FREQ = PMR_FREQS[mem.number - 1]
                     mem.freq = PMR_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 mem.power = POWER_LEVELS[0]
-                immutable = ["empty", "freq", "duplex", "offset", "mode",
-                             "power"]
+                immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
 
         mem.immutable = immutable
 
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << ((mem.number - 1) % 8))
-        bytepos = ((mem.number - 1) / 8)
+        bitpos = 1 << ((mem.number - 1) % 8)
+        bytepos = (mem.number - 1) / 8
         LOG.debug("bitpos %s" % bitpos)
         LOG.debug("bytepos %s" % bytepos)
 
@@ -553,14 +586,14 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         _rsvd = _mem.reserved.get_raw(asbytes=False)
 
         if mem.empty:
-            _mem.set_raw("\xFF" * 13 + _rsvd)
+            _mem.set_raw("\xff" * 13 + _rsvd)
             return
 
         _mem.rx_freq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw("\xff")
         elif mem.duplex == "+":
             _mem.tx_freq = (mem.freq + mem.offset) / 10
         elif mem.duplex == "-":
@@ -572,11 +605,12 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         if mem.power:
             _mem.power = POWER_LEVELS.index(mem.power)
         else:
-            _mem.power = 0     # low
+            _mem.power = 0  # low
 
         # tone data
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self.encode_tone(_mem.tx_tone, txmode, txtone, txpol)
         self.encode_tone(_mem.rx_tone, rxmode, rxtone, rxpol)
 
@@ -593,44 +627,57 @@ class RadioddityR2(chirp_common.CloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic Settings")
         top = RadioSettings(basic)
 
-        rs = RadioSetting("settings.squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, _settings.squelch))
+        rs = RadioSetting(
+            "settings.squelch",
+            "Squelch Level",
+            RadioSettingValueInteger(0, 9, _settings.squelch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.timeout", "Timeout Timer",
-                          RadioSettingValueList(
-                              TIMEOUT_LIST, current_index=_settings.timeout))
+        rs = RadioSetting(
+            "settings.timeout",
+            "Timeout Timer",
+            RadioSettingValueList(TIMEOUT_LIST, current_index=_settings.timeout),
+        )
 
         basic.append(rs)
 
-        rs = RadioSetting("settings.scanmode", "Scan Mode",
-                          RadioSettingValueList(
-                              SCANMODE_LIST,
-                              current_index=_settings.scanmode))
+        rs = RadioSetting(
+            "settings.scanmode",
+            "Scan Mode",
+            RadioSettingValueList(SCANMODE_LIST, current_index=_settings.scanmode),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.voice", "Voice Prompts",
-                          RadioSettingValueList(
-                              VOICE_LIST, current_index=_settings.voice))
+        rs = RadioSetting(
+            "settings.voice",
+            "Voice Prompts",
+            RadioSettingValueList(VOICE_LIST, current_index=_settings.voice),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.voxgain", "VOX Level",
-                          RadioSettingValueList(
-                              VOX_LIST, current_index=_settings.voxgain))
+        rs = RadioSetting(
+            "settings.voxgain",
+            "VOX Level",
+            RadioSettingValueList(VOX_LIST, current_index=_settings.voxgain),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.voxdelay", "VOX Delay Time",
-                          RadioSettingValueList(
-                              VOXDELAY_LIST,
-                              current_index=_settings.voxdelay))
+        rs = RadioSetting(
+            "settings.voxdelay",
+            "VOX Delay Time",
+            RadioSettingValueList(VOXDELAY_LIST, current_index=_settings.voxdelay),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.save", "Battery Save",
-                          RadioSettingValueBoolean(_settings.save))
+        rs = RadioSetting(
+            "settings.save", "Battery Save", RadioSettingValueBoolean(_settings.save)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.beep", "Beep Tone",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting(
+            "settings.beep", "Beep Tone", RadioSettingValueBoolean(_settings.beep)
+        )
         basic.append(rs)
 
         def _filter(name):
@@ -677,6 +724,7 @@ class RadioddityR2(chirp_common.CloneModeRadio):
 @directory.register
 class RetevisRT24(RadioddityR2):
     """Retevis RT24"""
+
     VENDOR = "Retevis"
     MODEL = "RT24"
 
@@ -686,6 +734,7 @@ class RetevisRT24(RadioddityR2):
 @directory.register
 class RetevisRT24V(RadioddityR2):
     """Retevis RT24V"""
+
     VENDOR = "Retevis"
     MODEL = "RT24V"
 
@@ -696,13 +745,14 @@ class RetevisRT24V(RadioddityR2):
     # maximum 6 channels
     _upper = 6
     _mem_params = {
-        'memnum': _upper,  # number of channels
+        "memnum": _upper,  # number of channels
     }
 
 
 @directory.register
 class RetevisH777S(RadioddityR2):
     """Retevis H777S"""
+
     VENDOR = "Retevis"
     MODEL = "H777S"
 

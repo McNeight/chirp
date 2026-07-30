@@ -64,8 +64,7 @@ class MemoryMapBytes(object):
                 self._data[pos] = ord(byte)
                 pos += 1
         else:
-            raise ValueError("Unsupported type %s for value" %
-                             type(value).__name__)
+            raise ValueError("Unsupported type %s for value" % type(value).__name__)
 
     def get_packed(self):
         """Return the entire memory map as raw data"""
@@ -75,7 +74,7 @@ class MemoryMapBytes(object):
         return len(self._data)
 
     def __getslice__(self, start, end):
-        return self.get(start, end-start)
+        return self.get(start, end - start)
 
     def __getitem__(self, pos):
         if isinstance(pos, slice):
@@ -112,9 +111,11 @@ class MemoryMap(MemoryMapBytes):
 
     This deals in strings for compatibility with drivers that do.
     """
+
     def __init__(self, data):
         # Fix circular dependency
         from chirp import bitwise
+
         self._bitwise = bitwise
 
         if isinstance(data, bytes):
@@ -125,19 +126,18 @@ class MemoryMap(MemoryMapBytes):
 
     def get(self, pos, length=1):
         return self._bitwise.string_straight_decode(
-            super(MemoryMap, self).get(pos, length=length))
+            super(MemoryMap, self).get(pos, length=length)
+        )
 
     def set(self, pos, value):
         if isinstance(value, int):
             # Apparently this is a thing that drivers do, so
             # be compatible here
             value = chr(value)
-        super(MemoryMap, self).set(
-            pos, self._bitwise.string_straight_encode(value))
+        super(MemoryMap, self).set(pos, self._bitwise.string_straight_encode(value))
 
     def get_packed(self):
-        return self._bitwise.string_straight_decode(
-            super(MemoryMap, self).get_packed())
+        return self._bitwise.string_straight_decode(super(MemoryMap, self).get_packed())
 
     def get_byte_compatible(self):
         mmb = MemoryMapBytes(bytes(self._data))

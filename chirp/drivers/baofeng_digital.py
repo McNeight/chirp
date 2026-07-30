@@ -20,26 +20,27 @@ import time
 from chirp import chirp_common, directory, errors, memmap
 from chirp import bitwise
 from chirp.drivers import baofeng_common
-from chirp.settings import (RadioSetting, RadioSettingGroup,
-                            RadioSettingValueBoolean,
-                            RadioSettingValueList)
-
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+)
 
 LOG = logging.getLogger(__name__)
 
-CMD_ACK = b'\x06'
-CMD_READ = b'R'
-CMD_WRITE = b'W'
-CMD_EXIT = b'E'
+CMD_ACK = b"\x06"
+CMD_READ = b"R"
+CMD_WRITE = b"W"
+CMD_EXIT = b"E"
 
-MemoryChunk = namedtuple('MemoryChunk', ['start', 'end', 'read_only'])
+MemoryChunk = namedtuple("MemoryChunk", ["start", "end", "read_only"])
 
-ProtoVersion = namedtuple('ProtoVersion',
-                          ['chan_count', 'serial_magic', 'mem_chunks'])
+ProtoVersion = namedtuple("ProtoVersion", ["chan_count", "serial_magic", "mem_chunks"])
 
 PROTO_A = ProtoVersion(
     chan_count=16,
-    serial_magic=b'\x80\x82',
+    serial_magic=b"\x80\x82",
     mem_chunks=[
         MemoryChunk(start=0x000, end=0x10F, read_only=False),
         MemoryChunk(start=0x2B0, end=0x2BF, read_only=False),
@@ -49,17 +50,17 @@ PROTO_A = ProtoVersion(
 )
 PROTO_B = ProtoVersion(
     chan_count=16,
-    serial_magic=b'\x80\x82',
+    serial_magic=b"\x80\x82",
     mem_chunks=PROTO_A.mem_chunks,
 )
 PROTO_C = ProtoVersion(
     chan_count=16,
-    serial_magic=b'\x20\x22',
+    serial_magic=b"\x20\x22",
     mem_chunks=PROTO_A.mem_chunks,
 )
 PROTO_D = ProtoVersion(
     chan_count=30,
-    serial_magic=b'\x80\x82',
+    serial_magic=b"\x80\x82",
     mem_chunks=[
         MemoryChunk(start=0x000, end=0x1EF, read_only=False),
         MemoryChunk(start=0x2B0, end=0x2BF, read_only=False),
@@ -69,9 +70,9 @@ PROTO_D = ProtoVersion(
 )
 
 
-class BaofengDigital(chirp_common.CloneModeRadio,
-                     chirp_common.ExperimentalRadio):
+class BaofengDigital(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """Base for all digital radios from Fujian Baofeng Electronics Co. Ltd."""
+
     VENDOR = "Baofeng"
     BAUD_RATE = 9600
 
@@ -96,37 +97,37 @@ class BaofengDigital(chirp_common.CloneModeRadio,
     """
 
     _PREAMBLE_CMDS = [
-        (b'\x02', b'P3107\xf7\x00\x00'),
+        (b"\x02", b"P3107\xf7\x00\x00"),
         (CMD_ACK, CMD_ACK),
-        (b'R\x01\x30\x08', b'W\x01\x30\x08\xff\xff\xff\xff\xff\xff\xff\xff'),
+        (b"R\x01\x30\x08", b"W\x01\x30\x08\xff\xff\xff\xff\xff\xff\xff\xff"),
         (CMD_ACK, CMD_ACK),
     ]
 
     _WRITE_PREAMBLE_CMDS = [
-        (b'E', b'F'),
-        (b'\x02\x80\x82OGRAM', CMD_ACK),
-        (b'\x02', b'P3107\xf7\x00\x00'),
+        (b"E", b"F"),
+        (b"\x02\x80\x82OGRAM", CMD_ACK),
+        (b"\x02", b"P3107\xf7\x00\x00"),
         (CMD_ACK, CMD_ACK),
     ]
 
     _VOICES_PER_REGION = {
-        0x00: ('English', 'Chinese'),
-        0x01: ('Chinese', 'Russian'),
-        0x02: ('Russian', 'English'),
-        0x03: ('Arabic', 'English'),
-        0x04: ('Arabic', 'Chinese'),
-        0x05: ('Arabic', 'Russian'),
-        0x06: ('Chinese', 'Portuguese'),
-        0x07: ('English', 'Portuguese'),
-        0x08: ('Chinese', 'Spanish'),
-        0x09: ('English', 'Spanish'),
-        0x0A: ('Chinese', 'German'),
-        0x0B: ('English', 'German'),
-        0x0C: ('Chinese', 'French'),
-        0x0D: ('English', 'French'),
+        0x00: ("English", "Chinese"),
+        0x01: ("Chinese", "Russian"),
+        0x02: ("Russian", "English"),
+        0x03: ("Arabic", "English"),
+        0x04: ("Arabic", "Chinese"),
+        0x05: ("Arabic", "Russian"),
+        0x06: ("Chinese", "Portuguese"),
+        0x07: ("English", "Portuguese"),
+        0x08: ("Chinese", "Spanish"),
+        0x09: ("English", "Spanish"),
+        0x0A: ("Chinese", "German"),
+        0x0B: ("English", "German"),
+        0x0C: ("Chinese", "French"),
+        0x0D: ("English", "French"),
     }
 
-    _ENC_OPTS = ['None (analog)'] + [str(x) for x in range(32)]
+    _ENC_OPTS = ["None (analog)"] + [str(x) for x in range(32)]
 
     @property
     def _memsize(self):
@@ -143,7 +144,7 @@ class BaofengDigital(chirp_common.CloneModeRadio,
         rf.memory_bounds = (1, self._proto.chan_count)
         rf.valid_bands = self.VALID_BANDS
         rf.valid_duplexes = ["", "+", "-", "split"]
-        rf.valid_modes = ['FM', 'NFM']
+        rf.valid_modes = ["FM", "NFM"]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_tuning_steps = [2.5, 6.25, 5.0]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
@@ -163,11 +164,10 @@ class BaofengDigital(chirp_common.CloneModeRadio,
             try:
                 baofeng_common._clean_buffer(self)
 
-                self.pipe.write(b'\x02prOGRAM')
+                self.pipe.write(b"\x02prOGRAM")
                 resp = self.pipe.read(4)
                 if len(resp) != 4:
-                    raise errors.RadioError(
-                        'Radio did not send identification')
+                    raise errors.RadioError("Radio did not send identification")
                 return resp
             except errors.RadioError:
                 # Don't wait if already last attempt
@@ -179,15 +179,15 @@ class BaofengDigital(chirp_common.CloneModeRadio,
     def _enter_programming(self, write):
         radio_id = self._get_radio_id()
         if radio_id[1] != self._serial_id:
-            raise errors.RadioError('Detected a different radio model')
+            raise errors.RadioError("Detected a different radio model")
 
-        self._metadata['fw_region'] = radio_id[0]
-        self._metadata['fw_version'] = radio_id[2] * 0x100 + radio_id[3]
+        self._metadata["fw_region"] = radio_id[0]
+        self._metadata["fw_version"] = radio_id[2] * 0x100 + radio_id[3]
 
         # Issue protocol-specific command
-        self.pipe.write(b'\x02' + self._proto.serial_magic + b'OGRAM')
+        self.pipe.write(b"\x02" + self._proto.serial_magic + b"OGRAM")
         if self.pipe.read(1) != CMD_ACK:
-            raise errors.RadioError('No ACK on protocol-specific command')
+            raise errors.RadioError("No ACK on protocol-specific command")
 
         # Issue fixed commands and check their values
         if write:
@@ -198,7 +198,8 @@ class BaofengDigital(chirp_common.CloneModeRadio,
             self.pipe.write(cmd[0])
             if self.pipe.read(len(cmd[1])) != cmd[1]:
                 raise errors.RadioError(
-                    f'Radio replied incorrectly to preamble step {step}')
+                    f"Radio replied incorrectly to preamble step {step}"
+                )
 
     def _clean_buffer(self):
         self.pipe.timeout = 0.001
@@ -215,26 +216,25 @@ class BaofengDigital(chirp_common.CloneModeRadio,
         try:
             self._enter_programming(False)
 
-            memory = memmap.MemoryMapBytes(b"\xFF" * self._memsize)
+            memory = memmap.MemoryMapBytes(b"\xff" * self._memsize)
             for chunk in self._proto.mem_chunks:
                 for addr in range(chunk.start, chunk.end, 8):
-                    self.pipe.write(struct.pack('>cHB', CMD_READ, addr, 8))
+                    self.pipe.write(struct.pack(">cHB", CMD_READ, addr, 8))
                     reply = self.pipe.read(12)
                     if len(reply) != 12:
-                        raise errors.RadioError(
-                            f'Failed to read block at 0x{addr:03x}')
+                        raise errors.RadioError(f"Failed to read block at 0x{addr:03x}")
 
                     self.pipe.write(CMD_ACK)
                     if self.pipe.read(1) != CMD_ACK:
                         raise errors.RadioError(
-                            f'No ACK after reading from 0x{addr:03x}')
+                            f"No ACK after reading from 0x{addr:03x}"
+                        )
 
                     memory.set(addr, reply[4:])
         except errors.RadioError:
             raise
         except Exception as e:
-            raise errors.RadioError(
-                f'Failed to communicate with the radio: {e}')
+            raise errors.RadioError(f"Failed to communicate with the radio: {e}")
         finally:
             self._exit_programming()
 
@@ -250,20 +250,19 @@ class BaofengDigital(chirp_common.CloneModeRadio,
                     continue
 
                 for addr in range(chunk.start, chunk.end, 8):
-                    frame = (
-                        struct.pack('>cHB', CMD_WRITE, addr, 8) +
-                        self._mmap.get(addr, 8)
+                    frame = struct.pack(">cHB", CMD_WRITE, addr, 8) + self._mmap.get(
+                        addr, 8
                     )
                     self.pipe.write(frame)
 
                     if self.pipe.read(1) != CMD_ACK:
                         raise errors.RadioError(
-                            f'Not ACK after writing to 0x{addr:03x}')
+                            f"Not ACK after writing to 0x{addr:03x}"
+                        )
         except errors.RadioError:
             raise
         except Exception as e:
-            raise errors.RadioError(
-                f'Failed to communicate with the radio: {e}')
+            raise errors.RadioError(f"Failed to communicate with the radio: {e}")
         finally:
             self._exit_programming()
 
@@ -276,8 +275,8 @@ class BaofengDigital(chirp_common.CloneModeRadio,
 
     def _get_squelch(self, elem):
         # Get raw and check if unset
-        if elem.get_raw() in (b'\x00\x00', b'\xFF\xFF'):
-            return ('', None, 'N')
+        if elem.get_raw() in (b"\x00\x00", b"\xff\xff"):
+            return ("", None, "N")
 
         # Get flags, unset them so we can parse as BCD, then restore them
         flags = elem[1].get_bits(0xC0)
@@ -287,19 +286,17 @@ class BaofengDigital(chirp_common.CloneModeRadio,
 
         # DTCS if bit 15 is set
         if flags & 0x80:
-            return ('DTCS', value, flags & 0x40 and 'R' or 'N')
+            return ("DTCS", value, flags & 0x40 and "R" or "N")
         else:
             # Parse as CTCSS frequency * 10
-            return ('Tone', value / 10.0, 'N')
+            return ("Tone", value / 10.0, "N")
 
     def get_memory(self, number):
         raw = self._memobj.memory[number - 1]
 
         mem = chirp_common.Memory()
         mem.number = number
-        mem.empty = raw.rx_freq.get_raw() in (
-            b'\x00\x00\x00\x00', b'\xFF\xFF\xFF\xFF'
-        )
+        mem.empty = raw.rx_freq.get_raw() in (b"\x00\x00\x00\x00", b"\xff\xff\xff\xff")
 
         bcl = hopping = False
         enc_idx = 0
@@ -310,73 +307,74 @@ class BaofengDigital(chirp_common.CloneModeRadio,
             mem.freq = rx_freq
             offset = tx_freq - rx_freq
             if offset == 0:
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
             elif abs(offset) < 10000000:
-                mem.duplex = '-' if offset < 0 else '+'
+                mem.duplex = "-" if offset < 0 else "+"
                 mem.offset = abs(offset)
             else:
-                mem.duplex = 'split'
+                mem.duplex = "split"
                 mem.offset = tx_freq
 
-            mem.mode = raw.narrow and 'NFM' or 'FM'
+            mem.mode = raw.narrow and "NFM" or "FM"
             if raw.digital:
-                mem.tmode = ''
-                mem.dtcs_polarity = 'NN'
+                mem.tmode = ""
+                mem.dtcs_polarity = "NN"
                 enc_idx = raw.encryption_key + 1
             else:
                 hopping = raw.hopping
 
                 tx_tmode, tx_tvalue, tx_tpol = self._get_squelch(raw.tx_tone)
-                if tx_tmode == 'Tone':
+                if tx_tmode == "Tone":
                     mem.rtone = tx_tvalue
-                elif tx_tmode == 'DTCS':
+                elif tx_tmode == "DTCS":
                     mem.dtcs = tx_tvalue
 
                 rx_tmode, rx_tvalue, rx_tpol = self._get_squelch(raw.rx_tone)
-                if rx_tmode == 'Tone':
+                if rx_tmode == "Tone":
                     mem.ctone = rx_tvalue
-                elif rx_tmode == 'DTCS':
+                elif rx_tmode == "DTCS":
                     mem.rx_dtcs = rx_tvalue
 
-                if tx_tmode == 'Tone' and rx_tmode == '':
-                    mem.tmode = 'Tone'
-                elif tx_tmode and tx_tmode == rx_tmode and \
-                        tx_tvalue == rx_tvalue:
-                    mem.tmode = tx_tmode == 'Tone' and 'TSQL' or 'DTCS'
+                if tx_tmode == "Tone" and rx_tmode == "":
+                    mem.tmode = "Tone"
+                elif tx_tmode and tx_tmode == rx_tmode and tx_tvalue == rx_tvalue:
+                    mem.tmode = tx_tmode == "Tone" and "TSQL" or "DTCS"
                 elif tx_tmode or rx_tmode:
-                    mem.tmode = 'Cross'
-                    mem.cross_mode = f'{tx_tmode}->{rx_tmode}'
+                    mem.tmode = "Cross"
+                    mem.cross_mode = f"{tx_tmode}->{rx_tmode}"
 
                 mem.dtcs_polarity = tx_tpol + rx_tpol
 
             mem.power = self.POWER_LEVELS[raw.high_power]
-            mem.skip = '' if raw.scan else 'S'
+            mem.skip = "" if raw.scan else "S"
             bcl = not raw.bcl_disabled
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("bcl", "BCL",
-                          RadioSettingValueBoolean(bcl))
-        rs.set_doc('Busy channel lockout.')
+        rs = RadioSetting("bcl", "BCL", RadioSettingValueBoolean(bcl))
+        rs.set_doc("Busy channel lockout.")
         mem.extra.append(rs)
 
-        rs = RadioSetting("encryption_key", "Encryption key",
-                          RadioSettingValueList(self._ENC_OPTS,
-                                                current_index=enc_idx))
-        rs.set_doc('Encryption key for the digital mode. ' +
-                   'If none is selected, analog audio will be used.')
+        rs = RadioSetting(
+            "encryption_key",
+            "Encryption key",
+            RadioSettingValueList(self._ENC_OPTS, current_index=enc_idx),
+        )
+        rs.set_doc(
+            "Encryption key for the digital mode. "
+            + "If none is selected, analog audio will be used."
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("hopping", "Hopping",
-                          RadioSettingValueBoolean(hopping))
-        rs.set_doc('Frequency hopping. Only supported on analog modes.')
+        rs = RadioSetting("hopping", "Hopping", RadioSettingValueBoolean(hopping))
+        rs.set_doc("Frequency hopping. Only supported on analog modes.")
         mem.extra.append(rs)
 
         return mem
 
     def _set_no_tone(self, elem):
-        elem.set_raw(b'\xFF\xFF')
+        elem.set_raw(b"\xff\xff")
 
     def _set_ctcss(self, freq, elem):
         elem.set_value(int(freq * 10))
@@ -384,13 +382,13 @@ class BaofengDigital(chirp_common.CloneModeRadio,
     def _set_dtcs(self, code, polarity, elem):
         elem.set_value(code)
         elem[1].set_bits(0x80)
-        if polarity == 'R':
+        if polarity == "R":
             elem[1].set_bits(0x40)
 
     def _set_squelch(self, mode, ctcss_freq, dtcs_code, dtcs_polarity, elem):
-        if mode == 'Tone':
+        if mode == "Tone":
             self._set_ctcss(ctcss_freq, elem)
-        elif mode == 'DTCS':
+        elif mode == "DTCS":
             self._set_dtcs(dtcs_code, dtcs_polarity, elem)
         else:
             self._set_no_tone(elem)
@@ -398,72 +396,75 @@ class BaofengDigital(chirp_common.CloneModeRadio,
     def set_memory(self, mem):
         raw = self._memobj.memory[mem.number - 1]
         if mem.empty:
-            raw.fill_raw(b'\xFF')
+            raw.fill_raw(b"\xff")
             return
 
-        raw.fill_raw(b'\x00')
+        raw.fill_raw(b"\x00")
 
         raw.rx_freq = mem.freq // 10
-        if mem.duplex == '':
+        if mem.duplex == "":
             raw.tx_freq = mem.freq // 10
-        elif mem.duplex == 'split':
+        elif mem.duplex == "split":
             raw.tx_freq = mem.offset // 10
-        elif mem.duplex == '-':
+        elif mem.duplex == "-":
             raw.tx_freq = (mem.freq - mem.offset) // 10
-        elif mem.duplex == '+':
+        elif mem.duplex == "+":
             raw.tx_freq = (mem.freq + mem.offset) // 10
         else:
-            raise errors.RadioError('Unsupported duplex mode %r' % mem.duplex)
+            raise errors.RadioError("Unsupported duplex mode %r" % mem.duplex)
 
-        raw.narrow = mem.mode == 'NFM'
+        raw.narrow = mem.mode == "NFM"
         try:
             raw.high_power = self.POWER_LEVELS.index(mem.power)
         except ValueError:
             raw.high_power = 1
-        raw.scan = mem.skip != 'S'
+        raw.scan = mem.skip != "S"
 
         raw.bcl_disabled = 1
         raw.digital = 0
         for item in mem.extra:
-            if item.get_name() == 'bcl':
+            if item.get_name() == "bcl":
                 raw.bcl_disabled = not item.value
-            elif item.get_name() == 'encryption_key':
+            elif item.get_name() == "encryption_key":
                 idx = self._ENC_OPTS.index(item.value)
                 if idx == 0:
                     raw.digital = 0
                 else:
                     raw.digital = 1
                     raw.encryption_key = idx - 1
-            elif item.get_name() == 'hopping' and not raw.digital:
+            elif item.get_name() == "hopping" and not raw.digital:
                 raw.hopping = item.value
 
         if raw.digital:
             self._set_no_tone(raw.tx_tone)
             self._set_no_tone(raw.rx_tone)
-        elif mem.tmode == 'Tone':
+        elif mem.tmode == "Tone":
             self._set_ctcss(mem.rtone, raw.tx_tone)
             self._set_no_tone(raw.rx_tone)
-        elif mem.tmode == 'TSQL':
+        elif mem.tmode == "TSQL":
             self._set_ctcss(mem.ctone, raw.tx_tone)
             self._set_ctcss(mem.ctone, raw.rx_tone)
-        elif mem.tmode == 'DTCS':
+        elif mem.tmode == "DTCS":
             # According to the documentation we should use ".rx_dtcs" because
             # "has_rx_dtcs" is set. However, the code does not match the docs,
             # and we have to use ".dtcs".
             self._set_dtcs(mem.dtcs, mem.dtcs_polarity[0], raw.tx_tone)
             self._set_dtcs(mem.dtcs, mem.dtcs_polarity[1], raw.rx_tone)
-        elif mem.tmode == 'Cross':
-            tx_tmode, rx_tmode = mem.cross_mode.split('->', 2)
-            self._set_squelch(tx_tmode, mem.rtone, mem.dtcs,
-                              mem.dtcs_polarity[0], raw.tx_tone)
-            self._set_squelch(rx_tmode, mem.ctone, mem.rx_dtcs,
-                              mem.dtcs_polarity[1], raw.rx_tone)
+        elif mem.tmode == "Cross":
+            tx_tmode, rx_tmode = mem.cross_mode.split("->", 2)
+            self._set_squelch(
+                tx_tmode, mem.rtone, mem.dtcs, mem.dtcs_polarity[0], raw.tx_tone
+            )
+            self._set_squelch(
+                rx_tmode, mem.ctone, mem.rx_dtcs, mem.dtcs_polarity[1], raw.rx_tone
+            )
 
 
 @directory.register
 class BaofengW31D(BaofengDigital):
     """Baofeng W31D"""
-    MODEL = 'W31D'
+
+    MODEL = "W31D"
     VALID_BANDS = [(400000000, 480000000)]
     POWER_LEVELS = [
         chirp_common.PowerLevel("Low", watts=0.5),
@@ -476,7 +477,8 @@ class BaofengW31D(BaofengDigital):
 @directory.register
 class BaofengBFT20D(BaofengDigital):
     """Baofeng BF-T20D"""
-    MODEL = 'BF-T20D'
+
+    MODEL = "BF-T20D"
     VALID_BANDS = [(400000000, 480000000)]
     POWER_LEVELS = [
         chirp_common.PowerLevel("Low", watts=0.5),
@@ -489,13 +491,14 @@ class BaofengBFT20D(BaofengDigital):
 @directory.register
 class BaofengBFV12D(BaofengDigital):
     """Baofeng BF-V12D"""
-    MODEL = 'BF-V12D'
+
+    MODEL = "BF-V12D"
     VALID_BANDS = [(400000000, 480000000)]
     POWER_LEVELS = [
         chirp_common.PowerLevel("Low", watts=0.5),
         chirp_common.PowerLevel("High", watts=2.00),
     ]
-    _serial_id = 0x0a
+    _serial_id = 0x0A
     _proto = PROTO_A
 
     def _get_radio_id(self):
@@ -506,43 +509,36 @@ class BaofengBFV12D(BaofengDigital):
                 baofeng_common._clean_buffer(self)
 
                 # Send unlock command
-                self.pipe.write(b'\x02ucbfpwd')
+                self.pipe.write(b"\x02ucbfpwd")
                 resp = self.pipe.read(1)
-                LOG.debug('ucbfpwd response: %s',
-                          resp.hex() if resp else 'empty')
+                LOG.debug("ucbfpwd response: %s", resp.hex() if resp else "empty")
                 if resp != CMD_ACK:
                     raise errors.RadioError(
-                        'No ACK on unlock command (got %s)'
-                        % (resp.hex() if resp else 'empty'))
+                        "No ACK on unlock command (got %s)"
+                        % (resp.hex() if resp else "empty")
+                    )
 
                 # Send unlock data and model identifier
                 # (observed from factory software captures)
-                self.pipe.write(b'\x10\xc5\xea\x35')
+                self.pipe.write(b"\x10\xc5\xea\x35")
                 resp = self.pipe.read(1)
-                LOG.debug('unlock data response: %s',
-                          resp.hex() if resp else 'empty')
+                LOG.debug("unlock data response: %s", resp.hex() if resp else "empty")
                 if resp != CMD_ACK:
-                    raise errors.RadioError(
-                        'No ACK on unlock data')
+                    raise errors.RadioError("No ACK on unlock data")
 
                 # Base64-encoded model identifier from factory software
-                self.pipe.write(
-                    b'Q041OTUwMA==\x00\x00\x00\x00')
+                self.pipe.write(b"Q041OTUwMA==\x00\x00\x00\x00")
                 resp = self.pipe.read(1)
-                LOG.debug('model id response: %s',
-                          resp.hex() if resp else 'empty')
+                LOG.debug("model id response: %s", resp.hex() if resp else "empty")
                 if resp != CMD_ACK:
-                    raise errors.RadioError(
-                        'No ACK on model identifier')
+                    raise errors.RadioError("No ACK on model identifier")
 
                 # Now request radio ID
-                self.pipe.write(b'\x02prOGRAM')
+                self.pipe.write(b"\x02prOGRAM")
                 resp = self.pipe.read(4)
-                LOG.debug('radio ID: %s',
-                          resp.hex() if resp else 'empty')
+                LOG.debug("radio ID: %s", resp.hex() if resp else "empty")
                 if len(resp) != 4:
-                    raise errors.RadioError(
-                        'Radio did not send identification')
+                    raise errors.RadioError("Radio did not send identification")
                 return resp
             except errors.RadioError:
                 if attempt == 4:

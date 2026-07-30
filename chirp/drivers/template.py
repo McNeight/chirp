@@ -70,9 +70,10 @@ def do_upload(radio):
 # @directory.register
 class TemplateRadio(chirp_common.CloneModeRadio):
     """Acme Template"""
-    VENDOR = "Acme"     # Replace this with your vendor
+
+    VENDOR = "Acme"  # Replace this with your vendor
     MODEL = "Template"  # Replace this with your model
-    BAUD_RATE = 9600    # Replace this with your baud rate
+    BAUD_RATE = 9600  # Replace this with your baud rate
 
     # All new drivers should be "Byte Clean" so leave this in place.
 
@@ -82,9 +83,10 @@ class TemplateRadio(chirp_common.CloneModeRadio):
         rf = chirp_common.RadioFeatures()
         rf.has_bank = False
         rf.memory_bounds = (0, 9)  # This radio supports memories 0-9
-        rf.valid_bands = [(144000000, 148000000),  # Supports 2-meters
-                          (440000000, 450000000),  # Supports 70-centimeters
-                          ]
+        rf.valid_bands = [
+            (144000000, 148000000),  # Supports 2-meters
+            (440000000, 450000000),  # Supports 70-centimeters
+        ]
         return rf
 
     # Do a download of the radio from the serial port
@@ -114,7 +116,7 @@ class TemplateRadio(chirp_common.CloneModeRadio):
         # Create a high-level memory object to return to the UI
         mem = chirp_common.Memory()
 
-        mem.number = number                 # Set the memory number
+        mem.number = number  # Set the memory number
         # Convert your low-level frequency to Hertz
         mem.freq = int(_mem.freq)
         mem.name = str(_mem.name).rstrip()  # Set the alpha tag

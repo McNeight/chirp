@@ -24,69 +24,81 @@ class Reasons(enum.Enum):
 
 class InvalidDataError(Exception):
     """The radio driver encountered some invalid data"""
+
     pass
 
 
 class InvalidValueError(Exception):
     """An invalid value for a given parameter was used"""
+
     pass
 
 
 class InvalidMemoryLocation(Exception):
     """The requested memory location does not exist"""
+
     pass
 
 
 class RadioError(Exception):
     """An error occurred while talking to the radio"""
+
     pass
 
 
 class UnsupportedToneError(Exception):
     """The radio does not support the specified tone value"""
+
     pass
 
 
 class ImageDetectFailed(Exception):
     """The driver for the supplied image could not be determined"""
+
     pass
 
 
 class ImageMetadataInvalidModel(Exception):
     """The image contains metadata but no suitable driver is found"""
+
     pass
 
 
 class SpecificRadioError(RadioError):
     """An error with a specific reason and troubleshooting reference."""
+
     CODE: None | Reasons = None
 
     def __init__(self, msg=None):
         if self.CODE not in Reasons:
-            raise RuntimeError('Invalid reason; '
-                               'must be one of chirp.errors.Reasons')
+            raise RuntimeError("Invalid reason; " "must be one of chirp.errors.Reasons")
         super().__init__(msg or self.CODE.value)
 
     def get_link(self):
-        return ('https://chirpmyradio.com/projects/chirp/wiki/'
-                'Error-%s' % self.CODE.name)
+        return (
+            "https://chirpmyradio.com/projects/chirp/wiki/" "Error-%s" % self.CODE.name
+        )
 
 
 class RadioNoContactLikelyK1(SpecificRadioError):
     """A radio that uses a K1 connector likely to have fitment issues."""
+
     CODE = Reasons.NO_CONNECTION_K1
 
 
 class RadioNoResponse(SpecificRadioError):
     """A radio that provided no response to a command."""
+
     CODE = Reasons.NO_RESPONSE
 
 
 class RadioFixedBanks(SpecificRadioError):
     """A radio that has fixed banks and cannot be changed."""
+
     CODE = Reasons.FIXED_BANKS
 
 
 class FrozenMemoryError(TypeError):
     """An attempt was made to modify a frozen memory."""
+
     pass

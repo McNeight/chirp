@@ -86,13 +86,17 @@ TMODES = ["", "Tone", "TSQL", "", "DTCS", "", ""]
 MODES = ["FM", "AM", "NFM", "", "WFM"]
 DUPLEXES = ["", "", "-", "+", "split", "off"]
 # TODO: add Japanese characters (viewable in special menu, scroll backwards)
-CHARSET = \
-    ('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!"' +
-     '#$%&`()*+,-./:;<=>?@[\\]^_`{|}~?????? ' + '?' * 91)
+CHARSET = (
+    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!"'
+    + "#$%&`()*+,-./:;<=>?@[\\]^_`{|}~?????? "
+    + "?" * 91
+)
 
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=50),
-                chirp_common.PowerLevel("Mid", watts=20),
-                chirp_common.PowerLevel("Low", watts=5)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=50),
+    chirp_common.PowerLevel("Mid", watts=20),
+    chirp_common.PowerLevel("Low", watts=5),
+]
 
 SKIPS = ["", "S", "P"]
 
@@ -135,7 +139,7 @@ def _clone_in(radio):
                 raise errors.RadioNoResponse()
 
         if frame:
-            addr, = struct.unpack(">H", frame[0:2])
+            (addr,) = struct.unpack(">H", frame[0:2])
             checksum = frame[130]
             block = frame[2:130]
 
@@ -143,16 +147,14 @@ def _clone_in(radio):
             for i in frame[:-1]:
                 cs = (cs + i) % 256
             if cs != checksum:
-                LOG.debug("Calc: %02x Real: %02x Len: %i" %
-                          (cs, checksum, len(block)))
+                LOG.debug("Calc: %02x Real: %02x Len: %i" % (cs, checksum, len(block)))
                 raise errors.RadioError("Block failed checksum")
 
             radio.pipe.write(b"\x06")
             time.sleep(0.05)
 
             if (last_addr + 128) != addr:
-                LOG.debug("Gap, expecting %04x, got %04x" %
-                          (last_addr+128, addr))
+                LOG.debug("Gap, expecting %04x, got %04x" % (last_addr + 128, addr))
             last_addr = addr
             data[addr] = block
             length += len(block)
@@ -176,11 +178,11 @@ def _clone_out(radio):
         (0x0480, 0xFF80),
         (0x0080, 0x0080),
         (0xFFFE, 0xFFFE),
-        ]
+    ]
 
     for start, end in ranges:
-        for i in range(start, end+1, 128):
-            block = radio._mmap[i:i + 128]
+        for i in range(start, end + 1, 128):
+            block = radio._mmap[i : i + 128]
             frame = struct.pack(">H", i) + block
             cs = 0
             for byte in frame:
@@ -240,6 +242,7 @@ def set_freq(freq, obj, field):
 @directory.register
 class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu FTM-350"""
+
     BAUD_RATE = 48000
     VENDOR = "Yaesu"
     MODEL = "FTM-350"
@@ -265,12 +268,25 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.valid_characters = CHARSET
         rf.memory_bounds = (0, 500)
         rf.valid_power_levels = POWER_LEVELS
-        rf.valid_bands = [(500000,   1800000),
-                          (76000000, 250000000),
-                          (30000000, 1000000000)]
+        rf.valid_bands = [
+            (500000, 1800000),
+            (76000000, 250000000),
+            (30000000, 1000000000),
+        ]
         rf.can_odd_split = True
-        rf.valid_tuning_steps = [5.0, 6.25, 8.33, 10.0, 12.5, 15.0, 20.0,
-                                 25.0, 50.0, 100.0, 200.0]
+        rf.valid_tuning_steps = [
+            5.0,
+            6.25,
+            8.33,
+            10.0,
+            12.5,
+            15.0,
+            20.0,
+            25.0,
+            50.0,
+            100.0,
+            200.0,
+        ]
 
         return rf
 
@@ -283,7 +299,7 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed to read: %s', e)
+            LOG.exception("Failed to read: %s", e)
             raise errors.RadioError("Failed to download from radio (%s)" % e)
         self.process_mmap()
 
@@ -293,7 +309,7 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed to write: %s', e)
+            LOG.exception("Failed to write: %s", e)
             raise errors.RadioError("Failed to upload to radio (%s)" % e)
 
     def process_mmap(self):
@@ -313,8 +329,7 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         else:
             suffix = ""
             fn = indexed
-        return (repr(fn(self._memory_obj(suffix))) +
-                repr(fn(self._label_obj(suffix))))
+        return repr(fn(self._memory_obj(suffix))) + repr(fn(self._label_obj(suffix)))
 
     def _memory_obj(self, suffix=""):
         return getattr(self._memobj, "%s_memory%s" % (self._vfo, suffix))
@@ -379,7 +394,7 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         if mem.empty:
             return
 
-        set_freq(mem.freq, _mem, 'freq')
+        set_freq(mem.freq, _mem, "freq")
 
         _mem.oddsplit = 0
         _mem.tone = chirp_common.TONES.index(mem.rtone)
@@ -394,7 +409,7 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
             _mem.tmode = 0x00
             _mem.duplex = 0x00
         elif mem.duplex == "split":
-            set_freq(mem.offset, _mem, 'split')
+            set_freq(mem.offset, _mem, "split")
             _mem.oddsplit = 1
         else:
             _mem.offset = mem.offset / 50000
@@ -426,13 +441,18 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
         top.append(aprs)
 
         myc = self._memobj.aprs_my_callsign
-        rs = RadioSetting("aprs_my_callsign.call", "APRS My Callsign",
-                          RadioSettingValueString(0, 6,
-                                                  aprs_call_to_str(myc.call)))
+        rs = RadioSetting(
+            "aprs_my_callsign.call",
+            "APRS My Callsign",
+            RadioSettingValueString(0, 6, aprs_call_to_str(myc.call)),
+        )
         aprs.append(rs)
 
-        rs = RadioSetting("aprs_my_callsign.ssid", "APRS My SSID",
-                          RadioSettingValueInteger(0, 15, myc.ssid))
+        rs = RadioSetting(
+            "aprs_my_callsign.ssid",
+            "APRS My SSID",
+            RadioSettingValueInteger(0, 15, myc.ssid),
+        )
         aprs.append(rs)
 
         return top
@@ -445,8 +465,9 @@ class FTM350Radio(yaesu_clone.YaesuCloneModeRadio):
 
             # Quick hack to make these work
             if setting.get_name() == "aprs_my_callsign.call":
-                self._memobj.aprs_my_callsign.call = \
-                    setting.value.get_value().upper().replace(" ", "\xCA")
+                self._memobj.aprs_my_callsign.call = (
+                    setting.value.get_value().upper().replace(" ", "\xca")
+                )
             elif setting.get_name() == "aprs_my_callsign.ssid":
                 self._memobj.aprs_my_callsign.ssid = setting.value
 

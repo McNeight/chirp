@@ -22,10 +22,15 @@ import logging
 
 from chirp import util, memmap, chirp_common, bitwise, directory, errors
 from chirp.drivers.yaesu_clone import YaesuCloneModeRadio
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueString, RadioSettings, \
-    RadioSettingValueInteger, RadioSettingValueBoolean
-
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettings,
+    RadioSettingValueInteger,
+    RadioSettingValueBoolean,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -35,7 +40,7 @@ BLOCK_LEN = 32
 
 
 def _send(pipe, data):
-    time.sleep(0.035)   # Same delay as "FT7100 Programmer" from RT Systems
+    time.sleep(0.035)  # Same delay as "FT7100 Programmer" from RT Systems
     # pipe.write(data) --> It seems, that the single bytes are sent too fast
     # so send character per character with a delay
     for ch in data:
@@ -43,14 +48,15 @@ def _send(pipe, data):
         time.sleep(0.0012)  # 0.0011 is to short. No ACK after a few packets
     echo = pipe.read(len(data))
     if data == b"":
-        raise Exception("Failed to read echo."
-                        " Maybe serial hardware not connected."
-                        " Maybe radio not powered or not in receiving mode.")
+        raise Exception(
+            "Failed to read echo."
+            " Maybe serial hardware not connected."
+            " Maybe radio not powered or not in receiving mode."
+        )
     if data != echo:
         LOG.debug("expecting echo\n%s\n", util.hexprint(data))
         LOG.debug("got echo\n%s\n", util.hexprint(echo))
-        raise Exception("Got false echo. Expected: %r, got: %r.",
-                        data, echo)
+        raise Exception("Got false echo. Expected: %r, got: %r.", data, echo)
 
 
 def _send_ack(pipe):
@@ -65,8 +71,7 @@ def _wait_for_ack(pipe):
     if echo == b"":
         raise errors.RadioNoResponse()
     if echo != ACK:
-        raise Exception("Failed to read ACK.  Expected: %r, got: %r.",
-                        ACK, echo)
+        raise Exception("Failed to read ACK.  Expected: %r, got: %r.", ACK, echo)
 
 
 def _download(radio):
@@ -83,8 +88,9 @@ def _download(radio):
     if data == b"":
         raise Exception("Got no data from radio.")
     if data != radio.IDBLOCK:
-        raise Exception("Got false header. Expected: %r, got: %r." % (
-                          radio.IDBLOCK, data))
+        raise Exception(
+            "Got false header. Expected: %r, got: %r." % (radio.IDBLOCK, data)
+        )
     _send_ack(radio.pipe)
 
     # read 16 Byte block
@@ -94,7 +100,7 @@ def _download(radio):
     # Now the data is hardcoded in _upload(radio)
     data = radio.pipe.read(16)
     _send_ack(radio.pipe)
-    LOG.debug('Magic 16-byte chunk:\n%s' % util.hexprint(data))
+    LOG.debug("Magic 16-byte chunk:\n%s" % util.hexprint(data))
 
     # initialize data, the big var that holds all memory
     data = b""
@@ -122,8 +128,8 @@ def _download(radio):
     # for debugging purposes, dump the channels, in hex.
     for _i in range(0, (NB_OF_BLOCKS * BLOCK_LEN) // 26):
         _start_data = 4 + 26 * _i
-        chunk = data[_start_data:_start_data + 26]
-        LOG.debug("channel %i:\n%s", _i-21, util.hexprint(chunk))
+        chunk = data[_start_data : _start_data + 26]
+        LOG.debug("channel %i:\n%s", _i - 21, util.hexprint(chunk))
 
     return memmap.MemoryMapBytes(data)
 
@@ -135,13 +141,14 @@ def _upload(radio):
 
     # write 16 Byte block
     # If there should be a problem, see remarks in _download(radio)
-    _send(radio.pipe, b"\xEE\x77\x01\x00\x0E\x07\x0E\x07"
-                      b"\x00\x00\x00\x00\x00\x02\x00\x00")
+    _send(
+        radio.pipe,
+        b"\xee\x77\x01\x00\x0e\x07\x0e\x07" b"\x00\x00\x00\x00\x00\x02\x00\x00",
+    )
     _wait_for_ack(radio.pipe)
 
     for block_nr in range(NB_OF_BLOCKS):
-        data = radio.get_mmap()[block_nr * BLOCK_LEN:
-                                (block_nr + 1) * BLOCK_LEN]
+        data = radio.get_mmap()[block_nr * BLOCK_LEN : (block_nr + 1) * BLOCK_LEN]
         LOG.debug("Writing block_nr %i:\n%s", block_nr, util.hexprint(data))
         _send(radio.pipe, data)
         _wait_for_ack(radio.pipe)
@@ -499,7 +506,7 @@ struct {
 """
 
 MODES_VHF = ["FM", "AM"]
-MODES_UHF = ["FM"]      # AM can be set but is ignored by the radio
+MODES_UHF = ["FM"]  # AM can be set but is ignored by the radio
 DUPLEX = ["", "-", "+", "split"]
 TONE_MODES_RADIO = ["", "Tone", "TSQL", "CTCSS Bell", "DTCS"]
 TONE_MODES = ["", "Tone", "TSQL", "DTCS"]
@@ -508,12 +515,12 @@ POWER_LEVELS = [
     chirp_common.PowerLevel("Low2", watts=10),
     chirp_common.PowerLevel("Low3", watts=20),
     chirp_common.PowerLevel("High", watts=35),
-    ]
+]
 TUNING_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0]
 SKIP_VALUES = ["", "S"]
 CHARSET = r"!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^ _"
 DTMF_CHARSET = "0123456789*# "
-SPECIAL_CHANS = ['VFO-VHF', 'VFO-UHF', 'Home-VHF', 'Home-UHF', 'VFO', 'Home']
+SPECIAL_CHANS = ["VFO-VHF", "VFO-UHF", "Home-VHF", "Home-UHF", "VFO", "Home"]
 SCAN_LIMITS = ["L1", "U1", "L2", "U2", "L3", "U3", "L4", "U4", "L5", "U5"]
 
 
@@ -524,8 +531,8 @@ def do_download(radio):
 
 @directory.register
 class FT7100Radio(YaesuCloneModeRadio):
-
     """Yaesu FT-7100M"""
+
     MODEL = "FT-7100M"
     VARIANT = ""
     IDBLOCK = b"Vartex Standard AH003M M-Map V04"
@@ -544,7 +551,7 @@ class FT7100Radio(YaesuCloneModeRadio):
         rf.valid_bands = [
             (108000000, 180000000),  # Supports 2-meters tx
             (320000000, 999990000),  # Supports 70-centimeters tx
-            ]
+        ]
         rf.can_odd_split = True
         rf.has_ctone = True
         rf.has_rx_dtcs = True
@@ -608,29 +615,29 @@ class FT7100Radio(YaesuCloneModeRadio):
             band = 0
             if self._memobj.overlay.current_band != 0:
                 band = 1
-            if number == 'VFO-VHF':
+            if number == "VFO-VHF":
                 _mem = self._memobj.current_vfo_vhf_uhf[0].mem_struct
-            elif number == 'VFO-UHF':
+            elif number == "VFO-UHF":
                 _mem = self._memobj.current_vfo_vhf_uhf[1].mem_struct
-            elif number == 'Home-VHF':
+            elif number == "Home-VHF":
                 _mem = self._memobj.home_vhf_uhf[0].mem_struct
-            elif number == 'Home-UHF':
+            elif number == "Home-UHF":
                 _mem = self._memobj.home_vhf_uhf[1].mem_struct
-            elif number == 'VFO':
+            elif number == "VFO":
                 _mem = self._memobj.current_vfo_vhf_uhf[band].mem_struct
-            elif number == 'Home':
+            elif number == "Home":
                 _mem = self._memobj.home_vhf_uhf[band].mem_struct
             _mem.is_used = True
         else:
-            mem.number = number                 # Set the memory number
+            mem.number = number  # Set the memory number
             _mem = self._memobj.memory[number]
             upper_channel = self._memobj.nb_mem_used_vhf
             upper_limit = self._memobj.nb_mem_used_vhf_and_limits
             if number >= upper_channel and number < upper_limit:
                 i = number - upper_channel
                 mem.extd_number = SCAN_LIMITS[i]
-            if number >= 260-10:
-                i = number - (260-10)
+            if number >= 260 - 10:
+                i = number - (260 - 10)
                 mem.extd_number = SCAN_LIMITS[i]
 
         # Convert your low-level frequency to Hertz
@@ -662,7 +669,7 @@ class FT7100Radio(YaesuCloneModeRadio):
         if _mem.is_split:
             mem.offset = int(_mem.freq_tx_Hz)
         else:
-            mem.offset = int(_mem.offset_10khz)*10000   # 10 kHz to Hz
+            mem.offset = int(_mem.offset_10khz) * 10000  # 10 kHz to Hz
 
         if _mem.is_mode_am:
             mem.mode = "AM"
@@ -684,17 +691,21 @@ class FT7100Radio(YaesuCloneModeRadio):
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("show_name", "Show Name",
-                          RadioSettingValueBoolean(_mem.show_name))
+        rs = RadioSetting(
+            "show_name", "Show Name", RadioSettingValueBoolean(_mem.show_name)
+        )
         mem.extra.append(rs)
-        rs = RadioSetting("is_masked", "Is Masked",
-                          RadioSettingValueBoolean(_mem.is_masked))
+        rs = RadioSetting(
+            "is_masked", "Is Masked", RadioSettingValueBoolean(_mem.is_masked)
+        )
         mem.extra.append(rs)
-        rs = RadioSetting("is_packet96", "Packet 9600",
-                          RadioSettingValueBoolean(_mem.is_packet96))
+        rs = RadioSetting(
+            "is_packet96", "Packet 9600", RadioSettingValueBoolean(_mem.is_packet96)
+        )
         mem.extra.append(rs)
-        rs = RadioSetting("is_ctcss_bell", "CTCSS Bell",
-                          RadioSettingValueBoolean(is_ctcss_bell))
+        rs = RadioSetting(
+            "is_ctcss_bell", "CTCSS Bell", RadioSettingValueBoolean(is_ctcss_bell)
+        )
         mem.extra.append(rs)
 
         return mem
@@ -702,18 +713,17 @@ class FT7100Radio(YaesuCloneModeRadio):
     def set_memory(self, mem):
         LOG.debug("set_memory Number: %r", mem.number)
         if mem.number < 0:
-            number = SPECIAL_CHANS[mem.number+10]
-            if number == 'VFO-VHF':
+            number = SPECIAL_CHANS[mem.number + 10]
+            if number == "VFO-VHF":
                 _mem = self._memobj.current_vfo_vhf_uhf[0].mem_struct
-            elif number == 'VFO-UHF':
+            elif number == "VFO-UHF":
                 _mem = self._memobj.current_vfo_vhf_uhf[1].mem_struct
-            elif number == 'Home-VHF':
+            elif number == "Home-VHF":
                 _mem = self._memobj.home_vhf_uhf[0].mem_struct
-            elif number == 'Home-UHF':
+            elif number == "Home-UHF":
                 _mem = self._memobj.home_vhf_uhf[1].mem_struct
             else:
-                raise errors.RadioError("Unexpected Memory Number: %r",
-                                        mem.number)
+                raise errors.RadioError("Unexpected Memory Number: %r", mem.number)
         else:
             _mem = self._memobj.memory[mem.number]
 
@@ -734,11 +744,11 @@ class FT7100Radio(YaesuCloneModeRadio):
         if mem.duplex == "+":
             _mem.is_offset_plus = 1
             _mem.freq_tx_Hz = mem.freq + mem.offset
-            _mem.offset_10khz = int(mem.offset/10000)
+            _mem.offset_10khz = int(mem.offset / 10000)
         elif mem.duplex == "-":
             _mem.is_offset_minus = 1
             _mem.freq_tx_Hz = mem.freq - mem.offset
-            _mem.offset_10khz = int(mem.offset/10000)
+            _mem.offset_10khz = int(mem.offset / 10000)
         elif mem.duplex == "split":
             _mem.is_split = 1
             _mem.freq_tx_Hz = mem.offset
@@ -770,15 +780,15 @@ class FT7100Radio(YaesuCloneModeRadio):
             else:
                 setattr(_mem, setting.get_name(), setting.value)
 
-        LOG.debug("encoded mem\n%s\n",
-                  (util.hexprint(_mem.get_raw(asbytes=False)[0:25])))
+        LOG.debug(
+            "encoded mem\n%s\n", (util.hexprint(_mem.get_raw(asbytes=False)[0:25]))
+        )
         LOG.debug(repr(_mem))
 
     def get_settings(self):
         common = RadioSettingGroup("common", "Common Settings")
         band = RadioSettingGroup("band", "Band dependent Settings")
-        arts = RadioSettingGroup("arts",
-                                 "Auto Range Transponder System (ARTS)")
+        arts = RadioSettingGroup("arts", "Auto Range Transponder System (ARTS)")
         dtmf = RadioSettingGroup("dtmf", "DTMF Settings")
         mic_button = RadioSettingGroup("mic_button", "Microphone Buttons")
         setmode = RadioSettings(common, band, arts, dtmf, mic_button)
@@ -791,35 +801,56 @@ class FT7100Radio(YaesuCloneModeRadio):
 
         # 1 Automatic Power Off
         opts = [
-            "Off", "30 Min",
-            "1 Hour", "1.5 Hours",
-            "2 Hours", "2.5 Hours",
-            "3 Hours", "3.5 Hours",
-            "4 Hours", "4.5 Hours",
-            "5 Hours", "5.5 Hours",
-            "6 Hours", "6.5 Hours",
-            "7 Hours", "7.5 Hours",
-            "8 Hours", "8.5 Hours",
-            "9 Hours", "9.5 Hours",
-            "10 Hours", "10.5 Hours",
-            "11 Hours", "11.5 Hours",
+            "Off",
+            "30 Min",
+            "1 Hour",
+            "1.5 Hours",
+            "2 Hours",
+            "2.5 Hours",
+            "3 Hours",
+            "3.5 Hours",
+            "4 Hours",
+            "4.5 Hours",
+            "5 Hours",
+            "5.5 Hours",
+            "6 Hours",
+            "6.5 Hours",
+            "7 Hours",
+            "7.5 Hours",
+            "8 Hours",
+            "8.5 Hours",
+            "9 Hours",
+            "9.5 Hours",
+            "10 Hours",
+            "10.5 Hours",
+            "11 Hours",
+            "11.5 Hours",
             "12 Hours",
-            ]
+        ]
         common.append(
             RadioSetting(
-                "apo", "Automatic Power Off",
-                RadioSettingValueList(opts, current_index=_overlay.apo)))
+                "apo",
+                "Automatic Power Off",
+                RadioSettingValueList(opts, current_index=_overlay.apo),
+            )
+        )
 
         # 2 Automatic Repeater Shift function
         opts = ["Off", "On"]
         band.append(
             RadioSetting(
-                "ars_vhf", "Automatic Repeater Shift VHF",
-                RadioSettingValueList(opts, current_index=_overlay.ars_vhf)))
+                "ars_vhf",
+                "Automatic Repeater Shift VHF",
+                RadioSettingValueList(opts, current_index=_overlay.ars_vhf),
+            )
+        )
         band.append(
             RadioSetting(
-                "ars_uhf", "Automatic Repeater Shift UHF",
-                RadioSettingValueList(opts, current_index=_overlay.ars_uhf)))
+                "ars_uhf",
+                "Automatic Repeater Shift UHF",
+                RadioSettingValueList(opts, current_index=_overlay.ars_uhf),
+            )
+        )
 
         # 3  Selects the ARTS mode.
         # -> Only useful to set it on the radio directly
@@ -828,19 +859,25 @@ class FT7100Radio(YaesuCloneModeRadio):
         opts = ["Off", "On"]
         common.append(
             RadioSetting(
-                "beep", "Key/Button Beep",
-                RadioSettingValueList(opts, current_index=_overlay.beep)))
+                "beep",
+                "Key/Button Beep",
+                RadioSettingValueList(opts, current_index=_overlay.beep),
+            )
+        )
 
         # 5 Enables/disables the CW IDer during ARTS operation.
         opts = ["Off", "On"]
         arts.append(
             RadioSetting(
-                "cwid", "Enables/Disables the CW ID",
-                RadioSettingValueList(opts, current_index=_overlay.cwid)))
+                "cwid",
+                "Enables/Disables the CW ID",
+                RadioSettingValueList(opts, current_index=_overlay.cwid),
+            )
+        )
 
         # 6  Callsign during ARTS operation.
         cwidw = _overlay.cwidw.get_raw(asbytes=False)
-        cwidw = cwidw.rstrip('\x00')
+        cwidw = cwidw.rstrip("\x00")
         val = RadioSettingValueString(0, 6, cwidw)
         val.set_charset(CHARSET)
         rs = RadioSetting("cwidw", "CW Identifier Callsign", val)
@@ -848,6 +885,7 @@ class FT7100Radio(YaesuCloneModeRadio):
         def apply_cwid(setting):
             value_string = setting.value.get_value()
             _overlay.cwidw.set_value(value_string)
+
         rs.set_apply_callback(apply_cwid)
         arts.append(rs)
 
@@ -855,8 +893,11 @@ class FT7100Radio(YaesuCloneModeRadio):
         opts = ["0: Off", "1: Max", "2", "3", "4", "5", "6", "7: Min"]
         common.append(
             RadioSetting(
-                "dim", "Display Illumination",
-                RadioSettingValueList(opts, current_index=_overlay.dim)))
+                "dim",
+                "Display Illumination",
+                RadioSettingValueList(opts, current_index=_overlay.dim),
+            )
+        )
 
         # 8 Setting the DCS code number.
         #   Note: This Menu item can be set independently for each band,
@@ -869,41 +910,59 @@ class FT7100Radio(YaesuCloneModeRadio):
         opts = ["TRX Normal", "RX Reversed", "TX Reversed", "TRX Reversed"]
         band.append(
             RadioSetting(
-                "dcsnr_vhf", "DCS coding VHF",
-                RadioSettingValueList(opts, current_index=_overlay.dcsnr_vhf)))
+                "dcsnr_vhf",
+                "DCS coding VHF",
+                RadioSettingValueList(opts, current_index=_overlay.dcsnr_vhf),
+            )
+        )
         band.append(
             RadioSetting(
-                "dcsnr_uhf", "DCS coding UHF",
-                RadioSettingValueList(opts, current_index=_overlay.dcsnr_uhf)))
+                "dcsnr_uhf",
+                "DCS coding UHF",
+                RadioSettingValueList(opts, current_index=_overlay.dcsnr_uhf),
+            )
+        )
 
         # 11 Selects the 'sub' band display format
-        opts = ["Frequency", "Off / Sub Band disabled",
-                "DC Input Voltage", "CW ID"]
+        opts = ["Frequency", "Off / Sub Band disabled", "DC Input Voltage", "CW ID"]
         common.append(
             RadioSetting(
-                "disp", "Sub Band Display Format",
-                RadioSettingValueList(opts, current_index=_overlay.disp)))
+                "disp",
+                "Sub Band Display Format",
+                RadioSettingValueList(opts, current_index=_overlay.disp),
+            )
+        )
 
         # 12 Setting the DTMF Autodialer delay time
         opts = ["50 ms", "250 ms", "450 ms", "750 ms", "1 s"]
         dtmf.append(
             RadioSetting(
-                "dtmfd", "Autodialer delay time",
-                RadioSettingValueList(opts, current_index=_overlay.dtmfd)))
+                "dtmfd",
+                "Autodialer delay time",
+                RadioSettingValueList(opts, current_index=_overlay.dtmfd),
+            )
+        )
 
         # 13 Setting the DTMF Autodialer sending speed
         opts = ["50 ms", "75 ms", "100 ms"]
         dtmf.append(
             RadioSetting(
-                "dtmfs", "Autodialer sending speed",
-                RadioSettingValueList(opts, current_index=_overlay.dtmfs)))
+                "dtmfs",
+                "Autodialer sending speed",
+                RadioSettingValueList(opts, current_index=_overlay.dtmfs),
+            )
+        )
 
         # 14 Current DTMF Autodialer memory
-        rs = RadioSetting("dtmfw", "Current Autodialer memory",
-                          RadioSettingValueInteger(1, 16, _overlay.dtmfw + 1))
+        rs = RadioSetting(
+            "dtmfw",
+            "Current Autodialer memory",
+            RadioSettingValueInteger(1, 16, _overlay.dtmfw + 1),
+        )
 
         def apply_dtmfw(setting):
             _overlay.dtmfw = setting.value.get_value() - 1
+
         rs.set_apply_callback(apply_dtmfw)
         dtmf.append(rs)
 
@@ -911,23 +970,22 @@ class FT7100Radio(YaesuCloneModeRadio):
         for i in range(16):
             dtmf_string = ""
             for j in range(16):
-                dtmf_char = ''
+                dtmf_char = ""
                 dtmf_int = int(self._memobj.dtmf_mem[i].dtmf[j])
                 if dtmf_int < 10:
                     dtmf_char = str(dtmf_int)
                 elif dtmf_int == 14:
-                    dtmf_char = '*'
+                    dtmf_char = "*"
                 elif dtmf_int == 15:
-                    dtmf_char = '#'
+                    dtmf_char = "#"
                 elif dtmf_int == 255:
                     break
                 dtmf_string += dtmf_char
-            radio_setting_value_string = RadioSettingValueString(0, 16,
-                                                                 dtmf_string)
+            radio_setting_value_string = RadioSettingValueString(0, 16, dtmf_string)
             radio_setting_value_string.set_charset(DTMF_CHARSET)
-            rs = RadioSetting("dtmf_%02i" % i,
-                              "DTMF Mem " + str(i+1),
-                              radio_setting_value_string)
+            rs = RadioSetting(
+                "dtmf_%02i" % i, "DTMF Mem " + str(i + 1), radio_setting_value_string
+            )
 
             def apply_dtmf(setting, index):
                 radio_setting_value_string = setting.value.get_value().rstrip()
@@ -936,15 +994,16 @@ class FT7100Radio(YaesuCloneModeRadio):
                     dtmf_int = 255
                     if dtmf_char in "0123456789":
                         dtmf_int = int(dtmf_char)
-                    elif dtmf_char == '*':
+                    elif dtmf_char == "*":
                         dtmf_int = 14
-                    elif dtmf_char == '#':
+                    elif dtmf_char == "#":
                         dtmf_int = 15
                     if dtmf_int < 255:
                         self._memobj.dtmf_mem[index].dtmf[j] = dtmf_int
                         j += 1
                 if j < 16:
                     self._memobj.dtmf_mem[index].dtmf[j] = 255
+
             rs.set_apply_callback(apply_dtmf, i)
             dtmf.append(rs)
 
@@ -952,23 +1011,32 @@ class FT7100Radio(YaesuCloneModeRadio):
         opts = ["Off", "Band A", "Band B", "Both"]
         common.append(
             RadioSetting(
-                "lockt", "PTT switch lock",
-                RadioSettingValueList(opts, current_index=_overlay.lockt)))
+                "lockt",
+                "PTT switch lock",
+                RadioSettingValueList(opts, current_index=_overlay.lockt),
+            )
+        )
 
         # 17 Selects the Microphone type to be used
         opts = ["MH-42", "MH-48"]
         common.append(
             RadioSetting(
-                "mic", "Microphone type",
-                RadioSettingValueList(opts, current_index=_overlay.mic)))
+                "mic",
+                "Microphone type",
+                RadioSettingValueList(opts, current_index=_overlay.mic),
+            )
+        )
 
         # 18 Reduces the audio level on the sub receiver when the
         #    main receiver is active
         opts = ["Off", "On"]
         common.append(
             RadioSetting(
-                "mute", "Mute Sub Receiver",
-                RadioSettingValueList(opts, current_index=_overlay.mute)))
+                "mute",
+                "Mute Sub Receiver",
+                RadioSettingValueList(opts, current_index=_overlay.mute),
+            )
+        )
 
         # 20 - 23 Programming the microphones button assignment
         buttons = [
@@ -976,20 +1044,32 @@ class FT7100Radio(YaesuCloneModeRadio):
             "P / P2",
             "P1 / P3",
             "P2 / P4",
-            ]
-        opts_button = ["Low", "Tone", "MHz", "Rev", "Home", "Band",
-                       "VFO / Memory", "Sql Off", "1750 Hz Tone Call",
-                       "Repeater", "Priority"]
+        ]
+        opts_button = [
+            "Low",
+            "Tone",
+            "MHz",
+            "Rev",
+            "Home",
+            "Band",
+            "VFO / Memory",
+            "Sql Off",
+            "1750 Hz Tone Call",
+            "Repeater",
+            "Priority",
+        ]
         for i, button in enumerate(buttons):
             rs = RadioSetting(
-                "button" + str(i), button,
-                RadioSettingValueList(opts_button,
-                                      current_index=_overlay.button[i]))
+                "button" + str(i),
+                button,
+                RadioSettingValueList(opts_button, current_index=_overlay.button[i]),
+            )
 
             def apply_button(setting, index):
                 value_string = setting.value.get_value()
                 value_int = opts_button.index(value_string)
                 _overlay.button[index] = value_int
+
             rs.set_apply_callback(apply_button, i)
             mic_button.append(rs)
 
@@ -997,82 +1077,107 @@ class FT7100Radio(YaesuCloneModeRadio):
         opts = ["Off", "S-1", "S-5", "S-9", "S-FULL"]
         band.append(
             RadioSetting(
-                "rf_sql_vhf", "RF Sql VHF",
-                RadioSettingValueList(
-                    opts, current_index=_overlay.rf_sql_vhf)))
+                "rf_sql_vhf",
+                "RF Sql VHF",
+                RadioSettingValueList(opts, current_index=_overlay.rf_sql_vhf),
+            )
+        )
         band.append(
             RadioSetting(
-                "rf_sql_uhf", "RF Sql UHF",
-                RadioSettingValueList(
-                    opts, current_index=_overlay.rf_sql_uhf)))
+                "rf_sql_uhf",
+                "RF Sql UHF",
+                RadioSettingValueList(opts, current_index=_overlay.rf_sql_uhf),
+            )
+        )
 
         # 25 Selects the Scan-Resume mode
         opts = ["Busy", "Time"]
         band.append(
             RadioSetting(
-                "scan_vhf", "Scan-Resume VHF",
-                RadioSettingValueList(opts, current_index=_overlay.scan_vhf)))
+                "scan_vhf",
+                "Scan-Resume VHF",
+                RadioSettingValueList(opts, current_index=_overlay.scan_vhf),
+            )
+        )
         band.append(
             RadioSetting(
-                "scan_uhf", "Scan-Resume UHF",
-                RadioSettingValueList(opts, current_index=_overlay.scan_uhf)))
+                "scan_uhf",
+                "Scan-Resume UHF",
+                RadioSettingValueList(opts, current_index=_overlay.scan_uhf),
+            )
+        )
 
         # 28 Defining the audio path to the external speaker
         opts = ["Off", "Band A", "Band B", "Both"]
         common.append(
             RadioSetting(
-                "speaker_cnt", "External Speaker",
-                RadioSettingValueList(
-                    opts, current_index=_overlay.speaker_cnt)))
+                "speaker_cnt",
+                "External Speaker",
+                RadioSettingValueList(opts, current_index=_overlay.speaker_cnt),
+            )
+        )
 
         # 31 Sets the Time-Out Timer
         opts = ["Off", "Band A", "Band B", "Both"]
         common.append(
             RadioSetting(
-                "tot", "TX Time-Out [Min.] (0 = Off)",
-                RadioSettingValueInteger(0, 30, _overlay.tot)))
+                "tot",
+                "TX Time-Out [Min.] (0 = Off)",
+                RadioSettingValueInteger(0, 30, _overlay.tot),
+            )
+        )
 
         # 32 Reducing the MIC Gain (and Deviation)
         opts = ["Off", "On"]
         band.append(
             RadioSetting(
-                "txnar_vhf", "TX Narrowband VHF",
-                RadioSettingValueList(opts, current_index=_overlay.txnar_vhf)))
+                "txnar_vhf",
+                "TX Narrowband VHF",
+                RadioSettingValueList(opts, current_index=_overlay.txnar_vhf),
+            )
+        )
         band.append(
             RadioSetting(
-                "txnar_uhf", "TX Narrowband UHF",
-                RadioSettingValueList(opts, current_index=_overlay.txnar_uhf)))
+                "txnar_uhf",
+                "TX Narrowband UHF",
+                RadioSettingValueList(opts, current_index=_overlay.txnar_uhf),
+            )
+        )
 
         # 33 Enables/disables the VFO Tracking feature
         opts = ["Off", "On"]
         common.append(
             RadioSetting(
-                "vfotr", "VFO Tracking",
-                RadioSettingValueList(opts, current_index=_overlay.vfotr)))
+                "vfotr",
+                "VFO Tracking",
+                RadioSettingValueList(opts, current_index=_overlay.vfotr),
+            )
+        )
 
         # 34 Selects the receiving mode on the VHF band
         opts = ["Inhibit (only FM)", "AM", "Auto"]
         common.append(
             RadioSetting(
-                "am", "AM Mode",
-                RadioSettingValueList(opts, current_index=_overlay.am)))
+                "am", "AM Mode", RadioSettingValueList(opts, current_index=_overlay.am)
+            )
+        )
 
         # Current Band
         opts = ["VHF", "UHF"]
         common.append(
             RadioSetting(
-                "current_band", "Current Band",
-                RadioSettingValueList(
-                    opts, current_index=_overlay.current_band)))
+                "current_band",
+                "Current Band",
+                RadioSettingValueList(opts, current_index=_overlay.current_band),
+            )
+        )
 
         # Show number of VHF and UHF channels
-        val = RadioSettingValueString(0, 7,
-                                      str(int(self._memobj.nb_mem_used_vhf)))
+        val = RadioSettingValueString(0, 7, str(int(self._memobj.nb_mem_used_vhf)))
         val.set_mutable(False)
         rs = RadioSetting("num_chan_vhf", "Number of VHF channels", val)
         common.append(rs)
-        val = RadioSettingValueString(0, 7,
-                                      str(int(self._memobj.nb_mem_used_uhf)))
+        val = RadioSettingValueString(0, 7, str(int(self._memobj.nb_mem_used_uhf)))
         val.set_mutable(False)
         rs = RadioSetting("num_chan_uhf", "Number of UHF channels", val)
         common.append(rs)
@@ -1121,7 +1226,7 @@ class FT7100Radio(YaesuCloneModeRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return filedata[0x1ec0:0x1ec0+len(cls.IDBLOCK)] == cls.IDBLOCK
+        return filedata[0x1EC0 : 0x1EC0 + len(cls.IDBLOCK)] == cls.IDBLOCK
 
     @classmethod
     def get_prompts(cls):
@@ -1129,22 +1234,23 @@ class FT7100Radio(YaesuCloneModeRadio):
         rp.pre_download = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"TONE\" and \"REV\" buttons, turn radio on.\n"
-            "4. <b>After clicking OK</b>, press \"TONE\" to send image.\n")
+            '3. While holding "TONE" and "REV" buttons, turn radio on.\n'
+            '4. <b>After clicking OK</b>, press "TONE" to send image.\n'
+        )
         rp.pre_upload = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"TONE\" and \"REV\" buttons, turn radio on.\n"
-            "4. Press \"REV\" to receive image.\n"
-            "5. Make sure display says \"CLONE RX\" and green led is"
+            '3. While holding "TONE" and "REV" buttons, turn radio on.\n'
+            '4. Press "REV" to receive image.\n'
+            '5. Make sure display says "CLONE RX" and green led is'
             " blinking\n"
-            "6. Click OK to start transfer.\n")
+            "6. Click OK to start transfer.\n"
+        )
         return rp
 
     def get_sub_devices(self):
         if not self.VARIANT:
-            return [FT7100RadioVHF(self._mmap),
-                    FT7100RadioUHF(self._mmap)]
+            return [FT7100RadioVHF(self._mmap), FT7100RadioUHF(self._mmap)]
         else:
             return []
 
@@ -1160,7 +1266,7 @@ class FT7100RadioVHF(FT7100Radio):
         # Normally this band supports 120 + 10 memories. 1 based for chirpw
         rf.valid_bands = [(108000000, 180000000)]  # Supports 2-meters tx
         rf.valid_modes = MODES_VHF
-        rf.valid_special_chans = ['VFO', 'Home']
+        rf.valid_special_chans = ["VFO", "Home"]
         rf.has_sub_devices = False
         return rf
 
@@ -1173,7 +1279,7 @@ class FT7100RadioVHF(FT7100Radio):
                 mem = FT7100Radio.get_memory(self, number)
             mem.number = number
         else:
-            mem = FT7100Radio.get_memory(self, number + '-VHF')
+            mem = FT7100Radio.get_memory(self, number + "-VHF")
             mem.extd_number = number
             mem.immutable = ["number", "extd_number", "skip"]
         return mem
@@ -1187,7 +1293,7 @@ class FT7100RadioVHF(FT7100Radio):
             if mem.number >= 0:
                 mem.number += -1
         else:
-            mem.number += '-VHF'
+            mem.number += "-VHF"
         super(FT7100RadioVHF, self).set_memory(mem)
         return
 
@@ -1203,7 +1309,7 @@ class FT7100RadioUHF(FT7100Radio):
         # Normally this band supports 120 + 10 memories. 1 based for chirpw
         rf.valid_bands = [(320000000, 999990000)]  # Supports 70-centimeters tx
         rf.valid_modes = MODES_UHF
-        rf.valid_special_chans = ['VFO', 'Home']
+        rf.valid_special_chans = ["VFO", "Home"]
         rf.has_sub_devices = False
         return rf
 
@@ -1212,13 +1318,12 @@ class FT7100RadioUHF(FT7100Radio):
         upper_vhf_limit = self._get_upper_vhf_limit()
         if isinstance(number, int):
             if number >= 0:
-                mem = FT7100Radio.get_memory(self, number + 10 +
-                                             upper_vhf_limit - 1)
+                mem = FT7100Radio.get_memory(self, number + 10 + upper_vhf_limit - 1)
             else:
                 mem = FT7100Radio.get_memory(self, number)
             mem.number = number
         else:
-            mem = FT7100Radio.get_memory(self, number + '-UHF')
+            mem = FT7100Radio.get_memory(self, number + "-UHF")
             mem.extd_number = number
             mem.immutable = ["number", "extd_number", "skip"]
         return mem
@@ -1233,6 +1338,6 @@ class FT7100RadioUHF(FT7100Radio):
             if mem.number >= 0:
                 mem.number += upper_vhf_limit - 1 + 10
         else:
-            mem.number += '-UHF'
+            mem.number += "-UHF"
         super(FT7100RadioUHF, self).set_memory(mem)
         return

@@ -16,9 +16,14 @@
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, directory, bitwise
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean, \
-    RadioSettingValueString, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 import re
 import logging
 
@@ -174,16 +179,22 @@ VX2_TMODES = ["", "Tone", "TSQL", "DTCS"]
 
 VX2_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0, 9.0]
 
-CHARSET = list("0123456789" +
-               "ABCDEFGHIJKLMNOPQRSTUVWXYZ " +
-               "+-/\x00[](){}\x00\x00_" +
-               ("\x00" * 13) + "*" + "\x00\x00,'|\x00\x00\x00\x00" +
-               ("\x00" * 64))
+CHARSET = list(
+    "0123456789"
+    + "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
+    + "+-/\x00[](){}\x00\x00_"
+    + ("\x00" * 13)
+    + "*"
+    + "\x00\x00,'|\x00\x00\x00\x00"
+    + ("\x00" * 64)
+)
 
 DTMFCHARSET = list("0123456789ABCD*#")
 
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=1.50),
-                chirp_common.PowerLevel("Low", watts=0.10)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=1.50),
+    chirp_common.PowerLevel("Low", watts=0.10),
+]
 
 
 class VX2BankModel(chirp_common.BankModel):
@@ -240,8 +251,9 @@ class VX2BankModel(chirp_common.BankModel):
         try:
             channels_in_bank.remove(memory.number)
         except KeyError:
-            raise Exception("Memory %i is not in bank %s. Cannot remove" %
-                            (memory.number, bank))
+            raise Exception(
+                "Memory %i is not in bank %s. Cannot remove" % (memory.number, bank)
+            )
         self._update_bank_with_channel_numbers(bank, channels_in_bank)
 
         if not channels_in_bank:
@@ -271,6 +283,7 @@ def _wipe_memory(mem):
 @directory.register
 class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu VX-2"""
+
     MODEL = "VX-2"
     _model = b"AH015"
     BAUD_RATE = 19200
@@ -306,10 +319,10 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
         return repr(self._memobj.memory[number])
 
     def get_memory(self, number):
-        _mem = self._memobj.memory[number-1]
-        _flag = self._memobj.flags[(number-1)/2]
+        _mem = self._memobj.memory[number - 1]
+        _flag = self._memobj.flags[(number - 1) / 2]
 
-        nibble = ((number-1) % 2) and "even" or "odd"
+        nibble = ((number - 1) % 2) and "even" or "odd"
         used = _flag["%s_masked" % nibble]
         valid = _flag["%s_valid" % nibble]
         pskip = _flag["%s_pskip" % nibble]
@@ -350,10 +363,10 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
-        _flag = self._memobj.flags[(mem.number-1)/2]
+        _mem = self._memobj.memory[mem.number - 1]
+        _flag = self._memobj.flags[(mem.number - 1) / 2]
 
-        nibble = ((mem.number-1) % 2) and "even" or "odd"
+        nibble = ((mem.number - 1) % 2) and "even" or "odd"
 
         used = _flag["%s_masked" % nibble]
         valid = _flag["%s_valid" % nibble]
@@ -442,220 +455,283 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
 
         options = ["off", "30m", "1h", "3h", "5h", "8h"]
         rs = RadioSetting(
-                "apo", "APO time (hrs)",
-                RadioSettingValueList(options, current_index=_settings.apo))
+            "apo",
+            "APO time (hrs)",
+            RadioSettingValueList(options, current_index=_settings.apo),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "ars", "Auto Repeater Shift",
-                RadioSettingValueBoolean(_settings.ars))
+            "ars", "Auto Repeater Shift", RadioSettingValueBoolean(_settings.ars)
+        )
+        basic.append(rs)
+
+        rs = RadioSetting("att", "Attenuation", RadioSettingValueBoolean(_settings.att))
         basic.append(rs)
 
         rs = RadioSetting(
-                "att", "Attenuation",
-                RadioSettingValueBoolean(_settings.att))
+            "bclo", "Busy Channel Lockout", RadioSettingValueBoolean(_settings.bclo)
+        )
         basic.append(rs)
 
-        rs = RadioSetting(
-                "bclo", "Busy Channel Lockout",
-                RadioSettingValueBoolean(_settings.bclo))
-        basic.append(rs)
-
-        rs = RadioSetting(
-                "beep", "Beep",
-                RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
         basic.append(rs)
 
         options = ["off", "1", "3", "5", "8", "cont"]
         rs = RadioSetting(
-                "bell", "Bell",
-                RadioSettingValueList(options, current_index=_settings.bell))
+            "bell", "Bell", RadioSettingValueList(options, current_index=_settings.bell)
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "busyled", "Busy LED",
-                RadioSettingValueBoolean(_settings.busyled))
+            "busyled", "Busy LED", RadioSettingValueBoolean(_settings.busyled)
+        )
         basic.append(rs)
 
         options = ["5", "10", "50", "100"]
         rs = RadioSetting(
-            "chcounter", "Channel Counter (MHz)",
-            RadioSettingValueList(
-                options, current_index=_settings.chcounter))
+            "chcounter",
+            "Channel Counter (MHz)",
+            RadioSettingValueList(options, current_index=_settings.chcounter),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "dcsrev", "DCS Reverse",
-                RadioSettingValueBoolean(_settings.dcsrev))
+            "dcsrev", "DCS Reverse", RadioSettingValueBoolean(_settings.dcsrev)
+        )
         basic.append(rs)
 
-        options = list(map(str, list(range(0, 12+1))))
+        options = list(map(str, list(range(0, 12 + 1))))
         rs = RadioSetting(
-                "dimmer", "Dimmer",
-                RadioSettingValueList(options, current_index=_settings.dimmer))
+            "dimmer",
+            "Dimmer",
+            RadioSettingValueList(options, current_index=_settings.dimmer),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "edgebeep", "Edge Beep",
-                RadioSettingValueBoolean(_settings.edgebeep))
+            "edgebeep", "Edge Beep", RadioSettingValueBoolean(_settings.edgebeep)
+        )
         basic.append(rs)
 
-        options = ["beep", "strobe", "bp+str", "beam",
-                   "bp+beam", "cw", "bp+cw"]
+        options = ["beep", "strobe", "bp+str", "beam", "bp+beam", "cw", "bp+cw"]
         rs = RadioSetting(
-            "emergmode", "Emergency Mode",
-            RadioSettingValueList(
-                options, current_index=_settings.emergmode))
+            "emergmode",
+            "Emergency Mode",
+            RadioSettingValueList(options, current_index=_settings.emergmode),
+        )
         basic.append(rs)
 
         options = ["Home", "Reverse"]
         rs = RadioSetting(
-                "hmrv", "HM/RV key",
-                RadioSettingValueList(options, current_index=_settings.hmrv))
+            "hmrv",
+            "HM/RV key",
+            RadioSettingValueList(options, current_index=_settings.hmrv),
+        )
         basic.append(rs)
 
         options = ["My Menu", "Internet"]
         rs = RadioSetting(
-                "internet_key", "Internet key",
-                RadioSettingValueList(
-                    options, current_index=_settings.internet_key))
+            "internet_key",
+            "Internet key",
+            RadioSettingValueList(options, current_index=_settings.internet_key),
+        )
         basic.append(rs)
 
-        options = ["1 APO", "2 AR BEP", "3 AR INT", "4 ARS", "5 ATT",
-                   "6 BCLO", "7 BEEP", "8 BELL", "9 BSYLED", "10 CH CNT",
-                   "11 CK SFT", "12 CW ID", "13 DC VLT", "14 DCS CD",
-                   "15 DCS RV", "16 DIMMER", "17 DTMF", "18 DTMF S",
-                   "19 EDG BP", "20 EMG S", "21 HLFDEV", "22 HM/RV",
-                   "23 INT MD", "24 LAMP", "25 LOCK", "26 M/T-CL",
-                   "27 MW MD", "28 NAME", "29 NM SET", "30 OPNMSG",
-                   "31 RESUME", "32 RF SQL", "33 RPT", "34 RX MD",
-                   "35 RXSAVE", "36 S SCH", "37 SCNLMP", "38 SHIFT",
-                   "39 SKIP", "40 SPLIT", "41 SQL", "42 SQL TYP",
-                   "43 STEP", "44 TN FRQ", "45 TOT", "46 TXSAVE",
-                   "47 VFO MD", "48 TR SQL (JAPAN)", "48 WX ALT"]
+        options = [
+            "1 APO",
+            "2 AR BEP",
+            "3 AR INT",
+            "4 ARS",
+            "5 ATT",
+            "6 BCLO",
+            "7 BEEP",
+            "8 BELL",
+            "9 BSYLED",
+            "10 CH CNT",
+            "11 CK SFT",
+            "12 CW ID",
+            "13 DC VLT",
+            "14 DCS CD",
+            "15 DCS RV",
+            "16 DIMMER",
+            "17 DTMF",
+            "18 DTMF S",
+            "19 EDG BP",
+            "20 EMG S",
+            "21 HLFDEV",
+            "22 HM/RV",
+            "23 INT MD",
+            "24 LAMP",
+            "25 LOCK",
+            "26 M/T-CL",
+            "27 MW MD",
+            "28 NAME",
+            "29 NM SET",
+            "30 OPNMSG",
+            "31 RESUME",
+            "32 RF SQL",
+            "33 RPT",
+            "34 RX MD",
+            "35 RXSAVE",
+            "36 S SCH",
+            "37 SCNLMP",
+            "38 SHIFT",
+            "39 SKIP",
+            "40 SPLIT",
+            "41 SQL",
+            "42 SQL TYP",
+            "43 STEP",
+            "44 TN FRQ",
+            "45 TOT",
+            "46 TXSAVE",
+            "47 VFO MD",
+            "48 TR SQL (JAPAN)",
+            "48 WX ALT",
+        ]
 
         rs = RadioSetting(
-            "mymenu", "My Menu function",
-            RadioSettingValueList(
-                options, current_index=_settings.mymenu - 9))
+            "mymenu",
+            "My Menu function",
+            RadioSettingValueList(options, current_index=_settings.mymenu - 9),
+        )
         basic.append(rs)
 
         options = ["wires", "link"]
         rs = RadioSetting(
-                "internet_mode", "Internet mode",
-                RadioSettingValueList(
-                    options, current_index=_settings.internet_mode))
+            "internet_mode",
+            "Internet mode",
+            RadioSettingValueList(options, current_index=_settings.internet_mode),
+        )
         basic.append(rs)
 
         options = ["key", "cont", "off"]
         rs = RadioSetting(
-                "lamp", "Lamp mode",
-                RadioSettingValueList(options, current_index=_settings.lamp))
+            "lamp",
+            "Lamp mode",
+            RadioSettingValueList(options, current_index=_settings.lamp),
+        )
         basic.append(rs)
 
-        options = ["key", "dial", "key+dial", "ptt",
-                   "key+ptt", "dial+ptt", "all"]
+        options = ["key", "dial", "key+dial", "ptt", "key+ptt", "dial+ptt", "all"]
         rs = RadioSetting(
-                "lock", "Lock mode",
-                RadioSettingValueList(options, current_index=_settings.lock))
+            "lock",
+            "Lock mode",
+            RadioSettingValueList(options, current_index=_settings.lock),
+        )
         basic.append(rs)
 
         options = ["monitor", "tone call"]
         rs = RadioSetting(
-            "moni_tcall", "MONI key",
-            RadioSettingValueList(
-                options, current_index=_settings.moni_tcall))
+            "moni_tcall",
+            "MONI key",
+            RadioSettingValueList(options, current_index=_settings.moni_tcall),
+        )
         basic.append(rs)
 
         options = ["lower", "next"]
         rs = RadioSetting(
-                "mwmode", "Memory write mode",
-                RadioSettingValueList(options, current_index=_settings.mwmode))
+            "mwmode",
+            "Memory write mode",
+            RadioSettingValueList(options, current_index=_settings.mwmode),
+        )
         basic.append(rs)
 
-        options = list(map(str, list(range(0, 15+1))))
+        options = list(map(str, list(range(0, 15 + 1))))
         rs = RadioSetting(
-            "nfm_sql", "NFM Sql",
-            RadioSettingValueList(
-                options, current_index=_settings.nfm_sql))
+            "nfm_sql",
+            "NFM Sql",
+            RadioSettingValueList(options, current_index=_settings.nfm_sql),
+        )
         basic.append(rs)
 
-        options = list(map(str, list(range(0, 8+1))))
+        options = list(map(str, list(range(0, 8 + 1))))
         rs = RadioSetting(
-            "wfm_sql", "WFM Sql",
-            RadioSettingValueList(
-                options, current_index=_settings.wfm_sql))
+            "wfm_sql",
+            "WFM Sql",
+            RadioSettingValueList(options, current_index=_settings.wfm_sql),
+        )
         basic.append(rs)
 
         options = ["off", "dc", "msg"]
         rs = RadioSetting(
-            "openmsgmode", "Opening message",
-            RadioSettingValueList(
-                options, current_index=_settings.openmsgmode))
+            "openmsgmode",
+            "Opening message",
+            RadioSettingValueList(options, current_index=_settings.openmsgmode),
+        )
         basic.append(rs)
 
         openmsg = RadioSettingValueString(
-                0, 6, self._decode_chars(_settings.openmsg.get_value()))
+            0, 6, self._decode_chars(_settings.openmsg.get_value())
+        )
         openmsg.set_charset(CHARSET)
         rs = RadioSetting("openmsg", "Opening Message", openmsg)
         basic.append(rs)
 
         options = ["3s", "5s", "10s", "busy", "hold"]
         rs = RadioSetting(
-                "resume", "Resume",
-                RadioSettingValueList(options, current_index=_settings.resume))
+            "resume",
+            "Resume",
+            RadioSettingValueList(options, current_index=_settings.resume),
+        )
         basic.append(rs)
 
-        options = ["off"] + list(map(str, list(range(1, 9+1))))
+        options = ["off"] + list(map(str, list(range(1, 9 + 1))))
         rs = RadioSetting(
-                "rfsql", "RF Sql",
-                RadioSettingValueList(options, current_index=_settings.rfsql))
+            "rfsql",
+            "RF Sql",
+            RadioSettingValueList(options, current_index=_settings.rfsql),
+        )
         basic.append(rs)
 
         options = ["off", "200ms", "300ms", "500ms", "1s", "2s"]
         rs = RadioSetting(
-                "rxsave", "RX pwr save",
-                RadioSettingValueList(options, current_index=_settings.rxsave))
+            "rxsave",
+            "RX pwr save",
+            RadioSettingValueList(options, current_index=_settings.rxsave),
+        )
         basic.append(rs)
 
         options = ["single", "cont"]
         rs = RadioSetting(
-            "smartsearch", "Smart search",
-            RadioSettingValueList(
-                options, current_index=_settings.smartsearch))
+            "smartsearch",
+            "Smart search",
+            RadioSettingValueList(options, current_index=_settings.smartsearch),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "scan_lamp", "Scan lamp",
-                RadioSettingValueBoolean(_settings.scan_lamp))
+            "scan_lamp", "Scan lamp", RadioSettingValueBoolean(_settings.scan_lamp)
+        )
         basic.append(rs)
 
-        rs = RadioSetting(
-                "split", "Split",
-                RadioSettingValueBoolean(_settings.split))
+        rs = RadioSetting("split", "Split", RadioSettingValueBoolean(_settings.split))
         basic.append(rs)
 
         options = ["off", "1", "3", "5", "10"]
         rs = RadioSetting(
-                "tot", "TOT (mins)",
-                RadioSettingValueList(options, current_index=_settings.tot))
+            "tot",
+            "TOT (mins)",
+            RadioSettingValueList(options, current_index=_settings.tot),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "txsave", "TX pwr save",
-                RadioSettingValueBoolean(_settings.txsave))
+            "txsave", "TX pwr save", RadioSettingValueBoolean(_settings.txsave)
+        )
         basic.append(rs)
 
         options = ["all", "band"]
         rs = RadioSetting(
-            "vfomode", "VFO mode",
-            RadioSettingValueList(
-                options, current_index=_settings.vfomode))
+            "vfomode",
+            "VFO mode",
+            RadioSettingValueList(options, current_index=_settings.vfomode),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-                "wx_alert", "WX Alert",
-                RadioSettingValueBoolean(_settings.wx_alert))
+            "wx_alert", "WX Alert", RadioSettingValueBoolean(_settings.wx_alert)
+        )
         basic.append(rs)
 
         # todo: priority channel
@@ -665,25 +741,28 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
         # arts settings (ar beep, ar int, cwid en, cwid field)
         options = ["15s", "25s"]
         rs = RadioSetting(
-                "artsinterval", "ARTS Interval",
-                RadioSettingValueList(
-                    options, current_index=_settings.artsinterval))
+            "artsinterval",
+            "ARTS Interval",
+            RadioSettingValueList(options, current_index=_settings.artsinterval),
+        )
         arts.append(rs)
 
         options = ["off", "in range", "always"]
         rs = RadioSetting(
-            "artsbeep", "ARTS Beep",
-            RadioSettingValueList(
-                options, current_index=_settings.artsbeep))
+            "artsbeep",
+            "ARTS Beep",
+            RadioSettingValueList(options, current_index=_settings.artsbeep),
+        )
         arts.append(rs)
 
         rs = RadioSetting(
-                "cwid_en", "CWID Enable",
-                RadioSettingValueBoolean(_settings.cwid_en))
+            "cwid_en", "CWID Enable", RadioSettingValueBoolean(_settings.cwid_en)
+        )
         arts.append(rs)
 
         cwid = RadioSettingValueString(
-                0, 16, self._decode_chars(_settings.cwid.get_value()))
+            0, 16, self._decode_chars(_settings.cwid.get_value())
+        )
         cwid.set_charset(CHARSET)
         rs = RadioSetting("cwid", "CWID", cwid)
         arts.append(rs)
@@ -691,13 +770,14 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
         # setup dtmf
         options = ["manual", "auto"]
         rs = RadioSetting(
-            "dtmfmode", "DTMF mode",
-            RadioSettingValueList(
-                options, current_index=_settings.dtmfmode))
+            "dtmfmode",
+            "DTMF mode",
+            RadioSettingValueList(options, current_index=_settings.dtmfmode),
+        )
         dtmf.append(rs)
 
-        for i in range(0, 8+1):
-            name = "dtmf" + str(i+1)
+        for i in range(0, 8 + 1):
+            name = "dtmf" + str(i + 1)
             dtmfsetting = self._memobj.dtmf[i]
             # dtmflen = getattr(_settings, objname + "_len")
             dtmfstr = ""
@@ -722,7 +802,7 @@ class VX2Radio(yaesu_clone.YaesuCloneModeRadio):
             try:
                 setting = element.get_name()
                 _settings = self._memobj.settings
-                if re.match(r'dtmf\d', setting):
+                if re.match(r"dtmf\d", setting):
                     # set dtmf fields
                     dtmfstr = str(element.value).strip()
                     newval = []

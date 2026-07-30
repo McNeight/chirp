@@ -18,10 +18,16 @@
 
 from chirp import bitwise, chirp_common, directory, errors, util, memmap
 import struct
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueBoolean, \
-    RadioSettingValueString, RadioSettings, \
-    RadioSettingValueMap, zero_indexed_seq_map
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+    RadioSettingValueMap,
+    zero_indexed_seq_map,
+)
 from chirp.chirp_common import format_freq
 import logging
 from datetime import date
@@ -145,43 +151,70 @@ struct {
 """
 
 
-BLANK_MEMORY = "\xFF" * 8 + "\x00\x10\x23\x00\xC0\x08\x06\x00" \
-               "\x00\x00\x76\x00\x00\x00" + "\xFF" * 10
+BLANK_MEMORY = (
+    "\xff" * 8 + "\x00\x10\x23\x00\xc0\x08\x06\x00"
+    "\x00\x00\x76\x00\x00\x00" + "\xff" * 10
+)
 DTCS_POLARITY = ["NN", "RN", "NR", "RR"]
 SCAN_MODES = ["", "S", "P"]
 MODES = ["WFM", "FM", "NFM"]
 TMODES = ["", "Tone", "TSQL", "DTCS"]
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=5.00),
-                chirp_common.PowerLevel("Mid2", watts=10.00),
-                chirp_common.PowerLevel("Mid1", watts=20.00),
-                chirp_common.PowerLevel("High", watts=50.00)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=5.00),
+    chirp_common.PowerLevel("Mid2", watts=10.00),
+    chirp_common.PowerLevel("Mid1", watts=20.00),
+    chirp_common.PowerLevel("High", watts=50.00),
+]
 BUSY_LOCK = ["off", "Carrier", "2 tone"]
-MICKEYFUNC = ["None", "SCAN", "SQL.OFF", "TCALL", "PPTR", "PRI", "LOW", "TONE",
-              "MHz", "REV", "HOME", "BAND", "VFO/MR"]
+MICKEYFUNC = [
+    "None",
+    "SCAN",
+    "SQL.OFF",
+    "TCALL",
+    "PPTR",
+    "PRI",
+    "LOW",
+    "TONE",
+    "MHz",
+    "REV",
+    "HOME",
+    "BAND",
+    "VFO/MR",
+]
 SQLPRESET = ["Off", "2", "5", "9", "Full"]
-BANDS = ["30 MHz", "50 MHz", "60 MHz", "108 MHz", "150 MHz", "250 MHz", "350 MHz",
-         "450 MHz", "850 MHz"]
-STEPS = [2.5, 5.0, 6.25, 7.5, 8.33, 10.0, 12.5,
-         15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
+BANDS = [
+    "30 MHz",
+    "50 MHz",
+    "60 MHz",
+    "108 MHz",
+    "150 MHz",
+    "250 MHz",
+    "350 MHz",
+    "450 MHz",
+    "850 MHz",
+]
+STEPS = [2.5, 5.0, 6.25, 7.5, 8.33, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0]
 
 
-def add_radio_setting(radio_setting_group, mem_field, ui_name, option_map,
-                      current, doc=None):
-    setting = RadioSetting(mem_field, ui_name,
-                           RadioSettingValueMap(option_map, current))
+def add_radio_setting(
+    radio_setting_group, mem_field, ui_name, option_map, current, doc=None
+):
+    setting = RadioSetting(
+        mem_field, ui_name, RadioSettingValueMap(option_map, current)
+    )
     if doc is not None:
         setting.set_doc(doc)
     radio_setting_group.append(setting)
 
 
 def add_radio_bool(radio_setting_group, mem_field, ui_name, current, doc=None):
-    setting = RadioSetting(mem_field, ui_name,
-                           RadioSettingValueBoolean(bool(current)))
+    setting = RadioSetting(mem_field, ui_name, RadioSettingValueBoolean(bool(current)))
     radio_setting_group.append(setting)
 
 
 class TYTTH7800Base(chirp_common.Radio):
     """Base class for TYT TH-7800"""
+
     VENDOR = "TYT"
 
     def get_features(self):
@@ -196,9 +229,11 @@ class TYTTH7800Base(chirp_common.Radio):
         rf.has_ctone = False
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "#*-+"
-        rf.valid_bands = [(108000000, 180000000),
-                          (350000000, 399995000),
-                          (400000000, 512000000)]
+        rf.valid_bands = [
+            (108000000, 180000000),
+            (350000000, 399995000),
+            (400000000, 512000000),
+        ]
         rf.valid_skips = SCAN_MODES
         rf.valid_modes = MODES + ["AM"]
         rf.valid_name_length = 6
@@ -207,9 +242,16 @@ class TYTTH7800Base(chirp_common.Radio):
 
     def process_mmap(self):
         self._memobj = bitwise.parse(
-            TH7800_MEM_FORMAT %
-            (self._mmap_offset, self._scanlimits_offset, self._settings_offset,
-             self._chan_active_offset, self._info_offset), self._mmap)
+            TH7800_MEM_FORMAT
+            % (
+                self._mmap_offset,
+                self._scanlimits_offset,
+                self._settings_offset,
+                self._chan_active_offset,
+                self._info_offset,
+            ),
+            self._mmap,
+        )
 
     def get_active(self, banktype, num):
         """get active flag for channel active,
@@ -273,7 +315,7 @@ class TYTTH7800Base(chirp_common.Radio):
         mem.dtcs = int(_mem.dtcs)
 
         mem.name = str(_mem.name)
-        mem.name = mem.name.replace("\xFF", " ").rstrip()
+        mem.name = mem.name.replace("\xff", " ").rstrip()
 
         if not self.get_active("scan_enable", number):
             mem.skip = "S"
@@ -289,21 +331,39 @@ class TYTTH7800Base(chirp_common.Radio):
 
         mem.extra = RadioSettingGroup("extra", "Extra")
 
-        add_radio_setting(mem.extra, "display", "Display",
-                          zero_indexed_seq_map(["Frequency", "Name"]),
-                          _mem.display)
-        add_radio_setting(mem.extra, "hsdtype", "HSD TYPE",
-                          zero_indexed_seq_map(["OFF", "2TON", "5TON",
-                                                "DTMF"]),
-                          _mem.hsdtype)
+        add_radio_setting(
+            mem.extra,
+            "display",
+            "Display",
+            zero_indexed_seq_map(["Frequency", "Name"]),
+            _mem.display,
+        )
+        add_radio_setting(
+            mem.extra,
+            "hsdtype",
+            "HSD TYPE",
+            zero_indexed_seq_map(["OFF", "2TON", "5TON", "DTMF"]),
+            _mem.hsdtype,
+        )
         add_radio_bool(mem.extra, "clk_sft", "CLK-SFT", _mem.clk_sft)
-        add_radio_bool(mem.extra, "compand", "Compand", _mem.compand,
-                       doc="Compress Audio")
-        add_radio_bool(mem.extra, "talkaround", "Talk Around", _mem.talkaround,
-                       doc="Simplex mode when out of range of repeater")
+        add_radio_bool(
+            mem.extra, "compand", "Compand", _mem.compand, doc="Compress Audio"
+        )
+        add_radio_bool(
+            mem.extra,
+            "talkaround",
+            "Talk Around",
+            _mem.talkaround,
+            doc="Simplex mode when out of range of repeater",
+        )
 
-        add_radio_bool(mem.extra, "scramb", "Scramble", _mem.scramb,
-                       doc="Frequency inversion Scramble")
+        add_radio_bool(
+            mem.extra,
+            "scramb",
+            "Scramble",
+            _mem.scramb,
+            doc="Frequency inversion Scramble",
+        )
         return mem
 
     def set_memory(self, mem):
@@ -340,7 +400,7 @@ class TYTTH7800Base(chirp_common.Radio):
         _mem.dtcs = mem.dtcs
         _mem.dtcs_pol = DTCS_POLARITY.index(mem.dtcs_polarity)
 
-        _mem.name = mem.name.ljust(6, "\xFF")
+        _mem.name = mem.name.ljust(6, "\xff")
 
         # autoset display to name if filled, else show frequency
         if mem.extra:
@@ -374,7 +434,7 @@ class TYTTH7800Base(chirp_common.Radio):
         if mem.power:
             _mem.power = POWER_LEVELS.index(mem.power)
         else:
-            _mem.power = 0    # low
+            _mem.power = 0  # low
         _mem.step = STEPS.index(mem.tuning_step)
 
         for setting in mem.extra:
@@ -390,59 +450,105 @@ class TYTTH7800Base(chirp_common.Radio):
         top = RadioSettings(basic, info)
         add_radio_bool(basic, "beep", "Beep", _settings.beep)
         add_radio_bool(basic, "ars", "Auto Repeater Shift", _settings.ars)
-        add_radio_setting(basic, "keylock", "Key Lock",
-                          zero_indexed_seq_map(["Manual", "Auto"]),
-                          _settings.keylock)
+        add_radio_setting(
+            basic,
+            "keylock",
+            "Key Lock",
+            zero_indexed_seq_map(["Manual", "Auto"]),
+            _settings.keylock,
+        )
         add_radio_bool(basic, "auto_am", "Auto AM", _settings.auto_am)
-        add_radio_setting(basic, "left_sql", "Left Squelch",
-                          zero_indexed_seq_map(SQLPRESET),
-                          _settings.left_sql)
-        add_radio_setting(basic, "right_sql", "Right Squelch",
-                          zero_indexed_seq_map(SQLPRESET),
-                          _settings.right_sql)
-        add_radio_setting(basic, "apo", "Auto Power off (Hours)",
-                          [("Off", 0), ("0.5", 5), ("1.0", 10), ("1.5", 15),
-                           ("2.0", 20)],
-                          _settings.apo)
-        add_radio_setting(basic, "backlight", "Display Backlight",
-                          zero_indexed_seq_map(["Off", "1", "2", "3", "Full"]),
-                          _settings.backlight)
-        add_radio_setting(basic, "pttlock", "PTT Lock",
-                          zero_indexed_seq_map(["Off", "Right", "Left",
-                                                "Both"]),
-                          _settings.pttlock)
-        add_radio_setting(basic, "hyper_chan", "Hyper Channel",
-                          zero_indexed_seq_map(["Manual", "Auto"]),
-                          _settings.hyper_chan)
-        add_radio_setting(basic, "right_func_key", "Right Function Key",
-                          zero_indexed_seq_map(["Key 1", "Key 2"]),
-                          _settings.right_func_key)
-        add_radio_setting(basic, "mute_mode", "Mute Mode",
-                          zero_indexed_seq_map(["Off", "TX", "RX", "TX RX"]),
-                          _settings.mute_mode)
-        add_radio_setting(basic, "scan_mode", "Scan Mode",
-                          zero_indexed_seq_map(["MEM", "MSM"]),
-                          _settings.scan_mode,
-                          doc="MEM = Normal scan, bypass channels marked "
-                          "skip. MSM = Scan only channels marked priority.")
-        add_radio_setting(basic, "scan_resume", "Scan Resume",
-                          zero_indexed_seq_map(["Time", "Busy"]),
-                          _settings.scan_resume)
-        basic.append(RadioSetting(
-                "tot", "Time Out Timer (minutes)",
-                RadioSettingValueInteger(0, 30, _settings.tot)))
-        add_radio_setting(basic, "p1", "P1 Function",
-                          zero_indexed_seq_map(MICKEYFUNC),
-                          _settings.p1)
-        add_radio_setting(basic, "p2", "P2 Function",
-                          zero_indexed_seq_map(MICKEYFUNC),
-                          _settings.p2)
-        add_radio_setting(basic, "p3", "P3 Function",
-                          zero_indexed_seq_map(MICKEYFUNC),
-                          _settings.p3)
-        add_radio_setting(basic, "p4", "P4 Function",
-                          zero_indexed_seq_map(MICKEYFUNC),
-                          _settings.p4)
+        add_radio_setting(
+            basic,
+            "left_sql",
+            "Left Squelch",
+            zero_indexed_seq_map(SQLPRESET),
+            _settings.left_sql,
+        )
+        add_radio_setting(
+            basic,
+            "right_sql",
+            "Right Squelch",
+            zero_indexed_seq_map(SQLPRESET),
+            _settings.right_sql,
+        )
+        add_radio_setting(
+            basic,
+            "apo",
+            "Auto Power off (Hours)",
+            [("Off", 0), ("0.5", 5), ("1.0", 10), ("1.5", 15), ("2.0", 20)],
+            _settings.apo,
+        )
+        add_radio_setting(
+            basic,
+            "backlight",
+            "Display Backlight",
+            zero_indexed_seq_map(["Off", "1", "2", "3", "Full"]),
+            _settings.backlight,
+        )
+        add_radio_setting(
+            basic,
+            "pttlock",
+            "PTT Lock",
+            zero_indexed_seq_map(["Off", "Right", "Left", "Both"]),
+            _settings.pttlock,
+        )
+        add_radio_setting(
+            basic,
+            "hyper_chan",
+            "Hyper Channel",
+            zero_indexed_seq_map(["Manual", "Auto"]),
+            _settings.hyper_chan,
+        )
+        add_radio_setting(
+            basic,
+            "right_func_key",
+            "Right Function Key",
+            zero_indexed_seq_map(["Key 1", "Key 2"]),
+            _settings.right_func_key,
+        )
+        add_radio_setting(
+            basic,
+            "mute_mode",
+            "Mute Mode",
+            zero_indexed_seq_map(["Off", "TX", "RX", "TX RX"]),
+            _settings.mute_mode,
+        )
+        add_radio_setting(
+            basic,
+            "scan_mode",
+            "Scan Mode",
+            zero_indexed_seq_map(["MEM", "MSM"]),
+            _settings.scan_mode,
+            doc="MEM = Normal scan, bypass channels marked "
+            "skip. MSM = Scan only channels marked priority.",
+        )
+        add_radio_setting(
+            basic,
+            "scan_resume",
+            "Scan Resume",
+            zero_indexed_seq_map(["Time", "Busy"]),
+            _settings.scan_resume,
+        )
+        basic.append(
+            RadioSetting(
+                "tot",
+                "Time Out Timer (minutes)",
+                RadioSettingValueInteger(0, 30, _settings.tot),
+            )
+        )
+        add_radio_setting(
+            basic, "p1", "P1 Function", zero_indexed_seq_map(MICKEYFUNC), _settings.p1
+        )
+        add_radio_setting(
+            basic, "p2", "P2 Function", zero_indexed_seq_map(MICKEYFUNC), _settings.p2
+        )
+        add_radio_setting(
+            basic, "p3", "P3 Function", zero_indexed_seq_map(MICKEYFUNC), _settings.p3
+        )
+        add_radio_setting(
+            basic, "p4", "P4 Function", zero_indexed_seq_map(MICKEYFUNC), _settings.p4
+        )
 
         def _filter(name):
             filtered = ""
@@ -468,8 +574,7 @@ class TYTTH7800Base(chirp_common.Radio):
         rs = RadioSetting("code", "Model Code", rsvs)
         info.append(rs)
 
-        progdate = "%d/%d/%d" % (_info.prog_mon, _info.prog_day,
-                                 _info.prog_yr)
+        progdate = "%d/%d/%d" % (_info.prog_mon, _info.prog_day, _info.prog_yr)
         rsvs = RadioSettingValueString(0, 10, progdate)
         rsvs.set_mutable(False)
         rs = RadioSetting("progdate", "Last Program Date", rsvs)
@@ -537,6 +642,7 @@ class TYTTH7800Base(chirp_common.Radio):
 @directory.register
 class TYTTH7800File(TYTTH7800Base, chirp_common.FileBackedRadio):
     """TYT TH-7800 .dat file"""
+
     MODEL = "TH-7800 File"
     NEEDS_COMPAT_SERIAL = True
     FILE_EXTENSION = "dat"
@@ -546,7 +652,7 @@ class TYTTH7800File(TYTTH7800Base, chirp_common.FileBackedRadio):
     _scanlimits_offset = 0xC800 + _mmap_offset
     _settings_offset = 0xCB20 + _mmap_offset
     _chan_active_offset = 0xCB80 + _mmap_offset
-    _info_offset = 0xfe00 + _mmap_offset
+    _info_offset = 0xFE00 + _mmap_offset
 
     def __init__(self, pipe):
         self.errors = []
@@ -560,7 +666,7 @@ class TYTTH7800File(TYTTH7800Base, chirp_common.FileBackedRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and filename.endswith('.dat')
+        return len(filedata) == cls._memsize and filename.endswith(".dat")
 
 
 def _identify(radio):
@@ -572,8 +678,7 @@ def _identify(radio):
             raise errors.RadioNoResponse()
         if ack != b"A":
             util.hexprint(ack)
-            raise errors.RadioError("Radio did not ACK first command: %r"
-                                    % ack)
+            raise errors.RadioError("Radio did not ACK first command: %r" % ack)
     except errors.RadioError:
         raise
     except Exception:
@@ -625,11 +730,11 @@ def _upload(radio, memsize=0xF400, blocksize=0x80):
 
     radio.pipe.timeout = 1
 
-    if data != radio._mmap[0:radio._mmap_offset]:
+    if data != radio._mmap[0 : radio._mmap_offset]:
         raise errors.RadioError(
-            "Model mismatch: \n%s\n%s" %
-            (util.hexprint(data),
-             util.hexprint(radio._mmap[:radio._mmap_offset])))
+            "Model mismatch: \n%s\n%s"
+            % (util.hexprint(data), util.hexprint(radio._mmap[: radio._mmap_offset]))
+        )
     # in the factory software they update the last program date when
     # they upload, So let's do the same
     today = date.today()
@@ -653,7 +758,7 @@ def _upload(radio, memsize=0xF400, blocksize=0x80):
         mapaddr = addr + radio._mmap_offset - offset
         LOG.debug("addr: 0x%04X, mmapaddr: 0x%04X" % (addr, mapaddr))
         msg = struct.pack(">cHB", b"W", addr, blocksize)
-        msg += radio._mmap[mapaddr:(mapaddr + blocksize)]
+        msg += radio._mmap[mapaddr : (mapaddr + blocksize)]
         LOG.debug(util.hexprint(msg))
         radio.pipe.write(msg)
         ack = radio.pipe.read(1)
@@ -677,8 +782,9 @@ def _upload(radio, memsize=0xF400, blocksize=0x80):
 
 
 @directory.register
-class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
-                     chirp_common.ExperimentalRadio):
+class TYTTH7800Radio(
+    TYTTH7800Base, chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio
+):
     VENDOR = "TYT"
     MODEL = "TH-7800"
     BAUD_RATE = 38400
@@ -688,7 +794,7 @@ class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
     _scanlimits_offset = 0xC800 + _mmap_offset
     _settings_offset = 0xCB20 + _mmap_offset
     _chan_active_offset = 0xCB80 + _mmap_offset
-    _info_offset = 0xfe00 + _mmap_offset
+    _info_offset = 0xFE00 + _mmap_offset
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -697,13 +803,13 @@ class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
         # TYT used TH9800 as model for TH-7800 _AND_ TH-9800.  Check
         # for TH7800 in case they fix it or if users update the model
         # in their own radio.
-        if not (filedata[0xfe18:0xfe1e] == b"TH9800" or
-                filedata[0xfe18:0xfe1e] == b"TH7800"):
+        if not (
+            filedata[0xFE18:0xFE1E] == b"TH9800" or filedata[0xFE18:0xFE1E] == b"TH7800"
+        ):
             return False
         # TH-7800 bandlimits differ from TH-9800.  First band Invalid
         # (zero).
-        first_bandlimit = struct.unpack("BBBBBBBBBBBBBBBB",
-                                        filedata[0xfe40:0xfe50])
+        first_bandlimit = struct.unpack("BBBBBBBBBBBBBBBB", filedata[0xFE40:0xFE50])
         if not all(v == 0 for v in first_bandlimit):
             return False
         return True
@@ -712,11 +818,12 @@ class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
         rp.experimental = (
-         'This is experimental support for TH-7800 '
-         'which is still under development.\n'
-         'Please ensure you have a good backup with OEM software.\n'
-         'Also please send in bug and enhancement requests!\n'
-         'You have been warned. Proceed at your own risk!')
+            "This is experimental support for TH-7800 "
+            "which is still under development.\n"
+            "Please ensure you have a good backup with OEM software.\n"
+            "Also please send in bug and enhancement requests!\n"
+            "You have been warned. Proceed at your own risk!"
+        )
         return rp
 
     def sync_in(self):
@@ -725,8 +832,7 @@ class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
         except errors.RadioError:
             raise
         except Exception as e:
-            raise errors.RadioError(
-                    "Failed to communicate with the radio: %s" % e)
+            raise errors.RadioError("Failed to communicate with the radio: %s" % e)
         self.process_mmap()
 
     def sync_out(self):
@@ -735,5 +841,4 @@ class TYTTH7800Radio(TYTTH7800Base, chirp_common.CloneModeRadio,
         except errors.RadioError:
             raise
         except Exception as e:
-            raise errors.RadioError(
-                    "Failed to communicate with the radio: %s" % e)
+            raise errors.RadioError("Failed to communicate with the radio: %s" % e)

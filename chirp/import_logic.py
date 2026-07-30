@@ -21,11 +21,13 @@ LOG = logging.getLogger(__name__)
 
 class ImportError(Exception):
     """An import error"""
+
     pass
 
 
 class DestNotCompatible(ImportError):
     """Memory is not compatible with the destination radio"""
+
     pass
 
 
@@ -43,8 +45,7 @@ def ensure_has_calls(radio, memory):
                 ulist_changed = True
                 break
         if not ulist_changed:
-            raise errors.RadioError("No room to add callsign %s" %
-                                    memory.dv_urcall)
+            raise errors.RadioError("No room to add callsign %s" % memory.dv_urcall)
 
     rlist_add = []
     if memory.dv_rpt1call and memory.dv_rpt1call not in rlist:
@@ -74,9 +75,9 @@ def _import_freq(dst_radio, _srcrf, mem):
     dst_bands = dst_rf.valid_bands
     if not any(lo <= mem.freq <= hi for (lo, hi) in dst_bands):
         raise DestNotCompatible(
-            _('Frequency %s is out of supported ranges %s') % (
-                chirp_common.format_freq(mem.freq),
-                dst_rf.concise_bands))
+            _("Frequency %s is out of supported ranges %s")
+            % (chirp_common.format_freq(mem.freq), dst_rf.concise_bands)
+        )
 
 
 # Filter the name according to the destination's rules
@@ -85,8 +86,10 @@ def _import_name(dst_radio, _srcrf, mem):
 
 
 def find_closest_power(needle_watts, levels_haystack):
-    deltas = [abs(needle_watts - chirp_common.dBm_to_watts(int(power)))
-              for power in levels_haystack]
+    deltas = [
+        abs(needle_watts - chirp_common.dBm_to_watts(int(power)))
+        for power in levels_haystack
+    ]
     return levels_haystack[deltas.index(min(deltas))]
 
 
@@ -129,8 +132,7 @@ def _import_power(dst_radio, _srcrf, mem):
     # watts not dBm because we will make the wrong decision otherwise due
     # to the logarithmic scale.
 
-    mem.power = find_closest_power(chirp_common.dBm_to_watts(int(mem.power)),
-                                   levels)
+    mem.power = find_closest_power(chirp_common.dBm_to_watts(int(mem.power)), levels)
 
 
 def _import_tone(dst_radio, srcrf, mem):
@@ -147,12 +149,12 @@ def _import_tone(dst_radio, srcrf, mem):
         # without, and the tmode is TSQL, then use the ctone value
         if mem.rtone not in dstrf.valid_tones:
             raise DestNotCompatible(
-                "Destination does not support tone frequency %s" %
-                mem.rtone)
+                "Destination does not support tone frequency %s" % mem.rtone
+            )
         if mem.ctone not in dstrf.valid_tones:
             raise DestNotCompatible(
-                "Destination does not support tone frequency %s" %
-                mem.ctone)
+                "Destination does not support tone frequency %s" % mem.ctone
+            )
         if mem.tmode == "TSQL":
             mem.rtone = mem.ctone
     elif not srcrf.has_ctone and dstrf.has_ctone:
@@ -185,7 +187,7 @@ def _guess_mode_by_frequency(freq):
     ranges = [
         (0, 136000000, "AM"),
         (136000000, 9999000000, "FM"),
-        ]
+    ]
 
     for lo, hi, mode in ranges:
         if freq > lo and freq <= hi:
@@ -229,17 +231,18 @@ def _import_duplex(dst_radio, srcrf, mem):
         mem.duplex, mem.offset = _make_offset_with_split(mem.freq, mem.offset)
 
         # Enforce maximum offset
-        ranges = [(0,          500000000, 15000000),
-                  (500000000, 3000000000, 50000000),
-                  ]
+        ranges = [
+            (0, 500000000, 15000000),
+            (500000000, 3000000000, 50000000),
+        ]
         for lo, hi, limit in ranges:
             if lo < mem.freq <= hi:
                 if abs(mem.offset) > limit:
                     raise DestNotCompatible("offset is abnormally large.")
-    elif mem.duplex == 'off' and mem.duplex not in dstrf.valid_duplexes:
+    elif mem.duplex == "off" and mem.duplex not in dstrf.valid_duplexes:
         # If a radio does not support duplex=off, we should just convert to
         # simplex
-        mem.duplex = ''
+        mem.duplex = ""
 
 
 def import_mem(dst_radio, src_features, src_mem, overrides={}, mem_cls=None):
@@ -255,9 +258,8 @@ def import_mem(dst_radio, src_features, src_mem, overrides={}, mem_cls=None):
         if isinstance(dst_radio, chirp_common.IcomDstarSupport):
             if dst_rf.requires_call_lists:
                 ensure_has_calls(dst_radio, src_mem)
-        elif 'DV' not in dst_rf.valid_modes:
-            raise DestNotCompatible(
-                "Destination radio does not support D-STAR")
+        elif "DV" not in dst_rf.valid_modes:
+            raise DestNotCompatible("Destination radio does not support D-STAR")
 
     if mem_cls:
         dst_mem = mem_cls()
@@ -272,14 +274,15 @@ def import_mem(dst_radio, src_features, src_mem, overrides={}, mem_cls=None):
     for k, v in overrides.items():
         dst_mem.__dict__[k] = v
 
-    helpers = [_import_freq,
-               _import_name,
-               _import_power,
-               _import_tone,
-               _import_dtcs,
-               _import_mode,
-               _import_duplex,
-               ]
+    helpers = [
+        _import_freq,
+        _import_name,
+        _import_power,
+        _import_tone,
+        _import_dtcs,
+        _import_mode,
+        _import_duplex,
+    ]
 
     for helper in helpers:
         helper(dst_radio, src_features, dst_mem)
@@ -336,8 +339,9 @@ def import_bank(dst_radio, src_radio, dst_mem, src_mem):
             LOG.debug("Adding memory to bank %s" % bank)
             dst_bm.add_memory_to_mapping(dst_mem, bank)
             if isinstance(dst_bm, chirp_common.MappingModelIndexInterface):
-                dst_bm.set_memory_index(dst_mem, bank,
-                                        dst_bm.get_next_mapping_index(bank))
+                dst_bm.set_memory_index(
+                    dst_mem, bank, dst_bm.get_next_mapping_index(bank)
+                )
 
         except IndexError:
             pass

@@ -23,9 +23,11 @@ from chirp.settings import RadioSettings
 
 LOG = logging.getLogger(__name__)
 
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=5),
-                chirp_common.PowerLevel("Mid", watts=25),
-                chirp_common.PowerLevel("Hi", watts=50)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=25),
+    chirp_common.PowerLevel("Hi", watts=50),
+]
 
 TMODES = ["", "Tone", "TSQL", "DTCS", "TSQL-R", None, None, "Pager", "Cross"]
 CROSS_MODES = [None, "DTCS->", "Tone->DTCS", "DTCS->Tone"]
@@ -35,12 +37,14 @@ STEPS = [0, 5, 6.25, 10, 12.5, 15, 20, 25, 50, 100]  # 0 = auto
 RFSQUELCH = ["OFF", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
 
 # Charset is subset of ASCII + some unknown chars \x80-\x86
-VALID_CHARS = ["%i" % int(x) for x in range(0, 10)] + \
-    list(":>=<?@") + \
-    [chr(x) for x in range(ord("A"), ord("Z") + 1)] + \
-    list("[\\]_") + \
-    [chr(x) for x in range(ord("a"), ord("z") + 1)] + \
-    list("%*+,-/=$ ")
+VALID_CHARS = (
+    ["%i" % int(x) for x in range(0, 10)]
+    + list(":>=<?@")
+    + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    + list("[\\]_")
+    + [chr(x) for x in range(ord("a"), ord("z") + 1)]
+    + list("%*+,-/=$ ")
+)
 
 MEM_FORMAT = """
 #seekto 0xceca;
@@ -63,6 +67,7 @@ u8 checksum;
 @directory.register
 class FTM7250Radio(ft1d.FT1Radio):
     """Yaesu FTM-7250D"""
+
     BAUD_RATE = 38400
     VENDOR = "Yaesu"
     MODEL = "FTM-7250D"
@@ -74,8 +79,10 @@ class FTM7250Radio(ft1d.FT1Radio):
     _has_vibrate = False
     _has_af_dual = False
 
-    _mem_params = {'memnum': 199,            # size of memories array
-                   'flgnum': 199}            # size of flags array
+    _mem_params = {
+        "memnum": 199,  # size of memories array
+        "flgnum": 199,
+    }  # size of flags array
 
     @classmethod
     def get_prompts(cls):
@@ -85,17 +92,19 @@ class FTM7250Radio(ft1d.FT1Radio):
             "2. Connect cable to MIC Jack.\n"
             "3. Press and hold in the [MHz(SETUP)] key while turning the"
             " radio\n"
-            "     on (\"CLONE\" will appear on the display).\n"
+            '     on ("CLONE" will appear on the display).\n'
             "4. <b>After clicking OK</b>, press the [GM(AMS)] key\n"
-            "     to send image.\n")
+            "     to send image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to MIC Jack.\n"
             "3. Press and hold in the [MHz(SETUP)] key while turning the"
             " radio\n"
-            "     on (\"CLONE\" will appear on the display).\n"
+            '     on ("CLONE" will appear on the display).\n'
             "4. Press the [MHz(SETUP)] key\n"
-            "     (\"-WAIT-\" will appear on the LCD).\n")
+            '     ("-WAIT-" will appear on the LCD).\n'
+        )
         return rp
 
     def process_mmap(self):
@@ -126,17 +135,17 @@ class FTM7250Radio(ft1d.FT1Radio):
 
     def _decode_label(self, mem):
         # TODO preserve the unknown \x80-x86 chars?
-        return str(mem.label).rstrip("\xFF")
+        return str(mem.label).rstrip("\xff")
 
     def _encode_label(self, mem):
-        label = mem.name.rstrip().encode('ascii', 'ignore')
+        label = mem.name.rstrip().encode("ascii", "ignore")
         return self._add_ff_pad(label, 16)
 
     def _encode_charsetbits(self, mem):
         # TODO this is a setting to decide if the memory should be displayed
         # as a name or frequency. Should we expose this setting to the user
         # instead of autoselecting it (and losing their preference)?
-        if mem.name.rstrip() == '':
+        if mem.name.rstrip() == "":
             return 0x00
         return 0x00
 
@@ -185,11 +194,13 @@ class FTM7250Radio(ft1d.FT1Radio):
         return
 
     def _checksums(self):
-        return [yaesu_clone.YaesuChecksum(0x064A, 0x06C8),
-                yaesu_clone.YaesuChecksum(0x06CA, 0x0748),
-                yaesu_clone.YaesuChecksum(0x074A, 0x07C8),
-                yaesu_clone.YaesuChecksum(0x07CA, 0x0848),
-                yaesu_clone.YaesuChecksum(0x0000, 0xFEC9)]
+        return [
+            yaesu_clone.YaesuChecksum(0x064A, 0x06C8),
+            yaesu_clone.YaesuChecksum(0x06CA, 0x0748),
+            yaesu_clone.YaesuChecksum(0x074A, 0x07C8),
+            yaesu_clone.YaesuChecksum(0x07CA, 0x0848),
+            yaesu_clone.YaesuChecksum(0x0000, 0xFEC9),
+        ]
 
     def _get_settings(self):
         # TODO

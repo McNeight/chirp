@@ -27,27 +27,38 @@ import subprocess
 # pep8 has a FutureWarning about nested sets. This isn't our problem, so
 # squelch it here during import.
 with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
+    warnings.simplefilter("ignore")
     import pep8
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-a", "--all", action="store_true",
-                    help="Check all files, ignoring blacklist")
-parser.add_argument("-d", "--dir", action="append", default=['chirp', 'tests'],
-                    help="Root directory of source tree")
-parser.add_argument("-s", "--stats", action="store_true",
-                    help="Only show statistics")
-parser.add_argument("--strict", action="store_true",
-                    help="Ignore listed exceptions")
-parser.add_argument("-S", "--scan", action="store_true",
-                    help="Scan for additional files")
-parser.add_argument("-u", "--update", action="store_true",
-                    help="Update manifest/blacklist files")
-parser.add_argument("-v", "--verbose", action="store_true",
-                    help="Display list of checked files")
-parser.add_argument("files", metavar="file", nargs='*',
-                    help="List of files to check (if none, check all)")
+parser.add_argument(
+    "-a", "--all", action="store_true", help="Check all files, ignoring blacklist"
+)
+parser.add_argument(
+    "-d",
+    "--dir",
+    action="append",
+    default=["chirp", "tests"],
+    help="Root directory of source tree",
+)
+parser.add_argument("-s", "--stats", action="store_true", help="Only show statistics")
+parser.add_argument("--strict", action="store_true", help="Ignore listed exceptions")
+parser.add_argument(
+    "-S", "--scan", action="store_true", help="Scan for additional files"
+)
+parser.add_argument(
+    "-u", "--update", action="store_true", help="Update manifest/blacklist files"
+)
+parser.add_argument(
+    "-v", "--verbose", action="store_true", help="Display list of checked files"
+)
+parser.add_argument(
+    "files",
+    metavar="file",
+    nargs="*",
+    help="List of files to check (if none, check all)",
+)
 args = parser.parse_args()
 
 
@@ -56,7 +67,7 @@ def file_to_lines(name):
     lines = fh.read().split("\n")
     lines.pop()
     fh.close()
-    return [x for x in lines if not x.startswith('#')]
+    return [x for x in lines if not x.startswith("#")]
 
 
 scriptdir = os.path.dirname(sys.argv[0])
@@ -66,13 +77,13 @@ exceptions_filename = os.path.join(scriptdir, "cpep8.exceptions")
 
 cpep8_manifest = set(file_to_lines(manifest_filename))
 flake8_manifest = set()
-for src_dir in [os.path.join('.', d) for d in args.dir]:
+for src_dir in [os.path.join(".", d) for d in args.dir]:
     for root, dirs, files in os.walk(src_dir):
         for f in files:
             filename = os.path.join(root, f)
-            if filename.replace('\\', '/') in cpep8_manifest:
+            if filename.replace("\\", "/") in cpep8_manifest:
                 continue
-            if f.endswith('.py'):
+            if f.endswith(".py"):
                 flake8_manifest.add(filename)
                 continue
             with open(filename, "rb") as fh:
@@ -85,8 +96,7 @@ for src_dir in [os.path.join('.', d) for d in args.dir]:
 exceptions = {}
 if not args.strict:
     exception_lines = file_to_lines(exceptions_filename)
-    exception_lists = [x.split('\t')
-                       for x in exception_lines if not x.startswith('#')]
+    exception_lists = [x.split("\t") for x in exception_lines if not x.startswith("#")]
     for filename, codes in exception_lists:
         exceptions[filename] = codes
 
@@ -104,8 +114,8 @@ if args.files:
     cpep8_manifest = []
     flake8_manifest = []
     for fn in args.files:
-        if not fn.startswith('./'):
-            fn = './' + fn
+        if not fn.startswith("./"):
+            fn = "./" + fn
         if fn in old_files:
             cpep8_manifest.append(fn)
         else:
@@ -116,7 +126,7 @@ blacklist = file_to_lines(blacklist_filename)
 
 check_list = []
 for f in cpep8_manifest:
-    if args.all or f.replace('\\', '/') not in blacklist:
+    if args.all or f.replace("\\", "/") not in blacklist:
         check_list.append(f)
 check_list = sorted(check_list)
 
@@ -131,14 +141,13 @@ for f in check_list:
         checker.report.print_statistics()
     total_errors += results
 
-flake8_manifest = [f for f in flake8_manifest
-                   if f.replace('\\', '/') not in blacklist]
+flake8_manifest = [f for f in flake8_manifest if f.replace("\\", "/") not in blacklist]
 
 for i in range(0, len(flake8_manifest), 10):
-    files = flake8_manifest[i:i + 10]
+    files = flake8_manifest[i : i + 10]
     if args.verbose:
-        print('Checking %s' % files)
-    r = subprocess.call(['flake8', '--builtins=_,ngettext'] + files)
+        print("Checking %s" % files)
+    r = subprocess.call(["flake8", "--builtins=_,ngettext"] + files)
     if r != 0:
         total_errors += r
 

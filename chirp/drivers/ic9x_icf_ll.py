@@ -46,7 +46,7 @@ def get_raw_memory(mmap, number):
         size = MEM_LOC_SIZE_B
     else:
         size = MEM_LOC_SIZE_A
-    return MemoryMap(mmap[offset:offset+size])
+    return MemoryMap(mmap[offset : offset + size])
 
 
 def get_freq(mmap):
@@ -55,13 +55,13 @@ def get_freq(mmap):
         mult = 6250
     else:
         mult = 5000
-    val, = struct.unpack(">I", "\x00" + mmap[POS_FREQ:POS_FREQ+3])
+    (val,) = struct.unpack(">I", "\x00" + mmap[POS_FREQ : POS_FREQ + 3])
     return val * mult
 
 
 def get_offset(mmap):
     """Return the memory offset"""
-    val, = struct.unpack(">H", mmap[POS_OFFSET:POS_OFFSET+2])
+    (val,) = struct.unpack(">H", mmap[POS_OFFSET : POS_OFFSET + 2])
     return val * 5000
 
 
@@ -73,7 +73,7 @@ def get_rtone(mmap):
 
 def get_ctone(mmap):
     """Return the memory ctone"""
-    val = (ord(mmap[POS_TONE]) & 0x03) | ((ord(mmap[POS_TONE+1]) & 0xF0) >> 4)
+    val = (ord(mmap[POS_TONE]) & 0x03) | ((ord(mmap[POS_TONE + 1]) & 0xF0) >> 4)
     return chirp_common.TONES[val]
 
 
@@ -110,7 +110,7 @@ def get_ts(mmap):
 
 def get_dtcs_polarity(mmap):
     """Return the memory dtcs polarity"""
-    val = (ord(mmap[POS_DTCSPOL]) & 0x03)
+    val = ord(mmap[POS_DTCSPOL]) & 0x03
 
     pols = ["NN", "NR", "RN", "RR"]
 
@@ -128,7 +128,7 @@ def get_duplex(mmap):
 
 def get_name(mmap):
     """Return the memory name"""
-    return mmap[POS_NAME:POS_NAME+8]
+    return mmap[POS_NAME : POS_NAME + 8]
 
 
 def get_memory(_mmap, number):

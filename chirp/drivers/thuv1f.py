@@ -18,10 +18,15 @@ import logging
 
 from chirp import chirp_common, errors, util, directory, memmap
 from chirp import bitwise
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -83,7 +88,7 @@ def uvf1_upload(radio):
     for i in range(0, 0x1000, 0x10):
         addr = i + 0x10
         msg = struct.pack(">cHB", b"W", i, 0x10)
-        msg += radio._mmap[addr:addr+0x10]
+        msg += radio._mmap[addr : addr + 0x10]
 
         radio.pipe.write(msg)
         ack = radio.pipe.read(1)
@@ -166,14 +171,14 @@ struct name names[128];
 LED_LIST = ["Off", "On", "Auto"]
 LIGHT_LIST = ["Purple", "Orange", "Blue"]
 VOX_LIST = ["1", "2", "3", "4", "5", "6", "7", "8"]
-TOT_LIST = ["Off", "30s", "60s", "90s", "120s", "150s", "180s", "210s",
-            "240s", "270s"]
+TOT_LIST = ["Off", "30s", "60s", "90s", "120s", "150s", "180s", "210s", "240s", "270s"]
 SCANS_LIST = ["Time", "Carry", "Seek"]
 OPNMSG_LIST = ["Off", "DC", "Message"]
 
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5),
-                chirp_common.PowerLevel("Low", watts=1),
-                ]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=5),
+    chirp_common.PowerLevel("Low", watts=1),
+]
 
 PTTID_LIST = ["Off", "BOT", "EOT", "Both"]
 BCL_LIST = ["Off", "CSQ", "QT/DQT"]
@@ -184,6 +189,7 @@ STEPS = [5.0, 6.25, 7.5, 10.0, 12.5, 25.0, 37.5, 50.0, 100.0]
 @directory.register
 class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
     """TYT TH-UVF1"""
+
     VENDOR = "TYT"
     MODEL = "TH-UVF1"
 
@@ -200,16 +206,21 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
         rf.valid_characters = chirp_common.CHARSET_ALPHANUMERIC + "-/"
-        rf.valid_bands = [(136000000, 174000000),
-                          (420000000, 470000000)]
+        rf.valid_bands = [(136000000, 174000000), (420000000, 470000000)]
         rf.valid_skips = ["", "S"]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_tuning_steps = STEPS
         rf.valid_name_length = 7
-        rf.valid_cross_modes = ["Tone->Tone", "DTCS->DTCS",
-                                "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+        ]
 
         return rf
 
@@ -233,12 +244,14 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
     @classmethod
     def match_model(cls, filedata, filename):
         # TYT TH-UVF1 original
-        if filedata.startswith(b"\x13\x60\x17\x40\x40\x00\x48\x00" +
-                               b"\x35\x00\x39\x00\x47\x00\x52\x00"):
+        if filedata.startswith(
+            b"\x13\x60\x17\x40\x40\x00\x48\x00" + b"\x35\x00\x39\x00\x47\x00\x52\x00"
+        ):
             return True
         # TYT TH-UVF1 V2
-        elif filedata.startswith(b"\x14\x40\x14\x80\x43\x00\x45\x00" +
-                                 b"\x13\x60\x17\x40\x40\x00\x47\x00"):
+        elif filedata.startswith(
+            b"\x14\x40\x14\x80\x43\x00\x45\x00" + b"\x13\x60\x17\x40\x40\x00\x47\x00"
+        ):
             return True
         else:
             return False
@@ -288,13 +301,13 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
         raw_tx = ""
         for i in range(0, 4):
             raw_tx += _mem.tx_freq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+        return raw_tx == "\xff\xff\xff\xff"
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number - 1]
         mem = chirp_common.Memory()
         mem.number = number
-        if _mem.get_raw(asbytes=False).startswith("\xFF\xFF\xFF\xFF"):
+        if _mem.get_raw(asbytes=False).startswith("\xff\xff\xff\xff"):
             mem.empty = True
             return mem
 
@@ -320,10 +333,11 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
         rxmode, rxval, rxpol = self._decode_tone(_mem.rx_tone)
 
         chirp_common.split_tone_decode(
-            mem, (txmode, txval, txpol), (rxmode, rxval, rxpol))
+            mem, (txmode, txval, txpol), (rxmode, rxval, rxpol)
+        )
 
         mem.name = str(self._memobj.names[number - 1].name)
-        mem.name = mem.name.replace("\xFF", " ").rstrip()
+        mem.name = mem.name.replace("\xff", " ").rstrip()
 
         mem.skip = not _mem.scan and "S" or ""
         mem.mode = _mem.isnarrow and "NFM" or "FM"
@@ -331,23 +345,28 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
 
         mem.extra = RadioSettingGroup("extra", "Extra Settings")
 
-        rs = RadioSetting("pttid", "PTT ID",
-                          RadioSettingValueList(PTTID_LIST,
-                                                current_index=_mem.pttid))
+        rs = RadioSetting(
+            "pttid",
+            "PTT ID",
+            RadioSettingValueList(PTTID_LIST, current_index=_mem.pttid),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("vox", "VOX",
-                          RadioSettingValueBoolean(_mem.vox))
+        rs = RadioSetting("vox", "VOX", RadioSettingValueBoolean(_mem.vox))
         mem.extra.append(rs)
 
-        rs = RadioSetting("bcl", "Busy Channel Lockout",
-                          RadioSettingValueList(BCL_LIST,
-                                                current_index=_mem.bcl))
+        rs = RadioSetting(
+            "bcl",
+            "Busy Channel Lockout",
+            RadioSettingValueList(BCL_LIST, current_index=_mem.bcl),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("scramble_code", "Scramble Code",
-                          RadioSettingValueList(
-                              CODES_LIST, current_index=_mem.scramble_code))
+        rs = RadioSetting(
+            "scramble_code",
+            "Scramble Code",
+            RadioSettingValueList(CODES_LIST, current_index=_mem.scramble_code),
+        )
         mem.extra.append(rs)
 
         return mem
@@ -355,17 +374,17 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
     def set_memory(self, mem):
         _mem = self._memobj.memory[mem.number - 1]
         if mem.empty:
-            _mem.set_raw(b"\xFF" * 16)
+            _mem.set_raw(b"\xff" * 16)
             return
 
-        if _mem.get_raw(asbytes=False) == ("\xFF" * 16):
+        if _mem.get_raw(asbytes=False) == ("\xff" * 16):
             LOG.debug("Initializing empty memory")
             _mem.set_raw(b"\x00" * 16)
 
         _mem.rx_freq = mem.freq / 10
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw(b"\xFF")
+                _mem.tx_freq[i].set_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.tx_freq = mem.offset / 10
         elif mem.duplex == "-":
@@ -375,13 +394,14 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
         else:
             _mem.tx_freq = mem.freq / 10
 
-        (txmode, txval, txpol), (rxmode, rxval, rxpol) = \
-            chirp_common.split_tone_encode(mem)
+        (txmode, txval, txpol), (rxmode, rxval, rxpol) = chirp_common.split_tone_encode(
+            mem
+        )
 
         self._encode_tone(_mem.tx_tone, txmode, txval, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxval, rxpol)
 
-        self._memobj.names[mem.number - 1].name = mem.name.ljust(7, "\xFF")
+        self._memobj.names[mem.number - 1].name = mem.name.ljust(7, "\xff")
 
         _mem.scan = mem.skip == ""
         _mem.isnarrow = mem.mode == "NFM"
@@ -397,84 +417,115 @@ class TYTTHUVF1Radio(chirp_common.CloneModeRadio):
         top = RadioSettings(group)
 
         group.append(
-            RadioSetting("led", "LED Mode",
-                         RadioSettingValueList(LED_LIST,
-                                               current_index=_settings.led)))
+            RadioSetting(
+                "led",
+                "LED Mode",
+                RadioSettingValueList(LED_LIST, current_index=_settings.led),
+            )
+        )
         group.append(
-            RadioSetting("light", "Light Color",
-                         RadioSettingValueList(LIGHT_LIST,
-                                               current_index=_settings.light)))
-
-        group.append(
-            RadioSetting("squelch", "Squelch Level",
-                         RadioSettingValueInteger(0, 9, _settings.squelch)))
+            RadioSetting(
+                "light",
+                "Light Color",
+                RadioSettingValueList(LIGHT_LIST, current_index=_settings.light),
+            )
+        )
 
         group.append(
             RadioSetting(
-                "vox_level", "VOX Level",
-                RadioSettingValueList(
-                    VOX_LIST, current_index=_settings.vox_level)))
-
-        group.append(
-            RadioSetting("beep", "Beep",
-                         RadioSettingValueBoolean(_settings.beep)))
-
-        group.append(
-            RadioSetting("ani", "ANI",
-                         RadioSettingValueBoolean(_settings.ani)))
-
-        group.append(
-            RadioSetting("dwait", "D.WAIT",
-                         RadioSettingValueBoolean(_settings.dwait)))
-
-        group.append(
-            RadioSetting("tot", "Timeout Timer",
-                         RadioSettingValueList(TOT_LIST,
-                                               current_index=_settings.tot)))
-
-        group.append(
-            RadioSetting("roger", "Roger Beep",
-                         RadioSettingValueBoolean(_settings.roger)))
-
-        group.append(
-            RadioSetting("dw", "Dual Watch",
-                         RadioSettingValueBoolean(_settings.dw)))
-
-        group.append(
-            RadioSetting("rxsave", "RX Save",
-                         RadioSettingValueBoolean(_settings.rxsave)))
-
-        group.append(
-            RadioSetting("scans", "Scans",
-                         RadioSettingValueList(SCANS_LIST,
-                                               current_index=_settings.scans)))
-
-        group.append(
-            RadioSetting("autolk", "Auto Lock",
-                         RadioSettingValueBoolean(_settings.autolk)))
-
-        group.append(
-            RadioSetting("voice", "Voice",
-                         RadioSettingValueBoolean(_settings.voice)))
+                "squelch",
+                "Squelch Level",
+                RadioSettingValueInteger(0, 9, _settings.squelch),
+            )
+        )
 
         group.append(
             RadioSetting(
-                "opnmsg", "Opening Message",
-                RadioSettingValueList(
-                    OPNMSG_LIST, current_index=_settings.opnmsg)))
+                "vox_level",
+                "VOX Level",
+                RadioSettingValueList(VOX_LIST, current_index=_settings.vox_level),
+            )
+        )
 
         group.append(
-            RadioSetting("disnm", "Display Name",
-                         RadioSettingValueBoolean(_settings.disnm)))
+            RadioSetting("beep", "Beep", RadioSettingValueBoolean(_settings.beep))
+        )
+
+        group.append(
+            RadioSetting("ani", "ANI", RadioSettingValueBoolean(_settings.ani))
+        )
+
+        group.append(
+            RadioSetting("dwait", "D.WAIT", RadioSettingValueBoolean(_settings.dwait))
+        )
+
+        group.append(
+            RadioSetting(
+                "tot",
+                "Timeout Timer",
+                RadioSettingValueList(TOT_LIST, current_index=_settings.tot),
+            )
+        )
+
+        group.append(
+            RadioSetting(
+                "roger", "Roger Beep", RadioSettingValueBoolean(_settings.roger)
+            )
+        )
+
+        group.append(
+            RadioSetting("dw", "Dual Watch", RadioSettingValueBoolean(_settings.dw))
+        )
+
+        group.append(
+            RadioSetting(
+                "rxsave", "RX Save", RadioSettingValueBoolean(_settings.rxsave)
+            )
+        )
+
+        group.append(
+            RadioSetting(
+                "scans",
+                "Scans",
+                RadioSettingValueList(SCANS_LIST, current_index=_settings.scans),
+            )
+        )
+
+        group.append(
+            RadioSetting(
+                "autolk", "Auto Lock", RadioSettingValueBoolean(_settings.autolk)
+            )
+        )
+
+        group.append(
+            RadioSetting("voice", "Voice", RadioSettingValueBoolean(_settings.voice))
+        )
+
+        group.append(
+            RadioSetting(
+                "opnmsg",
+                "Opening Message",
+                RadioSettingValueList(OPNMSG_LIST, current_index=_settings.opnmsg),
+            )
+        )
+
+        group.append(
+            RadioSetting(
+                "disnm", "Display Name", RadioSettingValueBoolean(_settings.disnm)
+            )
+        )
 
         def _filter(name):
             LOG.debug(repr(str(name)))
-            return str(name).rstrip("\xFF").rstrip()
+            return str(name).rstrip("\xff").rstrip()
 
         group.append(
-            RadioSetting("ponmsg", "Power-On Message",
-                         RadioSettingValueString(0, 6,
-                                                 _filter(_settings.ponmsg))))
+            RadioSetting(
+                "ponmsg",
+                "Power-On Message",
+                RadioSettingValueString(0, 6, _filter(_settings.ponmsg)),
+            )
+        )
 
         return top
 

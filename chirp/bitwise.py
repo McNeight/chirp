@@ -75,6 +75,7 @@ LOG = logging.getLogger(__name__)
 
 class ParseError(Exception):
     """Indicates an error parsing a definition"""
+
     pass
 
 
@@ -94,7 +95,7 @@ def string_straight_encode(string):
     # specific binary values in memory). Ideally we would have
     # written all of chirp with bytes() for these values, but alas.
     # We can get the intended string here by doing bytes([ord(char)]).
-    return bytes(b''.join(bytes([ord(b)]) for b in string))
+    return bytes(b"".join(bytes([ord(b)]) for b in string))
 
 
 def string_straight_decode(string):
@@ -112,14 +113,14 @@ def string_straight_decode(string):
     # will detect '\xFF' properly.
     # FIXMEPY3: Remove this and the hack below when drivers convert to
     # bytestrings.
-    return ''.join(chr(b) for b in string)
+    return "".join(chr(b) for b in string)
 
 
-def format_binary(nbits, value, width=8, shift=0, padchar='.'):
+def format_binary(nbits, value, width=8, shift=0, padchar="."):
     padleft = width - shift
     padright = width - padleft - nbits
-    bits = f'{value << shift:0{nbits}b}'[:nbits]
-    return f'{padleft * padchar}{bits}{padright * padchar}'
+    bits = f"{value << shift:0{nbits}b}"[:nbits]
+    return f"{padleft * padchar}{bits}{padright * padchar}"
 
 
 def bits_between(start, end):
@@ -130,13 +131,13 @@ def bits_between(start, end):
 def pp(structure, level=0):
     for i in structure:
         if isinstance(i, list):
-            pp(i, level+2)
+            pp(i, level + 2)
         elif isinstance(i, tuple):
             if isinstance(i[1], str):
                 print("%s%s: %s" % (" " * level, i[0], i[1]))
             else:
                 print("%s%s:" % (" " * level, i[0]))
-                pp(i, level+2)
+                pp(i, level + 2)
         elif isinstance(i, str):
             print("%s%s" % (" " * level, i))
 
@@ -182,7 +183,7 @@ def dec_to_bbcd(dec: int, packed=True) -> int:
     return result
 
 
-def numeric_str_to_bcd(bcdel, string, pad='0'):
+def numeric_str_to_bcd(bcdel, string, pad="0"):
     """Convert a string of digits into BCD-like bytes.
 
     This should only be used for the quasi-BCD encodings of DTMF characters
@@ -190,17 +191,17 @@ def numeric_str_to_bcd(bcdel, string, pad='0'):
     """
     string = string.ljust(2 * bcdel.size() // 8, pad)
     for i in range(0, bcdel.size() // 8):
-        bcdel[i] = int(string[i*2:i*2+2], 16)
+        bcdel[i] = int(string[i * 2 : i * 2 + 2], 16)
 
 
-def bcd_to_numeric_str(bcdel, pad='0'):
+def bcd_to_numeric_str(bcdel, pad="0"):
     """Convert a list of BCD-like bytes into a string.
 
     See numeric_str_to_bcd above.
     """
-    string = ''
+    string = ""
     for i in range(0, bcdel.size() // 8):
-        string += '%02X' % bcdel[i]
+        string += "%02X" % bcdel[i]
     return string.ljust(2 * bcdel.size() // 8, pad)
 
 
@@ -226,8 +227,11 @@ class DataElement:
         if asbytes:
             return bytes(bs)
         else:
-            warnings.warn('Driver is using non-byte-native get_raw()',
-                          DeprecationWarning, stacklevel=3)
+            warnings.warn(
+                "Driver is using non-byte-native get_raw()",
+                DeprecationWarning,
+                stacklevel=3,
+            )
             return string_straight_decode(bs)
 
     def size(self):
@@ -240,22 +244,25 @@ class DataElement:
         raise Exception("Not implemented")
 
     def get_value(self):
-        value = self._data[self._offset:self._offset + self._size]
+        value = self._data[self._offset : self._offset + self._size]
         return self._get_value(value)
 
     def set_value(self, value):
         raise Exception("Not implemented for %s" % self.__class__)
 
     def get_raw(self, asbytes=True):
-        raw = self._data[self._offset:self._offset+self._size]
+        raw = self._data[self._offset : self._offset + self._size]
         return self._compat_bytes(raw, asbytes)
 
     def set_raw(self, data):
         if isinstance(data, str):
-            warnings.warn('Driver is using non-byte-native set_raw()',
-                          DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Driver is using non-byte-native set_raw()",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             data = string_straight_encode(data)
-        self._data[self._offset] = data[:self._size]
+        self._data[self._offset] = data[: self._size]
 
     def get_path(self, path):
         """Retrieve a child element starting from here by symbolic path.
@@ -265,21 +272,21 @@ class DataElement:
             [3]
             .bar
         """
-        tok = re.search('[.[]', path)
+        tok = re.search("[.[]", path)
         if tok:
             tok = tok.group(0)
-        if path.startswith('.'):
+        if path.startswith("."):
             return self.get_path(path[1:])
-        elif path.startswith('['):
-            index, rest = path.split(']', 1)
+        elif path.startswith("["):
+            index, rest = path.split("]", 1)
             index = int(index[1:])
             return self[index].get_path(rest)
-        elif tok == '.':
-            field, rest = path.split('.', 1)
+        elif tok == ".":
+            field, rest = path.split(".", 1)
             return getattr(self, field).get_path(rest)
-        elif tok == '[':
-            field, rest = path.split('[', 1)
-            return getattr(self, field).get_path('[' + rest)
+        elif tok == "[":
+            field, rest = path.split("[", 1)
+            return getattr(self, field).get_path("[" + rest)
         elif path:
             return getattr(self, path)
         else:
@@ -294,13 +301,14 @@ class DataElement:
         self.set_raw(byteval * (self.size() // 8))
 
     def __getattr__(self, name):
-        raise AttributeError("Unknown attribute %s in %s" % (name,
-                                                             self.__class__))
+        raise AttributeError("Unknown attribute %s in %s" % (name, self.__class__))
 
     def __repr__(self):
-        return "(%s:%i bytes @ %04x)" % (self.__class__.__name__,
-                                         self._size,
-                                         self._offset)
+        return "(%s:%i bytes @ %04x)" % (
+            self.__class__.__name__,
+            self._size,
+            self._offset,
+        )
 
 
 class arrayDataElement(DataElement):
@@ -329,20 +337,20 @@ class arrayDataElement(DataElement):
 
     def get_raw(self, asbytes=True):
         raw = [item.get_raw(asbytes=True) for item in self.__items]
-        return self._compat_bytes(bytes(b''.join(raw)), asbytes)
+        return self._compat_bytes(bytes(b"".join(raw)), asbytes)
 
     def set_raw(self, data):
         item_size = self.__items[0].size() // 8
-        assert len(data) / item_size == len(self), 'Invalid raw data length'
+        assert len(data) / item_size == len(self), "Invalid raw data length"
         for i in range(len(self)):
-            self[i].set_raw(data[i * item_size:(i + 1) * item_size])
+            self[i].set_raw(data[i * item_size : (i + 1) * item_size])
 
     def __setitem__(self, index, val):
         self.__items[index].set_value(val)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
-            return self.__items[int(index.start):int(index.stop)]
+            return self.__items[int(index.start) : int(index.stop)]
         else:
             return self.__items[int(index)]
 
@@ -388,8 +396,10 @@ class arrayDataElement(DataElement):
 
     def __set_value_char(self, value):
         if len(value) != len(self.__items):
-            raise ValueError("String expects exactly %i characters, not %i" % (
-                             len(self.__items), len(value)))
+            raise ValueError(
+                "String expects exactly %i characters, not %i"
+                % (len(self.__items), len(value))
+            )
         for i in range(0, len(self.__items)):
             self.__items[i].set_value(value[i])
 
@@ -574,7 +584,7 @@ class u8DataElement(intDataElement):
         return ord(data)
 
     def set_value(self, value):
-        self._data[self._offset] = (int(value) & 0xFF)
+        self._data[self._offset] = int(value) & 0xFF
 
 
 class u16DataElement(intDataElement):
@@ -585,8 +595,9 @@ class u16DataElement(intDataElement):
         return struct.unpack(self._endianess + "H", data)[0]
 
     def set_value(self, value):
-        self._data[self._offset] = struct.pack(self._endianess + "H",
-                                               int(value) & 0xFFFF)
+        self._data[self._offset] = struct.pack(
+            self._endianess + "H", int(value) & 0xFFFF
+        )
 
 
 class ul16DataElement(u16DataElement):
@@ -600,7 +611,7 @@ class u24DataElement(intDataElement):
     def _get_value(self, data):
         pre = self._endianess == ">" and b"\x00" or b""
         post = self._endianess == "<" and b"\x00" or b""
-        return struct.unpack(self._endianess + "I", pre+data+post)[0]
+        return struct.unpack(self._endianess + "I", pre + data + post)[0]
 
     def set_value(self, value):
         if self._endianess == "<":
@@ -625,8 +636,9 @@ class u32DataElement(intDataElement):
         return struct.unpack(self._endianess + "I", data)[0]
 
     def set_value(self, value):
-        self._data[self._offset] = struct.pack(self._endianess + "I",
-                                               int(value) & 0xFFFFFFFF)
+        self._data[self._offset] = struct.pack(
+            self._endianess + "I", int(value) & 0xFFFFFFFF
+        )
 
 
 class ul32DataElement(u32DataElement):
@@ -651,8 +663,7 @@ class i16DataElement(intDataElement):
         return struct.unpack(self._endianess + "h", data)[0]
 
     def set_value(self, value):
-        self._data[self._offset] = struct.pack(self._endianess + "h",
-                                               int(value))
+        self._data[self._offset] = struct.pack(self._endianess + "h", int(value))
 
 
 class il16DataElement(i16DataElement):
@@ -666,7 +677,7 @@ class i24DataElement(intDataElement):
     def _get_value(self, data):
         pre = self._endianess == ">" and "\x00" or ""
         post = self._endianess == "<" and "\x00" or ""
-        return struct.unpack(self._endianess + "i", pre+data+post)[0]
+        return struct.unpack(self._endianess + "i", pre + data + post)[0]
 
     def set_value(self, value):
         if self._endianess == "<":
@@ -675,8 +686,9 @@ class i24DataElement(intDataElement):
         else:
             start = 1
             end = 4
-        self._data[self._offset] = struct.pack(self._endianess + "i",
-                                               int(value))[start:end]
+        self._data[self._offset] = struct.pack(self._endianess + "i", int(value))[
+            start:end
+        ]
 
 
 class il24DataElement(i24DataElement):
@@ -691,8 +703,7 @@ class i32DataElement(intDataElement):
         return struct.unpack(self._endianess + "i", data)[0]
 
     def set_value(self, value):
-        self._data[self._offset] = struct.pack(self._endianess + "i",
-                                               int(value))
+        self._data[self._offset] = struct.pack(self._endianess + "i", int(value))
 
 
 class il32DataElement(i32DataElement):
@@ -744,19 +755,22 @@ class bcdDataElement(DataElement):
         if isinstance(data, int):
             self._data[self._offset] = data & 0xFF
         elif isinstance(data, str):
-            warnings.warn('Driver is using non-byte-native set_raw()',
-                          DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Driver is using non-byte-native set_raw()",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             self._data[self._offset] = string_straight_encode(data[0])
         elif isinstance(data, bytes) and len(data) == 1:
             self._data[self._offset] = int(data[0]) & 0xFF
         else:
-            raise TypeError("Unable to set bcdDataElement from type %s" %
-                            type(data))
+            raise TypeError("Unable to set bcdDataElement from type %s" % type(data))
 
     def set_value(self, value):
         preserve = self._data[self._offset][0] & self._ignoremask
         self._data[self._offset] = (
-            dec_to_bbcd(int(value) & 0xFF) & ~self._ignoremask) | preserve
+            dec_to_bbcd(int(value) & 0xFF) & ~self._ignoremask
+        ) | preserve
 
     def _get_value(self, data):
         return data[0] & ~self._ignoremask
@@ -766,7 +780,7 @@ class bcdDataElement(DataElement):
 
     def __repr__(self):
         hex = self.get_raw().hex().upper()
-        return f'0x{hex} ({int(self)})'
+        return f"0x{hex} ({int(self)})"
 
 
 class lbcdDataElement(bcdDataElement):
@@ -786,21 +800,21 @@ class bitDataElement(intDataElement):
         size = self._subgen._size * 8
         hex_len = size // 4
         bits = format_binary(self._nbits, self.get_value(), size, self._shift)
-        return f'0x{int(self):0{hex_len}X} ({bits}b)'
+        return f"0x{int(self):0{hex_len}X} ({bits}b)"
 
     def get_value(self):
         data = self._subgen(self._data, self._offset).get_value()
-        mask = bits_between(self._shift-self._nbits, self._shift)
+        mask = bits_between(self._shift - self._nbits, self._shift)
         val = (data & mask) >> int(self._shift - self._nbits)
         return val
 
     def set_value(self, value):
-        mask = bits_between(self._shift-self._nbits, self._shift)
+        mask = bits_between(self._shift - self._nbits, self._shift)
 
         data = self._subgen(self._data, self._offset).get_value()
         data &= ~mask
 
-        value = ((int(value) << int(self._shift-self._nbits)) & mask) | data
+        value = ((int(value) << int(self._shift - self._nbits)) & mask) | data
 
         self._subgen(self._data, self._offset).set_value(value)
 
@@ -818,17 +832,18 @@ class bitDataElement(intDataElement):
 
 class structDataElement(DataElement):
     def __repr__(self):
-        return self._make_repr('struct')
+        return self._make_repr("struct")
 
     def _make_repr(self, typename):
         s = typename + " {" + os.linesep
         for prop in self._keys:
-            s += "  %15s: %s%s" % (prop, repr(self._generators[prop]),
-                                   os.linesep)
-        s += "} %s (%i bytes at 0x%04X)%s" % (self._name,
-                                              self.size() // 8,
-                                              self._offset,
-                                              os.linesep)
+            s += "  %15s: %s%s" % (prop, repr(self._generators[prop]), os.linesep)
+        s += "} %s (%i bytes at 0x%04X)%s" % (
+            self._name,
+            self.size() // 8,
+            self._offset,
+            os.linesep,
+        )
         return s
 
     def __init__(self, *args, **kwargs):
@@ -879,8 +894,7 @@ class structDataElement(DataElement):
         try:
             return self._generators[name]
         except KeyError:
-            raise AttributeError("No attribute %s in struct %s" % (
-                name, self._name))
+            raise AttributeError("No attribute %s in struct %s" % (name, self._name))
 
     def __setattr__(self, name, value):
         if "_structDataElement__init" not in self.__dict__:
@@ -902,15 +916,18 @@ class structDataElement(DataElement):
 
     def get_raw(self, asbytes=True):
         size = self.size() // 8
-        raw = self._data[self._offset:self._offset+size]
+        raw = self._data[self._offset : self._offset + size]
         return self._compat_bytes(raw, asbytes)
 
     def set_raw(self, buffer):
         if len(buffer) != (self.size() // 8):
             raise ValueError("Struct size mismatch during set_raw()")
         if isinstance(buffer, str):
-            warnings.warn('Driver is using non-byte-native set_raw()',
-                          DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Driver is using non-byte-native set_raw()",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             buffer = string_straight_encode(buffer)
         self._data[self._offset] = buffer
 
@@ -925,20 +942,20 @@ class structDataElement(DataElement):
 
 class unionDataElement(structDataElement):
     def __repr__(self):
-        return self._make_repr('union')
+        return self._make_repr("union")
 
     def set_union_size(self, size):
         # We don't know the size of the union until we have processed the first
         # member, so allow this to be set after creation.
-        assert (size % 8 == 0)
-        self.__dict__['_size'] = size
+        assert size % 8 == 0
+        self.__dict__["_size"] = size
 
     def size(self):
         return self._size
 
 
 def parse_count(string):
-    if string.startswith('0x'):
+    if string.startswith("0x"):
         return int(string, 16)
     else:
         return int(string)
@@ -946,26 +963,26 @@ def parse_count(string):
 
 class Processor:
     _types = {
-        "u8":    u8DataElement,
-        "u16":   u16DataElement,
-        "ul16":  ul16DataElement,
-        "u24":   u24DataElement,
-        "ul24":  ul24DataElement,
-        "u32":   u32DataElement,
-        "ul32":  ul32DataElement,
-        "i8":    i8DataElement,
-        "i16":   i16DataElement,
-        "il16":  il16DataElement,
-        "i24":   i24DataElement,
-        "il24":  il24DataElement,
-        "i32":   i32DataElement,
-        "char":  charDataElement,
-        "lbcd":  lbcdDataElement,
-        "bbcd":  bbcdDataElement,
-        }
+        "u8": u8DataElement,
+        "u16": u16DataElement,
+        "ul16": ul16DataElement,
+        "u24": u24DataElement,
+        "ul24": ul24DataElement,
+        "u32": u32DataElement,
+        "ul32": ul32DataElement,
+        "i8": i8DataElement,
+        "i16": i16DataElement,
+        "il16": il16DataElement,
+        "i24": i24DataElement,
+        "il24": il24DataElement,
+        "i32": i32DataElement,
+        "char": charDataElement,
+        "lbcd": lbcdDataElement,
+        "bbcd": bbcdDataElement,
+    }
 
     def __init__(self, data, offset, input):
-        if hasattr(data, 'get_byte_compatible'):
+        if hasattr(data, "get_byte_compatible"):
             # bitwise uses the byte-compatible interface of MemoryMap,
             # if that is what was passed in
             data = data.get_byte_compatible()
@@ -973,7 +990,7 @@ class Processor:
         self._offset = offset
         self._obj = None
         self._user_types = {}
-        self._input = input.split('\n')
+        self._input = input.split("\n")
 
     def do_symbol(self, symdef, gen):
         name = symdef[1]
@@ -984,15 +1001,15 @@ class Processor:
 
     def get_line_from_sym(self, sym):
         name = sym.__name__
-        if ':' in name.line:
-            _, num = name.line.split(':')
+        if ":" in name.line:
+            _, num = name.line.split(":")
         else:
             num = 0
         return int(num)
 
     def get_line_sym(self, sym):
         num = self.get_line_from_sym(sym)
-        return '%i: %s' % (num, self.get_source_line(num))
+        return "%i: %s" % (num, self.get_source_line(num))
 
     def do_bitfield(self, dtype, bitfield):
         bytes = self._types[dtype](self._data, 0).size() // 8
@@ -1001,11 +1018,16 @@ class Processor:
         for _bitdef, defn in bitfield:
             name = defn[0][1]
             if name in self._generators:
-                newname = '%s_%06x' % (name, self._offset)
-                prevline = self._lines.get(name, 'unknown')
-                LOG.error('Duplicate definition for %s on line %s; '
-                          'renaming to %s (previous definition line %s)',
-                          name, self.get_line_sym(defn[0]), newname, prevline)
+                newname = "%s_%06x" % (name, self._offset)
+                prevline = self._lines.get(name, "unknown")
+                LOG.error(
+                    "Duplicate definition for %s on line %s; "
+                    "renaming to %s (previous definition line %s)",
+                    name,
+                    self.get_line_sym(defn[0]),
+                    newname,
+                    prevline,
+                )
                 name = newname
             bits = int(defn[1][1])
             if bitsleft < 0:
@@ -1021,8 +1043,9 @@ class Processor:
             bitsleft -= bits
 
         if bitsleft:
-            LOG.warn("WARNING: %i trailing bits unaccounted for in %s" %
-                     (bitsleft, name))
+            LOG.warn(
+                "WARNING: %i trailing bits unaccounted for in %s" % (bitsleft, name)
+            )
 
         return bytes
 
@@ -1053,24 +1076,29 @@ class Processor:
 
             name = sym[1]
             if name in self._generators:
-                newname = '%s_%06x' % (name, self._offset)
-                prevline = self._lines.get(name, 'unknown')
-                LOG.error('Duplicate definition for %s on line %s; '
-                          'renaming to %s (previous definition line %s)',
-                          name, self.get_line_sym(sym), newname, prevline)
+                newname = "%s_%06x" % (name, self._offset)
+                prevline = self._lines.get(name, "unknown")
+                LOG.error(
+                    "Duplicate definition for %s on line %s; "
+                    "renaming to %s (previous definition line %s)",
+                    name,
+                    self.get_line_sym(sym),
+                    newname,
+                    prevline,
+                )
                 name = newname
             res = arrayDataElement(self._offset)
             size = 0
             for i in range(0, count):
                 if dtype == "bit":
                     gen = self.do_bitarray(i, count)
-                    self._offset += int((i+1) % 8 == 0)
+                    self._offset += int((i + 1) % 8 == 0)
                 elif dtype == "lbit":
                     gen = self.do_bitarray(i, count, bigendian=False)
-                    self._offset += int((i+1) % 8 == 0)
+                    self._offset += int((i + 1) % 8 == 0)
                 else:
                     gen = self._types[dtype](self._data, self._offset)
-                    self._offset += (gen.size() // 8)
+                    self._offset += gen.size() // 8
                 res.append(gen)
 
             if defn[1][0] != "array":
@@ -1094,8 +1122,7 @@ class Processor:
 
         result = arrayDataElement(self._offset)
         for i in range(0, count):
-            element = structDataElement(self._data, self._offset, count,
-                                        name=name)
+            element = structDataElement(self._data, self._offset, count, name=name)
             result.append(element)
             tmp = self._generators
             tmp_lines = self._lines
@@ -1140,9 +1167,8 @@ class Processor:
         for i in range(0, count):
             start_of_union_offset = self._offset
             self._generators = element = unionDataElement(
-                self._data,
-                start_of_union_offset,
-                name=name)
+                self._data, start_of_union_offset, name=name
+            )
             for t, d in block:
                 self._offset = start_of_union_offset
                 if t not in ("definition", "struct", "union"):
@@ -1152,13 +1178,14 @@ class Processor:
                 if union_size == 0:
                     union_size = size
                 elif union_size != size:
-                    LOG.error('Union member size mismatch parsing %s', name)
-                    raise ParseError('Union members must be the same size '
-                                     '(found %i, expected %i)' % (size,
-                                                                  union_size))
+                    LOG.error("Union member size mismatch parsing %s", name)
+                    raise ParseError(
+                        "Union members must be the same size "
+                        "(found %i, expected %i)" % (size, union_size)
+                    )
                 element.set_union_size(union_size * 8)
             if union_size == 0:
-                raise ParseError('Empty union %r is not valid' % name)
+                raise ParseError("Empty union %r is not valid" % name)
             # Increment the offset only past the end of the union
             self._offset = start_of_union_offset + union_size
             result.append(element)
@@ -1180,17 +1207,17 @@ class Processor:
         if name == "seekto":
             target = int(value, 0)
             if self._offset == target:
-                self.assert_unnecessary_seek('Unnecessary #seekto %s' % value)
+                self.assert_unnecessary_seek("Unnecessary #seekto %s" % value)
             elif target < self._offset:
                 self.assert_negative_seek(
-                    'Invalid negative seek from 0x%04x to 0x%04x' % (
-                        self._offset, target))
+                    "Invalid negative seek from 0x%04x to 0x%04x"
+                    % (self._offset, target)
+                )
             self._offset = target
         elif name == "seek":
             self._offset += int(value, 0)
         elif name == "printoffset":
-            LOG.debug("%s: %i (0x%08X)" %
-                      (value[1:-1], self._offset, self._offset))
+            LOG.debug("%s: %i (0x%08X)" % (value[1:-1], self._offset, self._offset))
 
     def parse_statement(self, type_, data):
         if type_ == "struct":

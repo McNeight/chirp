@@ -84,8 +84,22 @@ TMODES = ["", "Tone", "TSQL", "TSQL", "DTCS", "DTCS", "TSQL-R", "DTCS-R"]
 DUPLEX = ["", "-", "+", ""]
 DTCSP = ["NN", "NR", "RN", "RR"]
 MODES = ["FM", "NFM", "WFM", "AM", "NAM", "DV"]
-STEPS = [5.0, 6.25, 8.33, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0,
-         100.0, 125.0, 200.0]
+STEPS = [
+    5.0,
+    6.25,
+    8.33,
+    9.0,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+    125.0,
+    200.0,
+]
 FREQ_MULTIPLIER = [5000, 6250, 6250, 8333, 9000]
 
 
@@ -127,14 +141,14 @@ def encode_call(call):
     for i in range(0, 8):
         byte = ord(call[i])
         if i > 0:
-            last = buf[i-1]
-            himask = ~((1 << (7-i)) - 1) & 0x7F
-            last |= (byte & himask) >> (7-i)
-            buf[i-1] = last
+            last = buf[i - 1]
+            himask = ~((1 << (7 - i)) - 1) & 0x7F
+            last |= (byte & himask) >> (7 - i)
+            buf[i - 1] = last
         else:
             himask = 0
 
-        buf.append((byte & ~himask) << (i+1))
+        buf.append((byte & ~himask) << (i + 1))
 
     return "".join([chr(x) for x in buf[:7]])
 
@@ -156,6 +170,7 @@ def _wipe_memory(mem, char):
 
 class ID880Bank(icf.IcomNamedBank):
     """ID880 Bank"""
+
     def get_name(self):
         _bank = self._model._radio._memobj.bank_names[self.index]
         return str(_bank.name).rstrip()
@@ -168,6 +183,7 @@ class ID880Bank(icf.IcomNamedBank):
 @directory.register
 class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom ID880"""
+
     VENDOR = "Icom"
     MODEL = "ID-880H"
 
@@ -175,9 +191,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     _memsize = 62976
     _endframe = "Icom Inc\x2eB1"
 
-    _ranges = [(0x0000, 0xF5c0, 32),
-               (0xF5c0, 0xf5e0, 16),
-               (0xf5e0, 0xf600, 32)]
+    _ranges = [(0x0000, 0xF5C0, 32), (0xF5C0, 0xF5E0, 16), (0xF5E0, 0xF600, 32)]
 
     _num_banks = 26
     _bank_class = ID880Bank
@@ -220,16 +234,21 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         rf.has_bank_index = True
         rf.has_bank_names = True
         rf.valid_modes = ["FM", "NFM", "AM", "NAM", "DV"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'TSQL-R', 'DTCS-R']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "TSQL-R", "DTCS-R"]
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_tuning_steps = STEPS
-        rf.valid_bands = [(118000000, 173995000), (230000000, 549995000),
-                          (810000000, 823990000), (849000000, 868990000),
-                          (894000000, 999990000)]
+        rf.valid_bands = [
+            (118000000, 173995000),
+            (230000000, 549995000),
+            (810000000, 823990000),
+            (849000000, 868990000),
+            (894000000, 999990000),
+        ]
         rf.valid_skips = ["", "S", "P"]
         rf.valid_name_length = 8
-        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + \
-            r"!\"#$%&'()*+,-./:;<=>?@[\]^"
+        rf.valid_characters = (
+            chirp_common.CHARSET_UPPER_NUMERIC + r"!\"#$%&'()*+,-./:;<=>?@[\]^"
+        )
         rf.memory_bounds = (0, 999)
         return rf
 
@@ -243,7 +262,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _mem = self._memobj.memory[number]
         _used = self._memobj.used_flags[bytepos]
 
-        is_used = ((_used & bitpos) == 0)
+        is_used = (_used & bitpos) == 0
 
         if is_used and MODES[_mem.mode] == "DV":
             mem = chirp_common.DVMemory()
@@ -287,7 +306,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         return mem
 
     def set_memory(self, mem):
-        bitpos = (1 << (mem.number % 8))
+        bitpos = 1 << (mem.number % 8)
         bytepos = mem.number / 8
 
         _mem = self._memobj.memory[mem.number]
@@ -298,7 +317,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         if mem.empty:
             _used |= bitpos
-            _wipe_memory(_mem, "\xFF")
+            _wipe_memory(_mem, "\xff")
             self._set_bank(mem.number, None)
             return
 
@@ -312,7 +331,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _mem.rtone = chirp_common.TONES.index(mem.rtone)
         _mem.ctone = chirp_common.TONES.index(mem.ctone)
         _mem.tmode = TMODES.index(mem.tmode)
-        if mem.tmode == 'DTCS':
+        if mem.tmode == "DTCS":
             # The first index of DTCS is "bell" mode
             _mem.tmode += 1
         _mem.duplex = DUPLEX.index(mem.duplex)
@@ -348,7 +367,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = ["CQCQCQ"]
 
         for i in range(*self.URCALL_LIMIT):
-            calls.append(str(_calls[i-1].call))
+            calls.append(str(_calls[i - 1].call))
 
         return calls
 
@@ -357,7 +376,7 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         calls = []
 
         for i in range(*self.MYCALL_LIMIT):
-            calls.append(str(_calls[i-1].call))
+            calls.append(str(_calls[i - 1].call))
 
         return calls
 
@@ -373,8 +392,9 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if (super().match_model(filedata, filename) and
-                filename.lower().endswith('.icf')):
+        if super().match_model(filedata, filename) and filename.lower().endswith(
+            ".icf"
+        ):
             return True
         # This is a horrid hack, given that people can change the GPS-A
         # destination, but it should suffice in most cases until we get
@@ -387,14 +407,16 @@ class ID880Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 @directory.register
 class ID80Radio(ID880Radio):
     """Icom ID80"""
+
     MODEL = "ID-80H"
 
     _model = "\x31\x55\x00\x01"
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if (super().match_model(filedata, filename) and
-                filename.lower().endswith('.icf')):
+        if super().match_model(filedata, filename) and filename.lower().endswith(
+            ".icf"
+        ):
             return True
         # This is a horrid hack, given that people can change the GPS-A
         # destination, but it should suffice in most cases until we get

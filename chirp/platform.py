@@ -32,7 +32,7 @@ def natural_sorted(lst):
         return int(text) if text.isdigit() else text.lower()
 
     def natural_key(key):
-        return [convert(c) for c in re.split('([0-9]+)', key)]
+        return [convert(c) for c in re.split("([0-9]+)", key)]
 
     return sorted(lst, key=natural_key)
 
@@ -77,8 +77,7 @@ class Platform:
 
     def config_file(self, filename):
         """Return the full path to a config file with @filename"""
-        return os.path.join(self.config_dir(),
-                            self.filter_filename(filename))
+        return os.path.join(self.config_dir(), self.filter_filename(filename))
 
     def open_text_file(self, path):
         """Spawn the necessary program to open a text file at @path"""
@@ -98,17 +97,16 @@ class Platform:
 
     def executable_path(self):
         """Return a full path to the program executable"""
+
         def we_are_frozen():
             return hasattr(sys, "frozen")
 
         if we_are_frozen():
             # Win32, find the directory of the executable
-            return os.path.dirname(str(sys.executable,
-                                       sys.getfilesystemencoding()))
+            return os.path.dirname(str(sys.executable, sys.getfilesystemencoding()))
         else:
             # UNIX: Find the parent directory of this module
-            return os.path.dirname(os.path.abspath(os.path.join(_find_me(),
-                                                                "..")))
+            return os.path.dirname(os.path.abspath(os.path.join(_find_me(), "..")))
 
     def find_resource(self, filename):
         """Searches for files installed to a share/ prefix."""
@@ -119,8 +117,7 @@ class Platform:
             "/usr/local/share",
             "/usr/share",
         ]
-        pkgshare_candidates = [os.path.join(i, "chirp")
-                               for i in share_candidates]
+        pkgshare_candidates = [os.path.join(i, "chirp") for i in share_candidates]
         search_paths = [execpath] + pkgshare_candidates + share_candidates
         for path in search_paths:
             candidate = os.path.join(path, filename)
@@ -140,10 +137,10 @@ def _unix_editor():
 
 class UnixPlatform(Platform):
     """A platform module suitable for UNIX systems"""
+
     def __init__(self, basepath):
         if not basepath:
-            basepath = os.path.join(self.default_dir(),
-                                    ".chirp")
+            basepath = os.path.join(self.default_dir(), ".chirp")
 
         Path(basepath).mkdir(exist_ok=True)
         super().__init__(str(basepath))
@@ -183,11 +180,12 @@ class UnixPlatform(Platform):
         return ver
 
     def is_ble_serial(self, serial):
-        return serial.port.startswith('/tmp/ttyBLE')
+        return serial.port.startswith("/tmp/ttyBLE")
 
 
 class Win32Platform(Platform):
     """A platform module suitable for Windows systems"""
+
     def __init__(self, basepath=None):
         if not basepath:
             appdata = os.getenv("APPDATA")
@@ -204,11 +202,10 @@ class Win32Platform(Platform):
         Platform.__init__(self, basepath)
 
     def default_dir(self):
-        return os.path.abspath(os.path.join(os.getenv("USERPROFILE"),
-                                            "Desktop"))
+        return os.path.abspath(os.path.join(os.getenv("USERPROFILE"), "Desktop"))
 
     def filter_filename(self, filename):
-        for char in "/\\:*?\"<>|":
+        for char in '/\\:*?"<>|':
             filename = filename.replace(char, "")
 
         return filename
@@ -223,22 +220,23 @@ class Win32Platform(Platform):
     def os_version_string(self):
         import win32api
 
-        vers = {4: "Win2k",
-                5: "WinXP",
-                6: "WinVista/7",
-                }
+        vers = {
+            4: "Win2k",
+            5: "WinXP",
+            6: "WinVista/7",
+        }
 
-        (pform, sub, build, _, _) = win32api.GetVersionEx()
+        pform, sub, build, _, _ = win32api.GetVersionEx()
 
-        return vers.get(pform,
-                        "Win32 (Unknown %i.%i:%i)" % (pform, sub, build))
+        return vers.get(pform, "Win32 (Unknown %i.%i:%i)" % (pform, sub, build))
 
     def is_ble_serial(self, serial):
         import winreg
 
         max_ports = 255
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                             r'HARDWARE\DEVICEMAP\SERIALCOMM')
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM"
+        )
         devices = {}
         for i in range(max_ports):
             try:
@@ -249,29 +247,28 @@ class Win32Platform(Platform):
             except EnvironmentError:
                 break
 
-        LOG.debug('All device/name pairs: %s' % devices)
+        LOG.debug("All device/name pairs: %s" % devices)
 
         try:
             # ble-serial names its device BLE, so find it
-            ble_device = devices['BLE']
+            ble_device = devices["BLE"]
         except KeyError:
-            LOG.debug('No BLE device found')
+            LOG.debug("No BLE device found")
             return False
 
         # The pair device appears to always be \Device\com0com14 if
         # the BLE device is \Device\com0com24
         pair_device = list(ble_device)
         # Change 2 to 1 to get the first device of the pair
-        pair_device[-2] = '1'
-        pair_device = ''.join(pair_device)
-        LOG.debug('Found BLE device %s, guessing pair is %s' % (
-            device, pair_device))
+        pair_device[-2] = "1"
+        pair_device = "".join(pair_device)
+        LOG.debug("Found BLE device %s, guessing pair is %s" % (device, pair_device))
         try:
             pair_name = dict(((v, k) for k, v in devices.items()))[pair_device]
         except KeyError:
-            LOG.debug('Pair device not found!')
+            LOG.debug("Pair device not found!")
         else:
-            LOG.info('BLE pair device is %s' % pair_name)
+            LOG.info("BLE pair device is %s" % pair_name)
 
         return serial.port == pair_name
 

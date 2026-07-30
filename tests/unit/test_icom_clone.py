@@ -24,10 +24,11 @@ import os
 import unittest
 
 from chirp import directory
+
 directory.import_drivers()
 
 
-class BaseIcomCloneTest():
+class BaseIcomCloneTest:
     def setUp(self):
         self.radio = directory.get_radio(self.RADIO_IDENT)(None)
         self.simulator = icom_clone_simulator.FakeIcomRadio(self.radio)
@@ -35,7 +36,7 @@ class BaseIcomCloneTest():
 
     def image_filename(self, filename):
         tests_base = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(tests_base, 'images', filename)
+        return os.path.join(tests_base, "images", filename)
 
     def load_from_test_image(self, filename):
         self.simulator.load_from_file(self.image_filename(filename))
@@ -43,11 +44,11 @@ class BaseIcomCloneTest():
     def image_version(self, filename):
         end = self.radio.get_memsize()
 
-        with open(self.image_filename(filename), 'rb') as f:
+        with open(self.image_filename(filename), "rb") as f:
             data = f.read()
-        if data[-8:-6] == b'%02x' % self.radio.get_model()[0]:
+        if data[-8:-6] == b"%02x" % self.radio.get_model()[0]:
             return 2
-        elif data[end-16:end] == b'IcomCloneFormat3':
+        elif data[end - 16 : end] == b"IcomCloneFormat3":
             return 3
 
     def test_sync_in(self):
@@ -57,11 +58,10 @@ class BaseIcomCloneTest():
 
         img_ver = self.image_version(test_file)
         if img_ver == 2:
-            endstring = b''.join(b'%02x' % ord(c)
-                                 for c in self.radio._model[:2])
-            self.assertEqual(endstring + b'0001', self.radio._mmap[-8:])
+            endstring = b"".join(b"%02x" % ord(c) for c in self.radio._model[:2])
+            self.assertEqual(endstring + b"0001", self.radio._mmap[-8:])
         elif img_ver == 3:
-            self.assertEqual(b'IcomCloneFormat3', self.radio._mmap[-16:])
+            self.assertEqual(b"IcomCloneFormat3", self.radio._mmap[-16:])
         elif img_ver is None:
             if isinstance(self.radio, icw32.ICW32ERadio):
                 # The IC-W32E does some unclean things with the image size to
@@ -72,26 +72,27 @@ class BaseIcomCloneTest():
 
     def test_sync_out(self):
         self.radio._mmap = memmap.MemoryMapBytes(
-            bytes(b'\x00') * self.radio.get_memsize())
+            bytes(b"\x00") * self.radio.get_memsize()
+        )
         start = self.radio._ranges[0][0]
-        self.radio._mmap[start] = bytes(b'abcdefgh')
+        self.radio._mmap[start] = bytes(b"abcdefgh")
         self.radio.sync_out()
-        self.assertEqual(b'abcdefgh', self.simulator._memory[start:start + 8])
+        self.assertEqual(b"abcdefgh", self.simulator._memory[start : start + 8])
 
 
 class TestRawRadioData(unittest.TestCase):
     def test_get_payload(self):
-        radio = directory.get_radio('Icom_IC-2730A')(None)
-        payload = radio.get_payload(bytes(b'\x00\x10\xFE\x00'), True, True)
-        self.assertEqual(b'\x00\x10\xFF\x0E\x00\xF2', payload)
+        radio = directory.get_radio("Icom_IC-2730A")(None)
+        payload = radio.get_payload(bytes(b"\x00\x10\xfe\x00"), True, True)
+        self.assertEqual(b"\x00\x10\xff\x0e\x00\xf2", payload)
 
-        payload = radio.get_payload(bytes(b'\x00\x10\xFE\x00'), True, False)
-        self.assertEqual(b'\x00\x10\xFF\x0E\x00', payload)
+        payload = radio.get_payload(bytes(b"\x00\x10\xfe\x00"), True, False)
+        self.assertEqual(b"\x00\x10\xff\x0e\x00", payload)
 
     def test_process_frame_payload(self):
-        radio = directory.get_radio('Icom_IC-2730A')(None)
-        data = radio.process_frame_payload(bytes(b'\x00\x10\xFF\x0E\x00'))
-        self.assertEqual(b'\x00\x10\xFE\x00', data)
+        radio = directory.get_radio("Icom_IC-2730A")(None)
+        data = radio.process_frame_payload(bytes(b"\x00\x10\xff\x0e\x00"))
+        self.assertEqual(b"\x00\x10\xfe\x00", data)
 
 
 class TestAdapterMeta(type):
@@ -99,9 +100,9 @@ class TestAdapterMeta(type):
         return super(TestAdapterMeta, cls).__new__(cls, name, parents, dct)
 
 
-test_file_glob = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              '..', 'images',
-                              'Icom_*.img')
+test_file_glob = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "images", "Icom_*.img"
+)
 for image_file in glob.glob(test_file_glob):
     base, _ext = os.path.splitext(os.path.basename(image_file))
 
@@ -114,8 +115,9 @@ for image_file in glob.glob(test_file_glob):
         # The simulator does not behave like a raw radio
         continue
 
-    class_name = 'Test_%s' % base
-    sys.modules[__name__].__dict__[class_name] = \
-        TestAdapterMeta(class_name,
-                        (BaseIcomCloneTest, unittest.TestCase),
-                        dict(RADIO_IDENT=base, IMAGE_FILE=image_file))
+    class_name = "Test_%s" % base
+    sys.modules[__name__].__dict__[class_name] = TestAdapterMeta(
+        class_name,
+        (BaseIcomCloneTest, unittest.TestCase),
+        dict(RADIO_IDENT=base, IMAGE_FILE=image_file),
+    )

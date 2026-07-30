@@ -17,8 +17,7 @@ import logging
 import requests
 from chirp import chirp_common
 from chirp.sources import base
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList
+from chirp.settings import RadioSetting, RadioSettingGroup, RadioSettingValueList
 
 LOG = logging.getLogger(__name__)
 
@@ -31,28 +30,32 @@ def list_filter(haystack, attr, needles):
 
 class DMRMARCRadio(base.NetworkResultRadio):
     """DMR-MARC data source"""
+
     VENDOR = "DMR-MARC"
 
     def get_label(self):
-        return 'DMR-MARC'
+        return "DMR-MARC"
 
     def do_fetch(self, status, params):
-        status.send_status('Querying', 10)
+        status.send_status("Querying", 10)
         try:
-            r = requests.get('https://radioid.net/api/dmr/repeater/',
-                             headers=base.HEADERS,
-                             params={'city': params['city'],
-                                     'state': params['state'],
-                                     'country': params['country']})
+            r = requests.get(
+                "https://radioid.net/api/dmr/repeater/",
+                headers=base.HEADERS,
+                params={
+                    "city": params["city"],
+                    "state": params["state"],
+                    "country": params["country"],
+                },
+            )
             r.raise_for_status()
         except requests.exceptions.RequestException as e:
-            LOG.error('Failed to query DMR-MARC: %s' % e)
-            status.send_fail('Unable to query DMR-MARC')
+            LOG.error("Failed to query DMR-MARC: %s" % e)
+            status.send_fail("Unable to query DMR-MARC")
             return
-        status.send_status('Parsing', 20)
-        self._repeaters = r.json()['results']
-        self._memories = [self.make_memory(i)
-                          for i in range(0, len(self._repeaters))]
+        status.send_status("Parsing", 20)
+        self._repeaters = r.json()["results"]
+        self._memories = [self.make_memory(i) for i in range(0, len(self._repeaters))]
         status.send_end()
 
     def get_raw_memory(self, number):
@@ -64,9 +67,9 @@ class DMRMARCRadio(base.NetworkResultRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        mem.name = repeater.get('city')
-        mem.freq = chirp_common.parse_freq(repeater.get('frequency'))
-        offset = chirp_common.parse_freq(repeater.get('offset', '0'))
+        mem.name = repeater.get("city")
+        mem.freq = chirp_common.parse_freq(repeater.get("frequency"))
+        offset = chirp_common.parse_freq(repeater.get("offset", "0"))
         if offset > 0:
             mem.duplex = "+"
         elif offset < 0:
@@ -74,14 +77,16 @@ class DMRMARCRadio(base.NetworkResultRadio):
         else:
             mem.duplex = ""
         mem.offset = abs(offset)
-        mem.mode = 'DMR'
-        mem.comment = repeater.get('details')
+        mem.mode = "DMR"
+        mem.comment = repeater.get("details")
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
         rs = RadioSetting(
-            "color_code", "Color Code", RadioSettingValueList(
-                range(16), int(repeater.get('color_code', 0))))
+            "color_code",
+            "Color Code",
+            RadioSettingValueList(range(16), int(repeater.get("color_code", 0))),
+        )
         mem.extra.append(rs)
 
         return mem
@@ -92,19 +97,22 @@ def main():
     from pprint import PrettyPrinter
 
     parser = argparse.ArgumentParser(
-        description=("Fetch DMR-MARC repeater "
-                     "database and filter by city, state, and/or country. "
-                     "Multiple items combined with a , will be filtered with "
-                     "logical OR."))
+        description=(
+            "Fetch DMR-MARC repeater "
+            "database and filter by city, state, and/or country. "
+            "Multiple items combined with a , will be filtered with "
+            "logical OR."
+        )
+    )
     parser.add_argument(
-        "-c", "--city",
-        help="Comma-separated list of cities to include in output.")
+        "-c", "--city", help="Comma-separated list of cities to include in output."
+    )
     parser.add_argument(
-        "-s", "--state",
-        help="Comma-separated list of states to include in output.")
+        "-s", "--state", help="Comma-separated list of states to include in output."
+    )
     parser.add_argument(
-        "--country",
-        help="Comma-separated list of countries to include in output.")
+        "--country", help="Comma-separated list of countries to include in output."
+    )
     args = parser.parse_args()
 
     dmrmarc = DMRMARCRadio(None)

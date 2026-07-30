@@ -23,8 +23,14 @@ from chirp import directory
 from chirp import errors
 from chirp import memmap
 from chirp import util
-from chirp.settings import RadioSettingGroup, RadioSetting, RadioSettings, \
-    RadioSettingValueList, RadioSettingValueString, RadioSettingValueInteger
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettings,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -40,14 +46,16 @@ LOG = logging.getLogger(__name__)
 #
 MMAPSIZE = 16384
 TONES = [62.5] + list(chirp_common.TONES)
-TMODES = ['', 'Tone', 'DTCS', '']
-DUPLEXES = ['', 'err', '-', '+']  # index 2 not used
-MODES = ['WFM', 'FM', 'NFM']  # 25k, 20k,15k bw
+TMODES = ["", "Tone", "DTCS", ""]
+DUPLEXES = ["", "err", "-", "+"]  # index 2 not used
+MODES = ["WFM", "FM", "NFM"]  # 25k, 20k,15k bw
 TUNING_STEPS = [5.0, 6.25, 8.33, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
 #               index 0-9
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=65),
-                chirp_common.PowerLevel("Mid", watts=25),
-                chirp_common.PowerLevel("Low", watts=10)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=65),
+    chirp_common.PowerLevel("Mid", watts=25),
+    chirp_common.PowerLevel("Low", watts=10),
+]
 
 CROSS_MODES = chirp_common.CROSS_MODES
 
@@ -60,11 +68,28 @@ TXPWR_LIST = ["60W", "25W"]  # maximum power for Hi setting
 TBSTFREQ_LIST = ["1750 Hz", "2100 Hz", "1000 Hz", "1450 Hz"]
 BEEP_LIST = ["Off", "On"]
 VFO_LIST = ["VFO", "MEM"]
-BUTTONS_LIST = ["Off", "Call", "VFO/MEM", "CTCSS/DCS", "MHz Step", "Squelch",
-                "Transmit Power", "Repeater Shift", "Scan", "Lock", "Monitor",
-                "Copy Channel", "Delete Channel", "Reverse",
-                "Display Brightness", "Compander", "Priority",
-                "DTMF Autodialer", "Show Voltage", "Clone"]
+BUTTONS_LIST = [
+    "Off",
+    "Call",
+    "VFO/MEM",
+    "CTCSS/DCS",
+    "MHz Step",
+    "Squelch",
+    "Transmit Power",
+    "Repeater Shift",
+    "Scan",
+    "Lock",
+    "Monitor",
+    "Copy Channel",
+    "Delete Channel",
+    "Reverse",
+    "Display Brightness",
+    "Compander",
+    "Priority",
+    "DTMF Autodialer",
+    "Show Voltage",
+    "Clone",
+]
 
 MEM_FORMAT = """
 #seekto 0x0000;
@@ -440,8 +465,7 @@ def _read(radio, length):
         raise errors.RadioError("Unable to read from radio")
 
     if len(data) != length:
-        LOG.error("Short read from radio (%i, expected %i)" % (len(data),
-                  length))
+        LOG.error("Short read from radio (%i, expected %i)" % (len(data), length))
         LOG.debug(util.hexprint(data))
         raise errors.RadioError("Short read from radio")
     return data
@@ -487,8 +511,7 @@ def _send(radio, cmd, addr, length, data=None):
         result = radio.pipe.read(1)
         if result != b"\x06":
             LOG.debug("Ack was: %s" % repr(result))
-            raise errors.RadioError(
-                "Radio did not accept block at %04x" % addr)
+            raise errors.RadioError("Radio did not accept block at %04x" % addr)
         return
     result = _read(radio, length + 6)
     LOG.debug("Got:\n%s" % util.hexprint(result))
@@ -513,7 +536,7 @@ def _send(radio, cmd, addr, length, data=None):
 
 
 def _finish(radio):
-    endframe = b"\x45\x4E\x44"
+    endframe = b"\x45\x4e\x44"
     _echo_write(radio, endframe)
     result = radio.pipe.read(1)
     # TYT radios acknowledge the "endframe" command, Luiton radios do not.
@@ -531,7 +554,7 @@ def do_download(radio):
 
     for start, end in radio._ranges:
         for addr in range(start, end, 0x10):
-            block = _send(radio, b'R', addr, 0x10)
+            block = _send(radio, b"R", addr, 0x10)
             data += block
             status = chirp_common.Status()
             status.cur = len(data)
@@ -552,8 +575,8 @@ def do_upload(radio):
         for addr in range(start, end, 0x10):
             if addr < 0x0100:
                 continue
-            block = radio._mmap[addr:addr + 0x10]
-            _send(radio, b'W', addr, len(block), block)
+            block = radio._mmap[addr : addr + 0x10]
+            _send(radio, b"W", addr, len(block), block)
             status = chirp_common.Status()
             status.cur = addr
             status.max = end
@@ -566,9 +589,9 @@ def do_upload(radio):
 #
 # The base class, extended for use with other models
 #
-class Th9000Radio(chirp_common.CloneModeRadio,
-                  chirp_common.ExperimentalRadio):
+class Th9000Radio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """TYT TH-9000"""
+
     VENDOR = "TYT"
     MODEL = "TH9000 Base"
     BAUD_RATE = 9600
@@ -580,8 +603,10 @@ class Th9000Radio(chirp_common.CloneModeRadio,
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = ("The TYT TH-9000 driver is an beta version."
-                           "Proceed with Caution and backup your data")
+        rp.experimental = (
+            "The TYT TH-9000 driver is an beta version."
+            "Proceed with Caution and backup your data"
+        )
         return rp
 
     def get_features(self):
@@ -596,9 +621,14 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         rf.valid_name_length = 7
         rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "-"
         rf.valid_modes = MODES
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ['Tone->DTCS', 'DTCS->Tone',
-                                '->Tone', '->DTCS', 'Tone->Tone']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "Tone->Tone",
+        ]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_tones = TONES
         rf.valid_dtcs_codes = chirp_common.ALL_DTCS_CODES
@@ -625,13 +655,13 @@ class Th9000Radio(chirp_common.CloneModeRadio,
 
     # not working yet
     def _get_dcs_index(self, _mem, which):
-        base = getattr(_mem, '%scode' % which)
-        extra = getattr(_mem, '%sdcsextra' % which)
+        base = getattr(_mem, "%scode" % which)
+        extra = getattr(_mem, "%sdcsextra" % which)
         return (int(extra) << 8) | int(base)
 
     def _set_dcs_index(self, _mem, which, index):
-        base = getattr(_mem, '%scode' % which)
-        extra = getattr(_mem, '%sdcsextra' % which)
+        base = getattr(_mem, "%scode" % which)
+        extra = getattr(_mem, "%sdcsextra" % which)
         base.set_value(index & 0xFF)
         extra.set_value(index >> 8)
 
@@ -659,7 +689,7 @@ class Th9000Radio(chirp_common.CloneModeRadio,
 
         # compensate for 6.25 and 12.5 kHz tuning steps, add 500 Hz if needed
         lastdigit = int(_mem.freq) % 10
-        if (lastdigit == 2 or lastdigit == 7):
+        if lastdigit == 2 or lastdigit == 7:
             mem.freq += 50
 
         mem.offset = int(_mem.offset) * 100
@@ -678,21 +708,19 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         if rxmode == "Tone":
             rxtone = TONES[_mem.rxtone]
         elif rxmode == "DTCS":
-            rxtone = chirp_common.ALL_DTCS_CODES[self._get_dcs_index(
-                                                 _mem, 'rx')]
+            rxtone = chirp_common.ALL_DTCS_CODES[self._get_dcs_index(_mem, "rx")]
 
         if txmode == "Tone":
             txtone = TONES[_mem.txtone]
         elif txmode == "DTCS":
-            txtone = chirp_common.ALL_DTCS_CODES[self._get_dcs_index(
-                                                 _mem, 'tx')]
+            txtone = chirp_common.ALL_DTCS_CODES[self._get_dcs_index(_mem, "tx")]
 
         rxpol = _mem.rxinv and "R" or "N"
         txpol = _mem.txinv and "R" or "N"
 
-        chirp_common.split_tone_decode(mem,
-                                       (txmode, txtone, txpol),
-                                       (rxmode, rxtone, rxpol))
+        chirp_common.split_tone_decode(
+            mem, (txmode, txtone, txpol), (rxmode, rxtone, rxpol)
+        )
 
         mem.skip = "S" if skipflag == 1 else ""
 
@@ -722,8 +750,8 @@ class Th9000Radio(chirp_common.CloneModeRadio,
 
         _mem.set_raw("\x00" * 32)
 
-        _mem.freq = mem.freq / 100         # Convert to low-level frequency
-        _mem.offset = mem.offset / 100         # Convert to low-level frequency
+        _mem.freq = mem.freq / 100  # Convert to low-level frequency
+        _mem.offset = mem.offset / 100  # Convert to low-level frequency
 
         _mem.name = mem.name.ljust(7)[:7]  # Store the alpha tag
         _mem.duplex = DUPLEXES.index(mem.duplex)
@@ -733,8 +761,9 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         except ValueError:
             _mem.channel_width = 0
 
-        ((txmode, txtone, txpol),
-         (rxmode, rxtone, rxpol)) = chirp_common.split_tone_encode(mem)
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
+            chirp_common.split_tone_encode(mem)
+        )
 
         _mem.txtmode = TMODES.index(txmode)
 
@@ -743,14 +772,12 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         if txmode == "Tone":
             _mem.txtone = TONES.index(txtone)
         elif txmode == "DTCS":
-            self._set_dcs_index(_mem, 'tx',
-                                chirp_common.ALL_DTCS_CODES.index(txtone))
+            self._set_dcs_index(_mem, "tx", chirp_common.ALL_DTCS_CODES.index(txtone))
 
         if rxmode == "Tone":
             _mem.rxtone = TONES.index(rxtone)
         elif rxmode == "DTCS":
-            self._set_dcs_index(_mem, 'rx',
-                                chirp_common.ALL_DTCS_CODES.index(rxtone))
+            self._set_dcs_index(_mem, "rx", chirp_common.ALL_DTCS_CODES.index(rxtone))
 
         _mem.txinv = txpol == "R"
         _mem.rxinv = rxpol == "R"
@@ -769,8 +796,7 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         basic = RadioSettingGroup("basic", "Global Settings")
         freqrange = RadioSettingGroup("freqrange", "Frequency Ranges")
         buttons = RadioSettingGroup("buttons", "Programmable Buttons")
-        top = RadioSettingGroup("top", "All Settings", basic, freqrange,
-                                buttons)
+        top = RadioSettingGroup("top", "All Settings", basic, freqrange, buttons)
         settings = RadioSettings(top)
 
         def _filter(name):
@@ -787,170 +813,205 @@ class Th9000Radio(chirp_common.CloneModeRadio,
         basic.append(rs)
 
         rs = RadioSetting(
-            "bg_color", "LCD Color",
-            RadioSettingValueList(
-                BGCOLOR_LIST, current_index=_settings.bg_color))
+            "bg_color",
+            "LCD Color",
+            RadioSettingValueList(BGCOLOR_LIST, current_index=_settings.bg_color),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "bg_brightness", "LCD Brightness",
-            RadioSettingValueList(
-                BGBRIGHT_LIST, current_index=_settings.bg_brightness))
+            "bg_brightness",
+            "LCD Brightness",
+            RadioSettingValueList(BGBRIGHT_LIST, current_index=_settings.bg_brightness),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "squelch", "Squelch Level",
-            RadioSettingValueList(
-                SQUELCH_LIST, current_index=_settings.squelch))
+            "squelch",
+            "Squelch Level",
+            RadioSettingValueList(SQUELCH_LIST, current_index=_settings.squelch),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "timeout_timer", "Timeout Timer (TOT)",
-            RadioSettingValueList(
-                TIMEOUT_LIST, current_index=_settings.timeout_timer))
+            "timeout_timer",
+            "Timeout Timer (TOT)",
+            RadioSettingValueList(TIMEOUT_LIST, current_index=_settings.timeout_timer),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "auto_power_off", "Auto Power Off (APO)",
-            RadioSettingValueList(
-                APO_LIST, current_index=_settings.auto_power_off))
+            "auto_power_off",
+            "Auto Power Off (APO)",
+            RadioSettingValueList(APO_LIST, current_index=_settings.auto_power_off),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "voice_prompt", "Beep Prompt",
-            RadioSettingValueList(
-                BEEP_LIST, current_index=_settings.voice_prompt))
+            "voice_prompt",
+            "Beep Prompt",
+            RadioSettingValueList(BEEP_LIST, current_index=_settings.voice_prompt),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "tbst_freq", "Tone Burst Frequency",
-            RadioSettingValueList(
-                TBSTFREQ_LIST, current_index=_settings.tbst_freq))
+            "tbst_freq",
+            "Tone Burst Frequency",
+            RadioSettingValueList(TBSTFREQ_LIST, current_index=_settings.tbst_freq),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "choose_tx_power", "Max Level of TX Power",
-            RadioSettingValueList(
-                TXPWR_LIST, current_index=_settings.choose_tx_power))
+            "choose_tx_power",
+            "Max Level of TX Power",
+            RadioSettingValueList(TXPWR_LIST, current_index=_settings.choose_tx_power),
+        )
         basic.append(rs)
 
-        (flow, fhigh) = self.valid_freq[0]
+        flow, fhigh = self.valid_freq[0]
         flow /= 1000
         fhigh /= 1000
         fmidrange = (fhigh - flow) / 2
 
-        rs = RadioSetting("txrangelow", "TX Freq, Lower Limit (kHz)",
-                          RadioSettingValueInteger(
-                              flow, flow + fmidrange,
-                              int(_freqrange.txrangelow) / 10))
-        freqrange.append(rs)
-
-        rs = RadioSetting("txrangehi", "TX Freq, Upper Limit (kHz)",
-                          RadioSettingValueInteger(
-                              fhigh-fmidrange, fhigh,
-                              int(_freqrange.txrangehi) / 10))
-        freqrange.append(rs)
-
-        rs = RadioSetting("rxrangelow", "RX Freq, Lower Limit (kHz)",
-                          RadioSettingValueInteger(
-                              flow, flow+fmidrange,
-                              int(_freqrange.rxrangelow) / 10))
-        freqrange.append(rs)
-
-        rs = RadioSetting("rxrangehi", "RX Freq, Upper Limit (kHz)",
-                          RadioSettingValueInteger(
-                              fhigh-fmidrange, fhigh,
-                              int(_freqrange.rxrangehi) / 10))
+        rs = RadioSetting(
+            "txrangelow",
+            "TX Freq, Lower Limit (kHz)",
+            RadioSettingValueInteger(
+                flow, flow + fmidrange, int(_freqrange.txrangelow) / 10
+            ),
+        )
         freqrange.append(rs)
 
         rs = RadioSetting(
-            "btn_p1", "P1 Short Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p1))
+            "txrangehi",
+            "TX Freq, Upper Limit (kHz)",
+            RadioSettingValueInteger(
+                fhigh - fmidrange, fhigh, int(_freqrange.txrangehi) / 10
+            ),
+        )
+        freqrange.append(rs)
+
+        rs = RadioSetting(
+            "rxrangelow",
+            "RX Freq, Lower Limit (kHz)",
+            RadioSettingValueInteger(
+                flow, flow + fmidrange, int(_freqrange.rxrangelow) / 10
+            ),
+        )
+        freqrange.append(rs)
+
+        rs = RadioSetting(
+            "rxrangehi",
+            "RX Freq, Upper Limit (kHz)",
+            RadioSettingValueInteger(
+                fhigh - fmidrange, fhigh, int(_freqrange.rxrangehi) / 10
+            ),
+        )
+        freqrange.append(rs)
+
+        rs = RadioSetting(
+            "btn_p1",
+            "P1 Short Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p1),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p2", "P2 Short Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p2))
+            "btn_p2",
+            "P2 Short Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p2),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p3", "P3 Short Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p3))
+            "btn_p3",
+            "P3 Short Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p3),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p4", "P4 Short Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p4))
+            "btn_p4",
+            "P4 Short Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p4),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p5", "P5 Short Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p5))
+            "btn_p5",
+            "P5 Short Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p5),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p1_long", "P1 Long Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p1_long))
+            "btn_p1_long",
+            "P1 Long Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p1_long),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p2_long", "P2 Long Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p2_long))
+            "btn_p2_long",
+            "P2 Long Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p2_long),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p3_long", "P3 Long Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p3_long))
+            "btn_p3_long",
+            "P3 Long Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p3_long),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p4_long", "P4 Long Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p4_long))
+            "btn_p4_long",
+            "P4 Long Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p4_long),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p5_long", "P5 Long Press",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p5_long))
+            "btn_p5_long",
+            "P5 Long Press",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p5_long),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p1_func", "Function + P1",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p1_func))
+            "btn_p1_func",
+            "Function + P1",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p1_func),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p2_func", "Function + P2",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p2_func))
+            "btn_p2_func",
+            "Function + P2",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p2_func),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p3_func", "Function + P3",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p3_func))
+            "btn_p3_func",
+            "Function + P3",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p3_func),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p4_func", "Function + P4",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p4_func))
+            "btn_p4_func",
+            "Function + P4",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p4_func),
+        )
         buttons.append(rs)
 
         rs = RadioSetting(
-            "btn_p5_func", "Function + P5",
-            RadioSettingValueList(
-                BUTTONS_LIST, current_index=_buttons.btn_p5_func))
+            "btn_p5_func",
+            "Function + P5",
+            RadioSettingValueList(BUTTONS_LIST, current_index=_buttons.btn_p5_func),
+        )
         buttons.append(rs)
 
         return settings
@@ -960,6 +1021,7 @@ class Th9000Radio(chirp_common.CloneModeRadio,
             return self._get_settings()
         except:
             import traceback
+
             LOG.error("failed to parse settings")
             traceback.print_exc()
             return None
@@ -974,12 +1036,9 @@ class Th9000Radio(chirp_common.CloneModeRadio,
                 try:
                     name = element.get_name()
 
-                    if name in ["txrangelow", "txrangehi", "rxrangelow",
-                                "rxrangehi"]:
-                        LOG.debug("setting %s = %s" % (name,
-                                  int(element.value) * 10))
-                        setattr(self._memobj.freqrange, name,
-                                int(element.value) * 10)
+                    if name in ["txrangelow", "txrangehi", "rxrangelow", "rxrangehi"]:
+                        LOG.debug("setting %s = %s" % (name, int(element.value) * 10))
+                        setattr(self._memobj.freqrange, name, int(element.value) * 10)
                         continue
 
                     if name in ["startname"]:
@@ -987,11 +1046,23 @@ class Th9000Radio(chirp_common.CloneModeRadio,
                         setattr(self._memobj.slabel, name, element.value)
                         continue
 
-                    if name in ["btn_p3", "btn_p4", "btn_p5", "btn_p1",
-                                "btn_p2", "btn_p3_long", "btn_p4_long",
-                                "btn_p5_long", "btn_p1_long", "btn_p2_long",
-                                "btn_p3_func", "btn_p4_func", "btn_p5_func",
-                                "btn_p1_func", "btn_p2_func"]:
+                    if name in [
+                        "btn_p3",
+                        "btn_p4",
+                        "btn_p5",
+                        "btn_p1",
+                        "btn_p2",
+                        "btn_p3_long",
+                        "btn_p4_long",
+                        "btn_p5_long",
+                        "btn_p1_long",
+                        "btn_p2_long",
+                        "btn_p3_func",
+                        "btn_p4_func",
+                        "btn_p5_func",
+                        "btn_p1_func",
+                        "btn_p2_func",
+                    ]:
                         LOG.debug("setting %s = %s" % (name, element.value))
                         setattr(self._memobj.buttons, name, element.value)
                         continue
@@ -1003,8 +1074,7 @@ class Th9000Radio(chirp_common.CloneModeRadio,
                         LOG.debug("using apply callback")
                         element.run_apply_callback()
                     else:
-                        LOG.debug("Setting %s = %s" % (setting,
-                                  element.value))
+                        LOG.debug("Setting %s = %s" % (setting, element.value))
                         setattr(obj, setting, element.value)
                 except Exception:
                     LOG.debug(element.get_name())
@@ -1018,25 +1088,28 @@ class Th9000Radio(chirp_common.CloneModeRadio,
 def match_orig_model(cls, filedata, filename):
     # This old-style file detection should only be used for the
     # original TYT TH9000 classes for compatibility
-    if cls.VENDOR != 'TYT' or 'TH9000_' not in cls.MODEL:
+    if cls.VENDOR != "TYT" or "TH9000_" not in cls.MODEL:
         return False
 
     if MMAPSIZE == len(filedata):
-        (flow, fhigh) = cls.valid_freq[0]
+        flow, fhigh = cls.valid_freq[0]
         flow /= 1000000
         fhigh /= 1000000
 
-        txmin = filedata[0x200] * 100 + (filedata[0x201] >> 4) \
-            * 10 + filedata[0x201] % 16
-        txmax = filedata[0x204] * 100 + (filedata[0x205] >> 4) \
-            * 10 + filedata[0x205] % 16
-        rxmin = filedata[0x208] * 100 + (filedata[0x209] >> 4) \
-            * 10 + filedata[0x209] % 16
-        rxmax = filedata[0x20C] * 100 + (filedata[0x20D] >> 4) \
-            * 10 + filedata[0x20D] % 16
+        txmin = (
+            filedata[0x200] * 100 + (filedata[0x201] >> 4) * 10 + filedata[0x201] % 16
+        )
+        txmax = (
+            filedata[0x204] * 100 + (filedata[0x205] >> 4) * 10 + filedata[0x205] % 16
+        )
+        rxmin = (
+            filedata[0x208] * 100 + (filedata[0x209] >> 4) * 10 + filedata[0x209] % 16
+        )
+        rxmax = (
+            filedata[0x20C] * 100 + (filedata[0x20D] >> 4) * 10 + filedata[0x20D] % 16
+        )
 
-        if (rxmin >= flow and rxmax <= fhigh and txmin >= flow and
-                txmax <= fhigh):
+        if rxmin >= flow and rxmax <= fhigh and txmin >= flow and txmax <= fhigh:
             return True
 
     return False
@@ -1045,6 +1118,7 @@ def match_orig_model(cls, filedata, filename):
 @directory.register
 class Th9000220Radio(Th9000Radio):
     """TYT TH-9000 220"""
+
     VENDOR = "TYT"
     MODEL = "TH9000_220"
     BAUD_RATE = 9600
@@ -1058,6 +1132,7 @@ class Th9000220Radio(Th9000Radio):
 @directory.register
 class Th9000144Radio(Th9000220Radio):
     """TYT TH-9000 144"""
+
     VENDOR = "TYT"
     MODEL = "TH9000_144"
     BAUD_RATE = 9600
@@ -1071,6 +1146,7 @@ class Th9000144Radio(Th9000220Radio):
 @directory.register
 class Th9000440Radio(Th9000220Radio):
     """TYT TH-9000 440"""
+
     VENDOR = "TYT"
     MODEL = "TH9000_440"
     BAUD_RATE = 9600
@@ -1084,6 +1160,7 @@ class Th9000440Radio(Th9000220Radio):
 @directory.register
 class Lt580VHFRadio(Th9000144Radio):
     """Luiton LT-580 VHF"""
+
     VENDOR = "LUITON"
     MODEL = "LT-580_VHF"
 
@@ -1091,6 +1168,7 @@ class Lt580VHFRadio(Th9000144Radio):
 @directory.register
 class Lt580UHFRadio(Th9000440Radio):
     """Luiton LT-580 UHF"""
+
     VENDOR = "LUITON"
     MODEL = "LT-580_UHF"
 
@@ -1098,6 +1176,7 @@ class Lt580UHFRadio(Th9000440Radio):
 @directory.register
 class RT9000DVHFRadio(Th9000Radio):
     """Retevis RT9000D VHF"""
+
     VENDOR = "Retevis"
     MODEL = "RT9000D_136-174"
     valid_freq = [(136000000, 174000000)]
@@ -1106,6 +1185,7 @@ class RT9000DVHFRadio(Th9000Radio):
 @directory.register
 class RT9000D220Radio(Th9000Radio):
     """Retevis RT9000D 220"""
+
     VENDOR = "Retevis"
     MODEL = "RT9000D_220-260"
     valid_freq = [(220000000, 260000000)]
@@ -1114,6 +1194,7 @@ class RT9000D220Radio(Th9000Radio):
 @directory.register
 class RT9000DUHFRadio(Th9000Radio):
     """Retevis RT9000D UHF"""
+
     VENDOR = "Retevis"
     MODEL = "RT9000D_400-490"
     valid_freq = [(400000000, 490000000)]
@@ -1122,6 +1203,7 @@ class RT9000DUHFRadio(Th9000Radio):
 @directory.register
 class RT9000D6688Radio(Th9000Radio):
     """Retevis RT9000D 66-88"""
+
     VENDOR = "Retevis"
     MODEL = "RT9000D_66-88"
     valid_freq = [(66000000, 88000000)]

@@ -25,8 +25,7 @@ class TestSettingValues(base.BaseTest):
 
     def _set_and_catch(self, rsv, *values):
         for value in values:
-            self.assertRaises(settings.InvalidValueError,
-                              rsv.set_value, value)
+            self.assertRaises(settings.InvalidValueError, rsv.set_value, value)
 
     def test_radio_setting_value_integer(self):
         value = settings.RadioSettingValueInteger(0, 10, 5)
@@ -69,16 +68,16 @@ class TestSettingValues(base.BaseTest):
         self.assertEqual(value.get_options(), opts)
 
         # Make sure we int() the index, as we may pass a bitwise object
-        value = settings.RadioSettingValueList(opts, current_index='1')
+        value = settings.RadioSettingValueList(opts, current_index="1")
         value.initialize()
         self.assertEqual(value.get_value(), "Def")
 
         value.set_index(0)
-        self.assertEqual(value.get_value(), 'Abc')
+        self.assertEqual(value.get_value(), "Abc")
 
         # Same here, int() the index
-        value.set_index('0')
-        self.assertEqual(value.get_value(), 'Abc')
+        value.set_index("0")
+        self.assertEqual(value.get_value(), "Abc")
 
         self.assertRaises(IndexError, value.set_index, 7)
 
@@ -100,6 +99,7 @@ class TestSettingValues(base.BaseTest):
         def test_validate(val):
             if val == "bar":
                 raise TestException()
+
         value.set_validate_callback(test_validate)
         value.set_value("baz")
         self.assertRaises(TestException, value.set_value, "bar")
@@ -134,6 +134,7 @@ class TestSettingContainers(base.BaseTest):
 
         def set_dupe():
             group["s3"] = s3
+
         self.assertRaises(KeyError, set_dupe)
 
     def test_radio_setting(self):
@@ -142,8 +143,8 @@ class TestSettingContainers(base.BaseTest):
         self.assertEqual(rs.value, val)
         rs.value = False
         self.assertEqual(val.get_value(), False)
-        self.assertEqual('foo:False', str(rs))
-        self.assertEqual('[RadioSetting foo:False]', repr(rs))
+        self.assertEqual("foo:False", str(rs))
+        self.assertEqual("[RadioSetting foo:False]", repr(rs))
 
     def test_radio_setting_multi(self):
         val1 = settings.RadioSettingValueBoolean(True)
@@ -168,22 +169,25 @@ class TestSettingContainers(base.BaseTest):
             self.assertEqual(data1, "foo")
             self.assertEqual(data2, "bar")
             raise TestException()
+
         rs.set_apply_callback(test_cb, "foo", "bar")
         self.assertTrue(rs.has_apply_callback())
         self.assertRaises(TestException, rs.run_apply_callback)
 
     def test_setting_banned_name(self):
-        self.assertRaises(settings.InvalidNameError,
-                          settings.RadioSetting, "foo%bar", "Foo")
+        self.assertRaises(
+            settings.InvalidNameError, settings.RadioSetting, "foo%bar", "Foo"
+        )
 
     def test_setting_banned_name_characters(self):
         for c in settings.BANNED_NAME_CHARACTERS:
-            self.assertRaises(settings.InvalidNameError,
-                              settings.RadioSetting, "foo%sbar" % c, "Foo")
+            self.assertRaises(
+                settings.InvalidNameError, settings.RadioSetting, "foo%sbar" % c, "Foo"
+            )
 
     def test_setting_deferred(self):
         val = settings.RadioSettingValueInteger(0, 10, 12)
-        rs = settings.RadioSetting('test', 'Test', val)
+        rs = settings.RadioSetting("test", "Test", val)
         self.assertFalse(rs.value.initialized)
         rs.value = 1
         self.assertTrue(rs.value.initialized)

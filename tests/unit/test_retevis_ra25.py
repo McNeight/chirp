@@ -9,10 +9,11 @@ class TestRA25SqlMode(unittest.TestCase):
     """Test sql_mode (Signal/Squelch Mode) feature for RA25/779UV"""
 
     def setUp(self):
-        test_image = os.path.join(os.path.dirname(__file__),
-                                  '..', 'images', 'Retevis_RA25.img')
+        test_image = os.path.join(
+            os.path.dirname(__file__), "..", "images", "Retevis_RA25.img"
+        )
         self.radio = retevis_ra25.RA25UVRadio(None)
-        with open(test_image, 'rb') as f:
+        with open(test_image, "rb") as f:
             self.radio._mmap = memmap.MemoryMapBytes(f.read())
         self.radio.process_mmap()
 
@@ -20,7 +21,7 @@ class TestRA25SqlMode(unittest.TestCase):
         """sql_mode setting should NOT be present in mem.extra"""
         mem = self.radio.get_memory(1)
         setting_names = [s.get_name() for s in mem.extra]
-        self.assertNotIn('sql_mode', setting_names)
+        self.assertNotIn("sql_mode", setting_names)
 
     def test_sql_mode_raw_values(self):
         """sql_mode raw values should be 0 (SQ) or 1 (CT/DCS)"""

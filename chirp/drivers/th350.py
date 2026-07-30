@@ -179,14 +179,14 @@ def do_ident(radio):
     radio.pipe.write(b"\x05TROGRAM")
     for x in range(10):
         ack = radio.pipe.read(1)
-        if ack == b'\x06':
+        if ack == b"\x06":
             break
     else:
         raise errors.RadioError("Radio did not ack programming mode")
     radio.pipe.write(b"\x02")
     ident = radio.pipe.read(8)
     LOG.debug(util.hexprint(ident))
-    if not ident.startswith(b'HKT511'):
+    if not ident.startswith(b"HKT511"):
         raise errors.RadioError("Unsupported model")
     radio.pipe.write(b"\x06")
     ack = radio.pipe.read(1)
@@ -205,7 +205,7 @@ def do_status(radio, direction, addr):
 def do_download(radio):
     do_ident(radio)
     data = b"TRI350 Radio Program data v1.08\x00"
-    data += (b"\x00" * 16)
+    data += b"\x00" * 16
     for i in range(0, 0x1000, 16):
         frame = struct.pack(">cHB", b"R", i, 16)
         radio.pipe.write(frame)
@@ -225,7 +225,7 @@ def do_upload(radio):
 
     for i in range(0, 0x1000, 16):
         frame = struct.pack(">cHB", b"W", i, 16)
-        frame += data[i:i + 16]
+        frame += data[i : i + 16]
         radio.pipe.write(frame)
         ack = radio.pipe.read(1)
         if ack != b"\x06":
@@ -236,21 +236,23 @@ def do_upload(radio):
                 break
             else:
                 LOG.debug("Radio NAK'd block at address 0x%04x" % i)
-                raise errors.RadioError(
-                    "Radio NAK'd block at address 0x%04x" % i)
+                raise errors.RadioError("Radio NAK'd block at address 0x%04x" % i)
         LOG.debug("Radio ACK'd block at address 0x%04x" % i)
         do_status(radio, "to", i)
 
 
 DUPLEX = ["", "-", "+"]
 CHARSET = "0123456789- ABCDEFGHIJKLMNOPQRSTUVWXYZ/_+*"
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1),
-                chirp_common.PowerLevel("High", watts=5)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1),
+    chirp_common.PowerLevel("High", watts=5),
+]
 
 
 @directory.register
 class Th350Radio(BaofengUVB5):
     """TYT TH-350"""
+
     VENDOR = "TYT"
     MODEL = "TH-350"
     BAUD_RATE = 9600
@@ -267,11 +269,12 @@ class Th350Radio(BaofengUVB5):
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ("This TYT TH-350 driver is an alpha version. "
-             "Proceed with Caution and backup your data. "
-             "Always confirm the correctness of your settings with the "
-             "official programmer.")
+        rp.experimental = (
+            "This TYT TH-350 driver is an alpha version. "
+            "Proceed with Caution and backup your data. "
+            "Always confirm the correctness of your settings with the "
+            "official programmer."
+        )
         return rp
 
     def get_features(self):
@@ -280,16 +283,25 @@ class Th350Radio(BaofengUVB5):
         rf.has_cross = True
         rf.has_rx_dtcs = True
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_duplexes = DUPLEX + ["split"]
         rf.can_odd_split = True
         rf.valid_skips = ["", "S"]
         rf.valid_characters = CHARSET
         rf.valid_name_length = self.NAME_LENGTH
-        rf.valid_bands = [(130000000, 175000000),
-                          (220000000, 269000000),
-                          (400000000, 520000000)]
+        rf.valid_bands = [
+            (130000000, 175000000),
+            (220000000, 269000000),
+            (400000000, 520000000),
+        ]
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_special_chans = list(self.SPECIALS.keys())
         rf.valid_power_levels = POWER_LEVELS
@@ -324,9 +336,9 @@ class Th350Radio(BaofengUVB5):
         def _get(field):
             return int(getattr(_mem, "%s%s" % (which, field)))
 
-        tonea, toneb = _get('tonea'), _get('toneb')
+        tonea, toneb = _get("tonea"), _get("toneb")
 
-        if tonea == 0xff:
+        if tonea == 0xFF:
             mode = val = pol = None
         elif tonea >= 0x80:
             # DTCS
@@ -335,23 +347,18 @@ class Th350Radio(BaofengUVB5):
             # Yes. Decimal digits as hex. You're seeing that right.
             # No idea why TYT engineers would do something like that.
             pold = tonea // 16
-            if pold not in [0x8, 0xc]:
+            if pold not in [0x8, 0xC]:
                 LOG.warn("Bug: tone is %04x %04x" % (tonea, toneb))
                 mode = val = pol = None
             else:
-                mode = 'DTCS'
-                val = ((tonea % 16) * 100 +
-                       toneb // 16 * 10 +
-                       (toneb % 16))
-                pol = 'N' if pold == 8 else 'R'
+                mode = "DTCS"
+                val = (tonea % 16) * 100 + toneb // 16 * 10 + (toneb % 16)
+                pol = "N" if pold == 8 else "R"
         else:
             # Tone
             # 107.2 -> 0x10 0x72. Seriously.
-            mode = 'Tone'
-            val = (tonea // 16 * 100 +
-                   (tonea % 16) * 10 +
-                   toneb // 16 +
-                   toneb % 16 / 10)
+            mode = "Tone"
+            val = tonea // 16 * 100 + (tonea % 16) * 10 + toneb // 16 + toneb % 16 / 10
             pol = None
 
         return mode, val, pol
@@ -361,24 +368,16 @@ class Th350Radio(BaofengUVB5):
             setattr(_mem, "%s%s" % (which, field), value)
 
         if mode == "Tone":
-            tonea = int(
-                        val // 100 * 16 +
-                        val // 10 % 10
-                    )
-            toneb = int(
-                        floor(val % 10) * 16 +
-                        floor(val * 10) % 10
-                    )
+            tonea = int(val // 100 * 16 + val // 10 % 10)
+            toneb = int(floor(val % 10) * 16 + floor(val * 10) % 10)
         elif mode == "DTCS":
-            tonea = (0x80 if pol == 'N' else 0xc0) + \
-                val // 100
-            toneb = (val // 10) % 10 * 16 + \
-                val % 10
+            tonea = (0x80 if pol == "N" else 0xC0) + val // 100
+            toneb = (val // 10) % 10 * 16 + val % 10
         else:
-            tonea = toneb = 0xff
+            tonea = toneb = 0xFF
 
-        _set('tonea', tonea)
-        _set('toneb', toneb)
+        _set("tonea", tonea)
+        _set("toneb", toneb)
 
     def _get_memobjs(self, number):
         if isinstance(number, str):
@@ -388,13 +387,17 @@ class Th350Radio(BaofengUVB5):
                 if number == v:
                     return (getattr(self._memobj, k.lower()), None)
         else:
-            return (self._memobj.channels[number - 1],
-                    self._memobj.names[number - 1].name)
+            return (
+                self._memobj.channels[number - 1],
+                self._memobj.names[number - 1].name,
+            )
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return (filedata.startswith(b"TRI350 Radio Program data") and
-                len(filedata) == (cls._memsize + 0x30))
+        return filedata.startswith(b"TRI350 Radio Program data") and len(filedata) == (
+            cls._memsize + 0x30
+        )
+
 
 # US version has channel names that are 8 characters long
 
@@ -402,6 +405,7 @@ class Th350Radio(BaofengUVB5):
 @directory.register
 class Th350USRadio(Th350Radio):
     """TYT TH-350US"""
+
     VARIANT = "US"
     BAUD_RATE = 9600
 

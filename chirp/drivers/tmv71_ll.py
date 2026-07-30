@@ -98,7 +98,7 @@ def read_block(s, block, count=256):
 def write_block(s, block, map):
     s.write(struct.pack("<cHB", "W", block, 0))
     base = block * 256
-    s.write(map[base:base+256])
+    s.write(map[base : base + 256])
 
     ack = s.read(1)
 
@@ -155,7 +155,7 @@ def get_mem_offset(number):
 def get_raw_mem(map, number):
     base = get_mem_offset(number)
     # LOG.debug("Offset for %i is %04x" % (number, base))
-    return map[base:base+MEM_LOC_SIZE]
+    return map[base : base + MEM_LOC_SIZE]
 
 
 def get_used(map, number):
@@ -178,7 +178,7 @@ def set_used(map, number, freq):
 
 def get_skip(map, number):
     pos = MEM_FLG_BASE + (number * 2)
-    flag = ord(map[pos+1])
+    flag = ord(map[pos + 1])
     if flag & 0x01:
         return "S"
     else:
@@ -187,16 +187,16 @@ def get_skip(map, number):
 
 def set_skip(map, number, skip):
     pos = MEM_FLG_BASE + (number * 2)
-    flag = ord(map[pos+1])
+    flag = ord(map[pos + 1])
     if skip:
         flag |= 0x01
     else:
         flag &= ~0x01
-    map[pos+1] = flag
+    map[pos + 1] = flag
 
 
 def get_freq(mmap):
-    freq, = struct.unpack("<I", mmap[0:4])
+    (freq,) = struct.unpack("<I", mmap[0:4])
     return freq / 1000000.0
 
 
@@ -206,7 +206,7 @@ def set_freq(mmap, freq):
 
 def get_name(map, number):
     base = MEM_TAG_BASE + (8 * number)
-    return map[base:base+6].replace("\xff", "")
+    return map[base : base + 6].replace("\xff", "")
 
 
 def set_name(mmap, number, name):
@@ -222,7 +222,7 @@ def get_tmode(mmap):
         0x40: "Tone",
         0x20: "TSQL",
         0x10: "DTCS",
-        }
+    }
 
     return tmodemap[val]
 
@@ -231,11 +231,11 @@ def set_tmode(mmap, tmode):
     val = ord(mmap[POS_TMODE]) & 0x8F
 
     tmodemap = {
-        "":     0x00,
+        "": 0x00,
         "Tone": 0x40,
         "TSQL": 0x20,
         "DTCS": 0x10,
-        }
+    }
 
     mmap[POS_TMODE] = val | tmodemap[tmode]
 
@@ -268,7 +268,7 @@ def get_duplex(mmap):
         0x00: "",
         0x01: "+",
         0x02: "-",
-        }
+    }
 
     return dupmap[val]
 
@@ -277,16 +277,16 @@ def set_duplex(mmap, duplex):
     val = ord(mmap[POS_DUP]) & 0xFC
 
     dupmap = {
-        "":  0x00,
+        "": 0x00,
         "+": 0x01,
         "-": 0x02,
-        }
+    }
 
     mmap[POS_DUP] = val | dupmap[duplex]
 
 
 def get_offset(mmap):
-    val, = struct.unpack("<I", mmap[POS_OFFSET:POS_OFFSET+4])
+    (val,) = struct.unpack("<I", mmap[POS_OFFSET : POS_OFFSET + 4])
     return val / 1000000.0
 
 
@@ -300,7 +300,7 @@ def get_mode(mmap):
         0x00: "FM",
         0x01: "NFM",
         0x02: "AM",
-        }
+    }
 
     return modemap[val]
 
@@ -308,10 +308,10 @@ def get_mode(mmap):
 def set_mode(mmap, mode):
     val = ord(mmap[POS_MODE]) & 0xFC
     modemap = {
-        "FM":  0x00,
+        "FM": 0x00,
         "NFM": 0x01,
-        "AM":  0x02,
-        }
+        "AM": 0x02,
+    }
 
     mmap[POS_MODE] = val | modemap[mode]
 
@@ -353,9 +353,7 @@ def get_memory(map, number):
 
 
 def initialize(mmap):
-    mmap[0] = \
-        "\x80\xc8\xb3\x08\x00\x01\x00\x08" + \
-        "\x08\x00\xc0\x27\x09\x00\x00\xff"
+    mmap[0] = "\x80\xc8\xb3\x08\x00\x01\x00\x08" + "\x08\x00\xc0\x27\x09\x00\x00\xff"
 
 
 def set_memory(map, mem):
@@ -391,8 +389,8 @@ def set_memory(map, mem):
 if __name__ == "__main__":
     import sys
     import serial
-    s = serial.Serial(port=sys.argv[1], baudrate=9600, dsrdtr=True,
-                      timeout=0.25)
+
+    s = serial.Serial(port=sys.argv[1], baudrate=9600, dsrdtr=True, timeout=0.25)
     # s.write("\r\r")
     # print get_id(s)
     data = download(s)

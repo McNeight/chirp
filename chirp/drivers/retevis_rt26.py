@@ -19,10 +19,15 @@ import re
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -117,16 +122,23 @@ CMD_ACK = b"\x06"
 NUMERIC_CHARSET = list("0123456789")
 DTMF_CHARSET = NUMERIC_CHARSET + list("ABCD*#")
 
-RT26_POWER_LEVELS = [chirp_common.PowerLevel("Low",  watts=5.00),
-                     chirp_common.PowerLevel("High", watts=10.00)]
+RT26_POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=5.00),
+    chirp_common.PowerLevel("High", watts=10.00),
+]
 
 RT26_DTCS = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
 LIST_PTTID = ["Off", "BOT", "EOT", "Both"]
-LIST_SHORT_PRESS = ["Off", "Monitor On/Off", "", "Scan", "Alarm",
-                    "Power High/Low"]
-LIST_LONG_PRESS = ["Off", "Monitor On/Off", "Monitor(momentary)",
-                   "Scan", "Alarm", "Power High/Low"]
+LIST_SHORT_PRESS = ["Off", "Monitor On/Off", "", "Scan", "Alarm", "Power High/Low"]
+LIST_LONG_PRESS = [
+    "Off",
+    "Monitor On/Off",
+    "Monitor(momentary)",
+    "Scan",
+    "Alarm",
+    "Power High/Low",
+]
 LIST_VOXDELAY = ["0.5", "1.0", "2.0", "3.0"]
 LIST_VOICE = ["Off", "English", "Chinese"]
 LIST_TIMEOUTTIMER = ["Off"] + ["%s" % x for x in range(15, 615, 15)]
@@ -140,14 +152,17 @@ LIST_STARHASH = ["100", "500", "1000", "0"]
 LIST_CODESPACE = ["None"] + ["%s" % x for x in range(600, 2100, 100)]
 LIST_GROUPCODE = ["Off", "A", "B", "C", "D", "#", "*"]
 LIST_RESETTIME = ["Off"] + ["%s" % x for x in range(1, 61)]
-LIST_DECODETO = ["%s" % x for x in range(500, 1000, 50)] + \
-                ["%s" % x for x in range(1000, 1600, 100)]
+LIST_DECODETO = ["%s" % x for x in range(500, 1000, 50)] + [
+    "%s" % x for x in range(1000, 1600, 100)
+]
 LIST_STUNTYPE = ["TX/RX Inhibit", "TX Inhibit"]
 
 # Retevis RT26 fingerprints
-RT26_UHF_fp = b"PDK80" + b"\xF3\x00\x00"   # RT26 UHF model
+RT26_UHF_fp = b"PDK80" + b"\xf3\x00\x00"  # RT26 UHF model
 
-MODELS = [RT26_UHF_fp, ]
+MODELS = [
+    RT26_UHF_fp,
+]
 
 
 def _model_from_data(data):
@@ -208,7 +223,7 @@ def _rt26_enter_programming_mode(radio):
         _rt26_exit_programming_mode(radio)
         raise errors.RadioError("Error communicating with radio")
 
-    if ack != b"\xB2":
+    if ack != b"\xb2":
         LOG.debug("Incorrect response, got this:\n\n" + util.hexprint(ack))
         _rt26_exit_programming_mode(radio)
         raise errors.RadioError("Radio refused to enter programming mode")
@@ -241,7 +256,7 @@ def _rt26_exit_programming_mode(radio):
 def _rt26_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -271,8 +286,8 @@ def _rt26_read_block(radio, block_addr, block_size):
 def _rt26_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -283,8 +298,7 @@ def _rt26_write_block(radio, block_addr, block_size):
             raise Exception("No ACK")
     except:
         _rt26_exit_programming_mode(radio)
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -342,13 +356,14 @@ def model_match(cls, data):
 @directory.register
 class RT26Radio(chirp_common.CloneModeRadio):
     """Retevis RT26"""
+
     VENDOR = "Retevis"
     MODEL = "RT26"
     BAUD_RATE = 4800
 
     _ranges = [
-               (0x0000, 0x0190, 0x10),
-              ]
+        (0x0000, 0x0190, 0x10),
+    ]
     _memsize = 0x0400
     _block_size = 0x10
 
@@ -364,14 +379,21 @@ class RT26Radio(chirp_common.CloneModeRadio):
         rf.has_name = False
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = RT26_POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["NFM", "FM"]  # 12.5 kHz, 25 kHz.
         rf.valid_dtcs_codes = RT26_DTCS
         rf.memory_bounds = (1, 16)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
         rf.valid_bands = [(400000000, 520000000)]
 
         return rf
@@ -392,29 +414,29 @@ class RT26Radio(chirp_common.CloneModeRadio):
     def decode_tone(self, val):
         """Parse the tone data to decode from mem, it returns:
         Mode (''|DTCS|Tone), Value (None|###), Polarity (None,N,R)"""
-        if val.get_raw(asbytes=False) == "\xFF\xFF":
-            return '', None, None
+        if val.get_raw(asbytes=False) == "\xff\xff":
+            return "", None, None
 
         val = int(val)
         if val >= 12000:
             a = val - 12000
-            return 'DTCS', a, 'R'
+            return "DTCS", a, "R"
         elif val >= 8000:
             a = val - 8000
-            return 'DTCS', a, 'N'
+            return "DTCS", a, "N"
         else:
             a = val / 10.0
-            return 'Tone', a, None
+            return "Tone", a, None
 
     def encode_tone(self, memval, mode, value, pol):
         """Parse the tone data to encode from UI to mem"""
-        if mode == '':
+        if mode == "":
             memval[0].set_raw(0xFF)
             memval[1].set_raw(0xFF)
-        elif mode == 'Tone':
+        elif mode == "Tone":
             memval.set_value(int(value * 10))
-        elif mode == 'DTCS':
-            flag = 0x80 if pol == 'N' else 0xC0
+        elif mode == "DTCS":
+            flag = 0x80 if pol == "N" else 0xC0
             memval.set_value(value)
             memval[1].set_bits(flag)
         else:
@@ -437,7 +459,7 @@ class RT26Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -445,7 +467,7 @@ class RT26Radio(chirp_common.CloneModeRadio):
         if int(_mem.rxfreq) == int(_mem.txfreq):
             mem.duplex = ""
             mem.offset = 0
-        elif _mem.txfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        elif _mem.txfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
         else:
             mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
@@ -465,18 +487,18 @@ class RT26Radio(chirp_common.CloneModeRadio):
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("bcl", "BCL",
-                          RadioSettingValueBoolean(not _mem.bcl))
+        rs = RadioSetting("bcl", "BCL", RadioSettingValueBoolean(not _mem.bcl))
         mem.extra.append(rs)
 
-        rs = RadioSetting("epilogue", "Epilogue(STE)",
-                          RadioSettingValueBoolean(_mem.epilogue))
+        rs = RadioSetting(
+            "epilogue", "Epilogue(STE)", RadioSettingValueBoolean(_mem.epilogue)
+        )
         mem.extra.append(rs)
 
         val = 3 - _mem.pttid
-        rs = RadioSetting("pttid", "PTT ID",
-                          RadioSettingValueList(
-                              LIST_PTTID, current_index=val))
+        rs = RadioSetting(
+            "pttid", "PTT ID", RadioSettingValueList(LIST_PTTID, current_index=val)
+        )
         mem.extra.append(rs)
 
         return mem
@@ -485,13 +507,13 @@ class RT26Radio(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
             return
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
-            _mem.txfreq.fill_raw(b"\xFF")
+            _mem.txfreq.fill_raw(b"\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -503,8 +525,9 @@ class RT26Radio(chirp_common.CloneModeRadio):
 
         _mem.wide = mem.mode == "FM"
 
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         self.encode_tone(_mem.txtone, txmode, txtone, txpol)
         self.encode_tone(_mem.rxtone, rxmode, rxtone, rxpol)
 
@@ -523,16 +546,16 @@ class RT26Radio(chirp_common.CloneModeRadio):
     def _bbcd2dtmf(self, bcdarr, strlen=16):
         # doing bbcd, but with support for ABCD*#
         LOG.debug(bcdarr.get_value())
-        string = ''.join("%02X" % b for b in bcdarr)
+        string = "".join("%02X" % b for b in bcdarr)
         LOG.debug("@_bbcd2dtmf, received: %s" % string)
-        string = string.replace('E', '#').replace('F', '*')
+        string = string.replace("E", "#").replace("F", "*")
         if strlen <= 16:
             string = string[:strlen]
         return string
 
     def _dtmf2bbcd(self, value, strlen):
         dtmfstr = value.get_value()
-        dtmfstr = dtmfstr.replace('#', 'E').replace('*', 'F')
+        dtmfstr = dtmfstr.replace("#", "E").replace("*", "F")
         dtmfstr = str.ljust(dtmfstr.strip(), strlen, "F")
         bcdarr = list(bytearray.fromhex(dtmfstr))
         LOG.debug("@_dtmf2bbcd, sending: %s" % bcdarr)
@@ -541,7 +564,7 @@ class RT26Radio(chirp_common.CloneModeRadio):
     def _bbcd2num(self, bcdarr, strlen=6):
         # doing bbcd
         LOG.debug(bcdarr.get_value())
-        string = ''.join("%02X" % b for b in bcdarr)
+        string = "".join("%02X" % b for b in bcdarr)
         LOG.debug("@_bbcd2num, received: %s" % string)
         if strlen <= 6:
             string = string[:strlen]
@@ -565,186 +588,209 @@ class RT26Radio(chirp_common.CloneModeRadio):
             val = 4
         else:
             val = _settings.k1shortp
-        rs = RadioSetting("k1shortp", "Key 1 Short Press",
-                          RadioSettingValueList(
-                              LIST_SHORT_PRESS,
-                              current_index=val))
+        rs = RadioSetting(
+            "k1shortp",
+            "Key 1 Short Press",
+            RadioSettingValueList(LIST_SHORT_PRESS, current_index=val),
+        )
         basic.append(rs)
 
         if _settings.k1longp > 5:
             val = 5
         else:
             val = _settings.k1longp
-        rs = RadioSetting("k1longp", "Key 1 Long Press",
-                          RadioSettingValueList(
-                              LIST_LONG_PRESS,
-                              current_index=val))
+        rs = RadioSetting(
+            "k1longp",
+            "Key 1 Long Press",
+            RadioSettingValueList(LIST_LONG_PRESS, current_index=val),
+        )
         basic.append(rs)
 
         if _settings.k2shortp > 5:
             val = 1
         else:
             val = _settings.k2shortp
-        rs = RadioSetting("k2shortp", "Key 2 Short Press",
-                          RadioSettingValueList(
-                              LIST_SHORT_PRESS,
-                              current_index=val))
+        rs = RadioSetting(
+            "k2shortp",
+            "Key 2 Short Press",
+            RadioSettingValueList(LIST_SHORT_PRESS, current_index=val),
+        )
         basic.append(rs)
 
         if _settings.k2longp > 5:
             val = 3
         else:
             val = _settings.k2longp
-        rs = RadioSetting("k2longp", "Key 2 Long Press",
-                          RadioSettingValueList(
-                              LIST_LONG_PRESS,
-                              current_index=val))
+        rs = RadioSetting(
+            "k2longp",
+            "Key 2 Long Press",
+            RadioSettingValueList(LIST_LONG_PRESS, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX",
-                          RadioSettingValueBoolean(not _settings.vox))
+        rs = RadioSetting("vox", "VOX", RadioSettingValueBoolean(not _settings.vox))
         basic.append(rs)
 
         if _settings.voxg > 8:
             val = 4
         else:
             val = _settings.voxg + 1
-        rs = RadioSetting("voxg", "VOX Gain",
-                          RadioSettingValueInteger(1, 9, val))
+        rs = RadioSetting("voxg", "VOX Gain", RadioSettingValueInteger(1, 9, val))
         basic.append(rs)
 
-        rs = RadioSetting("voxd", "VOX Delay Time",
-                          RadioSettingValueList(
-                              LIST_VOXDELAY,
-                              current_index=_settings.voxd))
+        rs = RadioSetting(
+            "voxd",
+            "VOX Delay Time",
+            RadioSettingValueList(LIST_VOXDELAY, current_index=_settings.voxd),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("voxi", "VOX Inhibit on Receive",
-                          RadioSettingValueBoolean(_settings.voxi))
+        rs = RadioSetting(
+            "voxi", "VOX Inhibit on Receive", RadioSettingValueBoolean(_settings.voxi)
+        )
         basic.append(rs)
 
         if _settings.squelch > 9:
             val = 5
         else:
             val = _settings.squelch
-        rs = RadioSetting("squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, val))
+        rs = RadioSetting(
+            "squelch", "Squelch Level", RadioSettingValueInteger(0, 9, val)
+        )
         basic.append(rs)
 
         if _settings.voice == 3:
             val = 1
         else:
             val = _settings.voice
-        rs = RadioSetting("voice", "Voice Prompts",
-                          RadioSettingValueList(
-                              LIST_VOICE,
-                              current_index=val))
+        rs = RadioSetting(
+            "voice",
+            "Voice Prompts",
+            RadioSettingValueList(LIST_VOICE, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("tone", "Tone",
-                          RadioSettingValueBoolean(_settings.tone))
+        rs = RadioSetting("tone", "Tone", RadioSettingValueBoolean(_settings.tone))
         basic.append(rs)
 
-        rs = RadioSetting("lovoltnotx", "TX Inhibit (when battery < 6 volts)",
-                          RadioSettingValueBoolean(_settings.lovoltnotx))
+        rs = RadioSetting(
+            "lovoltnotx",
+            "TX Inhibit (when battery < 6 volts)",
+            RadioSettingValueBoolean(_settings.lovoltnotx),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("hivoltnotx", "TX Inhibit (when battery > 9 volts)",
-                          RadioSettingValueBoolean(_settings.hivoltnotx))
+        rs = RadioSetting(
+            "hivoltnotx",
+            "TX Inhibit (when battery > 9 volts)",
+            RadioSettingValueBoolean(_settings.hivoltnotx),
+        )
         basic.append(rs)
 
         if _settings.tot > 0x28:
             val = 6
         else:
             val = _settings.tot
-        rs = RadioSetting("tot", "Time-out Timer[s]",
-                          RadioSettingValueList(
-                              LIST_TIMEOUTTIMER,
-                              current_index=val))
+        rs = RadioSetting(
+            "tot",
+            "Time-out Timer[s]",
+            RadioSettingValueList(LIST_TIMEOUTTIMER, current_index=val),
+        )
         basic.append(rs)
 
         if _settings.save < 3:
             val = 0
         else:
             val = _settings.save - 3
-        rs = RadioSetting("save", "Battery Saver",
-                          RadioSettingValueList(
-                              LIST_SAVE,
-                              current_index=val))
+        rs = RadioSetting(
+            "save", "Battery Saver", RadioSettingValueList(LIST_SAVE, current_index=val)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ssave", "Super Battery Saver[s]",
-                          RadioSettingValueList(
-                              LIST_SSAVE,
-                              current_index=_settings.ssave))
+        rs = RadioSetting(
+            "ssave",
+            "Super Battery Saver[s]",
+            RadioSettingValueList(LIST_SSAVE, current_index=_settings.ssave),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("fmradio", "Broadcast FM",
-                          RadioSettingValueBoolean(_settings.fmradio))
+        rs = RadioSetting(
+            "fmradio", "Broadcast FM", RadioSettingValueBoolean(_settings.fmradio)
+        )
         basic.append(rs)
 
         if _settings.scanspeed > 8:
             val = 4
         else:
             val = _settings.scanspeed
-        rs = RadioSetting("scanspeed", "Scan Speed[ms]",
-                          RadioSettingValueList(
-                              LIST_SCANSPEED,
-                              current_index=val))
+        rs = RadioSetting(
+            "scanspeed",
+            "Scan Speed[ms]",
+            RadioSettingValueList(LIST_SCANSPEED, current_index=val),
+        )
         basic.append(rs)
 
         if _settings.scandelay > 27:
             val = 12
         else:
             val = _settings.scandelay
-        rs = RadioSetting("scandelay", "Scan Droupout Delay Time[s]",
-                          RadioSettingValueList(
-                              LIST_SCANDELAY,
-                              current_index=val))
+        rs = RadioSetting(
+            "scandelay",
+            "Scan Droupout Delay Time[s]",
+            RadioSettingValueList(LIST_SCANDELAY, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.dtmf.dtmfspd > 11:
             val = 2
         else:
             val = _mem.dtmf.dtmfspd + 4
-        rs = RadioSetting("dtmf.dtmfspd", "DTMF Speed[digit/s]",
-                          RadioSettingValueInteger(4, 15, val))
+        rs = RadioSetting(
+            "dtmf.dtmfspd", "DTMF Speed[digit/s]", RadioSettingValueInteger(4, 15, val)
+        )
         dtmf.append(rs)
 
         if _mem.dtmf.digtime > 10:
             val = 0
         else:
             val = _mem.dtmf.digtime
-        rs = RadioSetting("dtmf.digtime", "1st Digit Time[ms]",
-                          RadioSettingValueList(
-                              LIST_DIGTIME,
-                              current_index=val))
+        rs = RadioSetting(
+            "dtmf.digtime",
+            "1st Digit Time[ms]",
+            RadioSettingValueList(LIST_DIGTIME, current_index=val),
+        )
         dtmf.append(rs)
 
         if _mem.dtmf.digdelay > 9:
             val = 0
         else:
             val = _mem.dtmf.digdelay
-        rs = RadioSetting("dtmf.digdelay", "1st Digit Delay[ms]",
-                          RadioSettingValueList(
-                              LIST_DIGDELAY,
-                              current_index=val))
+        rs = RadioSetting(
+            "dtmf.digdelay",
+            "1st Digit Delay[ms]",
+            RadioSettingValueList(LIST_DIGDELAY, current_index=val),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.starhash", "* and # Time[ms]",
-                          RadioSettingValueList(
-                              LIST_STARHASH,
-                              current_index=_mem.dtmf.starhash))
+        rs = RadioSetting(
+            "dtmf.starhash",
+            "* and # Time[ms]",
+            RadioSettingValueList(LIST_STARHASH, current_index=_mem.dtmf.starhash),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.codespace", "Code Space Time[ms]",
-                          RadioSettingValueList(
-                              LIST_CODESPACE,
-                              current_index=_mem.dtmf.codespace))
+        rs = RadioSetting(
+            "dtmf.codespace",
+            "Code Space Time[ms]",
+            RadioSettingValueList(LIST_CODESPACE, current_index=_mem.dtmf.codespace),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.sidetone", "DTMF Sidetone",
-                          RadioSettingValueBoolean(_mem.dtmf.sidetone))
+        rs = RadioSetting(
+            "dtmf.sidetone",
+            "DTMF Sidetone",
+            RadioSettingValueBoolean(_mem.dtmf.sidetone),
+        )
         dtmf.append(rs)
 
         # setup pttid entries
@@ -781,44 +827,55 @@ class RT26Radio(chirp_common.CloneModeRadio):
             val = 0
         else:
             val = _mem.dtmf.groupcode
-        rs = RadioSetting("dtmf.groupcode", "Group Code",
-                          RadioSettingValueList(
-                              LIST_GROUPCODE,
-                              current_index=val))
+        rs = RadioSetting(
+            "dtmf.groupcode",
+            "Group Code",
+            RadioSettingValueList(LIST_GROUPCODE, current_index=val),
+        )
         dtmf.append(rs)
 
         if _mem.dtmf.resettime > 60:
             val = 0
         else:
             val = _mem.dtmf.resettime
-        rs = RadioSetting("dtmf.resettime", "Auto Reset Time[s]",
-                          RadioSettingValueList(
-                              LIST_RESETTIME,
-                              current_index=_mem.dtmf.resettime))
+        rs = RadioSetting(
+            "dtmf.resettime",
+            "Auto Reset Time[s]",
+            RadioSettingValueList(LIST_RESETTIME, current_index=_mem.dtmf.resettime),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.txdecode", "TX Decode",
-                          RadioSettingValueBoolean(_mem.dtmf.txdecode))
+        rs = RadioSetting(
+            "dtmf.txdecode", "TX Decode", RadioSettingValueBoolean(_mem.dtmf.txdecode)
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.decodeto", "Decode Time Out[ms]",
-                          RadioSettingValueList(
-                              LIST_DECODETO,
-                              current_index=_mem.dtmf.decodeto))
+        rs = RadioSetting(
+            "dtmf.decodeto",
+            "Decode Time Out[ms]",
+            RadioSettingValueList(LIST_DECODETO, current_index=_mem.dtmf.decodeto),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.decodetone", "Decode Tone",
-                          RadioSettingValueBoolean(_mem.dtmf.decodetone))
+        rs = RadioSetting(
+            "dtmf.decodetone",
+            "Decode Tone",
+            RadioSettingValueBoolean(_mem.dtmf.decodetone),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.resettone", "Reset Tone",
-                          RadioSettingValueBoolean(_mem.dtmf.resettone))
+        rs = RadioSetting(
+            "dtmf.resettone",
+            "Reset Tone",
+            RadioSettingValueBoolean(_mem.dtmf.resettone),
+        )
         dtmf.append(rs)
 
-        rs = RadioSetting("dtmf.stuntype", "Stun Type",
-                          RadioSettingValueList(
-                              LIST_STUNTYPE,
-                              current_index=_mem.dtmf.stuntype))
+        rs = RadioSetting(
+            "dtmf.stuntype",
+            "Stun Type",
+            RadioSettingValueList(LIST_STUNTYPE, current_index=_mem.dtmf.stuntype),
+        )
         dtmf.append(rs)
 
         # setup stun entry
@@ -860,7 +917,7 @@ class RT26Radio(chirp_common.CloneModeRadio):
                         setattr(obj, setting, int(element.value) + 3)
                     elif setting == "dtmfspd":
                         setattr(obj, setting, int(element.value) - 4)
-                    elif re.match(r'code\d', setting):
+                    elif re.match(r"code\d", setting):
                         # set dtmf length field and then get bcd dtmf
                         if setting == "code3":
                             strlen = 10
@@ -886,7 +943,9 @@ class RT26Radio(chirp_common.CloneModeRadio):
         match_model = False
 
         # testing the file data size
-        if len(filedata) in [0x0400, ]:
+        if len(filedata) in [
+            0x0400,
+        ]:
             match_size = True
 
         # testing the model fingerprint

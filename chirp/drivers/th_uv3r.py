@@ -70,10 +70,12 @@ u8 skipflags[16];
 """
 
 THUV3R_DUPLEX = ["", "+", "-"]
-THUV3R_CHARSET = "".join([chr(ord("0") + x) for x in range(0, 10)] +
-                         [" -*+"] +
-                         [chr(ord("A") + x) for x in range(0, 26)] +
-                         ["_/"])
+THUV3R_CHARSET = "".join(
+    [chr(ord("0") + x) for x in range(0, 10)]
+    + [" -*+"]
+    + [chr(ord("A") + x) for x in range(0, 26)]
+    + ["_/"]
+)
 
 
 @directory.register
@@ -90,16 +92,19 @@ class TYTUV3RRadio(chirp_common.CloneModeRadio):
         rf.has_cross = True
         rf.memory_bounds = (1, 128)
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone",
-                                "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+        ]
         rf.valid_skips = []
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_name_length = 6
         rf.valid_characters = THUV3R_CHARSET
         rf.valid_bands = [(136000000, 520000000)]
-        rf.valid_tuning_steps = [5.0, 6.25, 10.0, 12.5, 25.0, 37.50,
-                                 50.0, 100.0]
+        rf.valid_tuning_steps = [5.0, 6.25, 10.0, 12.5, 25.0, 37.50, 50.0, 100.0]
         rf.valid_skips = ["", "S"]
         return rf
 
@@ -237,7 +242,7 @@ class TYTUV3RRadio(chirp_common.CloneModeRadio):
 
         if mem.empty:
             self._memobj.emptyflags[byte] |= bit
-            _mem.set_raw("\xFF" * 16)
+            _mem.set_raw("\xff" * 16)
             return
 
         self._memobj.emptyflags[byte] &= ~bit

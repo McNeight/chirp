@@ -31,7 +31,7 @@ from chirp import util
 LOG = logging.getLogger(__name__)
 
 
-IndexEntry = collections.namedtuple('IndexEntry', 'zone memory zoneindex slot')
+IndexEntry = collections.namedtuple("IndexEntry", "zone memory zoneindex slot")
 EMPTY_INDEX_ENTRY = IndexEntry(0xFF, 0xFF, 0xFF, 0xFF)
 
 
@@ -48,28 +48,28 @@ def do_ident(radio):
     radio.pipe.baudrate = 9600
     radio.pipe.databits = 8
     radio.pipe.stopbits = 2
-    radio.pipe.parity = 'N'
+    radio.pipe.parity = "N"
     radio.pipe.timeout = 1
-    send(radio, b'PROGRAM')
+    send(radio, b"PROGRAM")
     ack = recv(radio, 1)
-    if ack != b'\x06':
-        LOG.error('Expected ACK, got %r' % ack)
-        raise errors.RadioError('Radio failed to ack program mode')
-    send(radio, b'\x02')
+    if ack != b"\x06":
+        LOG.error("Expected ACK, got %r" % ack)
+        raise errors.RadioError("Radio failed to ack program mode")
+    send(radio, b"\x02")
     model = recv(radio, 8)
     if model != radio._model:
-        raise errors.RadioError('Incorrect model')
-    send(radio, b'\x06')
+        raise errors.RadioError("Incorrect model")
+    send(radio, b"\x06")
     ack = recv(radio, 1)
-    if ack != b'\x06':
-        raise errors.RadioError('No ack after model probe')
-    send(radio, b'P')
+    if ack != b"\x06":
+        raise errors.RadioError("No ack after model probe")
+    send(radio, b"P")
     resp = recv(radio, 10)
-    LOG.debug('Radio ident:\n%s' % util.hexprint(resp))
-    send(radio, b'\x06')
+    LOG.debug("Radio ident:\n%s" % util.hexprint(resp))
+    send(radio, b"\x06")
     ack = recv(radio, 1)
-    if ack != b'\x06':
-        raise errors.RadioError('No ack after version probe')
+    if ack != b"\x06":
+        raise errors.RadioError("No ack after version probe")
 
 
 def status(radio, block, msg):
@@ -83,54 +83,53 @@ def status(radio, block, msg):
 def do_download(radio):
     do_ident(radio)
 
-    data = b''
+    data = b""
     for block in range(0x80):
-        send(radio, struct.pack('>cBB', b'R', 0, block))
+        send(radio, struct.pack(">cBB", b"R", 0, block))
         cmd = recv(radio, 1)
-        if cmd == b'Z':
+        if cmd == b"Z":
             fillbyte = recv(radio, 1)
             if len(fillbyte) != 1:
-                LOG.error('Expected fill byte after Z but got none')
-                raise errors.RadioError('Failed to communicate')
+                LOG.error("Expected fill byte after Z but got none")
+                raise errors.RadioError("Failed to communicate")
             chunk = fillbyte * 256
-        elif cmd == b'W':
+        elif cmd == b"W":
             chunk = recv(radio, 256)
             cs = recv(radio, 1)
             ccs = sum(chunk) % 256
-            if cmd != b'Z' and cs[0] != ccs:
-                LOG.error('Checksum mismatch %02x!=%02x at block %02x',
-                          cs[0], ccs, block)
-                raise errors.RadioError(
-                    'Checksum mismatch at block %02i' % block)
+            if cmd != b"Z" and cs[0] != ccs:
+                LOG.error(
+                    "Checksum mismatch %02x!=%02x at block %02x", cs[0], ccs, block
+                )
+                raise errors.RadioError("Checksum mismatch at block %02i" % block)
         else:
-            LOG.error('Unsupported command %r' % cmd)
-            raise errors.RadioError('Invalid command')
+            LOG.error("Unsupported command %r" % cmd)
+            raise errors.RadioError("Invalid command")
 
         data += chunk
-        send(radio, b'\x06')
+        send(radio, b"\x06")
         ack = recv(radio, 1)
-        if ack != b'\x06':
-            LOG.error('Expected ACK got %r' % ack)
-            raise errors.RadioError('Failed at block %02x' % block)
-        status(radio, block, 'Receiving from radio')
+        if ack != b"\x06":
+            LOG.error("Expected ACK got %r" % ack)
+            raise errors.RadioError("Failed at block %02x" % block)
+        status(radio, block, "Receiving from radio")
 
     # This is a separate region at the end, read and written in a different
     # way. Only contains the scan bits (that we know of)
     for addr in range(0x0320, 0x0340, 0x10):
-        hdr = struct.pack('>cHB', b'S', addr, 0x10)
+        hdr = struct.pack(">cHB", b"S", addr, 0x10)
         send(radio, hdr)
         cmd = recv(radio, 1)
-        if cmd != b'X':
-            LOG.error('Unsupported command %r' % cmd)
-            raise errors.RadioError('Invalid command')
+        if cmd != b"X":
+            LOG.error("Unsupported command %r" % cmd)
+            raise errors.RadioError("Invalid command")
         chunk = recv(radio, 0x10)
         if len(chunk) == 0x10:
-            send(radio, b'\x06')
+            send(radio, b"\x06")
             recv(radio, 1)
         else:
-            LOG.error('Got short read at %04x:\n%s',
-                      addr, util.hexprint(chunk))
-            raise errors.RadioError('Short read at %04x' % addr)
+            LOG.error("Got short read at %04x:\n%s", addr, util.hexprint(chunk))
+            raise errors.RadioError("Short read at %04x" % addr)
         data += chunk
 
     return memmap.MemoryMapBytes(data)
@@ -144,95 +143,95 @@ def do_upload(radio):
         if 0x54 <= block < 0x60:
             continue
         addr = block * 256
-        chunk = data[addr:addr + 256]
+        chunk = data[addr : addr + 256]
         if len(set(chunk)) == 1:
-            hdr = struct.pack('cBBB', b'Z', 0, block, chunk[0])
+            hdr = struct.pack("cBBB", b"Z", 0, block, chunk[0])
             send(radio, hdr)
         else:
-            hdr = struct.pack('cBB', b'W', 0, block)
+            hdr = struct.pack("cBB", b"W", 0, block)
             send(radio, hdr)
             send(radio, chunk)
             cs = sum(chunk) % 256
             send(radio, bytes([cs]))
         ack = recv(radio, 1)
-        if ack != b'\x06':
-            LOG.error('Expected ACK but got %r' % ack)
-            raise errors.RadioError('Radio NAKd block %i' % block)
-        status(radio, block, 'Sending to radio')
+        if ack != b"\x06":
+            LOG.error("Expected ACK but got %r" % ack)
+            raise errors.RadioError("Radio NAKd block %i" % block)
+        status(radio, block, "Sending to radio")
 
     for i in range(2):
         radio_addr = 0x0320 + i * 0x10
         memory_addr = 0x8000 + i * 0x10
-        chunk = data[memory_addr:memory_addr + 0x10]
-        hdr = struct.pack('>cHB', b'X', radio_addr, 0x10)
+        chunk = data[memory_addr : memory_addr + 0x10]
+        hdr = struct.pack(">cHB", b"X", radio_addr, 0x10)
         send(radio, hdr)
         send(radio, chunk)
         send(radio, bytes([sum(chunk) % 255]))
         ack = recv(radio, 1)
-        if ack != b'\x06':
-            LOG.error('Expected ACK at %04x, got %r', radio_addr, ack)
-            raise errors.RadioError('Radio NAKd block')
+        if ack != b"\x06":
+            LOG.error("Expected ACK at %04x, got %r", radio_addr, ack)
+            raise errors.RadioError("Radio NAKd block")
         send(radio, ack)
 
 
 def exit_program(radio):
     try:
-        send(radio, b'E')
+        send(radio, b"E")
     except Exception:
         pass
 
 
 KEYS = {
-    0x31: 'DTMF ID (BOT)',
-    0x32: 'DTMF ID (EOT)',
-    0x33: 'Display Character',
-    0x35: 'Home Channel',
-    0x37: 'Channel Down',
-    0x38: 'Channel Up',
-    0x39: 'Key Lock',
-    0x3A: 'Lamp',
-    0x3C: 'Memory RCL/STO',
-    0x3E: 'Memory RCL',
-    0x3F: 'Memory STO',
-    0x40: 'Squelch Off Momentary',
-    0x41: 'Squelch Off Toggle',
-    0x42: 'Monitor Momentary',
-    0x43: 'Monitor Toggle',
-    0x45: 'Redial',
-    0x46: 'Low RF Power',
-    0x47: 'Scan',
-    0x48: 'Scan Add/Del',
-    0x4A: 'Group Down',
-    0x4B: 'Group Up',
-    0x4E: 'OST',
-    0x4F: 'None',
-    0x52: 'Talk Around',
-    0x60: 'Squelch Level',
-    }
+    0x31: "DTMF ID (BOT)",
+    0x32: "DTMF ID (EOT)",
+    0x33: "Display Character",
+    0x35: "Home Channel",
+    0x37: "Channel Down",
+    0x38: "Channel Up",
+    0x39: "Key Lock",
+    0x3A: "Lamp",
+    0x3C: "Memory RCL/STO",
+    0x3E: "Memory RCL",
+    0x3F: "Memory STO",
+    0x40: "Squelch Off Momentary",
+    0x41: "Squelch Off Toggle",
+    0x42: "Monitor Momentary",
+    0x43: "Monitor Toggle",
+    0x45: "Redial",
+    0x46: "Low RF Power",
+    0x47: "Scan",
+    0x48: "Scan Add/Del",
+    0x4A: "Group Down",
+    0x4B: "Group Up",
+    0x4E: "OST",
+    0x4F: "None",
+    0x52: "Talk Around",
+    0x60: "Squelch Level",
+}
 
 KEY_NAMES = {
-    'A': 'akey',
-    'B': 'bkey',
-    'C': 'ckey',
-    'S': 'skey',
-    'Side 1': 'side1',
-    'Side 2': 'side2',
-    'Aux': 'aux',
-    'Mic PF1': 'pf1',
-    'Mic PF2': 'pf2',
+    "A": "akey",
+    "B": "bkey",
+    "C": "ckey",
+    "S": "skey",
+    "Side 1": "side1",
+    "Side 2": "side2",
+    "Aux": "aux",
+    "Mic PF1": "pf1",
+    "Mic PF2": "pf2",
 }
 
 KNOB = {
-    0x00: 'None',
-    0x01: 'Channel Up/Down',
-    0x02: 'Group Up/Down',
+    0x00: "None",
+    0x01: "Channel Up/Down",
+    0x02: "Group Up/Down",
 }
 
 BATTSAVE = {
-    0xFF: 'Off',
-    0x30: 'Short',
-    0x31: 'Medium',
-    0x32: 'Long',
+    0xFF: "Off",
+    0x30: "Short",
+    0x31: "Medium",
+    0x32: "Long",
 }
 
 mem_format = """
@@ -315,13 +314,15 @@ u8 scanbits[32];
 """
 
 
-POWER_LEVELS = [chirp_common.PowerLevel('Low', watts=1),
-                chirp_common.PowerLevel('High', watts=5)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1),
+    chirp_common.PowerLevel("High", watts=5),
+]
 
 
 class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
-    VENDOR = 'Kenwood'
-    FORMATS = [directory.register_format('Kenwood KPG-74D', '*.dat')]
+    VENDOR = "Kenwood"
+    FORMATS = [directory.register_format("Kenwood KPG-74D", "*.dat")]
 
     def sync_in(self):
         try:
@@ -330,8 +331,8 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed to download: %s' % e)
-            raise errors.RadioError('Failed to download from radio')
+            LOG.exception("Failed to download: %s" % e)
+            raise errors.RadioError("Failed to download from radio")
         finally:
             exit_program(self)
 
@@ -341,8 +342,8 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         except errors.RadioError:
             raise
         except Exception as e:
-            LOG.exception('Failed to upload: %s' % e)
-            raise errors.RadioError('Failed to upload to radio')
+            LOG.exception("Failed to upload: %s" % e)
+            raise errors.RadioError("Failed to upload to radio")
         finally:
             exit_program(self)
 
@@ -362,14 +363,31 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         rf.valid_bands = self._valid_bands
         rf.valid_characters = chirp_common.CHARSET_ASCII
         rf.valid_name_length = 10
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ['Tone->Tone', 'DTCS->', '->DTCS', "Tone->DTCS",
-                                'DTCS->Tone', '->Tone', 'DTCS->DTCS']
-        rf.valid_duplexes = ['', '-', '+', 'split', 'off']
-        rf.valid_modes = ['FM', 'NFM']
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->",
+            "->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "DTCS->DTCS",
+        ]
+        rf.valid_duplexes = ["", "-", "+", "split", "off"]
+        rf.valid_modes = ["FM", "NFM"]
         rf.valid_power_levels = list(POWER_LEVELS)
-        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 12.5, 10.0, 15.0, 20.0,
-                                 25.0, 50.0, 100.0]
+        rf.valid_tuning_steps = [
+            2.5,
+            5.0,
+            6.25,
+            12.5,
+            10.0,
+            15.0,
+            20.0,
+            25.0,
+            50.0,
+            100.0,
+        ]
 
         rf.has_sub_devices = not self.VARIANT
         return rf
@@ -377,7 +395,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
     def _get_zone(self, zone):
         class TKx140Zone(self.__class__):
             MODEL = self.MODEL
-            VARIANT = 'Group %i' % zone
+            VARIANT = "Group %i" % zone
             _valid_bands = self._valid_bands
 
             def __init__(self, parent, zone):
@@ -401,25 +419,22 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
             zoneinfo_obj = self._memobj.zoneinfo[i]
             if i >= count:
                 if i > 0 and zoneinfo_obj.zone != 0xFF:
-                    LOG.debug('Deleting zone %i index %i',
-                              zoneinfo_obj.zone, i)
-                zoneinfo_obj.set_raw(b'\xFF' * 16)
+                    LOG.debug("Deleting zone %i index %i", zoneinfo_obj.zone, i)
+                zoneinfo_obj.set_raw(b"\xff" * 16)
             elif zoneinfo_obj.zone == 0xFF:
                 next_zone = available.pop(0)
-                LOG.debug('Adding zone %i index %i', next_zone, i)
+                LOG.debug("Adding zone %i index %i", next_zone, i)
                 zoneinfo_obj.zone = next_zone
                 zoneinfo_obj.count = 0
-                zoneinfo_obj.name = ('Group %i' % next_zone).ljust(10)
+                zoneinfo_obj.name = ("Group %i" % next_zone).ljust(10)
             else:
-                LOG.debug('Keeping existing zone %i index %i',
-                          zoneinfo_obj.zone, i)
+                LOG.debug("Keeping existing zone %i index %i", zoneinfo_obj.zone, i)
         self.sort_index()
 
     def get_sub_devices(self):
         if not self._memobj:
             return [self._get_zone(1)]
-        return [self._get_zone(zone)
-                for zone, count in self._get_zone_info().items()]
+        return [self._get_zone(zone) for zone, count in self._get_zone_info().items()]
 
     def check_index(self, number):
         for i in range(250):
@@ -445,7 +460,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
                 break
             zones.append(int(zoneinfo_obj.zone))
 
-        LOG.debug('Enabled zones: %s' % zones)
+        LOG.debug("Enabled zones: %s" % zones)
 
         index_entries = []
         for i in range(250):
@@ -454,14 +469,22 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
                 # Empty
                 continue
             if int(mem_obj.zone) not in zones:
-                LOG.debug('Erasing %i:%i from slot %i because zone disabled',
-                          mem_obj.zone, mem_obj.memory, i)
-                mem_obj.set_raw(b'\xFF' * 48)
+                LOG.debug(
+                    "Erasing %i:%i from slot %i because zone disabled",
+                    mem_obj.zone,
+                    mem_obj.memory,
+                    i,
+                )
+                mem_obj.set_raw(b"\xff" * 48)
                 continue
-            index_entries.append(IndexEntry(int(mem_obj.zone),
-                                            int(mem_obj.memory),
-                                            zones.index(int(mem_obj.zone)),
-                                            i))
+            index_entries.append(
+                IndexEntry(
+                    int(mem_obj.zone),
+                    int(mem_obj.memory),
+                    zones.index(int(mem_obj.zone)),
+                    i,
+                )
+            )
 
         index_entries.sort()
         zone_counts = collections.defaultdict(int)
@@ -478,19 +501,20 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
             index_obj.slot = entry.slot
 
         for zone_index, zone in enumerate(zones):
-            LOG.debug('Zone %i count %i' % (zone, zone_counts[zone]))
+            LOG.debug("Zone %i count %i" % (zone, zone_counts[zone]))
             self._memobj.zoneinfo[zone_index].count = zone_counts[zone]
         self._memobj.memory_count = sum(zone_counts.values())
         self._memobj.zone_count = len(zones)
 
-        LOG.debug('Sorted index, %i memories' % self._memobj.memory_count)
+        LOG.debug("Sorted index, %i memories" % self._memobj.memory_count)
 
     def get_raw_memory(self, number):
         _index_entry, slot = self.check_index(number)
         if slot is not None:
-            return '\n'.join(repr(x) for x in [
-                self._memobj.memories[slot],
-                self._memobj.index[_index_entry]])
+            return "\n".join(
+                repr(x)
+                for x in [self._memobj.memories[slot], self._memobj.index[_index_entry]]
+            )
 
     def get_memory(self, number):
         m = chirp_common.Memory(number)
@@ -504,28 +528,26 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         mask = 1 << (slot % 8)
         m.freq = int(_mem.rx_freq) * 10
         offset = int(_mem.tx_freq) * 10 - m.freq
-        if _mem.tx_freq.get_raw() == b'\xFF\xFF\xFF\xFF':
+        if _mem.tx_freq.get_raw() == b"\xff\xff\xff\xff":
             m.offset = 0
-            m.duplex = 'off'
+            m.duplex = "off"
         elif offset < 0:
             m.offset = abs(offset)
-            m.duplex = '-'
+            m.duplex = "-"
         elif offset > 0:
             m.offset = offset
-            m.duplex = '+'
+            m.duplex = "+"
         else:
             m.offset = 0
 
-        rxtone = tk8180.KenwoodTKx180Radio._decode_tone(
-            _mem.rxtone)
-        txtone = tk8180.KenwoodTKx180Radio._decode_tone(
-            _mem.txtone)
+        rxtone = tk8180.KenwoodTKx180Radio._decode_tone(_mem.rxtone)
+        txtone = tk8180.KenwoodTKx180Radio._decode_tone(_mem.txtone)
         chirp_common.split_tone_decode(m, txtone, rxtone)
 
         m.name = str(_mem.name).rstrip()
         m.power = POWER_LEVELS[int(_mem.highpower)]
-        m.mode = 'FM' if _mem.wide else 'NFM'
-        m.skip = '' if _scn & mask else 'S'
+        m.mode = "FM" if _mem.wide else "NFM"
+        m.skip = "" if _scn & mask else "S"
 
         return m
 
@@ -533,7 +555,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         index_entry, slot = self.check_index(mem.number)
         if mem.empty:
             if slot is not None:
-                self._memobj.memories[slot].set_raw(b'\xFF' * 48)
+                self._memobj.memories[slot].set_raw(b"\xff" * 48)
                 self.sort_index()
             return
         if slot is None:
@@ -543,7 +565,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         mask = 1 << (slot % 8)
 
         # Everything seems to default to 0xFF for "off"
-        _mem.set_raw(b'\xFF' * 48)
+        _mem.set_raw(b"\xff" * 48)
         _mem.memory = mem.number
         _mem.zone = self._zone
         self.sort_index()
@@ -551,18 +573,18 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         _mem.txsomething = 0x3
 
         _mem.rx_freq = mem.freq // 10
-        if mem.duplex == '':
+        if mem.duplex == "":
             _mem.tx_freq = mem.freq // 10
-        elif mem.duplex == 'split':
+        elif mem.duplex == "split":
             _mem.tx_freq = mem.offset // 10
-        elif mem.duplex == 'off':
-            _mem.tx_freq.fill_raw(b'\xFF')
-        elif mem.duplex == '-':
+        elif mem.duplex == "off":
+            _mem.tx_freq.fill_raw(b"\xff")
+        elif mem.duplex == "-":
             _mem.tx_freq = (mem.freq - mem.offset) // 10
-        elif mem.duplex == '+':
+        elif mem.duplex == "+":
             _mem.tx_freq = (mem.freq + mem.offset) // 10
         else:
-            raise errors.RadioError('Unsupported duplex mode %r' % mem.duplex)
+            raise errors.RadioError("Unsupported duplex mode %r" % mem.duplex)
 
         step_lookup = {
             6.25: 0x02,
@@ -579,68 +601,75 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         _mem.rxtone = tk8180.KenwoodTKx180Radio._encode_tone(*rxtone)
         _mem.txtone = tk8180.KenwoodTKx180Radio._encode_tone(*txtone)
 
-        _mem.wide = mem.mode == 'FM'
+        _mem.wide = mem.mode == "FM"
         _mem.highpower = mem.power == POWER_LEVELS[1]
         _mem.name = mem.name[:10].ljust(10)
-        if mem.skip == 'S':
+        if mem.skip == "S":
             _scn &= ~mask
         else:
             _scn |= mask
 
     def load_mmap(self, filename):
-        if filename.lower().endswith('.dat'):
-            with open(filename, 'rb') as f:
+        if filename.lower().endswith(".dat"):
+            with open(filename, "rb") as f:
                 header = f.read(0x40)
-                LOG.debug('DAT header:\n%s' % util.hexprint(header))
+                LOG.debug("DAT header:\n%s" % util.hexprint(header))
                 self._mmap = memmap.MemoryMapBytes(f.read())
-                LOG.info('Loaded DAT file')
+                LOG.info("Loaded DAT file")
             self.process_mmap()
         else:
             super().load_mmap(filename)
 
     def save_mmap(self, filename):
-        if filename.lower().endswith('.dat'):
-            with open(filename, 'wb') as f:
-                f.write(b'KPG74D\xff\xff\xff\xffV1.10P')
-                f.write(self._model[1:] + (b'\xff' * 9))
-                f.write(b'\xff' * 32)
+        if filename.lower().endswith(".dat"):
+            with open(filename, "wb") as f:
+                f.write(b"KPG74D\xff\xff\xff\xffV1.10P")
+                f.write(self._model[1:] + (b"\xff" * 9))
+                f.write(b"\xff" * 32)
                 f.write(self._mmap.get_packed())
-                LOG.info('Wrote DAT file')
+                LOG.info("Wrote DAT file")
         else:
             super().save_mmap(filename)
 
     @classmethod
     def match_model(cls, filedata, filename):
-        if (filename.lower().endswith('.dat') and
-                filedata.startswith(b'KPG74D') and
-                filedata[0xE7:0xEF] == cls._model):
+        if (
+            filename.lower().endswith(".dat")
+            and filedata.startswith(b"KPG74D")
+            and filedata[0xE7:0xEF] == cls._model
+        ):
             return True
         return super().match_model(filedata, filename)
 
     def get_settings(self):
         num_zones = len(self._get_zone_info())
-        zones = settings.RadioSettingGroup('zones', 'Zones')
+        zones = settings.RadioSettingGroup("zones", "Zones")
         zone_count = settings.RadioSetting(
-            'zonecount', 'Number of Zones',
-            settings.RadioSettingValueInteger(1, 250, num_zones))
-        zone_count.set_doc('Number of zones in the radio. '
-                           'Requires a save and re-load of the file to take '
-                           'effect. Reducing this number will DELETE '
-                           'memories in the affected zones!')
+            "zonecount",
+            "Number of Zones",
+            settings.RadioSettingValueInteger(1, 250, num_zones),
+        )
+        zone_count.set_doc(
+            "Number of zones in the radio. "
+            "Requires a save and re-load of the file to take "
+            "effect. Reducing this number will DELETE "
+            "memories in the affected zones!"
+        )
         zones.append(zone_count)
 
-        keys = tk8160.TKx160Radio.make_key_group(self._memobj.keys,
-                                                 KEY_NAMES,
-                                                 KEYS)
+        keys = tk8160.TKx160Radio.make_key_group(self._memobj.keys, KEY_NAMES, KEYS)
 
         def apply_knob(setting):
             rev = {v: k for k, v in KNOB.items()}
             self._memobj.knob = rev[str(setting.value)]
 
         knob = settings.RadioSetting(
-            'knob', 'Knob',
+            "knob",
+            "Knob",
             settings.RadioSettingValueList(
-                KNOB.values(), current_index=self._memobj.knob))
+                KNOB.values(), current_index=self._memobj.knob
+            ),
+        )
         knob.set_apply_callback(apply_knob)
         keys.append(knob)
 
@@ -648,12 +677,14 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
             rev = {v: k for k, v in BATTSAVE.items()}
             self._memobj.battsave = rev[str(setting.value)]
 
-        general = settings.RadioSettingGroup('general', 'General')
+        general = settings.RadioSettingGroup("general", "General")
         battsave = settings.RadioSetting(
-            'battsave', 'Battery Save',
+            "battsave",
+            "Battery Save",
             settings.RadioSettingValueList(
-                BATTSAVE.values(),
-                BATTSAVE[int(self._memobj.battsave)]))
+                BATTSAVE.values(), BATTSAVE[int(self._memobj.battsave)]
+            ),
+        )
         battsave.set_apply_callback(apply_battsave)
         general.append(battsave)
 
@@ -663,7 +694,7 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
         for element in _settings:
             if not isinstance(element, settings.RadioSetting):
                 self.set_settings(element)
-            elif element.get_name() == 'zonecount':
+            elif element.get_name() == "zonecount":
                 self._set_num_zones(int(element.value))
             elif element.has_apply_callback():
                 element.run_apply_callback()
@@ -671,27 +702,27 @@ class KenwoodTKx140Radio(chirp_common.CloneModeRadio):
 
 @directory.register
 class KenwoodTK2140KRadio(KenwoodTKx140Radio):
-    MODEL = 'TK-2140K'
+    MODEL = "TK-2140K"
     _valid_bands = [(136000000, 174000000)]
-    _model = b'P2140\x04\xFF\xF1'
+    _model = b"P2140\x04\xff\xf1"
 
 
 @directory.register
 class KenwoodTK3140KRadio(KenwoodTKx140Radio):
-    MODEL = 'TK-3140K'
+    MODEL = "TK-3140K"
     _valid_bands = [(400000000, 520000000)]
-    _model = b'P3140\x06\xFF\xF1'
+    _model = b"P3140\x06\xff\xf1"
 
 
 @directory.register
 class KenwoodTK3140K2Radio(KenwoodTKx140Radio):
-    MODEL = 'TK-3140K2'
+    MODEL = "TK-3140K2"
     _valid_bands = [(400000000, 520000000)]
-    _model = b'P3140\x07\xFF\xF1'
+    _model = b"P3140\x07\xff\xf1"
 
 
 @directory.register
 class KenwoodTK3140K3Radio(KenwoodTKx140Radio):
-    MODEL = 'TK-3140K3'
+    MODEL = "TK-3140K3"
     _valid_bands = [(400000000, 520000000)]
-    _model = b'P3140\x08\xFF\xF1'
+    _model = b"P3140\x08\xff\xf1"

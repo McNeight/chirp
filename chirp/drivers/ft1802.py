@@ -25,8 +25,7 @@
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, bitwise, directory
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueBoolean
+from chirp.settings import RadioSetting, RadioSettingGroup, RadioSettingValueBoolean
 
 MEM_FORMAT = """
 #seekto 0x06ea;
@@ -70,17 +69,19 @@ TMODES = ["", "Tone", "TSQL", "DTCS", "TSQL-R", "Cross"]
 CROSS_MODES = ["DTCS->", "Tone->DTCS", "DTCS->Tone"]
 DUPLEX = ["", "-", "+", "split"]
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0]
-POWER_LEVELS = [chirp_common.PowerLevel("LOW1", watts=5),
-                chirp_common.PowerLevel("LOW2", watts=10),
-                chirp_common.PowerLevel("LOW3", watts=25),
-                chirp_common.PowerLevel("HIGH", watts=50),
-                ]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("LOW1", watts=5),
+    chirp_common.PowerLevel("LOW2", watts=10),
+    chirp_common.PowerLevel("LOW3", watts=25),
+    chirp_common.PowerLevel("HIGH", watts=50),
+]
 CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ +-/?()?_"
 
 
 @directory.register
 class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu FT-1802"""
+
     VENDOR = "Yaesu"
     MODEL = "FT-1802M"
     BAUD_RATE = 19200
@@ -98,14 +99,16 @@ class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
             "3. Press and hold in the [LOW(A/N)] key while turning the radio"
             " on.\n"
             "4. <b>After clicking OK</b>, press the [MHz(SET)] key to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to mic jack.\n"
             "3. Press and hold in the [LOW(A/N)] key while turning the radio"
             " on.\n"
-            "4. Press the [D/MR(MW)] key (\"--WAIT--\" will appear on the"
-            " LCD).\n")
+            '4. Press the [D/MR(MW)] key ("--WAIT--" will appear on the'
+            " LCD).\n"
+        )
         return rp
 
     def get_features(self):
@@ -134,18 +137,17 @@ class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
         return rf
 
     def _checksums(self):
-        return [yaesu_clone.YaesuChecksum(0, self._memsize-2)]
+        return [yaesu_clone.YaesuChecksum(0, self._memsize - 2)]
 
     def process_mmap(self):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number]) + \
-               repr(self._memobj.flags[number/2])
+        return repr(self._memobj.memory[number]) + repr(self._memobj.flags[number / 2])
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number]
-        _flag = self._memobj.flags[number/2]
+        _flag = self._memobj.flags[number / 2]
 
         nibble = (number % 2) and "odd" or "even"
         visible = _flag["%s_visible" % nibble]
@@ -165,8 +167,7 @@ class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
         mem.freq = chirp_common.fix_rounded_step(int(_mem.freq) * 1000)
         mem.offset = chirp_common.fix_rounded_step(int(_mem.offset) * 1000)
         mem.duplex = DUPLEX[_mem.duplex]
-        mem.tuning_step = _mem.step_changed and \
-            STEPS[_mem.tune_step] or STEPS[0]
+        mem.tuning_step = _mem.step_changed and STEPS[_mem.tune_step] or STEPS[0]
         if _mem.tmode < TMODES.index("Cross"):
             mem.tmode = TMODES[_mem.tmode]
             mem.cross_mode = CROSS_MODES[0]
@@ -189,15 +190,16 @@ class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
         mem.power = POWER_LEVELS[_mem.power]
 
         mem.extra = RadioSettingGroup("extra", "Extra Settings")
-        rs = RadioSetting("clk_shift", "Clock Shift",
-                          RadioSettingValueBoolean(_mem.clk_shift))
+        rs = RadioSetting(
+            "clk_shift", "Clock Shift", RadioSettingValueBoolean(_mem.clk_shift)
+        )
         mem.extra.append(rs)
 
         return mem
 
     def set_memory(self, mem):
         _mem = self._memobj.memory[mem.number]
-        _flag = self._memobj.flags[mem.number/2]
+        _flag = self._memobj.flags[mem.number / 2]
 
         nibble = (mem.number % 2) and "odd" or "even"
 
@@ -232,8 +234,7 @@ class FT1802Radio(yaesu_clone.YaesuCloneModeRadio):
         if mem.tmode != "Cross":
             _mem.tmode = TMODES.index(mem.tmode)
         else:
-            _mem.tmode = TMODES.index("Cross") + \
-                         CROSS_MODES.index(mem.cross_mode)
+            _mem.tmode = TMODES.index("Cross") + CROSS_MODES.index(mem.cross_mode)
         _mem.tone = chirp_common.TONES.index(mem.rtone)
         _mem.dtcs = chirp_common.DTCS_CODES.index(mem.dtcs)
 

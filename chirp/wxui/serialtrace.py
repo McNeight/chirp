@@ -31,13 +31,16 @@ TRACEFILES = []
 
 
 def get_trace_entry(direction, start_ts, data):
-    loglines = util.hexprint(data, block_size=16).split('\n')
+    loglines = util.hexprint(data, block_size=16).split("\n")
     ts = time.monotonic() - start_ts
-    loglines = ['%7.3f %s %s%s' % (ts, direction, line, os.linesep)
-                for line in loglines if line.strip()]
-    if not loglines and direction == 'R' and not data:
+    loglines = [
+        "%7.3f %s %s%s" % (ts, direction, line, os.linesep)
+        for line in loglines
+        if line.strip()
+    ]
+    if not loglines and direction == "R" and not data:
         # No data read means timeout, so denote that for clarity
-        loglines = ['%7.3f %s # timeout%s' % (ts, direction, os.linesep)]
+        loglines = ["%7.3f %s # timeout%s" % (ts, direction, os.linesep)]
     return loglines
 
 
@@ -52,19 +55,18 @@ def purge_trace_files(keep=10):
     for fn in purge:
         try:
             os.remove(fn)
-            LOG.debug('Removed old trace file %s', fn)
+            LOG.debug("Removed old trace file %s", fn)
         except FileNotFoundError:
             pass
         except Exception as e:
-            LOG.error('Failed to remove old trace file %s: %s', fn, e)
+            LOG.error("Failed to remove old trace file %s: %s", fn, e)
 
 
 def calculate_baud_time(serial, size):
     """Calculate the time in milliseconds required to transfer size bytes"""
-    cps = serial.baudrate / (1 +  # start bit
-                             serial.stopbits +
-                             serial.bytesize +
-                             (serial.parity and 1 or 0))
+    cps = serial.baudrate / (
+        1 + serial.stopbits + serial.bytesize + (serial.parity and 1 or 0)  # start bit
+    )
     return size / cps * 1000
 
 
@@ -74,7 +76,7 @@ def warn_timeout(f):
         try:
             size = a[0]
         except IndexError:
-            size = k.get('size', 1)
+            size = k.get("size", 1)
         required_time = calculate_baud_time(self, size)
         write_required_time = write_of = 0
         if self.last_write:
@@ -88,21 +90,35 @@ def warn_timeout(f):
             required_time += write_required_time
         if self.timeout is not None and required_time > (self.timeout * 1000):
             warnings.warn(
-                ('Read of %i bytes requires %ims at %i baud, '
-                 'but timeout is %ims (accounting for %i written bytes '
-                 'in %ims)') % (
-                    size, required_time, self.baudrate, self.timeout * 1000,
-                    write_of, write_required_time))
-            self.log('timeout %ims less than required %ims '
-                     'for read of %i bytes at %i baud (%ims remaining '
-                     'for %i bytes written)' % (
-                         self.timeout * 1000,
-                         required_time,
-                         size,
-                         self.baudrate,
-                         write_required_time,
-                         write_of))
+                (
+                    "Read of %i bytes requires %ims at %i baud, "
+                    "but timeout is %ims (accounting for %i written bytes "
+                    "in %ims)"
+                )
+                % (
+                    size,
+                    required_time,
+                    self.baudrate,
+                    self.timeout * 1000,
+                    write_of,
+                    write_required_time,
+                )
+            )
+            self.log(
+                "timeout %ims less than required %ims "
+                "for read of %i bytes at %i baud (%ims remaining "
+                "for %i bytes written)"
+                % (
+                    self.timeout * 1000,
+                    required_time,
+                    size,
+                    self.baudrate,
+                    write_required_time,
+                    write_of,
+                )
+            )
         return f(self, *a, **k)
+
     return wrapper
 
 
@@ -120,17 +136,16 @@ class SerialTrace(serial.Serial):
         super().open()
         try:
             self.__trace_start = time.monotonic()
-            self.__tracef = tempfile.NamedTemporaryFile(mode='w',
-                                                        delete=False,
-                                                        prefix='chirp-trace-',
-                                                        suffix='.txt')
+            self.__tracef = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, prefix="chirp-trace-", suffix=".txt"
+            )
             TRACEFILES.append(self.__tracef.name)
             purge_trace_files(10)
             now = datetime.datetime.now()
-            self.log('Serial trace %s started at %s' % (self, now.isoformat()))
-            LOG.info('Serial trace file created: %s' % self.__tracef.name)
+            self.log("Serial trace %s started at %s" % (self, now.isoformat()))
+            LOG.info("Serial trace file created: %s" % self.__tracef.name)
         except Exception as e:
-            LOG.error('Failed to create serial trace file: %s' % e)
+            LOG.error("Failed to create serial trace file: %s" % e)
             self.__tracef = None
 
     def write(self, data):
@@ -138,11 +153,9 @@ class SerialTrace(serial.Serial):
         super().write(data)
         if self.__tracef:
             try:
-                self.__tracef.writelines(get_trace_entry('W',
-                                                         self.__trace_start,
-                                                         data))
+                self.__tracef.writelines(get_trace_entry("W", self.__trace_start, data))
             except Exception as e:
-                LOG.error('Failed to write to serial trace file: %s' % e)
+                LOG.error("Failed to write to serial trace file: %s" % e)
                 self.__tracef = None
 
     @warn_timeout
@@ -151,11 +164,9 @@ class SerialTrace(serial.Serial):
         data = super().read(size)
         if self.__tracef:
             try:
-                self.__tracef.writelines(get_trace_entry('R',
-                                                         self.__trace_start,
-                                                         data))
+                self.__tracef.writelines(get_trace_entry("R", self.__trace_start, data))
             except Exception as e:
-                LOG.error('Failed to write to serial trace file: %s' % e)
+                LOG.error("Failed to write to serial trace file: %s" % e)
                 self.__tracef = None
         return data
 
@@ -164,11 +175,11 @@ class SerialTrace(serial.Serial):
         if self.__tracef:
             try:
                 now = datetime.datetime.now()
-                self.log('Trace ended at %s' % now.isoformat())
+                self.log("Trace ended at %s" % now.isoformat())
                 self.__tracef.close()
-                LOG.info('Serial trace file closed: %s' % self.__tracef.name)
+                LOG.info("Serial trace file closed: %s" % self.__tracef.name)
             except Exception as e:
-                LOG.error('Failed to close serial trace file: %s' % e)
+                LOG.error("Failed to close serial trace file: %s" % e)
             finally:
                 self.__tracef = None
 
@@ -180,7 +191,7 @@ class SerialTrace(serial.Serial):
         """
         if self.__tracef:
             try:
-                self.__tracef.write('# %s\n' % message)
+                self.__tracef.write("# %s\n" % message)
             except Exception as e:
-                LOG.error('Failed to write log message to trace file: %s' % e)
+                LOG.error("Failed to write log message to trace file: %s" % e)
                 self.__tracef = None

@@ -107,11 +107,12 @@ struct {
 @directory.register
 class ID51PLUSRadio(id31.ID31Radio):
     """Icom ID-51 Plus/50th Anniversary"""
+
     MODEL = "ID-51 Plus"
 
     _memsize = 0x1FB40
     _model = "\x33\x90\x00\x02"
-    _endframe = "Icom Inc\x2E\x44\x41"
+    _endframe = "Icom Inc\x2e\x44\x41"
     _bank_class = id31.ID31Bank
     _ranges = [(0x00000, 0x1FB40, 32)]
 
@@ -127,10 +128,12 @@ class ID51PLUSRadio(id31.ID31Radio):
         # the same memory size, we need to do a more detailed check.
         if len(filedata) == cls._memsize:
             snip = bytes(filedata[0x1AF40:0x1AF60])
-            if snip != bytes(b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'):
+            if snip != bytes(
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+            ):
                 return True
         return False
 
@@ -171,16 +174,16 @@ class ID51PLUSRadio(id31.ID31Radio):
 
 @directory.register
 class ID51PLUS2Radio(ID51PLUSRadio):
-    MODEL = 'ID-51 Plus2'
-    _model = b'\x33\x90\x00\x03'
-    _endframe = b'Icom Inc.DA'
+    MODEL = "ID-51 Plus2"
+    _model = b"\x33\x90\x00\x03"
+    _endframe = b"Icom Inc.DA"
 
     _raw_frames = True
     _highbit_flip = True
 
     _icf_data = {
-        'MapRev': 1,
-        'EtcData': 0x400001,
+        "MapRev": 1,
+        "EtcData": 0x400001,
     }
 
     @classmethod

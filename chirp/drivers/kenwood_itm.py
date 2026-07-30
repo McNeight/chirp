@@ -25,26 +25,29 @@ LOG = logging.getLogger(__name__)
 
 class OmittedHeaderError(Exception):
     """An internal exception to indicate that a header was omitted"""
+
     pass
 
 
 @directory.register
 class ITMRadio(generic_csv.CSVRadio):
     """Kenwood ITM format"""
+
     VENDOR = "Kenwood"
     MODEL = "ITM"
     FILE_EXTENSION = "itm"
 
     ATTR_MAP = {
-        "CH":            (int,  "number"),
-        "RXF":           (chirp_common.parse_freq, "freq"),
-        "NAME":          (str,  "name"),
-        }
+        "CH": (int, "number"),
+        "RXF": (chirp_common.parse_freq, "freq"),
+        "NAME": (str, "name"),
+    }
 
     def _clean_duplex(self, headers, line, mem):
         try:
             txfreq = chirp_common.parse_freq(
-                        generic_csv.get_datum_by_header(headers, line, "TXF"))
+                generic_csv.get_datum_by_header(headers, line, "TXF")
+            )
         except ValueError:
             mem.duplex = "off"
             return mem
@@ -105,14 +108,15 @@ class ITMRadio(generic_csv.CSVRadio):
                 break
 
             if len(header) > len(line):
-                LOG.error("Line %i has %i columns, expected %i" %
-                          (lineno, len(line), len(header)))
-                self.errors.append("Column number mismatch on line %i" %
-                                   lineno)
+                LOG.error(
+                    "Line %i has %i columns, expected %i"
+                    % (lineno, len(line), len(header))
+                )
+                self.errors.append("Column number mismatch on line %i" % lineno)
                 continue
 
             # fix EU decimal
-            line = [i.replace(',', '.') for i in line]
+            line = [i.replace(",", ".") for i in line]
 
             try:
                 mem = self._parse_csv_data_line(header, line)

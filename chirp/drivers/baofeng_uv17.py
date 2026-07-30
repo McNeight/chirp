@@ -17,9 +17,14 @@
 import logging
 
 from chirp import chirp_common, directory
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettings, RadioSettingValueString
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettings,
+    RadioSettingValueString,
+)
 import struct
 from chirp.drivers import baofeng_common, baofeng_uv17Pro
 from chirp import errors
@@ -32,8 +37,9 @@ LIST_SCANMODE = ["Time", "Carrier", "Search"]
 
 # Radios seem to have different memory sizes
 def _get_memory_size(radio):
-    response = baofeng_uv17Pro._sendmagic(radio, radio._magic_memsize[0][0],
-                                          radio._magic_memsize[0][1])
+    response = baofeng_uv17Pro._sendmagic(
+        radio, radio._magic_memsize[0][0], radio._magic_memsize[0][1]
+    )
     mem_size = struct.unpack("<I", response[7:])[0]
     for magic, resplen in radio._magics2:
         baofeng_uv17Pro._sendmagic(radio, magic, resplen)
@@ -49,13 +55,15 @@ def _get_memory_map(radio):
     else:
         mem_size = radio._radio_memsize
     if mem_size != radio._radio_memsize:
-        raise errors.RadioError("Incorrect radio model or model not supported "
-                                "(memory size doesn't match)")
+        raise errors.RadioError(
+            "Incorrect radio model or model not supported "
+            "(memory size doesn't match)"
+        )
     for addr in range(0x1FFF, mem_size + 0x1000, 0x1000):
         frame = radio._make_frame(b"R", addr, 1)
         baofeng_common._rawsend(radio, frame)
         blocknr = ord(baofeng_common._rawrecv(radio, 6)[5:])
-        blocknr = (blocknr >> 4 & 0xf) * 10 + (blocknr & 0xf)
+        blocknr = (blocknr >> 4 & 0xF) * 10 + (blocknr & 0xF)
         memory_map += [blocknr]
         baofeng_uv17Pro._sendmagic(radio, b"\x06", 1)
     return memory_map
@@ -78,17 +86,22 @@ def _download(radio):
     for block_number in radio.BLOCK_O_READ:
         if block_number not in memory_map:
             # Memory block not found.
-            LOG.error('Block %i (0x%x) not in memory map: %s',
-                      block_number, block_number, memory_map)
-            raise errors.RadioError('Radio memory is corrupted. ' +
-                                    'Fix this by uploading a backup image ' +
-                                    'to the radio.')
+            LOG.error(
+                "Block %i (0x%x) not in memory map: %s",
+                block_number,
+                block_number,
+                memory_map,
+            )
+            raise errors.RadioError(
+                "Radio memory is corrupted. "
+                + "Fix this by uploading a backup image "
+                + "to the radio."
+            )
         block_index = memory_map.index(block_number) + 1
         start_addr = block_index * 0x1000
-        for addr in range(start_addr, start_addr + 0x1000,
-                          radio.BLOCK_SIZE):
+        for addr in range(start_addr, start_addr + 0x1000, radio.BLOCK_SIZE):
             frame = radio._make_read_frame(addr, radio.BLOCK_SIZE)
-            radio.pipe.log('Reading addr %04x' % addr)
+            radio.pipe.log("Reading addr %04x" % addr)
             baofeng_common._rawsend(radio, frame)
 
             d = baofeng_common._rawrecv(radio, radio.BLOCK_SIZE + 5)
@@ -122,14 +135,13 @@ def _upload(radio):
         block_index = memory_map.index(block_number) + 1
         start_addr = block_index * 0x1000
         data_start_addr = radio.BLOCK_ORDER.index(block_number) * 0x1000
-        for addr in range(start_addr, start_addr + 0x1000,
-                          radio.BLOCK_SIZE):
+        for addr in range(start_addr, start_addr + 0x1000, radio.BLOCK_SIZE):
 
             # sending the data
             data_addr = data_start_addr + addr - start_addr
-            data = radio.get_mmap()[data_addr:data_addr + radio.BLOCK_SIZE]
+            data = radio.get_mmap()[data_addr : data_addr + radio.BLOCK_SIZE]
             frame = radio._make_frame(b"W", addr, radio.BLOCK_SIZE, data)
-            radio.pipe.log('Sending addr %04x' % addr)
+            radio.pipe.log("Sending addr %04x" % addr)
             baofeng_common._rawsend(radio, frame)
 
             # receiving the response
@@ -147,6 +159,7 @@ def _upload(radio):
 @directory.register
 class UV17(baofeng_uv17Pro.UV17Pro):
     """Baofeng UV-17"""
+
     VENDOR = "Baofeng"
     MODEL = "UV-17"
 
@@ -154,7 +167,7 @@ class UV17(baofeng_uv17Pro.UV17Pro):
     upload_function = _upload
 
     MODES = ["FM", "NFM"]
-    BLOCK_ORDER = [16, 17, 18, 19,  24, 25, 26, 4, 6]
+    BLOCK_ORDER = [16, 17, 18, 19, 24, 25, 26, 4, 6]
 
     # Add extra read blocks (e.g. calibration block 2) to the end here:
     BLOCK_O_READ = list(BLOCK_ORDER)
@@ -164,31 +177,39 @@ class UV17(baofeng_uv17Pro.UV17Pro):
     BLOCK_SIZE = 0x40
     BAUD_RATE = 57600
     _idents = [b"PSEARCH"]
-    _magics = [(b"PASSSTA", 3),
-               (b"SYSINFO", 1),
-               (b"\x56\x00\x00\x0A\x0D", 13),
-               (b"\x06", 1),
-               (b"\x56\x00\x10\x0A\x0D", 13),
-               (b"\x06", 1),
-               (b"\x56\x00\x20\x0A\x0D", 13),
-               (b"\x06", 1)]
-    _magic_memsize = [(b"\x56\x00\x00\x00\x0A", 11)]
-    _radio_memsize = 0xffff
-    _magics2 = [(b"\x06", 1),
-                (b"\xFF\xFF\xFF\xFF\x0C\x55\x56\x31\x35\x39\x39\x39", 1),
-                (b"\02", 8),
-                (b"\x06", 1)]
+    _magics = [
+        (b"PASSSTA", 3),
+        (b"SYSINFO", 1),
+        (b"\x56\x00\x00\x0a\x0d", 13),
+        (b"\x06", 1),
+        (b"\x56\x00\x10\x0a\x0d", 13),
+        (b"\x06", 1),
+        (b"\x56\x00\x20\x0a\x0d", 13),
+        (b"\x06", 1),
+    ]
+    _magic_memsize = [(b"\x56\x00\x00\x00\x0a", 11)]
+    _radio_memsize = 0xFFFF
+    _magics2 = [
+        (b"\x06", 1),
+        (b"\xff\xff\xff\xff\x0c\x55\x56\x31\x35\x39\x39\x39", 1),
+        (b"\02", 8),
+        (b"\x06", 1),
+    ]
     _fingerprint = b"\x06" + b"UV15999"
     _scode_offset = 1
     _mem_positions = ()
 
     _tri_band = False
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.00),
-                    chirp_common.PowerLevel("High",  watts=5.00)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=1.00),
+        chirp_common.PowerLevel("High", watts=5.00),
+    ]
 
     LENGTH_NAME = 11
-    VALID_BANDS = [baofeng_uv17Pro.UV17Pro._vhf_range,
-                   baofeng_uv17Pro.UV17Pro._uhf_range]
+    VALID_BANDS = [
+        baofeng_uv17Pro.UV17Pro._vhf_range,
+        baofeng_uv17Pro.UV17Pro._uhf_range,
+    ]
     SCODE_LIST = ["%s" % x for x in range(1, 16)]
     SQUELCH_LIST = ["Off"] + list("123456789")
     LIST_POWERON_DISPLAY_TYPE = ["Full", "Message", "Voltage"]
@@ -353,39 +374,50 @@ class UV17(baofeng_uv17Pro.UV17Pro):
                     filtered += " "
             return filtered
 
-        rs = RadioSetting("settings.boottext1", "Power-On Message 1",
-                          RadioSettingValueString(
-                              0, 10, _filter(self._memobj.settings.boottext1)))
+        rs = RadioSetting(
+            "settings.boottext1",
+            "Power-On Message 1",
+            RadioSettingValueString(0, 10, _filter(self._memobj.settings.boottext1)),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.boottext2", "Power-On Message 2",
-                          RadioSettingValueString(
-                              0, 10, _filter(self._memobj.settings.boottext2)))
+        rs = RadioSetting(
+            "settings.boottext2",
+            "Power-On Message 2",
+            RadioSettingValueString(0, 10, _filter(self._memobj.settings.boottext2)),
+        )
         basic.append(rs)
 
         if _mem.settings.powersave > 0x04:
             val = 0x00
         else:
             val = _mem.settings.powersave
-        rs = RadioSetting("settings.powersave", "Battery Saver",
-                          RadioSettingValueList(
-                              LIST_SAVE, current_index=val))
-        basic.append(rs)
-
-        rs = RadioSetting("settings.scanmode", "Scan Mode",
-                          RadioSettingValueList(
-                              LIST_SCANMODE,
-                              current_index=_mem.settings.scanmode))
+        rs = RadioSetting(
+            "settings.powersave",
+            "Battery Saver",
+            RadioSettingValueList(LIST_SAVE, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.dtmfst", "DTMF Sidetone",
-            RadioSettingValueList(
-                LIST_DTMFST, current_index=_mem.settings.dtmfst))
+            "settings.scanmode",
+            "Scan Mode",
+            RadioSettingValueList(LIST_SCANMODE, current_index=_mem.settings.scanmode),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.fmenable", "Enable FM radio",
-                          RadioSettingValueBoolean(_mem.settings.fmenable))
+        rs = RadioSetting(
+            "settings.dtmfst",
+            "DTMF Sidetone",
+            RadioSettingValueList(LIST_DTMFST, current_index=_mem.settings.dtmfst),
+        )
+        basic.append(rs)
+
+        rs = RadioSetting(
+            "settings.fmenable",
+            "Enable FM radio",
+            RadioSettingValueBoolean(_mem.settings.fmenable),
+        )
         basic.append(rs)
 
         self.get_settings_common_dtmf(dtmfe, _mem)
@@ -399,15 +431,20 @@ class UV17(baofeng_uv17Pro.UV17Pro):
             xval = 0
         elif (val & 0x8000) > 0:
             mode = "DTCS"
-            xval = (val & 0x0f) + (val >> 4 & 0xf)\
-                * 10 + (val >> 8 & 0xf) * 100
+            xval = (val & 0x0F) + (val >> 4 & 0xF) * 10 + (val >> 8 & 0xF) * 100
             if (val & 0xC000) == 0xC000:
                 pol = "R"
         else:
             mode = "Tone"
-            xval = int((val & 0x0f) + (val >> 4 & 0xf) * 10 +
-                       (val >> 8 & 0xf) * 100 + (val >> 12 & 0xf)
-                       * 1000) / 10.0
+            xval = (
+                int(
+                    (val & 0x0F)
+                    + (val >> 4 & 0xF) * 10
+                    + (val >> 8 & 0xF) * 100
+                    + (val >> 12 & 0xF) * 1000
+                )
+                / 10.0
+            )
 
         return mode, xval, pol
 
@@ -456,18 +493,32 @@ class UV17(baofeng_uv17Pro.UV17Pro):
 
     def encode_tone(self, memtone, mode, tone, pol):
         if mode == "Tone":
-            xtone = '%04i' % (tone * 10)
-            memtone.set_value((int(xtone[0]) << 12) + (int(xtone[1]) << 8) +
-                              (int(xtone[2]) << 4) + int(xtone[3]))
+            xtone = "%04i" % (tone * 10)
+            memtone.set_value(
+                (int(xtone[0]) << 12)
+                + (int(xtone[1]) << 8)
+                + (int(xtone[2]) << 4)
+                + int(xtone[3])
+            )
         elif mode == "TSQL":
-            xtone = '%04i' % (tone * 10)
-            memtone.set_value((int(tone[0]) << 12) + (int(xtone[1]) << 8) +
-                              (int(xtone[2]) << 4) + int(xtone[3]))
+            xtone = "%04i" % (tone * 10)
+            memtone.set_value(
+                (int(tone[0]) << 12)
+                + (int(xtone[1]) << 8)
+                + (int(xtone[2]) << 4)
+                + int(xtone[3])
+            )
         elif mode == "DTCS":
-            xtone = str(int(tone)).rjust(4, '0')
-            memtone.set_value((0x8000 + (int(xtone[0]) << 12) +
-                               (int(xtone[1]) << 8) + (int(xtone[2]) << 4) +
-                               int(xtone[3])))
+            xtone = str(int(tone)).rjust(4, "0")
+            memtone.set_value(
+                (
+                    0x8000
+                    + (int(xtone[0]) << 12)
+                    + (int(xtone[1]) << 8)
+                    + (int(xtone[2]) << 4)
+                    + int(xtone[3])
+                )
+            )
         else:
             memtone.set_value(0)
 
@@ -485,7 +536,7 @@ class UV17(baofeng_uv17Pro.UV17Pro):
         _mem.set_raw(b"\x00" * 16)
 
         _namelength = self.get_features().valid_name_length
-        _nam.name = mem.name[:_namelength].ljust(11, '\x00')
+        _nam.name = mem.name[:_namelength].ljust(11, "\x00")
 
         self.set_memory_common(mem, _mem)
 
@@ -495,4 +546,4 @@ class UV13Pro(UV17):
     VENDOR = "Baofeng"
     MODEL = "UV-13Pro"
 
-    _radio_memsize = 0x31fff
+    _radio_memsize = 0x31FFF

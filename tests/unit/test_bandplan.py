@@ -19,15 +19,16 @@ class FakeConfig:
 
 class BandPlanTest(unittest.TestCase):
     def test_get_repeater_bands(self):
-        plans = bandplan.BandPlans(FakeConfig('north_america'))
-        expected = ['10 Meter Band',
-                    '6 Meter Band',
-                    '2 Meter Band',
-                    '1.25 Meter Band',
-                    '70 Centimeter Band',
-                    '33 Centimeter Band',
-                    '23 Centimeter Band',
-                    '13 Centimeter Band']
+        plans = bandplan.BandPlans(FakeConfig("north_america"))
+        expected = [
+            "10 Meter Band",
+            "6 Meter Band",
+            "2 Meter Band",
+            "1.25 Meter Band",
+            "70 Centimeter Band",
+            "33 Centimeter Band",
+            "23 Centimeter Band",
+            "13 Centimeter Band",
+        ]
 
-        self.assertEqual(expected,
-                         [b.name for b in plans.get_repeater_bands()])
+        self.assertEqual(expected, [b.name for b in plans.get_repeater_bands()])

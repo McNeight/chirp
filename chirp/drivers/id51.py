@@ -95,11 +95,12 @@ LOG = logging.getLogger(__name__)
 @directory.register
 class ID51Radio(id31.ID31Radio):
     """Icom ID-51"""
+
     MODEL = "ID-51"
 
     _memsize = 0x1FB40
     _model = "\x33\x90\x00\x01"
-    _endframe = "Icom Inc\x2E\x44\x41"
+    _endframe = "Icom Inc\x2e\x44\x41"
 
     _ranges = [(0x00000, 0x1FB40, 32)]
 
@@ -115,12 +116,14 @@ class ID51Radio(id31.ID31Radio):
         # the same memory size, we need to do a more detailed check.
         if len(filedata) == cls._memsize:
             snip = bytes(filedata[0x1AF40:0x1AF60])
-            if snip == bytes(b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-                             b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'):
+            if snip == bytes(
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+            ):
                 return True
-        if filename.lower().endswith('.icf'):
+        if filename.lower().endswith(".icf"):
             return super().match_model(filedata, filename)
         return False
 

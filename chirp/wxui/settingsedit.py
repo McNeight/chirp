@@ -38,10 +38,8 @@ class ChirpSettingsEdit(common.ChirpEditor):
         self._group_control = wx.Treebook(self, style=wx.LB_LEFT)
         self._group_control.GetTreeCtrl().SetMinSize((250, -1))
         sizer.Add(self._group_control, 1, wx.EXPAND)
-        self._group_control.GetTreeCtrl().Bind(wx.EVT_KEY_DOWN,
-                                               self._key)
-        self._group_control.Bind(wx.EVT_TREEBOOK_PAGE_CHANGED,
-                                 self._click)
+        self._group_control.GetTreeCtrl().Bind(wx.EVT_KEY_DOWN, self._key)
+        self._group_control.Bind(wx.EVT_TREEBOOK_PAGE_CHANGED, self._click)
 
         self._initialized = False
         self._restore_selection = None
@@ -74,9 +72,10 @@ class ChirpSettingsEdit(common.ChirpEditor):
     def selected(self):
         if not self._initialized:
             self._initialized = True
-            self.start_wait_dialog(_('Getting settings'))
-            self.do_radio(lambda job: wx.CallAfter(self._initialize, job),
-                          'get_settings')
+            self.start_wait_dialog(_("Getting settings"))
+            self.do_radio(
+                lambda job: wx.CallAfter(self._initialize, job), "get_settings"
+            )
 
     def get_scroll_pos(self):
         return self._group_control.GetSelection()
@@ -103,19 +102,17 @@ class ChirpSettingsEdit(common.ChirpEditor):
     def _add_group(self, group, parent=None):
         propgrid = common.ChirpSettingGrid(group, self._group_control)
         self.Bind(common.EVT_EDITOR_CHANGED, self._changed, propgrid)
-        LOG.debug('Adding page for %s (parent=%s)' % (group.get_shortname(),
-                                                      parent))
+        LOG.debug("Adding page for %s (parent=%s)" % (group.get_shortname(), parent))
         if parent is not None:
-            self._group_control.InsertSubPage(parent, propgrid,
-                                              group.get_shortname())
+            self._group_control.InsertSubPage(parent, propgrid, group.get_shortname())
         else:
             self._group_control.AddPage(propgrid, group.get_shortname())
 
         for element in group.values():
-            if not isinstance(element, (settings.RadioSetting,
-                                        settings.RadioSettingSubGroup)):
-                self._add_group(element,
-                                parent=self._group_control.FindPage(propgrid))
+            if not isinstance(
+                element, (settings.RadioSetting, settings.RadioSettingSubGroup)
+            ):
+                self._add_group(element, parent=self._group_control.FindPage(propgrid))
 
     def cb_copy(self, cut=False):
         pass
@@ -139,8 +136,7 @@ class ChirpSettingsEdit(common.ChirpEditor):
                         realname, index = name.split(common.INDEX_CHAR)
                         prop = page.propgrid.GetProperty(name)
                         if not prop:
-                            LOG.warning('Unable to find property %s in page',
-                                        name)
+                            LOG.warning("Unable to find property %s in page", name)
                             continue
                         if int(index) == j:
                             try:
@@ -152,17 +148,15 @@ class ChirpSettingsEdit(common.ChirpEditor):
                                     prop.SetValue(setting[j].get_value())
             return True
         except Exception as e:
-            LOG.exception('Failed to apply settings')
-            wx.MessageBox(str(e), _('Error applying settings'),
-                          wx.OK | wx.ICON_ERROR)
+            LOG.exception("Failed to apply settings")
+            wx.MessageBox(str(e), _("Error applying settings"), wx.OK | wx.ICON_ERROR)
             return False
 
     def _apply_setting_group(self, all_values, group):
         for element in group.values():
             if isinstance(element, settings.RadioSetting):
                 if element.value.get_mutable():
-                    element.value = \
-                        all_values[group.get_name()][element.get_name()]
+                    element.value = all_values[group.get_name()][element.get_name()]
             else:
                 self._apply_setting_group(all_values, element)
 
@@ -182,10 +176,10 @@ class ChirpSettingsEdit(common.ChirpEditor):
                 # radio
                 for value in e:
                     if not value.get_mutable():
-                        LOG.debug('Skipping immutable %s', e.get_name())
+                        LOG.debug("Skipping immutable %s", e.get_name())
                         del root[e]
                     elif not value.initialized:
-                        LOG.debug('Skipping uninitialized %s', e.get_name())
+                        LOG.debug("Skipping uninitialized %s", e.get_name())
                         del root[e]
             elif isinstance(e, settings.RadioSettingGroup):
                 self._remove_dead_settings(e)
@@ -197,10 +191,10 @@ class ChirpSettingsEdit(common.ChirpEditor):
         settings = copy.deepcopy(self._settings)
         for g in settings:
             self._remove_dead_settings(g)
-        self.do_radio(self._set_settings_cb, 'set_settings', settings)
+        self.do_radio(self._set_settings_cb, "set_settings", settings)
         wx.PostEvent(self, common.EditorChanged(self.GetId()))
         if event.reload:
-            LOG.warning('Settings grid needs a reload')
+            LOG.warning("Settings grid needs a reload")
             if self.radio.get_features().has_dynamic_subdevices:
                 event = common.EditorRefresh(self.GetId())
                 event.SetEventObject(self)
@@ -214,11 +208,9 @@ class ChirpSettingsEdit(common.ChirpEditor):
             page.saved()
 
 
-class ChirpCloneSettingsEdit(ChirpSettingsEdit,
-                             common.ChirpSyncEditor):
+class ChirpCloneSettingsEdit(ChirpSettingsEdit, common.ChirpSyncEditor):
     pass
 
 
-class ChirpLiveSettingsEdit(ChirpSettingsEdit,
-                            common.ChirpAsyncEditor):
+class ChirpLiveSettingsEdit(ChirpSettingsEdit, common.ChirpAsyncEditor):
     pass

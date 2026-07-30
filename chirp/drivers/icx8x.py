@@ -78,14 +78,15 @@ u8 isuhf;
 
 
 TMODES = ["", "Tone", "TSQL", "DTCS"]
-DUPLEXES = ["", '-', '+']
+DUPLEXES = ["", "-", "+"]
 TUNING_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
-DTCS_POLARITY = ['NN', 'NR', 'RN', 'RR']
-SPECIALS = ['L0', 'U0', 'L1', 'U1', 'L2', 'U2', 'C']
+DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
+SPECIALS = ["L0", "U0", "L1", "U1", "L2", "U2", "C"]
 
 
 class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom IC-V/U82"""
+
     VENDOR = "Icom"
     MODEL = "IC-V82/U82"
 
@@ -97,18 +98,15 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
     _memories = []
 
-    _ranges = [(0x0000, 0x1340, 32),
-               (0x1340, 0x1360, 16),
-               (0x1360, 0x136B,  8),
-
-               (0x1370, 0x1440, 32),
-
-               (0x1460, 0x15D0, 32),
-
-               (0x15E0, 0x1930, 32),
-
-               (0x1938, 0x1940,  8),
-               ]
+    _ranges = [
+        (0x0000, 0x1340, 32),
+        (0x1340, 0x1360, 16),
+        (0x1360, 0x136B, 8),
+        (0x1370, 0x1440, 32),
+        (0x1460, 0x15D0, 32),
+        (0x15E0, 0x1930, 32),
+        (0x1938, 0x1940, 8),
+    ]
 
     MYCALL_LIMIT = (0, 6)
     URCALL_LIMIT = (0, 6)
@@ -153,7 +151,7 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         if number < 206:
             _flg = self._memobj.flags[number]
-            mem.skip = _flg.skip and 'S' or ''
+            mem.skip = _flg.skip and "S" or ""
             empty = _flg.empty
         else:
             empty = False
@@ -170,11 +168,11 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         mem.name = str(_mem.name).rstrip()
         if _mem.dvmode:
-            mem.mode = 'DV'
+            mem.mode = "DV"
         elif _mem.narrow:
-            mem.mode = 'NFM'
+            mem.mode = "NFM"
         else:
-            mem.mode = 'FM'
+            mem.mode = "FM"
         mem.duplex = DUPLEXES[_mem.duplex]
         mem.tmode = TMODES[_mem.tmode]
         mem.tuning_step = TUNING_STEPS[_mem.tuning_step]
@@ -192,7 +190,7 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _mem = self._memobj.memories[memory.number]
         if memory.number < 206:
             _flg = self._memobj.flags[memory.number]
-            _flg.skip = memory.skip == 'S'
+            _flg.skip = memory.skip == "S"
             _flg.empty = memory.empty
 
         if memory.empty:
@@ -206,8 +204,8 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         _mem.freq = (memory.freq - chirp_common.to_MHz(self._base)) // mult
         _mem.offset = memory.offset // 5000
         _mem.name = memory.name[:5].ljust(5)
-        _mem.dvmode = memory.mode == 'DV'
-        _mem.narrow = memory.mode == 'NFM'
+        _mem.dvmode = memory.mode == "DV"
+        _mem.narrow = memory.mode == "NFM"
         _mem.duplex = DUPLEXES.index(memory.duplex)
         _mem.tmode = TMODES.index(memory.tmode)
         _mem.tuning_step = TUNING_STEPS.index(memory.tuning_step)
@@ -273,7 +271,7 @@ class ICx8xRadio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
 @directory.register
 class ICV82Radio(ICx8xRadio):
-    MODEL = 'IC-V82'
+    MODEL = "IC-V82"
     _base = 0
 
     def get_features(self):
@@ -289,7 +287,7 @@ class ICV82Radio(ICx8xRadio):
 
 @directory.register
 class ICU82Radio(ICx8xRadio):
-    MODEL = 'IC-U82'
+    MODEL = "IC-U82"
     _base = 400
 
     def get_features(self):

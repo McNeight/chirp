@@ -11,31 +11,31 @@ from chirp import directory
 
 class FakeUV8D:
     def __init__(self, rclass):
-        self.writebuf = b''
-        self.readbuf = b''
+        self.writebuf = b""
+        self.readbuf = b""
         self.rclass = rclass
         self._model = rclass._model
 
     def write(self, data):
         assert isinstance(data, bytes)
         cmd = data[1]
-        response = b''
+        response = b""
         if cmd == kguv8d.CMD_ID:
-            response = self._model + b'\x00' * 10
+            response = self._model + b"\x00" * 10
         elif cmd == kguv8d.CMD_RD:
-            response = b'\x00' * 64
+            response = b"\x00" * 64
         elif cmd == kguv8d.CMD_WR:
             response = data[4:6]
-            if hasattr(self.rclass, 'decrypt'):
+            if hasattr(self.rclass, "decrypt"):
                 response = self.rclass(None).decrypt(response)
         elif cmd == kguv8d.CMD_END:
             return
         else:
-            raise Exception('Unhandled command')
-        packet = struct.pack('xxxB', len(response)) + response
+            raise Exception("Unhandled command")
+        packet = struct.pack("xxxB", len(response)) + response
         cs = sum(x for x in packet) % 256
-        packet += struct.pack('B', cs)
-        if hasattr(self.rclass, 'encrypt'):
+        packet += struct.pack("B", cs)
+        if hasattr(self.rclass, "encrypt"):
             payload = self.rclass(None).encrypt(packet[4:])
             packet = packet[:4] + payload
 
@@ -62,9 +62,12 @@ class TestKGUV8D(unittest.TestCase):
 
     def test_upload(self):
         f = FakeUV8D(self.RCLASS)
-        img = os.path.join(os.path.dirname(__file__),
-                           '..', 'images',
-                           '%s.img' % directory.radio_class_id(self.RCLASS))
+        img = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "images",
+            "%s.img" % directory.radio_class_id(self.RCLASS),
+        )
         r = self.RCLASS(img)
         r.set_pipe(f)
         r.sync_out()

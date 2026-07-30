@@ -19,7 +19,7 @@ from tests import test_edges
 from tests import test_features
 from tests import test_settings
 
-LOG = logging.getLogger('testadapter')
+LOG = logging.getLogger("testadapter")
 
 
 class TestAdapterMeta(type):
@@ -30,11 +30,14 @@ class TestAdapterMeta(type):
 
     Only works with a single parent!
     """
+
     def __new__(cls, name, parents, dct):
         for attrname, attr in list(parents[0].__dict__.items()):
-            if (isinstance(attr, FunctionType) and
-                    attrname.startswith('test') and
-                    not hasattr(attr, 'pytestmark')):
+            if (
+                isinstance(attr, FunctionType)
+                and attrname.startswith("test")
+                and not hasattr(attr, "pytestmark")
+            ):
                 # This is our wrapper, just so it can be independently marked
                 # by pytest without affecting the parent class
                 @functools.wraps(attr)
@@ -53,7 +56,7 @@ def _get_sub_devices(rclass, testimage):
         radio = rclass(None)
         rf = radio.get_features()
     except Exception as e:
-        print('Failed to get features for %s: %s' % (rclass, e))
+        print("Failed to get features for %s: %s" % (rclass, e))
         # FIXME: If the driver fails to run get_features with no memobj
         # we should not arrest the test load. This appears to happen for
         # the Puxing777 for some reason, and not all the time. Figure that
@@ -72,41 +75,43 @@ def _load_tests(loader, tests, pattern, suite=None):
     if not suite:
         suite = unittest.TestSuite()
 
-    if 'CHIRP_TESTIMG' in os.environ:
-        images = os.environ['CHIRP_TESTIMG'].split()
+    if "CHIRP_TESTIMG" in os.environ:
+        images = os.environ["CHIRP_TESTIMG"].split()
     else:
         images = glob.glob("tests/images/*.img")
         images = [os.path.basename(img) for img in images]
     tests = [os.path.splitext(os.path.basename(img))[0] for img in images]
 
     base = os.path.dirname(os.path.abspath(__file__))
-    base = os.path.join(base, 'images')
+    base = os.path.join(base, "images")
     images = [os.path.join(base, img) for img in images]
     tests = {img: os.path.splitext(os.path.basename(img))[0] for img in images}
 
-    if pattern == 'test*.py':
+    if pattern == "test*.py":
         # This default is meaningless for us
         pattern = None
 
-    driver_test_cases = (test_edges.TestCaseEdges,
-                         test_edges.TestBitwiseStrict,
-                         test_brute_force.TestCaseBruteForce,
-                         test_banks.TestCaseBanks,
-                         test_detect.TestCaseDetect,
-                         test_clone.TestCaseClone,
-                         test_settings.TestCaseSettings,
-                         test_features.TestCaseFeatures,
-                         test_copy_all.TestCaseCopyAll)
+    driver_test_cases = (
+        test_edges.TestCaseEdges,
+        test_edges.TestBitwiseStrict,
+        test_brute_force.TestCaseBruteForce,
+        test_banks.TestCaseBanks,
+        test_detect.TestCaseDetect,
+        test_clone.TestCaseClone,
+        test_settings.TestCaseSettings,
+        test_features.TestCaseFeatures,
+        test_copy_all.TestCaseCopyAll,
+    )
 
     # Load our list of dynamic XFAIL tests
-    with open('tests/driver_xfails.yaml') as xflist:
+    with open("tests/driver_xfails.yaml") as xflist:
         xfail_list = yaml.load(xflist, Loader=yaml.SafeLoader)
 
     for image, test in tests.items():
         rclass = directory.get_radio(test)
-        if hasattr(rclass, '_orig_rclass'):
+        if hasattr(rclass, "_orig_rclass"):
             rclass = rclass._orig_rclass
-        module = rclass.__module__.split('.')[-1]
+        module = rclass.__module__.split(".")[-1]
         subdevs = _get_sub_devices(rclass, image)
         has_subdevs = subdevs != [rclass]
         for index, device in enumerate(subdevs):
@@ -118,20 +123,27 @@ def _load_tests(loader, tests, pattern, suite=None):
                 tc = TestAdapterMeta(
                     "%s_%s" % (case.__name__, rclassid),
                     (case,),
-                    {'RADIO_CLASS': rclass,
-                     'SUB_DEVICE': index if has_subdevs else None,
-                     'TEST_IMAGE': image})
+                    {
+                        "RADIO_CLASS": rclass,
+                        "SUB_DEVICE": index if has_subdevs else None,
+                        "TEST_IMAGE": image,
+                    },
+                )
 
                 # Mark the class with the driver module name
                 tc = getattr(pytest.mark, module)(tc)
 
                 # Look for any XFAILs and mark those test functions
                 for xfail in xfails:
-                    if xfail['class'] == case.__name__:
+                    if xfail["class"] == case.__name__:
                         # This is like decorating it.
-                        setattr(tc, xfail['test'],
-                                pytest.mark.xfail(reason=xfail['reason'])(
-                                    getattr(tc, xfail['test'])))
+                        setattr(
+                            tc,
+                            xfail["test"],
+                            pytest.mark.xfail(reason=xfail["reason"])(
+                                getattr(tc, xfail["test"])
+                            ),
+                        )
 
                 suite.addTests(loader.loadTestsFromTestCase(tc))
 
@@ -143,6 +155,7 @@ def load_tests(loader, tests, pattern, suite=None):
         return _load_tests(loader, tests, pattern, suite=suite)
     except Exception as e:
         import traceback
-        print('Failed to load: %s' % e)
+
+        print("Failed to load: %s" % e)
         print(traceback.format_exc())
         raise

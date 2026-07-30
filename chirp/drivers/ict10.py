@@ -17,10 +17,15 @@ import logging
 
 from chirp.drivers import icf
 from chirp import chirp_common, bitwise, errors, directory
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettingValueString, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -143,10 +148,14 @@ struct {
 """
 
 SPECIAL = {
-    "1A": 200, "1B": 201,
-    "2A": 202, "2B": 203,
-    "3A": 204, "3B": 205,
-    "C0": 206, "C1": 207,
+    "1A": 200,
+    "1B": 201,
+    "2A": 202,
+    "2B": 203,
+    "3A": 204,
+    "3B": 205,
+    "C0": 206,
+    "C1": 207,
 }
 
 TMODES = ["", "Tone", "TSQL", "DTCS"]
@@ -154,7 +163,7 @@ MODES = ["FM", "NFM"]
 SKIPS = ["", "S", "P"]
 DUPLEXES = ["", "-", "+"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
-TUNING_STEPS = [5., 10., 12.5, 15., 20., 25., 30., 50., 100., 125., 200.]
+TUNING_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0, 100.0, 125.0, 200.0]
 POWER_LEVELS = [
     chirp_common.PowerLevel("High", watts=5.0),
     chirp_common.PowerLevel("Low", watts=0.5),
@@ -165,6 +174,7 @@ POWER_LEVELS = [
 @directory.register
 class ICVT10Radio(icf.IcomCloneModeRadio):
     """Icom IC-T10"""
+
     VENDOR = "Icom"
     MODEL = "IC-T10"
 
@@ -217,209 +227,284 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
         fm = RadioSettingGroup("fm", "FM Radio")
         wx = RadioSettingGroup("wx", "WX")
 
-        settings = RadioSettings(
-            setmode, assign, display, sounds, scan, fm, wx)
+        settings = RadioSettings(setmode, assign, display, sounds, scan, fm, wx)
 
         # Timeout Timer
         opts = ["Off"] + ["%s min" % x for x in range(1, 31)]
         setmode.append(
             RadioSetting(
-                "tot", "Timeout Timer",
-                RadioSettingValueList(opts, current_index=_settings.tot)))
+                "tot",
+                "Timeout Timer",
+                RadioSettingValueList(opts, current_index=_settings.tot),
+            )
+        )
 
         # Auto Power Off
         opts = ["Off", "30 min", "1 hr", "2 hrs"]
         setmode.append(
             RadioSetting(
-                "auto_pwr", "Auto Power Off",
-                RadioSettingValueList(opts, current_index=_settings.auto_pwr)))
+                "auto_pwr",
+                "Auto Power Off",
+                RadioSettingValueList(opts, current_index=_settings.auto_pwr),
+            )
+        )
 
         # Lockout
         opts = ["Off", "Rpt", "Busy"]
         setmode.append(
             RadioSetting(
-                "lockout", "Lockout",
-                RadioSettingValueList(opts, current_index=_settings.lockout)))
+                "lockout",
+                "Lockout",
+                RadioSettingValueList(opts, current_index=_settings.lockout),
+            )
+        )
 
         # Squelch Delay
         opts = ["Short", "Long"]
         setmode.append(
             RadioSetting(
-                "sql_delay", "Squelch Delay",
-                RadioSettingValueList(
-                    opts, current_index=_settings.sql_delay)))
+                "sql_delay",
+                "Squelch Delay",
+                RadioSettingValueList(opts, current_index=_settings.sql_delay),
+            )
+        )
 
         # Power Save
         opts = ["Off", "1:2", "1:8", "1:16", "Auto"]
         setmode.append(
             RadioSetting(
-                "pwr_save", "Power Save",
-                RadioSettingValueList(opts, current_index=_settings.pwr_save)))
+                "pwr_save",
+                "Power Save",
+                RadioSettingValueList(opts, current_index=_settings.pwr_save),
+            )
+        )
 
         # Dial Speed-up
         setmode.append(
             RadioSetting(
-                "dial_speedup", "Dial Speed-Up",
-                RadioSettingValueBoolean(bool(_settings.dial_speedup))))
+                "dial_speedup",
+                "Dial Speed-Up",
+                RadioSettingValueBoolean(bool(_settings.dial_speedup)),
+            )
+        )
 
         # Mic Simple Mode
         opts = ["Simple", "Normal-1", "Normal-2"]
         setmode.append(
             RadioSetting(
-                "simple_mode", "Mic Simple Mode",
-                RadioSettingValueList(
-                    opts, current_index=_settings.simple_mode)))
+                "simple_mode",
+                "Mic Simple Mode",
+                RadioSettingValueList(opts, current_index=_settings.simple_mode),
+            )
+        )
 
         # Mic Gain
         rs = RadioSetting(
-                "mic", "Mic Gain",
-                RadioSettingValueInteger(1, 4, _settings.mic + 1))
+            "mic", "Mic Gain", RadioSettingValueInteger(1, 4, _settings.mic + 1)
+        )
         rs.set_apply_callback(
             lambda s, obj: setattr(obj, s.get_name(), int(s.value) - 1),
-            self._memobj.settings)
+            self._memobj.settings,
+        )
         setmode.append(rs)
 
         # Auto Low Power
         setmode.append(
             RadioSetting(
-                "auto_low", "Auto Low Power",
-                RadioSettingValueBoolean(bool(_settings.auto_low))))
+                "auto_low",
+                "Auto Low Power",
+                RadioSettingValueBoolean(bool(_settings.auto_low)),
+            )
+        )
 
         # Vox Function
         setmode.append(
             RadioSetting(
-                "vox", "Vox Function",
-                RadioSettingValueBoolean(bool(_settings.vox))))
+                "vox", "Vox Function", RadioSettingValueBoolean(bool(_settings.vox))
+            )
+        )
 
         # Vox Gain
         opts = ["Off"] + ["%s" % x for x in range(1, 11)]
         setmode.append(
             RadioSetting(
-                "vox_gain", "Vox Gain",
-                RadioSettingValueList(
-                    opts, current_index=_settings.vox_gain)))
+                "vox_gain",
+                "Vox Gain",
+                RadioSettingValueList(opts, current_index=_settings.vox_gain),
+            )
+        )
 
         # Vox Delay
-        opts = ["0.5 seconds", "1.0 seconds", "1.5 seconds", "2.0 seconds",
-                "2.5 seconds", "3.0 seconds"]
+        opts = [
+            "0.5 seconds",
+            "1.0 seconds",
+            "1.5 seconds",
+            "2.0 seconds",
+            "2.5 seconds",
+            "3.0 seconds",
+        ]
         setmode.append(
             RadioSetting(
-                "vox_delay", "Vox Delay",
-                RadioSettingValueList(
-                    opts, current_index=_settings.vox_delay)))
+                "vox_delay",
+                "Vox Delay",
+                RadioSettingValueList(opts, current_index=_settings.vox_delay),
+            )
+        )
 
         # VOX Time out Timer
-        opts = ["Off", "1 min", "2 min", "3 min", "4 min", "5 min",
-                "10 min", "15 min"]
+        opts = ["Off", "1 min", "2 min", "3 min", "4 min", "5 min", "10 min", "15 min"]
         setmode.append(
             RadioSetting(
-                "vox_tot", "VOX Time-Out Timer",
-                RadioSettingValueList(opts, current_index=_settings.vox_tot)))
+                "vox_tot",
+                "VOX Time-Out Timer",
+                RadioSettingValueList(opts, current_index=_settings.vox_tot),
+            )
+        )
 
         # CTCSS Burst
         setmode.append(
             RadioSetting(
-                "ctcss_burst", "CTCSS Burst",
-                RadioSettingValueBoolean(bool(_settings.ctcss_burst))))
+                "ctcss_burst",
+                "CTCSS Burst",
+                RadioSettingValueBoolean(bool(_settings.ctcss_burst)),
+            )
+        )
 
         # Monitor
         opts = ["Push", "Hold"]
         setmode.append(
             RadioSetting(
-                "monitor", "Monitor",
-                RadioSettingValueList(opts, current_index=_settings.monitor)))
+                "monitor",
+                "Monitor",
+                RadioSettingValueList(opts, current_index=_settings.monitor),
+            )
+        )
 
         # Comment
         setmode.append(
             RadioSetting(
-                "comment", "Comment",
+                "comment",
+                "Comment",
                 RadioSettingValueString(
-                    0, 16, str(_settings.comment).rstrip(), autopad=False)))
+                    0, 16, str(_settings.comment).rstrip(), autopad=False
+                ),
+            )
+        )
 
         # P (Short)
         opts = ["Null", "TS", "MHz", "T-CALL"]
         assign.append(
             RadioSetting(
-                "p_short", "P (Short)",
-                RadioSettingValueList(opts, current_index=_settings.p_short)))
+                "p_short",
+                "P (Short)",
+                RadioSettingValueList(opts, current_index=_settings.p_short),
+            )
+        )
 
         # P (Long)
         opts = ["Null", "TS", "MHz", "T-CALL"]
         assign.append(
             RadioSetting(
-                "p_long", "P (Short)",
-                RadioSettingValueList(opts, current_index=_settings.p_long)))
+                "p_long",
+                "P (Short)",
+                RadioSettingValueList(opts, current_index=_settings.p_long),
+            )
+        )
 
         # Backlight
         opts = ["Off", "On", "Auto"]
         display.append(
             RadioSetting(
-                "lcd", "Backlight",
-                RadioSettingValueList(opts, current_index=_settings.lcd)))
+                "lcd",
+                "Backlight",
+                RadioSettingValueList(opts, current_index=_settings.lcd),
+            )
+        )
 
         # Display Type
         opts = ["Frequency", "Channel", "Name"]
         display.append(
             RadioSetting(
-                "disp_type", "Display Type",
-                RadioSettingValueList(
-                    opts, current_index=_settings.disp_type)))
+                "disp_type",
+                "Display Type",
+                RadioSettingValueList(opts, current_index=_settings.disp_type),
+            )
+        )
 
         # Voltage Indicator
         opts = ["Off", "On"]
         display.append(
             RadioSetting(
-                "volt", "Voltage Indicator",
-                RadioSettingValueList(opts, current_index=_settings.volt)))
+                "volt",
+                "Voltage Indicator",
+                RadioSettingValueList(opts, current_index=_settings.volt),
+            )
+        )
 
         # Timeout Timer
         opts = ["Off"] + ["%d" % x for x in range(1, 4)]
         sounds.append(
             RadioSetting(
-                "beep", "Beep Level",
-                RadioSettingValueList(opts, current_index=_settings.beep)))
+                "beep",
+                "Beep Level",
+                RadioSettingValueList(opts, current_index=_settings.beep),
+            )
+        )
 
         # Program Skip Scan
         scan.append(
             RadioSetting(
-                "skip_scan", "Program Skip Scan",
-                RadioSettingValueBoolean(bool(_settings.skip_scan))))
+                "skip_scan",
+                "Program Skip Scan",
+                RadioSettingValueBoolean(bool(_settings.skip_scan)),
+            )
+        )
 
         # Edge
         opts = ["All", "Band", "P1", "P2", "P3"]
         scan.append(
             RadioSetting(
-                "edge", "Edge",
-                RadioSettingValueList(opts, current_index=_settings.edge)))
+                "edge",
+                "Edge",
+                RadioSettingValueList(opts, current_index=_settings.edge),
+            )
+        )
 
         # Pause Timer
         opts = ["T-5", "T-10", "T-15", "P-2"]
         scan.append(
             RadioSetting(
-                "pause_timer", "Pause Timer",
-                RadioSettingValueList(
-                    opts, current_index=_settings.pause_timer)))
+                "pause_timer",
+                "Pause Timer",
+                RadioSettingValueList(opts, current_index=_settings.pause_timer),
+            )
+        )
 
         # Earphone Antenna
         opts = ["Not Used", "Use"]
         fm.append(
             RadioSetting(
-                "ant", "Earphone Antenna",
-                RadioSettingValueList(opts, current_index=_settings.ant)))
+                "ant",
+                "Earphone Antenna",
+                RadioSettingValueList(opts, current_index=_settings.ant),
+            )
+        )
 
         # WX Alert
         wx.append(
-            RadioSetting(
-                "wx", "WX Alert",
-                RadioSettingValueBoolean(bool(_settings.wx))))
+            RadioSetting("wx", "WX Alert", RadioSettingValueBoolean(bool(_settings.wx)))
+        )
 
         # Mic Gain
         rs = RadioSetting(
-                "wx_channel", "WX Channel",
-                RadioSettingValueInteger(1, 10, _settings.wx_channel + 1))
+            "wx_channel",
+            "WX Channel",
+            RadioSettingValueInteger(1, 10, _settings.wx_channel + 1),
+        )
         rs.set_apply_callback(
             lambda s, obj: setattr(obj, s.get_name(), int(s.value) - 1),
-            self._memobj.settings)
+            self._memobj.settings,
+        )
         wx.append(rs)
 
         return settings
@@ -448,14 +533,15 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
     def _get_extra(self, mem):
         ext = RadioSettingGroup("extra", "Extra")
 
-        rev = RadioSetting("rev", "Reverse duplex",
-                           RadioSettingValueBoolean(bool(mem.rev)))
+        rev = RadioSetting(
+            "rev", "Reverse duplex", RadioSettingValueBoolean(bool(mem.rev))
+        )
         rev.set_doc("Reverse duplex")
         ext.append(rev)
 
-        tx_inhibit = RadioSetting("tx_inhibit", "Tx inhibit",
-                                  RadioSettingValueBoolean(
-                                    bool(mem.tx_inhibit)))
+        tx_inhibit = RadioSetting(
+            "tx_inhibit", "Tx inhibit", RadioSettingValueBoolean(bool(mem.tx_inhibit))
+        )
         tx_inhibit.set_doc("Tx inhibit")
         ext.append(tx_inhibit)
 
@@ -474,7 +560,7 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
         else:
             mem.extd_number = extd_number
             mem.immutable = ["number", "extd_number"]
-            if (number >= 206):
+            if number >= 206:
                 mem.immutable.append("skip")
             _usd = self._memobj.used[number] if (number < 206) else None
             _skp = self._memobj.skips[number] if (number < 206) else None
@@ -511,8 +597,7 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
                 extd_number = number
                 number = dict(SPECIAL)[number]
             except KeyError:
-                raise errors.InvalidMemoryLocation(
-                    "Unknown channel %s" % number)
+                raise errors.InvalidMemoryLocation("Unknown channel %s" % number)
 
         return self._get_memory(number, extd_number)
 
@@ -520,7 +605,7 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
         _mem = self._memobj.memory[number]
 
         # Default values
-        _mem.fill_raw(b'\x00')
+        _mem.fill_raw(b"\x00")
         _mem.freq = 146010000
         _mem.offset = 146010000
         _mem.name = str("").ljust(6)
@@ -573,5 +658,4 @@ class ICVT10Radio(icf.IcomCloneModeRadio):
         return self._set_memory(mem)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number]) + \
-            repr(self._memobj.used[(number)])
+        return repr(self._memobj.memory[number]) + repr(self._memobj.used[(number)])

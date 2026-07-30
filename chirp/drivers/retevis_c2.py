@@ -228,26 +228,22 @@ NOAA_FREQS = [
 ]
 
 # Valid GMRS TX frequencies (main channels + repeater outputs)
-GMRS_TX_FREQS = (
-    set(bandplan_na.ALL_GMRS_FREQS) |
-    {f + 5000000 for f in bandplan_na.GMRS_HIRPT}
-)
+GMRS_TX_FREQS = set(bandplan_na.ALL_GMRS_FREQS) | {
+    f + 5000000 for f in bandplan_na.GMRS_HIRPT
+}
 
 # Tail elimination frequency options (50.0-260.0 Hz in 0.1 Hz steps)
 TAIL_TONES = [round(50.0 + i * 0.1, 1) for i in range(2101)]
 
 # CTCSS/CDCSS tail freq encoding: freq_hz * 40 + 2
-TAIL_TONE_MAP = [("%.1f" % t, int(round(t * 40)) + 2)
-                 for t in TAIL_TONES]
+TAIL_TONE_MAP = [("%.1f" % t, int(round(t * 40)) + 2) for t in TAIL_TONES]
 
 # NO CTCSS tail freq encoding: freq_hz * 10
-NO_CTCSS_TAIL_MAP = [("%.1f" % t, int(round(t * 10)))
-                     for t in TAIL_TONES]
+NO_CTCSS_TAIL_MAP = [("%.1f" % t, int(round(t * 10))) for t in TAIL_TONES]
 
 # Per-channel setting maps
 PTTID_MAP = [("Off", 1), ("Start", 2), ("End", 3), ("Both", 4)]
-SCRAMBLE_MAP = ([("Off", 0xFFFF)] +
-                [("%d Hz" % f, f) for f in range(2700, 3500, 100)])
+SCRAMBLE_MAP = [("Off", 0xFFFF)] + [("%d Hz" % f, f) for f in range(2700, 3500, 100)]
 
 # Lists used in get_settings / get_memory
 LIST_NOAA = ["WX%d" % (i + 1) for i in range(7)]
@@ -259,12 +255,13 @@ DTMF_CHARS = "0123456789ABCD*#"
 
 # --- DCS tone encoding/decoding ---
 
+
 def _reverse_bits(val, nbits):
     """Reverse the bit order of an integer."""
     result = 0
     for i in range(nbits):
         if val & (1 << i):
-            result |= (1 << (nbits - 1 - i))
+            result |= 1 << (nbits - 1 - i)
     return result
 
 
@@ -273,11 +270,11 @@ def _golay_remainder(data_12):
     msg = data_12 << 11
     for i in range(11, -1, -1):
         if msg & (1 << (i + 11)):
-            msg ^= (0xAE3 << i)
+            msg ^= 0xAE3 << i
     return msg & 0x7FF
 
 
-def _dcs_encode(code_oct, pol='N'):
+def _dcs_encode(code_oct, pol="N"):
     """Encode a DCS code and polarity to the C2's 32-bit tone value.
 
     The radio stores these in a format similar to the DCS wire format.
@@ -289,7 +286,7 @@ def _dcs_encode(code_oct, pol='N'):
     """
     code_dec = int(str(code_oct), 8)
 
-    if pol == 'R':
+    if pol == "R":
         # Inverted: compute Golay for the complemented code
         code_9bit = (~code_dec) & 0x1FF
         low3 = 0x06
@@ -303,7 +300,7 @@ def _dcs_encode(code_oct, pol='N'):
     cw23_rev = _reverse_bits(cw23, 23)
     tone = (cw23_rev << 2) | 0x02
 
-    if pol == 'R':
+    if pol == "R":
         # Set inversion flag (bit 25 = bit 1 of byte 3)
         tone = tone | (0x02 << 24)
 
@@ -316,9 +313,9 @@ def _dcs_decode(tone_val):
     inv_flag = (tone_val >> 25) & 1
     if inv_flag:
         code = (~raw9) & 0x1FF
-        return int('%o' % code), 'R'
+        return int("%o" % code), "R"
     else:
-        return int('%o' % raw9), 'N'
+        return int("%o" % raw9), "N"
 
 
 def _decode_tone(val):
@@ -328,26 +325,27 @@ def _decode_tone(val):
     or ('DTCS', code, pol) for DCS.
     """
     if val == 0:
-        return '', 0, 'N'
+        return "", 0, "N"
     if not (val & 0x02):
         # CTCSS: bit 1 clear, value = tone_hz * 40 + 1
         tone_hz = (val - 1) / 40.0
-        return 'Tone', tone_hz, 'N'
+        return "Tone", tone_hz, "N"
     # DCS: bit 1 set
     code, pol = _dcs_decode(val)
-    return 'DTCS', code, pol
+    return "DTCS", code, pol
 
 
 def _encode_tone(mode, value, pol):
     """Encode tone parameters to a 32-bit value."""
-    if mode in ('Tone', 'TSQL'):
+    if mode in ("Tone", "TSQL"):
         return int(round(value * 40)) + 1
-    elif mode == 'DTCS':
+    elif mode == "DTCS":
         return _dcs_encode(value, pol)
     return 0
 
 
 # --- Protocol framing ---
+
 
 def _dle_escape(data):
     """Apply DLE byte-stuffing to raw data."""
@@ -401,12 +399,13 @@ def _parse_frame(frame_data):
     expected = sum(payload) & 0xFF
     if chk != expected:
         raise errors.RadioError(
-            "Checksum mismatch: got 0x%02x, expected 0x%02x" %
-            (chk, expected))
+            "Checksum mismatch: got 0x%02x, expected 0x%02x" % (chk, expected)
+        )
     return payload
 
 
 # --- Serial communication ---
+
 
 def _read_frame(pipe, timeout=5.0):
     """Read a complete STX...ETX frame from the serial port.
@@ -421,8 +420,7 @@ def _read_frame(pipe, timeout=5.0):
         try:
             b = pipe.read(1)
         except Exception as e:
-            raise errors.RadioError(
-                "Error reading from radio: %s" % e)
+            raise errors.RadioError("Error reading from radio: %s" % e)
         if not b:
             continue
         data.append(b[0])
@@ -439,9 +437,8 @@ def _read_frame(pipe, timeout=5.0):
         if b[0] == ETX:
             return bytes(data)
     if data:
-        LOG.debug("Incomplete frame (%d bytes): %s",
-                  len(data), data[:20].hex())
-    return b''
+        LOG.debug("Incomplete frame (%d bytes): %s", len(data), data[:20].hex())
+    return b""
 
 
 class NoData(errors.RadioError):
@@ -452,6 +449,7 @@ class NoData(errors.RadioError):
     receieved any response from the radio in this session (compared to just
     a sudden lack of response to a particular command).
     """
+
     pass
 
 
@@ -470,8 +468,7 @@ def _send_recv(radio, payload):
             pipe.write(frame)
             pipe.flush()
         except Exception as e:
-            raise errors.RadioError(
-                "Error communicating with radio: %s" % e)
+            raise errors.RadioError("Error communicating with radio: %s" % e)
 
         resp_frame = _read_frame(pipe)
         if resp_frame:
@@ -487,8 +484,9 @@ def _send_recv(radio, payload):
             pass
 
     raise NoData(
-        "No response from radio after 3 attempts (cmd=%s)" %
-        ' '.join('%02x' % b for b in payload))
+        "No response from radio after 3 attempts (cmd=%s)"
+        % " ".join("%02x" % b for b in payload)
+    )
 
 
 def _read_block(radio, cmd, table, index):
@@ -502,7 +500,8 @@ def _read_block(radio, cmd, table, index):
     if len(resp) < 4 or resp[1:4] != payload[1:4]:
         raise errors.RadioError(
             "Unexpected response header: got %s, expected cmd=%02x "
-            "tbl=%02x idx=%02x" % (resp[:4].hex(), cmd, table, index))
+            "tbl=%02x idx=%02x" % (resp[:4].hex(), cmd, table, index)
+        )
     return resp[4:]
 
 
@@ -525,18 +524,21 @@ def _write_block(radio, cmd, table, index, data):
             raw = pipe.read(avail)
             LOG.error("Got non-frame data: %s", raw.hex())
         raise errors.RadioError(
-            "No response to write (cmd=%02x tbl=%02x idx=%02x, %d bytes)" %
-            (cmd, table, index, len(data)))
+            "No response to write (cmd=%02x tbl=%02x idx=%02x, %d bytes)"
+            % (cmd, table, index, len(data))
+        )
 
     resp = _parse_frame(resp_frame)
     if len(resp) < 4 or resp[1:4] != payload[1:4]:
         raise errors.RadioError(
             "Unexpected write response: got %s, expected cmd=%02x "
-            "tbl=%02x idx=%02x" % (resp[:4].hex(), cmd, table, index))
+            "tbl=%02x idx=%02x" % (resp[:4].hex(), cmd, table, index)
+        )
     return resp
 
 
 # --- Download / Upload ---
+
 
 def do_download(radio):
     """Download memory image from the radio."""
@@ -555,14 +557,14 @@ def do_download(radio):
         raise errors.RadioNoResponse()
     except Exception:
         raise
-    mmap_data[offset:offset + len(data)] = data
+    mmap_data[offset : offset + len(data)] = data
     offset += len(data)
     status.cur = offset
     radio.status_fn(status)
 
     # 2. Read settings
     data = _read_block(radio, CMD_READ, TBL_SETTINGS, 0x00)
-    mmap_data[offset:offset + len(data)] = data
+    mmap_data[offset : offset + len(data)] = data
     offset += len(data)
     status.cur = offset
     radio.status_fn(status)
@@ -570,7 +572,7 @@ def do_download(radio):
     # 3. Read channels (256)
     for i in range(NUM_CHANNELS):
         data = _read_block(radio, CMD_READ, TBL_CHANNELS, i)
-        mmap_data[offset:offset + len(data)] = data
+        mmap_data[offset : offset + len(data)] = data
         offset += len(data)
         status.cur = offset
         if i % 16 == 0:
@@ -579,22 +581,22 @@ def do_download(radio):
     # 4. Read extra blocks
     for i in range(EXTRA_COUNT):
         data = _read_block(radio, CMD_READ, TBL_EXTRA, i)
-        mmap_data[offset:offset + len(data)] = data
+        mmap_data[offset : offset + len(data)] = data
         offset += len(data)
 
     # 5. Read final block
     data = _read_block(radio, CMD_READ, TBL_FINAL, 0x00)
-    mmap_data[offset:offset + len(data)] = data
+    mmap_data[offset : offset + len(data)] = data
     offset += len(data)
 
     # 6. Read calibration data (downloaded but not uploaded)
     data = _read_block(radio, CMD_READ, TBL_SYSCONFIG, 0x00)
-    mmap_data[offset:offset + len(data)] = data
+    mmap_data[offset : offset + len(data)] = data
     offset += len(data)
 
     for i in range(RFCAL_COUNT):
         data = _read_block(radio, CMD_READ, TBL_RFCAL, i)
-        mmap_data[offset:offset + len(data)] = data
+        mmap_data[offset : offset + len(data)] = data
         offset += len(data)
 
     status.cur = MEMSIZE
@@ -602,7 +604,7 @@ def do_download(radio):
 
     LOG.debug("Downloaded %d bytes", offset)
 
-    radio._metadata['image_version'] = IMAGE_VERSION
+    radio._metadata["image_version"] = IMAGE_VERSION
 
     return memmap.MemoryMapBytes(bytes(mmap_data[:offset]))
 
@@ -628,7 +630,7 @@ def do_upload(radio):
     _read_block(radio, CMD_READ, TBL_SETTINGS, 0x00)
 
     # 3. Write settings
-    settings_data = mmap[SETTINGS_OFFSET:SETTINGS_OFFSET + SETTINGS_SIZE]
+    settings_data = mmap[SETTINGS_OFFSET : SETTINGS_OFFSET + SETTINGS_SIZE]
     _write_block(radio, CMD_WRITE, TBL_SETTINGS, 0x00, settings_data)
     _read_block(radio, CMD_VERIFY, TBL_SETTINGS, 0x00)
     status.cur = SETTINGS_OFFSET + SETTINGS_SIZE
@@ -637,7 +639,7 @@ def do_upload(radio):
     # 4. Write channels
     for i in range(NUM_CHANNELS):
         ch_offset = CHANNELS_OFFSET + i * CHANNEL_SIZE
-        ch_data = mmap[ch_offset:ch_offset + CHANNEL_SIZE]
+        ch_data = mmap[ch_offset : ch_offset + CHANNEL_SIZE]
         _write_block(radio, CMD_WRITE, TBL_CHANNELS, i, ch_data)
         _read_block(radio, CMD_VERIFY, TBL_CHANNELS, i)
         status.cur = ch_offset + CHANNEL_SIZE
@@ -647,12 +649,12 @@ def do_upload(radio):
     # 5. Write extra blocks
     for i in range(EXTRA_COUNT):
         blk_start = EXTRA_OFFSET + i * EXTRA_SIZE
-        blk_data = mmap[blk_start:blk_start + EXTRA_SIZE]
+        blk_data = mmap[blk_start : blk_start + EXTRA_SIZE]
         _write_block(radio, CMD_WRITE, TBL_EXTRA, i, blk_data)
         _read_block(radio, CMD_VERIFY, TBL_EXTRA, i)
 
     # 6. Write final block (448 of 480 bytes, matching CPS protocol)
-    final_data = mmap[FINAL_OFFSET:FINAL_OFFSET + 448]
+    final_data = mmap[FINAL_OFFSET : FINAL_OFFSET + 448]
     _write_block(radio, CMD_WRITE, TBL_FINAL, 0x00, final_data)
     _read_block(radio, CMD_VERIFY, TBL_FINAL, 0x00)
 
@@ -665,9 +667,11 @@ def do_upload(radio):
 
 # --- Main radio class ---
 
+
 @directory.register
 class RetevisC2(chirp_common.CloneModeRadio):
     """Retevis C2"""
+
     VENDOR = "Retevis"
     MODEL = "C2"
     BAUD_RATE = 115200
@@ -689,8 +693,7 @@ class RetevisC2(chirp_common.CloneModeRadio):
         rf.has_cross = True
         rf.has_name = True
         rf.valid_name_length = 12
-        rf.valid_characters = (chirp_common.CHARSET_ALPHANUMERIC +
-                               " !@#$%&*()-+=")
+        rf.valid_characters = chirp_common.CHARSET_ALPHANUMERIC + " !@#$%&*()-+="
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
@@ -748,8 +751,8 @@ class RetevisC2(chirp_common.CloneModeRadio):
                 mem.offset = 0
             elif offset > 0:
                 if chirp_common.is_split(
-                        self.get_features().valid_bands,
-                        mem.freq, txfreq):
+                    self.get_features().valid_bands, mem.freq, txfreq
+                ):
                     mem.duplex = "split"
                     mem.offset = txfreq
                 else:
@@ -775,7 +778,7 @@ class RetevisC2(chirp_common.CloneModeRadio):
         chirp_common.split_tone_decode(mem, txtone, rxtone)
 
         # Name
-        name = str(_mem.name).rstrip('\x00').rstrip()
+        name = str(_mem.name).rstrip("\x00").rstrip()
         mem.name = name
 
         # Skip (scanadd: 1=add, 0=skip)
@@ -785,40 +788,42 @@ class RetevisC2(chirp_common.CloneModeRadio):
         # Per-channel extras
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("_compand", "Compand",
-                          RadioSettingValueBoolean(
-                              bool(_mem.compand)))
+        rs = RadioSetting(
+            "_compand", "Compand", RadioSettingValueBoolean(bool(_mem.compand))
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("_talkaround", "Talk Around",
-                          RadioSettingValueBoolean(
-                              bool(_mem.talkaround)))
+        rs = RadioSetting(
+            "_talkaround",
+            "Talk Around",
+            RadioSettingValueBoolean(bool(_mem.talkaround)),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("_busylock", "Busy Lock",
-                          RadioSettingValueBoolean(
-                              bool(_mem.busylock)))
+        rs = RadioSetting(
+            "_busylock", "Busy Lock", RadioSettingValueBoolean(bool(_mem.busylock))
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("_ani", "ANI",
-                          RadioSettingValueBoolean(
-                              bool(_mem.ani)))
+        rs = RadioSetting("_ani", "ANI", RadioSettingValueBoolean(bool(_mem.ani)))
         mem.extra.append(rs)
 
-        rs = RadioSetting("_pttid", "PTT ID",
-                          RadioSettingValueMap(
-                              PTTID_MAP, int(_mem.pttid)))
+        rs = RadioSetting(
+            "_pttid", "PTT ID", RadioSettingValueMap(PTTID_MAP, int(_mem.pttid))
+        )
         mem.extra.append(rs)
 
         dtmf_grp = int(_mem.dtmf_group)
-        rs = RadioSetting("_dtmf_group", "DTMF Group",
-                          RadioSettingValueInteger(
-                              1, 16, dtmf_grp + 1))
+        rs = RadioSetting(
+            "_dtmf_group", "DTMF Group", RadioSettingValueInteger(1, 16, dtmf_grp + 1)
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("_scramble", "Scramble",
-                          RadioSettingValueMap(
-                              SCRAMBLE_MAP, int(_mem.scramble)))
+        rs = RadioSetting(
+            "_scramble",
+            "Scramble",
+            RadioSettingValueMap(SCRAMBLE_MAP, int(_mem.scramble)),
+        )
         mem.extra.append(rs)
 
         # GMRS implied modes
@@ -856,13 +861,13 @@ class RetevisC2(chirp_common.CloneModeRadio):
         _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
-            _mem.set_raw(b'\x00' * 56)
+            _mem.set_raw(b"\x00" * 56)
             _mem.bandwidth = 25000
             _mem.highpower = 1
-            _mem.cfg_unk2 = 5       # CPS default (bits 2,0 set)
+            _mem.cfg_unk2 = 5  # CPS default (bits 2,0 set)
             _mem.scanadd = 1
-            _mem.pttid = 1          # Off
-            _mem.unk11 = 1          # CPS default (bit 11)
+            _mem.pttid = 1  # Off
+            _mem.unk11 = 1  # CPS default (bit 11)
             _mem.scramble = 0xFFFF
             return
 
@@ -891,17 +896,17 @@ class RetevisC2(chirp_common.CloneModeRadio):
             _mem.bandwidth = 25000 if mem.mode == "FM" else 12500
 
         # Power
-        _mem.highpower = (not is_hhonly and
-                          mem.power == self.POWER_LEVELS[0])
+        _mem.highpower = not is_hhonly and mem.power == self.POWER_LEVELS[0]
 
         # Tones
-        ((txmode, txtone, txpol), (rxmode, rxtone, rxpol)) = \
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
             chirp_common.split_tone_encode(mem)
+        )
         _mem.txtone = _encode_tone(txmode, txtone, txpol)
         _mem.rxtone = _encode_tone(rxmode, rxtone, rxpol)
 
         # Name
-        name = mem.name.ljust(12, '\x00')[:12]
+        name = mem.name.ljust(12, "\x00")[:12]
         _mem.name = name
 
         # Skip (scanadd: 1=add, 0=skip)
@@ -917,7 +922,7 @@ class RetevisC2(chirp_common.CloneModeRadio):
             _mem.compand = 0
             _mem.dtmf_group = 0
             _mem.ani = 0
-            _mem.pttid = 1          # Off
+            _mem.pttid = 1  # Off
             _mem.scramble = 0xFFFF
             return
 
@@ -946,29 +951,53 @@ class RetevisC2(chirp_common.CloneModeRadio):
         top = RadioSettings(basic, vox, dtmf)
 
         ABSWITCH_MAP = [("Auto", 0), ("On", 1), ("Off", 2)]
-        STEP_MAP = [("2.5K", 2500), ("5.0K", 5000), ("6.25K", 6250),
-                    ("10.0K", 10000), ("12.5K", 12500), ("20.0K", 20000),
-                    ("25.0K", 25000), ("50.0K", 50000)]
+        STEP_MAP = [
+            ("2.5K", 2500),
+            ("5.0K", 5000),
+            ("6.25K", 6250),
+            ("10.0K", 10000),
+            ("12.5K", 12500),
+            ("20.0K", 20000),
+            ("25.0K", 25000),
+            ("50.0K", 50000),
+        ]
         TOT_MAP = [("Off", 0)] + [("%d" % x, x) for x in range(15, 615, 15)]
-        VOXDELAY_MAP = [("0.5", 500), ("1.0", 1000), ("1.5", 1500),
-                        ("2.0", 2000), ("2.5", 2500), ("3.0", 3000)]
+        VOXDELAY_MAP = [
+            ("0.5", 500),
+            ("1.0", 1000),
+            ("1.5", 1500),
+            ("2.0", 2000),
+            ("2.5", 2500),
+            ("3.0", 3000),
+        ]
 
-        basic.append(MemSetting("tot", "TOT (seconds)",
-                                RadioSettingValueMap(
-                                    TOT_MAP, int(_mem.tot))))
-        TOTWARN_MAP = [("Off", 0)] + [
-            ("%d" % x, x << 4) for x in range(1, 11)]
-        basic.append(MemSetting("tot_warning", "TOT Warning Time",
-                                RadioSettingValueMap(
-                                    TOTWARN_MAP,
-                                    int(_mem.tot_warning))))
-        basic.append(MemSetting("freq_step", "Frequency Step",
-                                RadioSettingValueMap(
-                                    STEP_MAP, int(_mem.freq_step))))
-        basic.append(MemSetting("abswitch", "A/B Switch",
-                                RadioSettingValueMap(
-                                    ABSWITCH_MAP,
-                                    int(_mem.abswitch))))
+        basic.append(
+            MemSetting(
+                "tot", "TOT (seconds)", RadioSettingValueMap(TOT_MAP, int(_mem.tot))
+            )
+        )
+        TOTWARN_MAP = [("Off", 0)] + [("%d" % x, x << 4) for x in range(1, 11)]
+        basic.append(
+            MemSetting(
+                "tot_warning",
+                "TOT Warning Time",
+                RadioSettingValueMap(TOTWARN_MAP, int(_mem.tot_warning)),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "freq_step",
+                "Frequency Step",
+                RadioSettingValueMap(STEP_MAP, int(_mem.freq_step)),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "abswitch",
+                "A/B Switch",
+                RadioSettingValueMap(ABSWITCH_MAP, int(_mem.abswitch)),
+            )
+        )
         KEY_MAP = [
             ("Off", 0xFFFFFFFF),
             ("Monitor", 1),
@@ -986,51 +1015,62 @@ class RetevisC2(chirp_common.CloneModeRadio):
         ]
         SKEY_MAP = KEY_MAP + [("SUB-PTT", 25), ("Group PTT", 26)]
         for field, label, kmap in [
-                ("pf1_short", "P1 Short Press", KEY_MAP),
-                ("pf1_long", "P1 Long Press", KEY_MAP),
-                ("pf2_short", "P2 Short Press", KEY_MAP),
-                ("pf2_long", "P2 Long Press", KEY_MAP),
-                ("sk_short", "Side Key Short", SKEY_MAP),
-                ("sk_long", "Side Key Long", KEY_MAP)]:
-            basic.append(MemSetting(
-                field, label,
-                RadioSettingValueMap(
-                    kmap, int(getattr(_mem, field)))))
+            ("pf1_short", "P1 Short Press", KEY_MAP),
+            ("pf1_long", "P1 Long Press", KEY_MAP),
+            ("pf2_short", "P2 Short Press", KEY_MAP),
+            ("pf2_long", "P2 Long Press", KEY_MAP),
+            ("sk_short", "Side Key Short", SKEY_MAP),
+            ("sk_long", "Side Key Long", KEY_MAP),
+        ]:
+            basic.append(
+                MemSetting(
+                    field, label, RadioSettingValueMap(kmap, int(getattr(_mem, field)))
+                )
+            )
         rs = RadioSettingValueInteger(1, 256, int(_mem.group_call_ch) + 1)
-        basic.append(RadioSetting(
-            "_group_call_ch", "Group Call Channel", rs))
-        basic.append(MemSetting(
-            "squelch", "Squelch Level",
-            RadioSettingValueInteger(0, 9, min(int(_mem.squelch), 9))))
+        basic.append(RadioSetting("_group_call_ch", "Group Call Channel", rs))
+        basic.append(
+            MemSetting(
+                "squelch",
+                "Squelch Level",
+                RadioSettingValueInteger(0, 9, min(int(_mem.squelch), 9)),
+            )
+        )
 
-        basic.append(MemSetting("chnameshow",
-                                "Display Channel Names",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.chnameshow)))))
-        basic.append(MemSetting("keytone", "Key Tone",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.keytone)))))
+        basic.append(
+            MemSetting(
+                "chnameshow",
+                "Display Channel Names",
+                RadioSettingValueBoolean(bool(int(_mem.chnameshow))),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "keytone", "Key Tone", RadioSettingValueBoolean(bool(int(_mem.keytone)))
+            )
+        )
         rs = RadioSettingValueBoolean(int(_mem.dwatch) == 2)
         basic.append(RadioSetting("_dwatch", "Dual Watch", rs))
-        basic.append(MemSetting("group_switch", "Group Call",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.group_switch)))))
+        basic.append(
+            MemSetting(
+                "group_switch",
+                "Group Call",
+                RadioSettingValueBoolean(bool(int(_mem.group_switch))),
+            )
+        )
 
         noaa_idx = int(_mem.noaa_ch)
         if noaa_idx >= 7:
             noaa_idx = 0
         rs = RadioSettingValueList(LIST_NOAA, current_index=noaa_idx)
-        basic.append(RadioSetting(
-            "_noaa_ch", "NOAA Weather Channel", rs))
+        basic.append(RadioSetting("_noaa_ch", "NOAA Weather Channel", rs))
         rs = RadioSettingValueBoolean(int(_mem.noaa_warning) != 0)
-        basic.append(RadioSetting(
-            "_noaa_warning", "NOAA Weather Warning", rs))
+        basic.append(RadioSetting("_noaa_warning", "NOAA Weather Warning", rs))
         fm_raw = int(_mem.settings_3d78)
         rs = RadioSettingValueBoolean((fm_raw & 0x03) == 1)
         basic.append(RadioSetting("_fm_auto", "FM Radio", rs))
         rs = RadioSettingValueBoolean(bool(fm_raw & 0x04))
-        basic.append(RadioSetting(
-            "_allow_tx_beep", "Allow TX Beep", rs))
+        basic.append(RadioSetting("_allow_tx_beep", "Allow TX Beep", rs))
         # AI Denoise: ul32 = level*96 + 4 + (3 if on else 0)
         ai_raw = int(_mem.ai_denoise_packed)
         ai_enabled = (ai_raw & 0x03) == 0x03
@@ -1042,68 +1082,92 @@ class RetevisC2(chirp_common.CloneModeRadio):
         rs = RadioSettingValueBoolean(ai_enabled)
         basic.append(RadioSetting("_ai_denoise", "AI Denoise", rs))
         rs = RadioSettingValueInteger(1, 10, ai_level)
-        basic.append(RadioSetting(
-            "_ai_denoise_level", "AI Denoise Level", rs))
+        basic.append(RadioSetting("_ai_denoise_level", "AI Denoise Level", rs))
 
-        basic.append(MemSetting("recorder", "Recording Playback",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.recorder)))))
-        basic.append(MemSetting("show_bat", "Show Battery Voltage",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.show_bat)))))
-        basic.append(MemSetting("dtmf_show", "DTMF Show",
-                                RadioSettingValueBoolean(
-                                    bool(int(_mem.dtmf_show)))))
+        basic.append(
+            MemSetting(
+                "recorder",
+                "Recording Playback",
+                RadioSettingValueBoolean(bool(int(_mem.recorder))),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "show_bat",
+                "Show Battery Voltage",
+                RadioSettingValueBoolean(bool(int(_mem.show_bat))),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "dtmf_show",
+                "DTMF Show",
+                RadioSettingValueBoolean(bool(int(_mem.dtmf_show))),
+            )
+        )
         rs = RadioSettingValueBoolean(bool(int(_mem.css_packed) & 0x01))
         basic.append(RadioSetting("_css_vague", "CSS Vague", rs))
         rs = RadioSettingValueBoolean(bool(int(_mem.css_packed) & 0x10))
-        basic.append(RadioSetting(
-            "_cancel_all_ctdt", "Cancel All CTCSS/DCS", rs))
+        basic.append(RadioSetting("_cancel_all_ctdt", "Cancel All CTCSS/DCS", rs))
 
-        basic.append(MemSetting("ctcss_tail_tone",
-                                "CTCSS Tail Freq (Hz)",
-                                RadioSettingValueMap(
-                                    TAIL_TONE_MAP,
-                                    int(_mem.ctcss_tail_tone))))
-        basic.append(MemSetting("cdcss_tail_tone",
-                                "CDCSS Tail Freq (Hz)",
-                                RadioSettingValueMap(
-                                    TAIL_TONE_MAP,
-                                    int(_mem.cdcss_tail_tone))))
-        basic.append(MemSetting("no_ctcss_tail_freq",
-                                "NO CTCSS Tail Freq (Hz)",
-                                RadioSettingValueMap(
-                                    NO_CTCSS_TAIL_MAP,
-                                    int(_mem.no_ctcss_tail_freq))))
+        basic.append(
+            MemSetting(
+                "ctcss_tail_tone",
+                "CTCSS Tail Freq (Hz)",
+                RadioSettingValueMap(TAIL_TONE_MAP, int(_mem.ctcss_tail_tone)),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "cdcss_tail_tone",
+                "CDCSS Tail Freq (Hz)",
+                RadioSettingValueMap(TAIL_TONE_MAP, int(_mem.cdcss_tail_tone)),
+            )
+        )
+        basic.append(
+            MemSetting(
+                "no_ctcss_tail_freq",
+                "NO CTCSS Tail Freq (Hz)",
+                RadioSettingValueMap(NO_CTCSS_TAIL_MAP, int(_mem.no_ctcss_tail_freq)),
+            )
+        )
 
         rs = RadioSettingValueBoolean(bool(int(_mem.settings_0020) & 1))
         basic.append(RadioSetting("_voice", "Voice Prompt", rs))
 
-        POWERSAVE_MAP = [("Off", 0), ("1", 1), ("2", 4),
-                         ("3", 6), ("4", 9)]
-        basic.append(MemSetting("power_save", "Battery Save",
-                                RadioSettingValueMap(
-                                    POWERSAVE_MAP,
-                                    int(_mem.power_save))))
+        POWERSAVE_MAP = [("Off", 0), ("1", 1), ("2", 4), ("3", 6), ("4", 9)]
+        basic.append(
+            MemSetting(
+                "power_save",
+                "Battery Save",
+                RadioSettingValueMap(POWERSAVE_MAP, int(_mem.power_save)),
+            )
+        )
 
         WORKMODE_MAP = [("Channel", 0), ("Memory", 1)]
-        basic.append(MemSetting("work_mode", "Work Mode",
-                                RadioSettingValueMap(
-                                    WORKMODE_MAP,
-                                    int(_mem.work_mode))))
+        basic.append(
+            MemSetting(
+                "work_mode",
+                "Work Mode",
+                RadioSettingValueMap(WORKMODE_MAP, int(_mem.work_mode)),
+            )
+        )
 
-        basic.append(MemSetting(
-            "micgain_analog", "Mic Gain (Analog)",
-            RadioSettingValueInteger(
-                -3, 3, max(-3, min(3, int(_mem.micgain_analog))))))
+        basic.append(
+            MemSetting(
+                "micgain_analog",
+                "Mic Gain (Analog)",
+                RadioSettingValueInteger(
+                    -3, 3, max(-3, min(3, int(_mem.micgain_analog)))
+                ),
+            )
+        )
 
         pri_raw = int(_mem.settings_035c)
         rs = RadioSettingValueBoolean(bool(pri_raw & 0x01))
-        basic.append(RadioSetting(
-            "_tx_start_beep", "TX Start Beep", rs))
+        basic.append(RadioSetting("_tx_start_beep", "TX Start Beep", rs))
         rs = RadioSettingValueBoolean(bool(pri_raw & 0x04))
-        basic.append(RadioSetting(
-            "_tx_stop_beep", "TX Stop Beep", rs))
+        basic.append(RadioSetting("_tx_stop_beep", "TX Stop Beep", rs))
 
         pri_ch = pri_raw >> 8
         if pri_ch == 0xFFFFFF:
@@ -1112,40 +1176,70 @@ class RetevisC2(chirp_common.CloneModeRadio):
             pri_idx = pri_ch + 1
             if pri_idx < 1 or pri_idx > 256:
                 pri_idx = 0
-        rs = RadioSettingValueList(
-            LIST_PRIORITY_SCAN, current_index=pri_idx)
-        basic.append(RadioSetting(
-            "_priority_scan", "Priority Scan Channel", rs))
+        rs = RadioSettingValueList(LIST_PRIORITY_SCAN, current_index=pri_idx)
+        basic.append(RadioSetting("_priority_scan", "Priority Scan Channel", rs))
 
         SCANMODE_MAP = [("Search", 0), ("Carrier", 1), ("Time", 2)]
-        basic.append(MemSetting("scan_mode", "Scan Mode",
-                                RadioSettingValueMap(
-                                    SCANMODE_MAP,
-                                    int(_mem.scan_mode))))
+        basic.append(
+            MemSetting(
+                "scan_mode",
+                "Scan Mode",
+                RadioSettingValueMap(SCANMODE_MAP, int(_mem.scan_mode)),
+            )
+        )
 
-        basic.append(MemSetting(
-            "lcd_brightness", "LCD Brightness",
-            RadioSettingValueInteger(
-                1, 5, min(max(int(_mem.lcd_brightness), 1), 5))))
+        basic.append(
+            MemSetting(
+                "lcd_brightness",
+                "LCD Brightness",
+                RadioSettingValueInteger(
+                    1, 5, min(max(int(_mem.lcd_brightness), 1), 5)
+                ),
+            )
+        )
 
-        KEYLOCK_MAP = [("Off", 0), ("5s", 5000), ("10s", 10000),
-                       ("15s", 15000), ("20s", 20000), ("25s", 25000),
-                       ("30s", 30000)]
-        basic.append(MemSetting("key_lock", "Key Lock",
-                                RadioSettingValueMap(
-                                    KEYLOCK_MAP, int(_mem.key_lock))))
+        KEYLOCK_MAP = [
+            ("Off", 0),
+            ("5s", 5000),
+            ("10s", 10000),
+            ("15s", 15000),
+            ("20s", 20000),
+            ("25s", 25000),
+            ("30s", 30000),
+        ]
+        basic.append(
+            MemSetting(
+                "key_lock",
+                "Key Lock",
+                RadioSettingValueMap(KEYLOCK_MAP, int(_mem.key_lock)),
+            )
+        )
 
-        ABLTIME_MAP = [("Always", 0), ("5s", 5000), ("10s", 10000),
-                       ("15s", 15000), ("20s", 20000)]
-        basic.append(MemSetting("auto_bl_time", "Auto Backlight Time",
-                                RadioSettingValueMap(
-                                    ABLTIME_MAP, int(_mem.auto_bl_time))))
+        ABLTIME_MAP = [
+            ("Always", 0),
+            ("5s", 5000),
+            ("10s", 10000),
+            ("15s", 15000),
+            ("20s", 20000),
+        ]
+        basic.append(
+            MemSetting(
+                "auto_bl_time",
+                "Auto Backlight Time",
+                RadioSettingValueMap(ABLTIME_MAP, int(_mem.auto_bl_time)),
+            )
+        )
 
-        APO_MAP = [("Off", 0), ("10min", 600000), ("30min", 1800000)] + \
-                  [("%dhr" % h, h * 3600000) for h in range(1, 13)]
-        basic.append(MemSetting("apo_time", "Auto Power Off",
-                                RadioSettingValueMap(
-                                    APO_MAP, int(_mem.apo_time))))
+        APO_MAP = [("Off", 0), ("10min", 600000), ("30min", 1800000)] + [
+            ("%dhr" % h, h * 3600000) for h in range(1, 13)
+        ]
+        basic.append(
+            MemSetting(
+                "apo_time",
+                "Auto Power Off",
+                RadioSettingValueMap(APO_MAP, int(_mem.apo_time)),
+            )
+        )
 
         # Password: packed as pwd_int * 4 + flag (1=on, 0=off)
         pwd_raw = int(_mem.password)
@@ -1153,17 +1247,19 @@ class RetevisC2(chirp_common.CloneModeRadio):
         pwd_num = pwd_raw // 4
         pwd_str = "%06d" % pwd_num
         rs = RadioSettingValueBoolean(pwd_enabled)
-        basic.append(RadioSetting(
-            "_pwd_enable", "Password Enable", rs))
+        basic.append(RadioSetting("_pwd_enable", "Password Enable", rs))
         rs = RadioSettingValueString(6, 6, pwd_str)
         rs.set_charset("0123456789")
         basic.append(RadioSetting("_pwd_code", "Password", rs))
 
-        TONE_MAP = [("1000", 1000), ("1450", 1450),
-                    ("1750", 1750), ("2100", 2100)]
-        basic.append(MemSetting("tone_burst", "Tone Burst (Hz)",
-                                RadioSettingValueMap(
-                                    TONE_MAP, int(_mem.tone_burst))))
+        TONE_MAP = [("1000", 1000), ("1450", 1450), ("1750", 1750), ("2100", 2100)]
+        basic.append(
+            MemSetting(
+                "tone_burst",
+                "Tone Burst (Hz)",
+                RadioSettingValueMap(TONE_MAP, int(_mem.tone_burst)),
+            )
+        )
         # VOX is packed: vox_level*4 + (1=on, 2=off)
         vox_packed = int(_mem.vox_packed)
         vox_on = (vox_packed % 4) == 1
@@ -1176,42 +1272,46 @@ class RetevisC2(chirp_common.CloneModeRadio):
         rs = RadioSettingValueBoolean(vox_on)
         vox.append(RadioSetting("_vox_enabled", "VOX Function", rs))
 
-        vox.append(RadioSetting(
-            "_vox_level", "VOX Level",
-            RadioSettingValueInteger(1, 9, vox_level)))
+        vox.append(
+            RadioSetting(
+                "_vox_level", "VOX Level", RadioSettingValueInteger(1, 9, vox_level)
+            )
+        )
 
-        vox.append(MemSetting("vox_delay", "VOX Delay Time",
-                              RadioSettingValueMap(
-                                  VOXDELAY_MAP, int(_mem.vox_delay))))
+        vox.append(
+            MemSetting(
+                "vox_delay",
+                "VOX Delay Time",
+                RadioSettingValueMap(VOXDELAY_MAP, int(_mem.vox_delay)),
+            )
+        )
 
         # DTMF settings
-        dtmf_id = str(_mem.dtmf_local_id).rstrip('\x00')
-        rs = RadioSettingValueString(0, 8, dtmf_id,
-                                     mem_pad_char='\x00')
+        dtmf_id = str(_mem.dtmf_local_id).rstrip("\x00")
+        rs = RadioSettingValueString(0, 8, dtmf_id, mem_pad_char="\x00")
         rs.set_charset(DTMF_CHARS)
         dtmf.append(MemSetting("dtmf_local_id", "DTMF Local ID", rs))
 
-        DTMF_FIRST_MAP = [("%dms" % ms, ms * 2)
-                          for ms in range(150, 1010, 10)]
-        dtmf.append(MemSetting("dtmf_first_time",
-                               "DTMF First Code Time",
-                               RadioSettingValueMap(
-                                   DTMF_FIRST_MAP,
-                                   int(_mem.dtmf_first_time))))
+        DTMF_FIRST_MAP = [("%dms" % ms, ms * 2) for ms in range(150, 1010, 10)]
+        dtmf.append(
+            MemSetting(
+                "dtmf_first_time",
+                "DTMF First Code Time",
+                RadioSettingValueMap(DTMF_FIRST_MAP, int(_mem.dtmf_first_time)),
+            )
+        )
 
-        LIST_SEP = ['*', '#', 'A', 'B', 'C', 'D']
+        LIST_SEP = ["*", "#", "A", "B", "C", "D"]
         sep = str(_mem.dtmf_sep_code)
         sep_idx = LIST_SEP.index(sep) if sep in LIST_SEP else 0
         rs = RadioSettingValueList(LIST_SEP, current_index=sep_idx)
-        dtmf.append(RadioSetting(
-            "dtmf_sep_code", "Separate Code", rs))
+        dtmf.append(RadioSetting("dtmf_sep_code", "Separate Code", rs))
 
-        LIST_GRP = ['A', 'B', 'C', 'D', '*', '#']
+        LIST_GRP = ["A", "B", "C", "D", "*", "#"]
         grp = str(_mem.dtmf_group_code)
         grp_idx = LIST_GRP.index(grp) if grp in LIST_GRP else 0
         rs = RadioSettingValueList(LIST_GRP, current_index=grp_idx)
-        dtmf.append(RadioSetting(
-            "dtmf_group_code", "Group Code", rs))
+        dtmf.append(RadioSetting("dtmf_group_code", "Group Code", rs))
 
         return top
 
@@ -1223,103 +1323,98 @@ class RetevisC2(chirp_common.CloneModeRadio):
             elif isinstance(element, RadioSetting):
                 # Packed/composite settings need manual encoding
                 name = element.get_name()
-                if name == '_group_call_ch':
+                if name == "_group_call_ch":
                     _mem.group_call_ch = int(element.value) - 1
-                elif name == '_fm_auto':
+                elif name == "_fm_auto":
                     cur = int(_mem.settings_3d78) & ~0x03
-                    _mem.settings_3d78 = \
-                        cur | (1 if bool(element.value) else 2)
-                elif name == '_allow_tx_beep':
+                    _mem.settings_3d78 = cur | (1 if bool(element.value) else 2)
+                elif name == "_allow_tx_beep":
                     cur = int(_mem.settings_3d78)
                     if bool(element.value):
                         _mem.settings_3d78 = cur | 0x04
                     else:
                         _mem.settings_3d78 = cur & ~0x04
-                elif name == '_dwatch':
+                elif name == "_dwatch":
                     _mem.dwatch = 2 if bool(element.value) else 1
-                elif name == '_voice':
+                elif name == "_voice":
                     cur = int(_mem.settings_0020)
                     if bool(element.value):
                         _mem.settings_0020 = cur | 1
                     else:
                         _mem.settings_0020 = cur & ~1
-                elif name == '_vox_enabled':
+                elif name == "_vox_enabled":
                     # Repack VOX: vox_level*4 + (1=on, 2=off)
                     cur = int(_mem.vox_packed)
                     level = cur // 4
                     flag = 1 if bool(element.value) else 2
                     _mem.vox_packed = level * 4 + flag
-                elif name == '_vox_level':
+                elif name == "_vox_level":
                     cur = int(_mem.vox_packed)
                     flag = cur % 4
                     _mem.vox_packed = int(element.value) * 4 + flag
-                elif name == '_pwd_enable':
+                elif name == "_pwd_enable":
                     cur = int(_mem.password)
                     pwd = cur // 4
                     if bool(element.value):
                         _mem.password = pwd * 4 + 1
                     else:
                         _mem.password = pwd * 4
-                elif name == '_pwd_code':
+                elif name == "_pwd_code":
                     cur = int(_mem.password)
                     flag = cur % 4
-                    _mem.password = \
-                        int(str(element.value)) * 4 + flag
-                elif name == '_ai_denoise':
+                    _mem.password = int(str(element.value)) * 4 + flag
+                elif name == "_ai_denoise":
                     cur = int(_mem.ai_denoise_packed)
                     if bool(element.value):
                         _mem.ai_denoise_packed = (cur & ~3) | 3
                     else:
                         _mem.ai_denoise_packed = cur & ~3
-                elif name == '_ai_denoise_level':
+                elif name == "_ai_denoise_level":
                     cur = int(_mem.ai_denoise_packed)
                     enable = cur & 3
-                    _mem.ai_denoise_packed = \
-                        int(element.value) * 96 + 4 + enable
-                elif name == '_tx_start_beep':
+                    _mem.ai_denoise_packed = int(element.value) * 96 + 4 + enable
+                elif name == "_tx_start_beep":
                     cur = int(_mem.settings_035c)
                     if bool(element.value):
                         _mem.settings_035c = cur | 0x01
                     else:
                         _mem.settings_035c = cur & ~0x01
-                elif name == '_tx_stop_beep':
+                elif name == "_tx_stop_beep":
                     cur = int(_mem.settings_035c)
                     if bool(element.value):
                         _mem.settings_035c = cur | 0x04
                     else:
                         _mem.settings_035c = cur & ~0x04
-                elif name == '_priority_scan':
+                elif name == "_priority_scan":
                     cur = int(_mem.settings_035c) & 0xFF
                     idx = int(element.value)
                     if idx == 0:
-                        _mem.settings_035c = \
-                            (0xFFFFFF << 8) | cur
+                        _mem.settings_035c = (0xFFFFFF << 8) | cur
                     else:
-                        _mem.settings_035c = \
-                            ((idx - 1) << 8) | cur
-                elif name == '_css_vague':
+                        _mem.settings_035c = ((idx - 1) << 8) | cur
+                elif name == "_css_vague":
                     cur = int(_mem.css_packed)
                     if bool(element.value):
                         _mem.css_packed = cur | 0x01
                     else:
                         _mem.css_packed = cur & ~0x01
-                elif name == '_cancel_all_ctdt':
+                elif name == "_cancel_all_ctdt":
                     cur = int(_mem.css_packed)
                     if bool(element.value):
                         _mem.css_packed = cur | 0x10
                     else:
                         _mem.css_packed = cur & ~0x10
-                elif name == '_noaa_ch':
+                elif name == "_noaa_ch":
                     idx = int(element.value)
                     _mem.noaa_ch = idx
                     _mem.noaa_freq = NOAA_FREQS[idx]
-                elif name == '_noaa_warning':
+                elif name == "_noaa_warning":
                     cur = int(_mem.noaa_warning)
                     if bool(element.value):
                         _mem.noaa_warning = cur | 0x40000
                     else:
                         _mem.noaa_warning = cur & ~0x40000
-                elif name in ('dtmf_sep_code', 'dtmf_group_code'):
+                elif name in ("dtmf_sep_code", "dtmf_group_code"):
                     setattr(_mem, name, str(element.value))
                 else:
                     LOG.warning("Unhandled setting: %s", name)
@@ -1335,15 +1430,24 @@ class RetevisC2(chirp_common.CloneModeRadio):
 
         if tx_freq is not None:
             if tx_freq not in GMRS_TX_FREQS:
-                msgs.append(chirp_common.ValidationWarning(
-                    "TX frequency %s is not a GMRS frequency"
-                    % chirp_common.format_freq(tx_freq)))
+                msgs.append(
+                    chirp_common.ValidationWarning(
+                        "TX frequency %s is not a GMRS frequency"
+                        % chirp_common.format_freq(tx_freq)
+                    )
+                )
             if tx_freq in bandplan_na.GMRS_HHONLY:
                 if mem.mode != "NFM":
-                    msgs.append(chirp_common.ValidationWarning(
-                        "GMRS 467 MHz channels require NFM"))
+                    msgs.append(
+                        chirp_common.ValidationWarning(
+                            "GMRS 467 MHz channels require NFM"
+                        )
+                    )
                 if mem.power and mem.power != self.POWER_LEVELS[1]:
-                    msgs.append(chirp_common.ValidationWarning(
-                        "GMRS 467 MHz channels require low power"))
+                    msgs.append(
+                        chirp_common.ValidationWarning(
+                            "GMRS 467 MHz channels require low power"
+                        )
+                    )
 
         return msgs

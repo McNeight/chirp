@@ -26,12 +26,18 @@ import time
 
 from chirp.drivers import yaesu_clone
 from chirp import bitwise, chirp_common, directory, errors, memmap
-from chirp.settings import RadioSetting, RadioSettingGroup, RadioSettings, \
-    RadioSettingValueBoolean, RadioSettingValueList, RadioSettingValueString
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettings,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+)
 
 LOG = logging.getLogger(__name__)
 
-ACK = b'\x06'
+ACK = b"\x06"
 
 
 def _send(ser, data):
@@ -80,8 +86,7 @@ def _download(radio):
 # Channel memory layout — 16 bytes per channel, starting at 0x07D8.
 #
 # Full 16-byte pattern of an unprogrammed channel
-_EMPTY_CHANNEL = (b'\x00\x01\x00\x44\x00\x00\x60\x00'
-                  b'\x0c\x00\x00\x00\xaa\x00\x02\x00')
+_EMPTY_CHANNEL = b"\x00\x01\x00\x44\x00\x00\x60\x00" b"\x0c\x00\x00\x00\xaa\x00\x02\x00"
 
 # Byte 0 — flags:
 #   bit 7    : active (0=masked or empty, 1=active)
@@ -313,7 +318,7 @@ def _upload(radio):
     body_end = 8 + radio._block_lengths[1]
     while cur < body_end:
         length = min(radio._block_size, body_end - cur)
-        _send(radio.pipe, mmap[cur:cur + length])
+        _send(radio.pipe, mmap[cur : cur + length])
         if radio.pipe.read(1) != ACK:
             raise errors.RadioError("Radio did not ack block at %i" % cur)
         cur += length
@@ -326,12 +331,13 @@ def _upload(radio):
             radio.status_fn(status)
 
     # Checksum (1 byte) — send last
-    _send(radio.pipe, mmap[cur:cur + 1])
+    _send(radio.pipe, mmap[cur : cur + 1])
 
 
 @directory.register
 class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
     """Vertex Standard VX-150"""
+
     VENDOR = "Yaesu"
     MODEL = "VX-150"
     BAUD_RATE = 9600
@@ -352,18 +358,20 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
             "1. Turn radio off.\n"
             "2. Connect clone cable to the MIC/SP jack.\n"
             "3. Press and hold [PTT] and [Lamp] while turning the radio on.\n"
-            "4. Rotate the dial to select \"CLONE\", then press [F].\n"
-            "     (\"CLONE\" will appear on the display)\n"
+            '4. Rotate the dial to select "CLONE", then press [F].\n'
+            '     ("CLONE" will appear on the display)\n'
             "5. <b>After clicking OK</b>, hold [PTT] briefly to transmit.\n"
-            "     (\"SENDING\" will appear on the display)\n")
+            '     ("SENDING" will appear on the display)\n'
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect clone cable to the MIC/SP jack.\n"
             "3. Press and hold [PTT] and [Lamp] while turning the radio on.\n"
-            "4. Rotate the dial to select \"CLONE\", then press [F].\n"
-            "     (\"CLONE\" will appear on the display)\n"
+            '4. Rotate the dial to select "CLONE", then press [F].\n'
+            '     ("CLONE" will appear on the display)\n'
             "5. Press [MONI] to receive.\n"
-            "     (\"SAVING\" will appear on the display)\n")
+            '     ("SAVING" will appear on the display)\n'
+        )
         return rp
 
     def get_features(self):
@@ -395,8 +403,8 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
             raise errors.RadioError("Failed to communicate with radio: %s" % e)
         if len(self._mmap) != self._memsize:
             raise errors.RadioError(
-                "Expected %i bytes but got %i" % (
-                    self._memsize, len(self._mmap)))
+                "Expected %i bytes but got %i" % (self._memsize, len(self._mmap))
+            )
         self.process_mmap()
 
     def _checksums(self):
@@ -444,20 +452,21 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
         elif isinstance(number, str):
             offset = 0x1448 + (SPECIALS.index(number) - 1) * 16
         else:
-            offset = 0x07d8 + (number - 1) * 16
-        raw16 = bytes(self._mmap.get_byte_compatible()[offset:offset + 16])
+            offset = 0x07D8 + (number - 1) * 16
+        raw16 = bytes(self._mmap.get_byte_compatible()[offset : offset + 16])
         if raw16 == _EMPTY_CHANNEL:
             mem.empty = True
             return mem
 
-        mem.freq = ((100 + int(raw.freq_mhz)) * 1_000_000
-                    + int(raw.freq_khz) * 10_000
-                    + int(raw.sub_khz) * 2_500)
+        mem.freq = (
+            (100 + int(raw.freq_mhz)) * 1_000_000
+            + int(raw.freq_khz) * 10_000
+            + int(raw.sub_khz) * 2_500
+        )
         mem.skip = "S" if raw.skip else ""
         mem.mode = "NFM" if raw.narrow else "FM"
         mem.duplex = DUPLEX_MAP.get(int(raw.duplex), "")
-        mem.offset = (int(raw.offset_high) * 1_000_000 +
-                      int(raw.offset_low) * 10_000)
+        mem.offset = int(raw.offset_high) * 1_000_000 + int(raw.offset_low) * 10_000
         mem.tmode = TMODE_MAP.get(int(raw.tmode), "")
 
         tone_idx = int(raw.tone)
@@ -480,12 +489,18 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
             mem.name = name.rstrip()
 
         mem.extra = RadioSettingGroup("extra", "Extra")
-        mem.extra.append(RadioSetting(
-            "masked", "Masked",
-            RadioSettingValueBoolean(not bool(raw.active))))
-        mem.extra.append(RadioSetting(
-            "clock_shift", "Clock Shift",
-            RadioSettingValueBoolean(bool(raw.clock_shift))))
+        mem.extra.append(
+            RadioSetting(
+                "masked", "Masked", RadioSettingValueBoolean(not bool(raw.active))
+            )
+        )
+        mem.extra.append(
+            RadioSetting(
+                "clock_shift",
+                "Clock Shift",
+                RadioSettingValueBoolean(bool(raw.clock_shift)),
+            )
+        )
 
         return mem
 
@@ -496,162 +511,284 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic")
         top = RadioSettings(basic)
 
-        basic.append(RadioSetting(
-            "mem_only", "Memory Only Mode",
-            RadioSettingValueBoolean(bool(_settings3.mem_only))))
+        basic.append(
+            RadioSetting(
+                "mem_only",
+                "Memory Only Mode",
+                RadioSettingValueBoolean(bool(_settings3.mem_only)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "power", "Power Level",
-            RadioSettingValueList(
-                POWER_LIST, current_index=int(_settings3.power))))
+        basic.append(
+            RadioSetting(
+                "power",
+                "Power Level",
+                RadioSettingValueList(POWER_LIST, current_index=int(_settings3.power)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "ars", "2: Auto Repeater Shift",
-            RadioSettingValueBoolean(bool(_settings2.ars))))
+        basic.append(
+            RadioSetting(
+                "ars",
+                "2: Auto Repeater Shift",
+                RadioSettingValueBoolean(bool(_settings2.ars)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "step", "6: Tuning Step (kHz)",
-            RadioSettingValueList(
-                STEP_LIST, current_index=int(self._memobj.step))))
+        basic.append(
+            RadioSetting(
+                "step",
+                "6: Tuning Step (kHz)",
+                RadioSettingValueList(STEP_LIST, current_index=int(self._memobj.step)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "scan_resume", "7: Scan Resume",
-            RadioSettingValueList(
-                SCAN_RESUME_LIST, current_index=int(_settings2.scan_resume))))
+        basic.append(
+            RadioSetting(
+                "scan_resume",
+                "7: Scan Resume",
+                RadioSettingValueList(
+                    SCAN_RESUME_LIST, current_index=int(_settings2.scan_resume)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "scan_lamp", "8: Scan Lamp",
-            RadioSettingValueList(
-                SCAN_LAMP_LIST, current_index=int(_settings2.scan_lamp))))
+        basic.append(
+            RadioSetting(
+                "scan_lamp",
+                "8: Scan Lamp",
+                RadioSettingValueList(
+                    SCAN_LAMP_LIST, current_index=int(_settings2.scan_lamp)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "rx_save", "9: RX Save",
-            RadioSettingValueList(
-                RX_SAVE_LIST, current_index=int(_settings2.rx_save))))
+        basic.append(
+            RadioSetting(
+                "rx_save",
+                "9: RX Save",
+                RadioSettingValueList(
+                    RX_SAVE_LIST, current_index=int(_settings2.rx_save)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "tx_save", "10: TX Save",
-            RadioSettingValueBoolean(bool(_settings2.tx_save))))
+        basic.append(
+            RadioSetting(
+                "tx_save",
+                "10: TX Save",
+                RadioSettingValueBoolean(bool(_settings2.tx_save)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "apo", "11: Auto Power Off",
-            RadioSettingValueList(
-                APO_LIST, current_index=int(_settings2.apo))))
+        basic.append(
+            RadioSetting(
+                "apo",
+                "11: Auto Power Off",
+                RadioSettingValueList(APO_LIST, current_index=int(_settings2.apo)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "tx_led", "12: TX LED",
-            RadioSettingValueBoolean(not bool(_settings2.tx_led))))
+        basic.append(
+            RadioSetting(
+                "tx_led",
+                "12: TX LED",
+                RadioSettingValueBoolean(not bool(_settings2.tx_led)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "arts_bp", "14: ARTS Beep",
-            RadioSettingValueList(
-                ARTS_BP_LIST, current_index=int(_settings2.arts_bp))))
+        basic.append(
+            RadioSetting(
+                "arts_bp",
+                "14: ARTS Beep",
+                RadioSettingValueList(
+                    ARTS_BP_LIST, current_index=int(_settings2.arts_bp)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "arts_interval", "15: ARTS Interval",
-            RadioSettingValueList(
-                ARTS_INTERVAL_LIST,
-                current_index=int(_settings2.arts_interval))))
+        basic.append(
+            RadioSetting(
+                "arts_interval",
+                "15: ARTS Interval",
+                RadioSettingValueList(
+                    ARTS_INTERVAL_LIST, current_index=int(_settings2.arts_interval)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "key_beep", "16: Key Beep",
-            RadioSettingValueBoolean(bool(_settings2.key_beep))))
+        basic.append(
+            RadioSetting(
+                "key_beep",
+                "16: Key Beep",
+                RadioSettingValueBoolean(bool(_settings2.key_beep)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "edge_beep", "17: Edge Beep",
-            RadioSettingValueBoolean(bool(_settings2.edge_beep))))
+        basic.append(
+            RadioSetting(
+                "edge_beep",
+                "17: Edge Beep",
+                RadioSettingValueBoolean(bool(_settings2.edge_beep)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "bell", "18: Bell (CTCSS)",
-            RadioSettingValueList(
-                BELL_LIST, current_index=int(_settings2.bell))))
+        basic.append(
+            RadioSetting(
+                "bell",
+                "18: Bell (CTCSS)",
+                RadioSettingValueList(BELL_LIST, current_index=int(_settings2.bell)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "moni_tcall", "19: MONI Button",
-            RadioSettingValueList(
-                MONI_TCALL_LIST, current_index=int(_settings2.moni_tcall))))
+        basic.append(
+            RadioSetting(
+                "moni_tcall",
+                "19: MONI Button",
+                RadioSettingValueList(
+                    MONI_TCALL_LIST, current_index=int(_settings2.moni_tcall)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "rev_hm", "20: REV(HM) Key",
-            RadioSettingValueList(
-                REV_HM_LIST, current_index=int(_settings2.rev_hm))))
+        basic.append(
+            RadioSetting(
+                "rev_hm",
+                "20: REV(HM) Key",
+                RadioSettingValueList(
+                    REV_HM_LIST, current_index=int(_settings2.rev_hm)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "lamp", "21: Lamp Mode",
-            RadioSettingValueList(
-                LAMP_LIST, current_index=int(_settings2.lamp))))
+        basic.append(
+            RadioSetting(
+                "lamp",
+                "21: Lamp Mode",
+                RadioSettingValueList(LAMP_LIST, current_index=int(_settings2.lamp)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "tot", "22: Time-Out Timer",
-            RadioSettingValueList(
-                TOT_LIST, current_index=int(_settings2.tot))))
+        basic.append(
+            RadioSetting(
+                "tot",
+                "22: Time-Out Timer",
+                RadioSettingValueList(TOT_LIST, current_index=int(_settings2.tot)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "bclo", "23: Busy Channel Lockout",
-            RadioSettingValueBoolean(bool(_settings2.bclo))))
+        basic.append(
+            RadioSetting(
+                "bclo",
+                "23: Busy Channel Lockout",
+                RadioSettingValueBoolean(bool(_settings2.bclo)),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "smt_mod", "31: Smart Search Mode",
-            RadioSettingValueList(
-                ["Single", "Continue"],
-                current_index=int(_settings2.smt_mod))))
+        basic.append(
+            RadioSetting(
+                "smt_mod",
+                "31: Smart Search Mode",
+                RadioSettingValueList(
+                    ["Single", "Continue"], current_index=int(_settings2.smt_mod)
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "lock_mode", "32: Lock Mode",
-            RadioSettingValueList(
-                ["Key", "Dial", "K+D", "PTT", "K+P", "D+P", "All"],
-                current_index=int(_settings2.lock_mode) - 1)))
+        basic.append(
+            RadioSetting(
+                "lock_mode",
+                "32: Lock Mode",
+                RadioSettingValueList(
+                    ["Key", "Dial", "K+D", "PTT", "K+P", "D+P", "All"],
+                    current_index=int(_settings2.lock_mode) - 1,
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "dtmf_speed", "34: DTMF Speed",
-            RadioSettingValueList(
-                ["50ms", "100ms"], current_index=int(_settings2.dtmf_speed))))
+        basic.append(
+            RadioSetting(
+                "dtmf_speed",
+                "34: DTMF Speed",
+                RadioSettingValueList(
+                    ["50ms", "100ms"], current_index=int(_settings2.dtmf_speed)
+                ),
+            )
+        )
 
         DTMF_DELAY_LIST = ["450ms", "750ms"]
         DTMF_DELAY_MAP = [0xD3, 0xB5]
-        basic.append(RadioSetting(
-            "dtmf_delay", "35: DTMF Delay",
-            RadioSettingValueList(
-                DTMF_DELAY_LIST,
-                current_index=DTMF_DELAY_MAP.index(
-                    int(_settings2.dtmf_delay)))))
+        basic.append(
+            RadioSetting(
+                "dtmf_delay",
+                "35: DTMF Delay",
+                RadioSettingValueList(
+                    DTMF_DELAY_LIST,
+                    current_index=DTMF_DELAY_MAP.index(int(_settings2.dtmf_delay)),
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "ani_on", "36: ANI",
-            RadioSettingValueBoolean(bool(_settings2.ani_on))))
+        basic.append(
+            RadioSetting(
+                "ani_on", "36: ANI", RadioSettingValueBoolean(bool(_settings2.ani_on))
+            )
+        )
 
         _p_keys = self._memobj.p_keys
-        basic.append(RadioSetting(
-            "p1_key", "P1 Key",
-            RadioSettingValueList(
-                P_KEY_LIST, current_index=int(_p_keys.p1_key) - 1)))
+        basic.append(
+            RadioSetting(
+                "p1_key",
+                "P1 Key",
+                RadioSettingValueList(
+                    P_KEY_LIST, current_index=int(_p_keys.p1_key) - 1
+                ),
+            )
+        )
 
-        basic.append(RadioSetting(
-            "p2_key", "P2 Key",
-            RadioSettingValueList(
-                P_KEY_LIST, current_index=int(_p_keys.p2_key) - 1)))
+        basic.append(
+            RadioSetting(
+                "p2_key",
+                "P2 Key",
+                RadioSettingValueList(
+                    P_KEY_LIST, current_index=int(_p_keys.p2_key) - 1
+                ),
+            )
+        )
 
         ani = RadioSettingGroup("ani", "ANI")
         top.append(ani)
         ani_str = _decode_str(self._memobj.ani, DTMF_CHARSET)
-        ani.append(RadioSetting(
-            "ani", "ANI Code",
-            RadioSettingValueString(0, 16, ani_str, False, DTMF_CHARSET)))
+        ani.append(
+            RadioSetting(
+                "ani",
+                "ANI Code",
+                RadioSettingValueString(0, 16, ani_str, False, DTMF_CHARSET),
+            )
+        )
 
         cwid = RadioSettingGroup("cwid", "CW ID")
         top.append(cwid)
         cwid_str = _decode_str(self._memobj.cwid, CHARSET)
-        cwid.append(RadioSetting(
-            "cwid", "CW ID",
-            RadioSettingValueString(0, 16, cwid_str, False, CHARSET)))
+        cwid.append(
+            RadioSetting(
+                "cwid",
+                "CW ID",
+                RadioSettingValueString(0, 16, cwid_str, False, CHARSET),
+            )
+        )
 
         dtmf = RadioSettingGroup("dtmf", "DTMF")
         top.append(dtmf)
         for i in range(9):
             dtmf_str = _decode_str(self._memobj.dtmf[i].digits, DTMF_CHARSET)
-            dtmf.append(RadioSetting(
-                "dtmf_%d" % (i + 1), "D%d" % (i + 1),
-                RadioSettingValueString(0, 16, dtmf_str, False, DTMF_CHARSET)))
+            dtmf.append(
+                RadioSetting(
+                    "dtmf_%d" % (i + 1),
+                    "D%d" % (i + 1),
+                    RadioSettingValueString(0, 16, dtmf_str, False, DTMF_CHARSET),
+                )
+            )
 
         return top
 
@@ -672,18 +809,32 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
                 self._memobj.step = element.value
             elif name == "tx_led":
                 _settings2.tx_led = not bool(element.value)
-            elif name in ("scan_resume", "scan_lamp", "ars", "rx_save",
-                          "tx_save", "apo", "ani_on", "dtmf_speed", "bclo",
-                          "edge_beep", "key_beep", "arts_interval", "arts_bp",
-                          "bell", "moni_tcall", "rev_hm", "lamp", "tot",
-                          "smt_mod"):
+            elif name in (
+                "scan_resume",
+                "scan_lamp",
+                "ars",
+                "rx_save",
+                "tx_save",
+                "apo",
+                "ani_on",
+                "dtmf_speed",
+                "bclo",
+                "edge_beep",
+                "key_beep",
+                "arts_interval",
+                "arts_bp",
+                "bell",
+                "moni_tcall",
+                "rev_hm",
+                "lamp",
+                "tot",
+                "smt_mod",
+            ):
                 setattr(_settings2, name, element.value)
             elif name == "ani":
-                self._memobj.ani = _encode_str(
-                    str(element.value), DTMF_CHARSET, 16)
+                self._memobj.ani = _encode_str(str(element.value), DTMF_CHARSET, 16)
             elif name == "cwid":
-                self._memobj.cwid = _encode_str(
-                    str(element.value), CHARSET, 16)
+                self._memobj.cwid = _encode_str(str(element.value), CHARSET, 16)
             elif name == "lock_mode":
                 _settings2.lock_mode = int(element.value) + 1
             elif name == "dtmf_delay":
@@ -693,7 +844,8 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
             elif name.startswith("dtmf_"):
                 i = int(name.split("_")[1]) - 1
                 self._memobj.dtmf[i].digits = _encode_str(
-                    str(element.value), DTMF_CHARSET, 16)
+                    str(element.value), DTMF_CHARSET, 16
+                )
 
     def set_memory(self, mem):
         number = mem.extd_number or mem.number
@@ -755,13 +907,19 @@ class VX150Radio(yaesu_clone.YaesuCloneModeRadio):
         raw.offset_low = (offset_hz % 1_000_000) // 10_000
 
         # Tone / DCS
-        raw.tone = (chirp_common.OLD_TONES.index(mem.rtone)
-                    if mem.rtone in chirp_common.OLD_TONES else 0)
-        raw.dtcs = (chirp_common.DTCS_CODES.index(mem.dtcs)
-                    if mem.dtcs in chirp_common.DTCS_CODES else 0)
+        raw.tone = (
+            chirp_common.OLD_TONES.index(mem.rtone)
+            if mem.rtone in chirp_common.OLD_TONES
+            else 0
+        )
+        raw.dtcs = (
+            chirp_common.DTCS_CODES.index(mem.dtcs)
+            if mem.dtcs in chirp_common.DTCS_CODES
+            else 0
+        )
 
         # Bytes 10-15: constant across all programmed channels
-        for i, b in enumerate([0x00, 0x00, 0xaa, 0x00, 0x02, 0x00]):
+        for i, b in enumerate([0x00, 0x00, 0xAA, 0x00, 0x02, 0x00]):
             raw.unknown5[i] = b
 
         # Name

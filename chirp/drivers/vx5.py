@@ -81,11 +81,13 @@ TMODES = ["", "Tone", "TSQL", "DTCS"]
 DUPLEX = ["", "-", "+", "split"]
 MODES = ["FM", "AM", "WFM"]
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0]
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=5.00),
-                chirp_common.PowerLevel("L3", watts=2.50),
-                chirp_common.PowerLevel("L2", watts=1.00),
-                chirp_common.PowerLevel("L1", watts=0.05)]
-SPECIALS = ["%s%d" % (c, i + 1) for i in range(0, 10) for c in ('L', 'U')]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=5.00),
+    chirp_common.PowerLevel("L3", watts=2.50),
+    chirp_common.PowerLevel("L2", watts=1.00),
+    chirp_common.PowerLevel("L1", watts=0.05),
+]
+SPECIALS = ["%s%d" % (c, i + 1) for i in range(0, 10) for c in ("L", "U")]
 
 
 class VX5BankModel(chirp_common.BankModel):
@@ -95,7 +97,7 @@ class VX5BankModel(chirp_common.BankModel):
     def get_mappings(self):
         banks = []
         for i in range(0, self.get_num_mappings()):
-            bank = chirp_common.Bank(self, "%i" % (i+1), "MG%i" % (i+1))
+            bank = chirp_common.Bank(self, "%i" % (i + 1), "MG%i" % (i + 1))
             bank.index = i
             banks.append(bank)
         return banks
@@ -130,9 +132,11 @@ class VX5BankModel(chirp_common.BankModel):
                     remaining_members += 1
 
         if not found:
-            raise Exception(_("Memory {num} not in "
-                              "bank {bank}").format(num=memory.number,
-                                                    bank=bank))
+            raise Exception(
+                _("Memory {num} not in " "bank {bank}").format(
+                    num=memory.number, bank=bank
+                )
+            )
         if not remaining_members:
             _bank_used.current_member = 0xFF
 
@@ -148,14 +152,13 @@ class VX5BankModel(chirp_common.BankModel):
         for member in _members:
             if member.status == 0xFF:
                 continue
-            memories.append(self._radio.get_memory(member.channel+1))
+            memories.append(self._radio.get_memory(member.channel + 1))
         return memories
 
     def get_memory_mappings(self, memory):
         banks = []
         for bank in self.get_mappings():
-            if memory.number in [x.number for x in
-                                 self.get_mapping_memories(bank)]:
+            if memory.number in [x.number for x in self.get_mapping_memories(bank)]:
                 banks.append(bank)
         return banks
 
@@ -163,6 +166,7 @@ class VX5BankModel(chirp_common.BankModel):
 @directory.register
 class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu VX-5"""
+
     BAUD_RATE = 9600
     VENDOR = "Yaesu"
     MODEL = "VX-5"
@@ -186,9 +190,11 @@ class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.valid_tuning_steps = STEPS
         rf.valid_duplexes = DUPLEX
         rf.memory_bounds = (1, 220)
-        rf.valid_bands = [(500000,    16000000),
-                          (48000000,  729000000),
-                          (800000000, 999000000)]
+        rf.valid_bands = [
+            (500000, 16000000),
+            (48000000, 729000000),
+            (800000000, 999000000),
+        ]
         rf.valid_skips = ["", "S", "P"]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_name_length = 8
@@ -201,24 +207,20 @@ class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def get_memory(self, number):
         mem = chirp_common.Memory()
         if isinstance(number, str):
             mem.number = len(self._memobj.memory) + SPECIALS.index(number) + 1
             mem.extd_number = number
-            _mem = self._memobj.special[mem.number -
-                                        len(self._memobj.memory) - 1]
-            _flg = self._memobj.specialflag[mem.number -
-                                            len(self._memobj.memory) - 1]
+            _mem = self._memobj.special[mem.number - len(self._memobj.memory) - 1]
+            _flg = self._memobj.specialflag[mem.number - len(self._memobj.memory) - 1]
         elif number > len(self._memobj.memory):
             mem.number = number
             mem.extd_number = SPECIALS[number - len(self._memobj.memory) - 1]
-            _mem = self._memobj.special[mem.number -
-                                        len(self._memobj.memory) - 1]
-            _flg = self._memobj.specialflag[mem.number -
-                                            len(self._memobj.memory) - 1]
+            _mem = self._memobj.special[mem.number - len(self._memobj.memory) - 1]
+            _flg = self._memobj.specialflag[mem.number - len(self._memobj.memory) - 1]
         else:
             mem.number = number
             _mem = self._memobj.memory[mem.number - 1]
@@ -251,10 +253,8 @@ class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
 
     def set_memory(self, mem):
         if mem.number > len(self._memobj.memory):
-            _mem = self._memobj.special[mem.number -
-                                        len(self._memobj.memory) - 1]
-            _flg = self._memobj.specialflag[mem.number -
-                                            len(self._memobj.memory) - 1]
+            _mem = self._memobj.special[mem.number - len(self._memobj.memory) - 1]
+            _flg = self._memobj.specialflag[mem.number - len(self._memobj.memory) - 1]
         else:
             _mem = self._memobj.memory[mem.number - 1]
             _flg = self._memobj.flag[mem.number - 1]
@@ -304,7 +304,8 @@ class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
             _mem.tone = chirp_common.OLD_TONES.index(mem.rtone)
         except ValueError:
             raise errors.UnsupportedToneError(
-                ("This radio does not support tone %s" % mem.rtone))
+                ("This radio does not support tone %s" % mem.rtone)
+            )
         _mem.dtcs = chirp_common.DTCS_CODES.index(mem.dtcs)
 
         _flg.skip = mem.skip == "S"
@@ -317,18 +318,20 @@ class VX5Radio(yaesu_clone.YaesuCloneModeRadio):
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/EAR jack.\n"
             "3. Press and hold in the [F/W] key while turning the radio on\n"
-            "    (\"CLONE\" will appear on the display).\n"
+            '    ("CLONE" will appear on the display).\n'
             "4. <b>After clicking OK</b>, press the [VFO(DW)SC] key to"
             " receive\n"
-            "    the image from the radio.\n")
+            "    the image from the radio.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/EAR jack.\n"
             "3. Press and hold in the [F/W] key while turning the radio on\n"
-            "    (\"CLONE\" will appear on the display).\n"
-            "4. Press the [MR(SKP)SC] key (\"CLONE WAIT\" will appear\n"
+            '    ("CLONE" will appear on the display).\n'
+            '4. Press the [MR(SKP)SC] key ("CLONE WAIT" will appear\n'
             "    on the LCD).\n"
-            "5. Click OK to send image to radio.\n")
+            "5. Click OK to send image to radio.\n"
+        )
         return rp
 
     @classmethod

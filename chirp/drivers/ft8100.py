@@ -23,22 +23,22 @@ LOG = logging.getLogger(__name__)
 
 TONES = chirp_common.OLD_TONES
 TMODES = ["", "Tone"]
-MODES = ['FM', 'AM']
+MODES = ["FM", "AM"]
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0]
 DUPLEX = ["", "-", "+", "split"]
 # "M" for masked memories, which are invisible until un-masked
 SKIPS = ["", "S", "M"]
-POWER_LEVELS_VHF = [chirp_common.PowerLevel("Low", watts=5),
-                    chirp_common.PowerLevel("Mid", watts=20),
-                    chirp_common.PowerLevel("High", watts=50)]
-POWER_LEVELS_UHF = [chirp_common.PowerLevel("Low", watts=5),
-                    chirp_common.PowerLevel("Mid", watts=20),
-                    chirp_common.PowerLevel("High", watts=35)]
-SPECIALS = {'1L': -1,
-            '1U': -2,
-            '2L': -3,
-            '2U': -4,
-            'Home': -5}
+POWER_LEVELS_VHF = [
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=20),
+    chirp_common.PowerLevel("High", watts=50),
+]
+POWER_LEVELS_UHF = [
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("Mid", watts=20),
+    chirp_common.PowerLevel("High", watts=35),
+]
+SPECIALS = {"1L": -1, "1U": -2, "2L": -3, "2U": -4, "Home": -5}
 
 MEM_FORMAT = """
 #seekto 0x{skips:X};
@@ -70,22 +70,233 @@ struct mem_struct memory[99];
 @directory.register
 class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
     """Implementation for Yaesu FT-8100"""
+
     MODEL = "FT-8100"
 
     _memstart = 0
     _memsize = 2968
-    _block_lengths = [10, 32, 114, 101, 101, 97, 128, 128, 128, 128, 128, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-                      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 1]
+    _block_lengths = [
+        10,
+        32,
+        114,
+        101,
+        101,
+        97,
+        128,
+        128,
+        128,
+        128,
+        128,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        1,
+    ]
 
     @classmethod
     def get_prompts(cls):
@@ -93,20 +304,24 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
         rp.pre_download = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"F/W\" button, turn radio on.\n"
-            "4. <b>After clicking OK</b>, press \"RPT\" to send image.\n")
+            '3. While holding "F/W" button, turn radio on.\n'
+            '4. <b>After clicking OK</b>, press "RPT" to send image.\n'
+        )
         rp.pre_upload = _(
             "1. Turn Radio off.\n"
             "2. Connect data cable.\n"
-            "3. While holding \"F/W\" button, turn radio on.\n"
-            "4. Press \"REV\" to receive image.\n"
-            "5. Click OK to start transfer.\n")
+            '3. While holding "F/W" button, turn radio on.\n'
+            '4. Press "REV" to receive image.\n'
+            "5. Click OK to start transfer.\n"
+        )
         return rp
 
     @classmethod
     def match_model(cls, data, path):
-        if (len(data) == cls._memsize and
-                data[1:10] == b'\x01\x01\x07\x08\x02\x01\x01\x00\x01'):
+        if (
+            len(data) == cls._memsize
+            and data[1:10] == b"\x01\x01\x07\x08\x02\x01\x01\x00\x01"
+        ):
             return True
 
         return False
@@ -125,7 +340,7 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.valid_tmodes = list(TMODES)
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_power_levels = POWER_LEVELS_VHF
-        rf.has_sub_devices = self.VARIANT == ''
+        rf.has_sub_devices = self.VARIANT == ""
 
         rf.valid_tuning_steps = list(STEPS)
         # This is not implemented properly, so don't expose it
@@ -133,11 +348,10 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
 
         # This driver doesn't properly support the upper bound of 1300MHz
         # so limit us to 999MHz
-        if self.VARIANT == 'VHF':
+        if self.VARIANT == "VHF":
             rf.valid_bands = [(110000000, 280000000)]
         else:
-            rf.valid_bands = [(280000000, 550000000),
-                              (750000000, 999000000)]
+            rf.valid_bands = [(280000000, 550000000), (750000000, 999000000)]
 
         # This is not actually implemented, so don't expose it
         # rf.valid_skips = SKIPS
@@ -165,9 +379,9 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
         if not self._memstart:
             return
 
-        mem_format = MEM_FORMAT.format(memories=self._memstart,
-                                       skips=self._skipstart,
-                                       enables=self._enablestart)
+        mem_format = MEM_FORMAT.format(
+            memories=self._memstart, skips=self._skipstart, enables=self._enablestart
+        )
 
         self._memobj = bitwise.parse(mem_format, self._mmap)
 
@@ -202,7 +416,7 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
         if not self._memobj.enables[byte] & bit and number != 1:
             mem.empty = True
         elif number == 1:
-            mem.immutable = ['empty']
+            mem.immutable = ["empty"]
 
         return mem
 
@@ -247,7 +461,7 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
     # enabling VHF M01, but no bit for UHF01, and the enables are shifted down,
     # so that the first bit is for M02
     def _bit_byte(self, number):
-        if self.VARIANT == 'VHF':
+        if self.VARIANT == "VHF":
             bit = 1 << ((number - 1) % 8)
             byte = (number - 1) // 8
         else:
@@ -259,6 +473,7 @@ class FT8100Radio(yaesu_clone.YaesuCloneModeRadio):
 
 class FT8100RadioVHF(FT8100Radio):
     """Yaesu FT-8100 VHF subdevice"""
+
     VARIANT = "VHF"
     _memstart = 0x447
     _skipstart = 0x02D
@@ -267,6 +482,7 @@ class FT8100RadioVHF(FT8100Radio):
 
 class FT8100RadioUHF(FT8100Radio):
     """Yaesu FT-8100 UHF subdevice"""
+
     VARIANT = "UHF"
     _memstart = 0x7E6
     _skipstart = 0x03A
@@ -297,7 +513,7 @@ def __clone_out(radio):
     pos = 0
     for block in radio._block_lengths:
         LOG.debug("\nSending %i-%i" % (pos, pos + block))
-        out = radio.get_mmap()[pos:pos + block]
+        out = radio.get_mmap()[pos : pos + block]
 
         # need to chew byte-by-byte here or else we lose the ACK...not sure why
         for b in out:

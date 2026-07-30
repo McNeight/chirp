@@ -65,8 +65,7 @@ class TMV71ARadio(chirp_common.CloneModeRadio):
             try:
                 number = tmv71_ll.V71_SPECIAL[number]
             except KeyError:
-                raise errors.InvalidMemoryLocation("Unknown channel %s" %
-                                                   number)
+                raise errors.InvalidMemoryLocation("Unknown channel %s" % number)
 
         return tmv71_ll.get_memory(self._mmap, number)
 

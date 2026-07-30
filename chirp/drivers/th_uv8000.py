@@ -23,10 +23,16 @@ import logging
 import math
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -221,12 +227,14 @@ struct {
 """
 
 MEM_SIZE = 0x1300
-BLOCK_SIZE = 0x10   # can read 0x20, but must write 0x10
+BLOCK_SIZE = 0x10  # can read 0x20, but must write 0x10
 STIMEOUT = 2
 BAUDRATE = 4800
 # Channel power: 2 levels
-POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=5.00),
-                chirp_common.PowerLevel("High", watts=10.00)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=5.00),
+    chirp_common.PowerLevel("High", watts=10.00),
+]
 
 LIST_RECVMODE = ["QT/DQT", "QT/DQT + Signaling"]
 LIST_COLOR = ["Off", "Orange", "Blue", "Purple"]
@@ -246,7 +254,7 @@ LIST_BW = ["Narrow", "Wide"]
 LIST_SHIFT = ["off", "+", "-", ""]
 STEPS = [0.5, 2.5, 5.0, 6.25, 10.0, 12.5, 25.0, 37.5, 50.0, 100.0]
 LIST_STEPS = [str(x) for x in STEPS]
-LIST_VOXDLY = ["0.5", "1.0", "2.0", "3.0"]      # LISTS must be strings
+LIST_VOXDLY = ["0.5", "1.0", "2.0", "3.0"]  # LISTS must be strings
 LIST_PTT = ["Both", "EoT", "BoT", "Off"]
 
 
@@ -295,7 +303,7 @@ def _make_frame(cmd, addr, length, data=""):
 
 
 def _recv(radio, addr, length):
-    """Get data from the radio """
+    """Get data from the radio"""
 
     data = _rawrecv(radio, length)
 
@@ -338,11 +346,11 @@ def _do_ident(radio):
         raise errors.RadioError("Unexpected response from radio")
     magic = b"\x02"
     _rawsend(radio, magic)
-    ack = _rawrecv(radio, 1)    # s/b: 0x50
+    ack = _rawrecv(radio, 1)  # s/b: 0x50
     magic = _rawrecv(radio, 7)  # s/b TC88...
     magic = b"MTC88CUMHS3E7BN-"
     _rawsend(radio, magic)
-    ack = _rawrecv(radio, 1)    # s/b 0x80
+    ack = _rawrecv(radio, 1)  # s/b 0x80
     magic = b"\x06"
     _rawsend(radio, magic)
     ack = _rawrecv(radio, 1)
@@ -411,7 +419,7 @@ def _upload(radio):
     # The fun starts here
     for addr in range(0, MEM_SIZE, BLOCK_SIZE):
         # Sending the data
-        data = radio.get_mmap()[addr:addr + BLOCK_SIZE]
+        data = radio.get_mmap()[addr : addr + BLOCK_SIZE]
 
         frame = _make_frame(b"W", addr, BLOCK_SIZE, data)
         # LOG.warning("Frame:%s:" % util.hexprint(frame))
@@ -439,18 +447,18 @@ def set_tone(_mem, txrx, ctdt, tval, pol):
     # tval = integer tone freq (*10) or DTCS code
     # pol = string for DTCS polarity "R" or "N"
     xv = int(str(tval), 16)
-    if txrx:        # True = set rxtones
+    if txrx:  # True = set rxtones
         _mem.rxtone[0] = xv & 0xFF  # Low byte
-        _mem.rxtone[1] = (xv >> 8)   # Hi byte
-        if not ctdt:    # dtcs,
+        _mem.rxtone[1] = xv >> 8  # Hi byte
+        if not ctdt:  # dtcs,
             if pol == "R":
                 _mem.rxtone[1] = _mem.rxtone[1] | 0xC0
             else:
                 _mem.rxtone[1] = _mem.rxtone[1] | 0x80
-    else:           # txtones
+    else:  # txtones
         _mem.txtone[0] = xv & 0xFF  # Low byte
-        _mem.txtone[1] = (xv >> 8)
-        if not ctdt:    # dtcs
+        _mem.txtone[1] = xv >> 8
+        if not ctdt:  # dtcs
             if pol == "R":
                 _mem.txtone[1] = _mem.txtone[1] | 0xC0
             else:
@@ -467,11 +475,11 @@ def _do_map(chn, sclr, mary):
     bv = (chn - 1) % 8
     msk = 1 << bv
     mapbit = sclr
-    if sclr == 1:    # Set the bit
+    if sclr == 1:  # Set the bit
         mary[ndx] = mary[ndx] | msk
     elif sclr == 0:  # clear
-        mary[ndx] = mary[ndx] & (~ msk)     # ~ is complement
-    else:       # return current bit state
+        mary[ndx] = mary[ndx] & (~msk)  # ~ is complement
+    else:  # return current bit state
         mapbit = 0
         if (mary[ndx] & msk) > 0:
             mapbit = 1
@@ -481,6 +489,7 @@ def _do_map(chn, sclr, mary):
 @directory.register
 class THUV8000Radio(chirp_common.CloneModeRadio):
     """TYT UV8000D Radio"""
+
     VENDOR = "TYT"
     MODEL = "TH-UV8000"
     MODES = ["NFM", "FM"]
@@ -491,44 +500,44 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
     # NOTE: SE Model supports 220-260 MHz
     # The following bands are the the range the radio is capable of,
     #   not the legal FCC amateur bands
-    VALID_BANDS = [(87500000, 107900000), (136000000, 174000000),
-                   (220000000, 260000000), (400000000, 520000000)]
+    VALID_BANDS = [
+        (87500000, 107900000),
+        (136000000, 174000000),
+        (220000000, 260000000),
+        (400000000, 520000000),
+    ]
 
     # Valid chars on the LCD
-    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + \
-        "`!\"#$%&'()*+,-./:;<=>?@[]^_"
+    VALID_CHARS = chirp_common.CHARSET_ALPHANUMERIC + "`!\"#$%&'()*+,-./:;<=>?@[]^_"
 
     # Special Channels Declaration
     # WARNING Indecis are hard wired in get/set_memory code !!!
     # Channels print in + increasing index order (most negative first)
-    SPECIAL_MEMORIES = {
-       "UpVFO": -2,
-       "LoVFO": -1
-    }
+    SPECIAL_MEMORIES = {"UpVFO": -2, "LoVFO": -1}
     FIRST_FREQ_INDEX = -1
     LAST_FREQ_INDEX = -2
 
-    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(),
-                                    SPECIAL_MEMORIES.keys()))
+    SPECIAL_MEMORIES_REV = dict(zip(SPECIAL_MEMORIES.values(), SPECIAL_MEMORIES.keys()))
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.info = \
-            ('Remember the # T-R key is the VFO/MEM toggle.\n')
+        rp.info = "Remember the # T-R key is the VFO/MEM toggle.\n"
 
         rp.pre_download = _(
             "Follow these instructions to download the radio memory:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio, volume @ 50%\n"
-            "4 - CHIRP Menu - Radio - Download from radio\n")
+            "4 - CHIRP Menu - Radio - Download from radio\n"
+        )
         rp.pre_upload = _(
             "Follow these instructions to upload the radio memory:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio, volume @ 50%\n"
-            "4 - CHIRP Menu - Radio - Upload to radio\n")
+            "4 - CHIRP Menu - Radio - Upload to radio\n"
+        )
         return rp
 
     def get_features(self):
@@ -537,8 +546,8 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rf.has_settings = True
         rf.has_bank = False
         rf.has_comment = False
-        rf.has_nostep_tuning = True     # Radio accepts any entered freq
-        rf.has_tuning_step = False      # Not as chan feature
+        rf.has_nostep_tuning = True  # Radio accepts any entered freq
+        rf.has_tuning_step = False  # Not as chan feature
         rf.can_odd_split = False
         rf.has_name = True
         rf.has_offset = True
@@ -553,10 +562,16 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rf.valid_modes = self.MODES
         rf.valid_characters = self.VALID_CHARS
         rf.valid_duplexes = ["-", "+", "off", ""]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'DTCS', 'Cross']
-        rf.valid_cross_modes = ["Tone->Tone", "DTCS->", "->DTCS",
-                                "Tone->DTCS", "DTCS->Tone", "->Tone",
-                                "DTCS->DTCS"]
+        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "DTCS->",
+            "->DTCS",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "DTCS->DTCS",
+        ]
         rf.valid_skips = []
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_dtcs_codes = self.DTCS_CODES
@@ -576,9 +591,8 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = memmap.MemoryMapBytes(data)
         self.process_mmap()
 
@@ -592,9 +606,8 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def process_mmap(self):
         """Process the mem map into the mem object"""
@@ -633,7 +646,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         """Convert raw channel memory data into UI columns"""
         mem.extra = RadioSettingGroup("extra", "Extra")
 
-        if _mem.get_raw()[0] == 0xff:
+        if _mem.get_raw()[0] == 0xFF:
             mem.empty = True
             return mem
 
@@ -655,7 +668,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         else:
             # Digital
             rxmode = "DTCS"
-            tonehi = int(str(_mem.rxtone[1] & 0x3f))
+            tonehi = int(str(_mem.rxtone[1] & 0x3F))
             tonelo = int(str(_mem.rxtone[0])[2:])
             mem.rx_dtcs = int(tonehi * 100 + tonelo)
             if (_mem.rxtone[1] & 0x40) != 0:
@@ -672,7 +685,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         else:
             # Digital
             txmode = "DTCS"
-            tonehi = int(str(_mem.txtone[1] & 0x3f))
+            tonehi = int(str(_mem.txtone[1] & 0x3F))
             tonelo = int(str(_mem.txtone[0])[2:])
             mem.dtcs = int(tonehi * 100 + tonelo)
             if (_mem.txtone[1] & 0x40) != 0:
@@ -692,11 +705,11 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         mem.dtcs_polarity = "".join(dtcs_pol)
 
         # Now test the mem.number to process special vs normal
-        if mem.number >= 0:      # Normal
+        if mem.number >= 0:  # Normal
             mem.name = ""
-            for i in range(self.NAME_LENGTH):   # 0 - 6
+            for i in range(self.NAME_LENGTH):  # 0 - 6
                 mem.name += chr(_mem.name[i] + 32)
-            mem.name = mem.name.rstrip()    # remove trailing spaces
+            mem.name = mem.name.rstrip()  # remove trailing spaces
 
             if _mem.txfreq == 0xFFFFFFFF:
                 # TX freq not set
@@ -706,8 +719,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                 mem.duplex = ""
                 mem.offset = 0
             else:
-                mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) \
-                    and "-" or "+"
+                mem.duplex = int(_mem.rxfreq) > int(_mem.txfreq) and "-" or "+"
                 mem.offset = abs(int(_mem.rxfreq) - int(_mem.txfreq)) * 10
 
             if _do_map(mem.number, 2, self._memobj.skpchns.map) > 0:
@@ -715,7 +727,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             else:
                 mem.skip = ""
 
-        else:       # specials VFO
+        else:  # specials VFO
             mem.name = "----"
             mem.duplex = LIST_SHIFT[_mem.duplx]
             mem.offset = int(_mem.ofst) * 10
@@ -723,7 +735,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         # End if specials
 
         # Channel Extra settings: Only Boolean & List methods, no call-backs
-        rx = RadioSettingValueBoolean(bool(not _mem.bcl))   # Inverted bool
+        rx = RadioSettingValueBoolean(bool(not _mem.bcl))  # Inverted bool
         # NOTE: first param of RadioSetting is the object attribute name
         rset = RadioSetting("bcl", "Busy Channel Lockout", rx)
         mem.extra.append(rset)
@@ -762,8 +774,9 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             # immutable = ["number", "extd_number", "name"]
             mem = self._get_memory(mem, _mem)
         else:
-            raise Exception("Sorry, you can't edit that special"
-                            " memory channel %i." % mem.number)
+            raise Exception(
+                "Sorry, you can't edit that special" " memory channel %i." % mem.number
+            )
 
         # mem.immutable = immutable
 
@@ -775,14 +788,14 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         # These first attributes are common to all types
         if mem.empty:
             if mem.number > 0:
-                _mem.rxfreq = 0xffffffff
+                _mem.rxfreq = 0xFFFFFFFF
                 # Set 'empty' and 'skip' bits
                 _do_map(mem.number, 1, self._memobj.chnmap.map)
                 _do_map(mem.number, 1, self._memobj.skpchns.map)
             elif mem.number == -2:  # upper VFO Freq
-                _mem.rxfreq = 14652000   # VHF National Calling freq
+                _mem.rxfreq = 14652000  # VHF National Calling freq
             elif mem.number == -1:  # lower VFO
-                _mem.rxfreq = 44600000   # UHF National Calling freq
+                _mem.rxfreq = 44600000  # UHF National Calling freq
             return
 
         _mem.rxfreq = mem.freq / 10
@@ -833,7 +846,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         elif txmode == "DTCS":
             i = set_tone(_mem, False, False, mem.dtcs, sx)
 
-        if mem.number > 0:      # Normal chans
+        if mem.number > 0:  # Normal chans
             for i in range(self.NAME_LENGTH):
                 pq = ord(mem.name.ljust(self.NAME_LENGTH)[i]) - 32
                 if pq < 0:
@@ -857,7 +870,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             else:
                 _do_map(mem.number, 0, self._memobj.skpchns.map)
 
-        else:    # Freq (VFO) chans
+        else:  # Freq (VFO) chans
             _mem.duplx = 0
             _mem.ofst = 0
             if mem.duplex == "+":
@@ -867,7 +880,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                 _mem.duplx = 2
                 _mem.ofst = mem.offset / 10
             for i in range(self.NAME_LENGTH):
-                _mem.name[i] = 0xff
+                _mem.name[i] = 0xFF
 
         # All mem.extra << Once the channel is defined
         for setting in mem.extra:
@@ -880,21 +893,21 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                 setattr(_mem, "ptt", val)
             elif setting.get_name() == "epilogue":  # not inverted bool
                 setattr(_mem, setting.get_name(), setting.value)
-            else:       # inverted booleans
+            else:  # inverted booleans
                 setattr(_mem, setting.get_name(), not setting.value)
 
     def _set_special(self, mem):
 
         cur_mem = self._get_special(self.SPECIAL_MEMORIES_REV[mem.number])
 
-        if mem.number == -2:    # upper frq[1]
+        if mem.number == -2:  # upper frq[1]
             _mem = self._memobj.frq[1]
         elif mem.number == -1:  # lower frq[0]
             _mem = self._memobj.frq[0]
         else:
             raise Exception("Sorry, you can't edit that special memory.")
 
-        self._set_memory(mem, _mem)     # Now update the _mem
+        self._set_memory(mem, _mem)  # Now update the _mem
 
     def _set_normal(self, mem):
         _mem = self._memobj.chan_mem[mem.number - 1]
@@ -956,17 +969,17 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             # cknt is char count, 2/word; mxw is max WORDS
             stx = ""
             mty = True
-            for i in range(mxw):    # unpack entire array
-                nib = (cary[i] & 0xf0) >> 4  # LE, Hi nib first
-                if nib != 0xf:
+            for i in range(mxw):  # unpack entire array
+                nib = (cary[i] & 0xF0) >> 4  # LE, Hi nib first
+                if nib != 0xF:
                     mty = False
-                stx += format(nib, '0X')
-                nib = cary[i] & 0xf
-                if nib != 0xf:
+                stx += format(nib, "0X")
+                nib = cary[i] & 0xF
+                if nib != 0xF:
                     mty = False
-                stx += format(nib, '0X')
+                stx += format(nib, "0X")
             stx = stx[:cknt]
-            if mty:     # all ff, empty string
+            if mty:  # all ff, empty string
                 sty = ""
             else:
                 # Convert E to #, F to *
@@ -990,7 +1003,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             cknt = 0
             ary = []
             stx = str(setting.value).upper()
-            stx = stx.strip()       # trim spaces
+            stx = stx.strip()  # trim spaces
             # Remove illegal characters first
             sty = ""
             for j in range(0, len(stx)):
@@ -1004,65 +1017,65 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                         chrv = 0xF
                     else:
                         chrv = int(sty[j], 16)
-                    cknt += 1      # char count
-                else:   # pad to mxl, cknt does not increment
+                    cknt += 1  # char count
+                else:  # pad to mxl, cknt does not increment
                     chrv = 0xF
                 if (j % 2) == 0:  # odd count (0-based), high nibble
                     hi_nib = chrv
-                else:   # even count, lower nibble
+                else:  # even count, lower nibble
                     lo_nib = chrv
                     nibs = lo_nib | (hi_nib << 4)
-                    ary.append(nibs)    # append word
+                    ary.append(nibs)  # append word
             setattr(obj, atrstr, ary)
             if setting.get_name() != "setstuf.stuncode":  # cknt is actual
                 if cknt > 0:
                     cknt = cknt - 1
                 else:
-                    cknt = 0xf
+                    cknt = 0xF
             setattr(obj, atrcnt, cknt)
             return
 
         def myset_freq(setting, obj, atrb, mult):
-            """ Callback to set frequency by applying multiplier"""
+            """Callback to set frequency by applying multiplier"""
             value = int(float(str(setting.value)) * mult)
             setattr(obj, atrb, value)
             return
 
         def my_invbool(setting, obj, atrb):
-            """Callback to invert the boolean """
+            """Callback to invert the boolean"""
             bval = not setting.value
             setattr(obj, atrb, bval)
             return
 
         def my_batsav(setting, obj, atrb):
-            """Callback to set batsav attribute """
+            """Callback to set batsav attribute"""
             stx = str(setting.value)  # Off, 1:1...
             if stx == "Off":
-                value = 0x1     # bit value 4 clear, ratio 1 = 1:2
+                value = 0x1  # bit value 4 clear, ratio 1 = 1:2
             elif stx == "1:1":
-                value = 0x4     # On, ratio 0 = 1:1
+                value = 0x4  # On, ratio 0 = 1:1
             elif stx == "1:2":
-                value = 0x5     # On, ratio 1 = 1:2
+                value = 0x5  # On, ratio 1 = 1:2
             elif stx == "1:3":
-                value = 0x6     # On, ratio 2 = 1:3
+                value = 0x6  # On, ratio 2 = 1:3
             else:
-                value = 0x7     # On, ratio 3 = 1:4
+                value = 0x7  # On, ratio 3 = 1:4
             # LOG.warning("Batsav stx:%s:, value= %x" % (stx, value))
             setattr(obj, atrb, value)
             return
 
         def my_manfrq(setting, obj, atrb):
-            """Callback to set 2-byte manfrqyn yes/no """
+            """Callback to set 2-byte manfrqyn yes/no"""
             # LOG.warning("Manfrq value = %d" % setting.value)
             if (str(setting.value)) == "No":
-                value = 0xff
+                value = 0xFF
             else:
-                value = 0xaa
+                value = 0xAA
             setattr(obj, atrb, value)
             return
 
         def myset_mask(setting, obj, atrb, nx):
-            if bool(setting.value):     # Enabled = 0
+            if bool(setting.value):  # Enabled = 0
                 vx = 0
             else:
                 vx = 1
@@ -1070,7 +1083,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             return
 
         def myset_fmfrq(setting, obj, atrb, nx):
-            """ Callback to set xx.x FM freq in memory as xx.x * 40"""
+            """Callback to set xx.x FM freq in memory as xx.x * 40"""
             # in-valid even kHz freqs are allowed; to satisfy run_tests
             vx = float(str(setting.value))
             vx = int(vx * 40)
@@ -1094,7 +1107,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rset = RadioSetting("setstuf.freqstep", "VFO Tune Step (kHz)", rx)
         basic.append(rset)
 
-        rx = RadioSettingValueBoolean(bool(_sets.dbw))     # true logic
+        rx = RadioSettingValueBoolean(bool(_sets.dbw))  # true logic
         rset = RadioSetting("setstuf.dbw", "Dual Band Watch (D.WAIT)", rx)
         basic.append(rset)
 
@@ -1168,8 +1181,8 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         adv.append(rset)
 
         options = ["Off", "1:1", "1:2", "1:3", "1:4"]
-        val = (_sets.batsav & 0x3) + 1     # ratio
-        if (_sets.batsav & 0x4) == 0:    # Off
+        val = (_sets.batsav & 0x3) + 1  # ratio
+        if (_sets.batsav & 0x4) == 0:  # Off
             val = 0
         rx = RadioSettingValueList(options, current_index=val)
         rset = RadioSetting("setstuf.batsav", "Battery Saver", rx)
@@ -1201,8 +1214,8 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rset.set_doc("Block Transmit if battery volts are too high or low,")
         adv.append(rset)
 
-        val = 0     # No = 0xff
-        if _sets.manfrqyn == 0xaa:
+        val = 0  # No = 0xff
+        if _sets.manfrqyn == 0xAA:
             val = 1
         options = ["No", "Yes"]
         rx = RadioSettingValueList(options, current_index=val)
@@ -1217,20 +1230,17 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         # Scan Settings
         options = ["CO: During Rx", "TO: Timed", "SE: Halt"]
         rx = RadioSettingValueList(options, current_index=_sets.scanmode)
-        rset = RadioSetting("setstuf.scanmode",
-                            "Scan Mode (Scan Pauses When)", rx)
+        rset = RadioSetting("setstuf.scanmode", "Scan Mode (Scan Pauses When)", rx)
         scn.append(rset)
 
-        options = ["100", "150", "200", "250",
-                   "300", "350", "400", "450"]
+        options = ["100", "150", "200", "250", "300", "350", "400", "450"]
         rx = RadioSettingValueList(options, current_index=_sets.scanspeed)
         rset = RadioSetting("setstuf.scanspeed", "Scan Speed (ms)", rx)
         scn.append(rset)
 
         val = _sets.scantmo + 3
         rx = RadioSettingValueInteger(3, 30, val)
-        rset = RadioSetting("setstuf.scantmo",
-                            "TO Mode Timeout (secs)", rx)
+        rset = RadioSetting("setstuf.scantmo", "TO Mode Timeout (secs)", rx)
         rset.set_apply_callback(my_adjraw, _sets, "scantmo", -3)
         scn.append(rset)
 
@@ -1249,7 +1259,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rset.set_apply_callback(myset_freq, _fmx, "fmcur", 40)
         fmb.append(rset)
 
-        options = ["5", "50", "100", "200(USA)"]    # 5 is not used
+        options = ["5", "50", "100", "200(USA)"]  # 5 is not used
         rx = RadioSettingValueList(options, current_index=_sets.fmstep)
         rset = RadioSetting("setstuf.fmstep", "FM Freq Step (kHz)", rx)
         fmb.append(rset)
@@ -1258,8 +1268,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         # Not supported at this time
 
         rx = RadioSettingValueBoolean(bool(_sets.rxinhib))
-        rset = RadioSetting("setstuf.rxinhib",
-                            "Rcvr Will Interrupt FM (DW)", rx)
+        rset = RadioSetting("setstuf.rxinhib", "Rcvr Will Interrupt FM (DW)", rx)
         fmb.append(rset)
 
         _fmfrq = self._memobj.fm_stations
@@ -1270,7 +1279,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                 val = 88.0
                 fmset = False
             else:
-                val = (float(int(val)) / 40)
+                val = float(int(val)) / 40
                 # get fmmap bit value: 0 = enabled
                 ndx = int(math.floor((j) / 8))
                 bv = j % 8
@@ -1278,14 +1287,14 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
                 vx = _fmap.fmset[ndx]
                 fmset = not bool(vx & msk)
             rx = RadioSettingValueBoolean(fmset)
-            rset = RadioSetting("fmmap.fmset/%d" % j,
-                                "FM Preset %02d" % (j + 1), rx)
+            rset = RadioSetting("fmmap.fmset/%d" % j, "FM Preset %02d" % (j + 1), rx)
             rset.set_apply_callback(myset_mask, _fmap, "fmset", j)
             fmb.append(rset)
 
             rx = RadioSettingValueFloat(87.5, 107.9, val, 0.1, 1)
-            rset = RadioSetting("fm_stations/%d.rxfreq" % j,
-                                "    Preset %02d Freq" % (j + 1), rx)
+            rset = RadioSetting(
+                "fm_stations/%d.rxfreq" % j, "    Preset %02d Freq" % (j + 1), rx
+            )
             # This callback uses the array index
             rset.set_apply_callback(myset_fmfrq, _fmfrq, "rxfreq", j)
             fmb.append(rset)
@@ -1293,32 +1302,27 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         # DTMF Settings
         options = [str(x) for x in range(4, 16)]
         rx = RadioSettingValueList(options, current_index=_sets.dtmfspd)
-        rset = RadioSetting("setstuf.dtmfspd",
-                            "Tx Speed (digits/sec)", rx)
+        rset = RadioSetting("setstuf.dtmfspd", "Tx Speed (digits/sec)", rx)
         dtmf.append(rset)
 
         options = [str(x) for x in range(0, 1100, 100)]
         rx = RadioSettingValueList(options, current_index=_sets.dtmfdig1time)
-        rset = RadioSetting("setstuf.dtmfdig1time",
-                            "Tx 1st Digit Time (ms)", rx)
+        rset = RadioSetting("setstuf.dtmfdig1time", "Tx 1st Digit Time (ms)", rx)
         dtmf.append(rset)
 
         options = [str(x) for x in range(100, 1100, 100)]
         rx = RadioSettingValueList(options, current_index=_sets.dtmfdig1dly)
-        rset = RadioSetting("setstuf.dtmfdig1dly",
-                            "Tx 1st Digit Delay (ms)", rx)
+        rset = RadioSetting("setstuf.dtmfdig1dly", "Tx 1st Digit Delay (ms)", rx)
         dtmf.append(rset)
 
         options = ["0", "100", "500", "1000"]
         rx = RadioSettingValueList(options, current_index=_sets.dtmfspms)
-        rset = RadioSetting("setstuf.dtmfspms",
-                            "Tx Star & Pound Time (ms)", rx)
+        rset = RadioSetting("setstuf.dtmfspms", "Tx Star & Pound Time (ms)", rx)
         dtmf.append(rset)
 
         options = ["None"] + [str(x) for x in range(600, 2100, 100)]
         rx = RadioSettingValueList(options, current_index=_sets.codespctim)
-        rset = RadioSetting("setstuf.codespctim",
-                            "Tx Code Space Time (ms)", rx)
+        rset = RadioSetting("setstuf.codespctim", "Tx Code Space Time (ms)", rx)
         dtmf.append(rset)
 
         rx = RadioSettingValueBoolean(bool(_sets.codeabcd))
@@ -1336,8 +1340,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
 
         options = ["Off"] + [str(x) for x in range(1, 16)]
         rx = RadioSettingValueList(options, current_index=_sets.autoresettmo)
-        rset = RadioSetting("setstuf.autoresettmo",
-                            "Rx Auto Reset Timeout (secs)", rx)
+        rset = RadioSetting("setstuf.autoresettmo", "Rx Auto Reset Timeout (secs)", rx)
         dtmf.append(rset)
 
         rx = RadioSettingValueBoolean(bool(_sets.txdecode))
@@ -1350,8 +1353,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
 
         options = [str(x) for x in range(500, 1600, 100)]
         rx = RadioSettingValueList(options, current_index=_sets.decodetmo)
-        rset = RadioSetting("setstuf.decodetmo",
-                            "Rx Decode Timeout (ms)", rx)
+        rset = RadioSetting("setstuf.decodetmo", "Rx Decode Timeout (ms)", rx)
         dtmf.append(rset)
 
         options = ["Tx & Rx Inhibit", "Tx Inhibit"]
@@ -1362,8 +1364,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         sx = unpack_str(_sets.stuncode, _sets.stuncnt, 5)
         rx = RadioSettingValueString(0, 10, sx)
         rset = RadioSetting("setstuf.stuncode", "Stun Code", rx)
-        rset.set_apply_callback(pack_chars, _sets,
-                                "stuncode", "stuncnt", 10)
+        rset.set_apply_callback(pack_chars, _sets, "stuncode", "stuncnt", 10)
         dtmf.append(rset)
 
         # Frequency ranges
@@ -1377,7 +1378,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         rset.set_doc("Enable the VHF frequency bank.")
         frng.append(rset)
 
-        mod_se = True     # UV8000SE has 3rd freq bank
+        mod_se = True  # UV8000SE has 3rd freq bank
         if mod_se:
             rx = RadioSettingValueBoolean(bool(_sets.frqr3))
             rset = RadioSetting("setstuf.frqr3", "Freq Range 3 (220 MHz)", rx)
@@ -1387,32 +1388,28 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
         frqm = 100000
         val = _sets.frqr1lo / frqm
         rx = RadioSettingValueFloat(400.0, 520.0, val, 0.005, 3)
-        rset = RadioSetting("setstuf.frqr1lo",
-                            "UHF Range Low Limit (MHz)", rx)
+        rset = RadioSetting("setstuf.frqr1lo", "UHF Range Low Limit (MHz)", rx)
         rset.set_apply_callback(myset_freq, _sets, "frqr1lo", frqm)
         rset.set_doc("Low limit of the UHF frequency bank.")
         frng.append(rset)
 
         val = _sets.frqr1hi / frqm
         rx = RadioSettingValueFloat(400.0, 520.0, val, 0.005, 3)
-        rset = RadioSetting("setstuf.frqr1hi",
-                            "UHF Range High Limit (MHz)", rx)
+        rset = RadioSetting("setstuf.frqr1hi", "UHF Range High Limit (MHz)", rx)
         rset.set_apply_callback(myset_freq, _sets, "frqr1hi", frqm)
         rset.set_doc("High limit of the UHF frequency bank.")
         frng.append(rset)
 
         val = _sets.frqr2lo / frqm
         rx = RadioSettingValueFloat(136.0, 174.0, val, 0.005, 3)
-        rset = RadioSetting("setstuf.frqr2lo",
-                            "VHF Range Low Limit (MHz)", rx)
+        rset = RadioSetting("setstuf.frqr2lo", "VHF Range Low Limit (MHz)", rx)
         rset.set_apply_callback(myset_freq, _sets, "frqr2lo", frqm)
         rset.set_doc("Low limit of the VHF frequency bank.")
         frng.append(rset)
 
         val = _sets.frqr2hi / frqm
         rx = RadioSettingValueFloat(136.0, 174.0, val, 0.005, 3)
-        rset = RadioSetting("setstuf.frqr2hi",
-                            "VHF Range High Limit (MHz)", rx)
+        rset = RadioSetting("setstuf.frqr2hi", "VHF Range High Limit (MHz)", rx)
         rset.set_apply_callback(myset_freq, _sets, "frqr2hi", frqm)
         rset.set_doc("High limit of the VHF frequency bank.")
         frng.append(rset)
@@ -1422,8 +1419,7 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             if val < 220.0:
                 val = 220.0
             rx = RadioSettingValueFloat(220.0, 260.0, val, 0.005, 3)
-            rset = RadioSetting("setstuf.frqr3lo",
-                                "1.25m Range Low Limit (MHz)", rx)
+            rset = RadioSetting("setstuf.frqr3lo", "1.25m Range Low Limit (MHz)", rx)
             rset.set_apply_callback(myset_freq, _sets, "frqr3lo", frqm)
             frng.append(rset)
 
@@ -1431,12 +1427,11 @@ class THUV8000Radio(chirp_common.CloneModeRadio):
             if val < 220.0:
                 val = 260.0
             rx = RadioSettingValueFloat(220.0, 260.0, val, 0.005, 3)
-            rset = RadioSetting("setstuf.frqr3hi",
-                                "1.25m Range High Limit (MHz)", rx)
+            rset = RadioSetting("setstuf.frqr3hi", "1.25m Range High Limit (MHz)", rx)
             rset.set_apply_callback(myset_freq, _sets, "frqr3hi", 1000)
             frng.append(rset)
 
-        return group       # END get_settings()
+        return group  # END get_settings()
 
     def set_settings(self, settings):
         _settings = self._memobj.setstuf

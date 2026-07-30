@@ -17,9 +17,14 @@ import logging
 
 from chirp.drivers import icf
 from chirp import chirp_common, bitwise, errors, directory
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueList, \
-    RadioSettingValueBoolean, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueInteger,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -80,16 +85,22 @@ struct {
 """
 
 SPECIAL = {
-    "0A": 200, "0B": 201,
-    "1A": 202, "1B": 203,
-    "2A": 204, "2B": 205,
+    "0A": 200,
+    "0B": 201,
+    "1A": 202,
+    "1B": 203,
+    "2A": 204,
+    "2B": 205,
     "C": 206,
 }
 
 SPECIAL_REV = {
-    200: "0A", 201: "0B",
-    202: "1A", 203: "1B",
-    204: "2A", 205: "2B",
+    200: "0A",
+    201: "0B",
+    202: "1A",
+    203: "1B",
+    204: "2A",
+    205: "2B",
     206: "C",
 }
 
@@ -98,7 +109,7 @@ MODES = ["FM", "NFM"]
 SKIPS = ["", "S"]
 DUPLEXES = ["", "-", "+"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
-TUNING_STEPS = [5., 10., 12.5, 15., 20., 25., 30., 50.]
+TUNING_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
 POWER_LEVELS = [
     chirp_common.PowerLevel("High", watts=5.5),
     chirp_common.PowerLevel("Low", watts=0.5),
@@ -110,6 +121,7 @@ POWER_LEVELS = [
 @directory.register
 class ICV86Radio(icf.IcomCloneModeRadio):
     """Icom IC-V86"""
+
     VENDOR = "Icom"
     MODEL = "IC-V86"
 
@@ -162,15 +174,20 @@ class ICV86Radio(icf.IcomCloneModeRadio):
         opts = ["Off", "On", "Auto"]
         setmode.append(
             RadioSetting(
-                "lcd", "LCD Backlight",
-                RadioSettingValueList(opts, current_index=_settings.lcd)))
+                "lcd",
+                "LCD Backlight",
+                RadioSettingValueList(opts, current_index=_settings.lcd),
+            )
+        )
 
         # Mic Gain
-        rs = RadioSetting("mic", "Mic Gain",
-                          RadioSettingValueInteger(1, 4, _settings.mic + 1))
+        rs = RadioSetting(
+            "mic", "Mic Gain", RadioSettingValueInteger(1, 4, _settings.mic + 1)
+        )
 
         def apply_mic(s, obj):
             setattr(obj, s.get_name(), int(s.value) - 1)
+
         rs.set_apply_callback(apply_mic, self._memobj.settings)
         setmode.append(rs)
 
@@ -178,15 +195,21 @@ class ICV86Radio(icf.IcomCloneModeRadio):
         opts = ["Volume", "Tuning"]
         setmode.append(
             RadioSetting(
-                "dial_assignment", "Dial Assignment",
-                RadioSettingValueList(opts, current_index=_settings.dial_assignment)))
+                "dial_assignment",
+                "Dial Assignment",
+                RadioSettingValueList(opts, current_index=_settings.dial_assignment),
+            )
+        )
 
         # Display Type
         opts = ["Frequency", "Channel", "Name"]
         setmode.append(
             RadioSetting(
-                "disp_type", "Display Type",
-                RadioSettingValueList(opts, current_index=_settings.disp_type)))
+                "disp_type",
+                "Display Type",
+                RadioSettingValueList(opts, current_index=_settings.disp_type),
+            )
+        )
 
         return settings
 
@@ -249,13 +272,15 @@ class ICV86Radio(icf.IcomCloneModeRadio):
 
         # Extras
         mem.extra = RadioSettingGroup("extra", "Extra")
-        rev = RadioSetting("rev", "Reverse duplex",
-                           RadioSettingValueBoolean(bool(_mem.rev)))
+        rev = RadioSetting(
+            "rev", "Reverse duplex", RadioSettingValueBoolean(bool(_mem.rev))
+        )
         rev.set_doc("Reverse duplex")
         mem.extra.append(rev)
 
-        tx = RadioSetting("tx", "Tx permission",
-                          RadioSettingValueBoolean(bool(_mem.tx)))
+        tx = RadioSetting(
+            "tx", "Tx permission", RadioSettingValueBoolean(bool(_mem.tx))
+        )
         tx.set_doc("Tx permission")
         mem.extra.append(tx)
 
@@ -268,7 +293,7 @@ class ICV86Radio(icf.IcomCloneModeRadio):
         if not self._mmap:
             self.sync_in()
 
-        assert (self._mmap)
+        assert self._mmap
 
         if isinstance(number, str):
             try:
@@ -281,7 +306,7 @@ class ICV86Radio(icf.IcomCloneModeRadio):
     def _fill_memory(self, number):
         _mem = self._memobj.memory[number]
 
-        assert (_mem)
+        assert _mem
 
         # zero-fill
         _mem.freq = 146010000
@@ -319,7 +344,7 @@ class ICV86Radio(icf.IcomCloneModeRadio):
         _usd = self._memobj.used[byte] if mem.number <= 206 else None
         _skp = self._memobj.skips[byte] if mem.number < 200 else None
 
-        assert (_mem)
+        assert _mem
 
         if mem.empty:
             self._fill_memory(mem.number)
@@ -359,10 +384,9 @@ class ICV86Radio(icf.IcomCloneModeRadio):
         if not self._mmap:
             self.sync_in()
 
-        assert (self._mmap)
+        assert self._mmap
 
         return self._set_memory(mem)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number]) + \
-            repr(self._memobj.used[(number)])
+        return repr(self._memobj.memory[number]) + repr(self._memobj.used[(number)])

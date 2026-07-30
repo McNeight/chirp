@@ -20,10 +20,15 @@ import logging
 
 from chirp import chirp_common, directory, memmap
 from chirp import bitwise, errors, util
-from chirp.settings import RadioSettingGroup, RadioSetting, \
-    RadioSettingValueBoolean, RadioSettingValueList, \
-    RadioSettingValueString, RadioSettingValueInteger, \
-    RadioSettings
+from chirp.settings import (
+    RadioSettingGroup,
+    RadioSetting,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueString,
+    RadioSettingValueInteger,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -175,10 +180,11 @@ LIST_DTMF_SPECIAL_VALUES = [0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00]
 
 CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ?+-*"
 STEPS = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5),
-                chirp_common.PowerLevel("Low", watts=1)]
-VALID_BANDS = [(136000000, 174000000),
-               (400000000, 520000000)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=5),
+    chirp_common.PowerLevel("Low", watts=1),
+]
+VALID_BANDS = [(136000000, 174000000), (400000000, 520000000)]
 
 
 def _rawrecv(radio, amount):
@@ -218,7 +224,7 @@ def _make_frame(cmd, addr, length, data=""):
 
 
 def _recv(radio, addr, length):
-    """Get data from the radio """
+    """Get data from the radio"""
     # read 4 bytes of header
     hdr = _rawrecv(radio, 4)
 
@@ -326,8 +332,7 @@ def _download(radio):
 
         ack = _rawrecv(radio, 1)
         if ack != "\x06":
-            raise errors.RadioError(
-                "Radio refused to send block 0x%04x" % addr)
+            raise errors.RadioError("Radio refused to send block 0x%04x" % addr)
 
         # aggregate the data
         data += d
@@ -347,7 +352,7 @@ def _upload(radio):
     # put radio in program mode
     _ident_radio(radio)
 
-    addr = 0x0f80
+    addr = 0x0F80
     frame = _make_frame("R", addr, radio._recv_block_size)
     # DEBUG
     LOG.info("Request sent:")
@@ -365,8 +370,7 @@ def _upload(radio):
 
     ack = _rawrecv(radio, 1)
     if ack != "\x06":
-        raise errors.RadioError(
-            "Radio refused to send block 0x%04x" % addr)
+        raise errors.RadioError("Radio refused to send block 0x%04x" % addr)
 
     _ranges = radio._ranges
 
@@ -381,7 +385,7 @@ def _upload(radio):
     for start, end in _ranges:
         for addr in range(start, end, radio._send_block_size):
             # sending the data
-            data = radio.get_mmap()[addr:addr + radio._send_block_size]
+            data = radio.get_mmap()[addr : addr + radio._send_block_size]
 
             frame = _make_frame("W", addr, radio._send_block_size, data)
 
@@ -410,48 +414,55 @@ def model_match(cls, data):
 
 
 @directory.register
-class TDXoneTDQ8A(chirp_common.CloneModeRadio,
-                  chirp_common.ExperimentalRadio):
+class TDXoneTDQ8A(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """TDXone TD-Q8A Radio"""
+
     VENDOR = "TDXone"
     MODEL = "TD-Q8A"
     NEEDS_COMPAT_SERIAL = True
 
-    _model = b'TD-Q8A'
-    _magic = [MSTRING_TDQ8A, MSTRING_TDQ8A, ]
+    _model = b"TD-Q8A"
+    _magic = [
+        MSTRING_TDQ8A,
+        MSTRING_TDQ8A,
+    ]
     _magic_response_length = 8
     _fw_ver_start = 0x1EF0
     _recv_block_size = 0x40
     _mem_size = 0x2000
 
-    _ranges = [(0x0010, 0x0810),
-               (0x0E20, 0x0E60),
-               (0x0F10, 0x0F30),
-               (0x1010, 0x1810),
-               (0x1F10, 0x1F30)]
+    _ranges = [
+        (0x0010, 0x0810),
+        (0x0E20, 0x0E60),
+        (0x0F10, 0x0F30),
+        (0x1010, 0x1810),
+        (0x1F10, 0x1F30),
+    ]
     _send_block_size = 0x10
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = \
-            ('The TDXone TD-Q8A driver is a beta version.\n'
-             '\n'
-             'Please save an unedited copy of your first successful\n'
-             'download to a CHIRP Radio Images(*.img) file.'
-             )
+        rp.experimental = (
+            "The TDXone TD-Q8A driver is a beta version.\n"
+            "\n"
+            "Please save an unedited copy of your first successful\n"
+            "download to a CHIRP Radio Images(*.img) file."
+        )
         rp.pre_download = _(
             "Follow these instructions to download your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the download of your radio data\n")
+            "4 - Do the download of your radio data\n"
+        )
         rp.pre_upload = _(
             "Follow this instructions to upload your info:\n"
             "1 - Turn off your radio\n"
             "2 - Connect your interface cable\n"
             "3 - Turn on your radio\n"
-            "4 - Do the upload of your radio data\n")
+            "4 - Do the upload of your radio data\n"
+        )
         return rp
 
     def get_features(self):
@@ -474,10 +485,8 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         rf.valid_characters = CHARSET
         rf.valid_name_length = 6
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
-        rf.valid_tmodes = ['', 'Tone', 'TSQL', 'Cross']
-        rf.valid_cross_modes = [
-            "Tone->Tone",
-            "->Tone"]
+        rf.valid_tmodes = ["", "Tone", "TSQL", "Cross"]
+        rf.valid_cross_modes = ["Tone->Tone", "->Tone"]
         rf.valid_skips = ["", "S"]
         rf.memory_bounds = (1, 128)
         rf.valid_power_levels = POWER_LEVELS
@@ -500,9 +509,8 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = memmap.MemoryMap(data)
         self.process_mmap()
 
@@ -515,15 +523,14 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def _is_txinh(self, _mem):
         raw_tx = ""
         for i in range(0, 4):
             raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+        return raw_tx == "\xff\xff\xff\xff"
 
     def _get_mem(self, number):
         return self._memobj.memory[number - 1]
@@ -552,8 +559,9 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
             # TX freq set
             offset = (int(_mem.txfreq) * 10) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.txfreq) * 10):
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.txfreq) * 10
+                ):
                     mem.duplex = "split"
                     mem.offset = int(_mem.txfreq) * 10
                 elif offset < 0:
@@ -606,13 +614,12 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("dtmf", "DTMF",
-                          RadioSettingValueList(LIST_DTMF,
-                                                current_index=_mem.dtmf))
+        rs = RadioSetting(
+            "dtmf", "DTMF", RadioSettingValueList(LIST_DTMF, current_index=_mem.dtmf)
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("bcl", "BCL",
-                          RadioSettingValueBoolean(_mem.bcl))
+        rs = RadioSetting("bcl", "BCL", RadioSettingValueBoolean(_mem.bcl))
         mem.extra.append(rs)
 
         return mem
@@ -638,7 +645,7 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -689,170 +696,214 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
         _mem = self._memobj
         basic = RadioSettingGroup("basic", "Basic Settings")
         advanced = RadioSettingGroup("advanced", "Advanced Settings")
-        top = RadioSettings(basic, advanced, )
+        top = RadioSettings(
+            basic,
+            advanced,
+        )
 
         # Basic settings
-        rs = RadioSetting("settings.beep", "Beep",
-                          RadioSettingValueBoolean(
-                              _mem.settings.beep))
+        rs = RadioSetting(
+            "settings.beep", "Beep", RadioSettingValueBoolean(_mem.settings.beep)
+        )
         basic.append(rs)
 
         if _mem.settings.squelcha > 0x09:
             val = 0x00
         else:
             val = _mem.settings.squelcha
-        rs = RadioSetting("squelcha", "Squelch Level A",
-                          RadioSettingValueInteger(
-                              0, 9, _mem.settings.squelcha))
+        rs = RadioSetting(
+            "squelcha",
+            "Squelch Level A",
+            RadioSettingValueInteger(0, 9, _mem.settings.squelcha),
+        )
         basic.append(rs)
 
         if _mem.settings.squelchb > 0x09:
             val = 0x00
         else:
             val = _mem.settings.squelchb
-        rs = RadioSetting("squelchb", "Squelch Level B",
-                          RadioSettingValueInteger(
-                              0, 9, _mem.settings.squelchb))
+        rs = RadioSetting(
+            "squelchb",
+            "Squelch Level B",
+            RadioSettingValueInteger(0, 9, _mem.settings.squelchb),
+        )
         basic.append(rs)
 
         if _mem.settings.voice > 0x02:
             val = 0x01
         else:
             val = _mem.settings.voice
-        rs = RadioSetting("settings.voice", "Voice Prompt",
-                          RadioSettingValueList(
-                              LIST_VOICE, current_index=val))
+        rs = RadioSetting(
+            "settings.voice",
+            "Voice Prompt",
+            RadioSettingValueList(LIST_VOICE, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.vox > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.vox
-        rs = RadioSetting("settings.vox", "VOX",
-                          RadioSettingValueList(
-                              LIST_OFF1TO10, current_index=val))
+        rs = RadioSetting(
+            "settings.vox",
+            "VOX",
+            RadioSettingValueList(LIST_OFF1TO10, current_index=val),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.autolk", "Automatic Key Lock",
-                          RadioSettingValueBoolean(_mem.settings.autolk))
+        rs = RadioSetting(
+            "settings.autolk",
+            "Automatic Key Lock",
+            RadioSettingValueBoolean(_mem.settings.autolk),
+        )
         basic.append(rs)
 
         if _mem.settings.screv > 0x02:
             val = 0x01
         else:
             val = _mem.settings.screv
-        rs = RadioSetting("settings.screv", "Scan Resume",
-                          RadioSettingValueList(
-                              LIST_RESUME, current_index=val))
+        rs = RadioSetting(
+            "settings.screv",
+            "Scan Resume",
+            RadioSettingValueList(LIST_RESUME, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.toa > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.toa
-        rs = RadioSetting("settings.toa", "Time-out Pre-Alert",
-                          RadioSettingValueList(
-                              LIST_OFF1TO10, current_index=val))
+        rs = RadioSetting(
+            "settings.toa",
+            "Time-out Pre-Alert",
+            RadioSettingValueList(LIST_OFF1TO10, current_index=val),
+        )
         basic.append(rs)
 
         if _mem.settings.timeout > 0x28:
             val = 0x03
         else:
             val = _mem.settings.timeout
-        rs = RadioSetting("settings.timeout", "Timeout Timer",
-                          RadioSettingValueList(
-                              LIST_TIMEOUT, current_index=val))
-        basic.append(rs)
-
-        rs = RadioSetting("settings.wtled", "Standby LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.wtled))
-        basic.append(rs)
-
-        rs = RadioSetting("settings.rxled", "RX LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.rxled))
-        basic.append(rs)
-
-        rs = RadioSetting("settings.txled", "TX LED Color",
-                          RadioSettingValueList(
-                              LIST_COLOR, current_index=_mem.settings.txled))
+        rs = RadioSetting(
+            "settings.timeout",
+            "Timeout Timer",
+            RadioSettingValueList(LIST_TIMEOUT, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.roger", "Roger Beep",
-            RadioSettingValueList(
-                LIST_ROGER, current_index=_mem.settings.roger))
+            "settings.wtled",
+            "Standby LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.wtled),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.mdfa", "Display Mode (A)",
-            RadioSettingValueList(
-                LIST_MODE, current_index=_mem.settings.mdfa))
+            "settings.rxled",
+            "RX LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.rxled),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.mdfb", "Display Mode (B)",
-            RadioSettingValueList(
-                LIST_MODE, current_index=_mem.settings.mdfb))
+            "settings.txled",
+            "TX LED Color",
+            RadioSettingValueList(LIST_COLOR, current_index=_mem.settings.txled),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.pf1", "PF1 Key Assignment",
-            RadioSettingValueList(
-                LIST_PF1, current_index=_mem.settings.pf1))
+            "settings.roger",
+            "Roger Beep",
+            RadioSettingValueList(LIST_ROGER, current_index=_mem.settings.roger),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.tdr", "Dual Watch(TDR)",
-                          RadioSettingValueBoolean(_mem.settings.tdr))
+        rs = RadioSetting(
+            "settings.mdfa",
+            "Display Mode (A)",
+            RadioSettingValueList(LIST_MODE, current_index=_mem.settings.mdfa),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.ani", "ANI",
-                          RadioSettingValueBoolean(_mem.settings.ani))
+        rs = RadioSetting(
+            "settings.mdfb",
+            "Display Mode (B)",
+            RadioSettingValueList(LIST_MODE, current_index=_mem.settings.mdfb),
+        )
+        basic.append(rs)
+
+        rs = RadioSetting(
+            "settings.pf1",
+            "PF1 Key Assignment",
+            RadioSettingValueList(LIST_PF1, current_index=_mem.settings.pf1),
+        )
+        basic.append(rs)
+
+        rs = RadioSetting(
+            "settings.tdr",
+            "Dual Watch(TDR)",
+            RadioSettingValueBoolean(_mem.settings.tdr),
+        )
+        basic.append(rs)
+
+        rs = RadioSetting(
+            "settings.ani", "ANI", RadioSettingValueBoolean(_mem.settings.ani)
+        )
         basic.append(rs)
 
         if _mem.settings.pttdly > 0x0A:
             val = 0x00
         else:
             val = _mem.settings.pttdly
-        rs = RadioSetting("settings.pttdly", "PTT ID Delay",
-                          RadioSettingValueList(
-                              LIST_OFF1TO30, current_index=val))
+        rs = RadioSetting(
+            "settings.pttdly",
+            "PTT ID Delay",
+            RadioSettingValueList(LIST_OFF1TO30, current_index=val),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.pttid", "When to send PTT ID",
-            RadioSettingValueList(
-                LIST_PTTID, current_index=_mem.settings.pttid))
+            "settings.pttid",
+            "When to send PTT ID",
+            RadioSettingValueList(LIST_PTTID, current_index=_mem.settings.pttid),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.dtmfst", "DTMF Sidetone",
-            RadioSettingValueList(
-                LIST_DTMFST, current_index=_mem.settings.dtmfst))
+            "settings.dtmfst",
+            "DTMF Sidetone",
+            RadioSettingValueList(LIST_DTMFST, current_index=_mem.settings.dtmfst),
+        )
         basic.append(rs)
 
         rs = RadioSetting(
-            "settings.ponmsg", "Power-On Message",
-            RadioSettingValueList(
-                LIST_PONMSG, current_index=_mem.settings.ponmsg))
+            "settings.ponmsg",
+            "Power-On Message",
+            RadioSettingValueList(LIST_PONMSG, current_index=_mem.settings.ponmsg),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("settings.dw", "DW",
-                          RadioSettingValueBoolean(_mem.settings.dw))
+        rs = RadioSetting(
+            "settings.dw", "DW", RadioSettingValueBoolean(_mem.settings.dw)
+        )
         basic.append(rs)
 
         # Advanced settings
         rs = RadioSetting(
-            "settings.prioritych", "Priority Channel",
+            "settings.prioritych",
+            "Priority Channel",
             RadioSettingValueList(
-                LIST_PRIORITY, current_index=_mem.settings.prioritych))
+                LIST_PRIORITY, current_index=_mem.settings.prioritych
+            ),
+        )
         advanced.append(rs)
 
         rs = RadioSetting(
-            "settings.vfomr", "Work Mode",
-            RadioSettingValueList(
-                LIST_WORKMODE, current_index=_mem.settings.vfomr))
+            "settings.vfomr",
+            "Work Mode",
+            RadioSettingValueList(LIST_WORKMODE, current_index=_mem.settings.vfomr),
+        )
         advanced.append(rs)
 
         dtmfchars = "0123456789"
@@ -870,6 +921,7 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.code = code
+
         rs.set_apply_callback(apply_code, _mem.settings)
         advanced.append(rs)
 
@@ -887,6 +939,7 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
                 except IndexError:
                     code.append(0xFF)
             obj.password = code
+
         rs.set_apply_callback(apply_code, _mem.settings)
         advanced.append(rs)
 
@@ -894,17 +947,23 @@ class TDXoneTDQ8A(chirp_common.CloneModeRadio,
             val = 0x00
         else:
             val = _mem.settings.tdrab
-        rs = RadioSetting("settings.tdrab", "Dual Watch TX Priority",
-                          RadioSettingValueList(
-                              LIST_AB, current_index=val))
+        rs = RadioSetting(
+            "settings.tdrab",
+            "Dual Watch TX Priority",
+            RadioSettingValueList(LIST_AB, current_index=val),
+        )
         advanced.append(rs)
 
-        rs = RadioSetting("settings.keylk", "Key Lock",
-                          RadioSettingValueBoolean(_mem.settings.keylk))
+        rs = RadioSetting(
+            "settings.keylk", "Key Lock", RadioSettingValueBoolean(_mem.settings.keylk)
+        )
         advanced.append(rs)
 
-        rs = RadioSetting("settings.control", "Control Code",
-                          RadioSettingValueBoolean(_mem.settings.control))
+        rs = RadioSetting(
+            "settings.control",
+            "Control Code",
+            RadioSettingValueBoolean(_mem.settings.control),
+        )
         advanced.append(rs)
 
         return top

@@ -196,33 +196,57 @@ struct {
 
 DUPLEX = ["", "-", "+", "split"]
 MODES = ["FM", "AM", "WFM", "FM"]  # last is auto
-TMODES = ["", "Tone", "TSQL",
-          "DTCS",
-          "TSQL-R",  # This is "RV TN" as Yaesu calls it
-          "DTCS->", "Tone->DTCS", "DTCS->Tone"]
+TMODES = [
+    "",
+    "Tone",
+    "TSQL",
+    "DTCS",
+    "TSQL-R",  # This is "RV TN" as Yaesu calls it
+    "DTCS->",
+    "Tone->DTCS",
+    "DTCS->Tone",
+]
 DTMFCHARSET = list("0123456789ABCD*#-")
-STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0,
-         9.0, 200.0, 5.0]  # last is auto, 9.0k and 200.0k are unadvertised
+STEPS = [
+    5.0,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    50.0,
+    100.0,
+    9.0,
+    200.0,
+    5.0,
+]  # last is auto, 9.0k and 200.0k are unadvertised
 
-CHARSET = ["%i" % int(x) for x in range(10)] + \
-    [chr(x) for x in range(ord("A"), ord("Z")+1)] + \
-    list(" +-/?[]u_" + ("\x00" * 9) + "$%%\x00*#.|=\\o@") + \
-    list("\x00" * 100)
+CHARSET = (
+    ["%i" % int(x) for x in range(10)]
+    + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    + list(" +-/?[]u_" + ("\x00" * 9) + "$%%\x00*#.|=\\o@")
+    + list("\x00" * 100)
+)
 
 PASS_CHARSET = list("0123456789ABCDEF")
 
-POWER_LEVELS = [chirp_common.PowerLevel("Hi", watts=5.00),
-                chirp_common.PowerLevel("L3", watts=2.50),
-                chirp_common.PowerLevel("L2", watts=1.00),
-                chirp_common.PowerLevel("L1", watts=0.30)]
-POWER_LEVELS_220 = [chirp_common.PowerLevel("Hi", watts=1.50),
-                    chirp_common.PowerLevel("L3", watts=1.00),
-                    chirp_common.PowerLevel("L2", watts=0.50),
-                    chirp_common.PowerLevel("L1", watts=0.20)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Hi", watts=5.00),
+    chirp_common.PowerLevel("L3", watts=2.50),
+    chirp_common.PowerLevel("L2", watts=1.00),
+    chirp_common.PowerLevel("L1", watts=0.30),
+]
+POWER_LEVELS_220 = [
+    chirp_common.PowerLevel("Hi", watts=1.50),
+    chirp_common.PowerLevel("L3", watts=1.00),
+    chirp_common.PowerLevel("L2", watts=0.50),
+    chirp_common.PowerLevel("L1", watts=0.20),
+]
 
 
 class VX6Bank(chirp_common.NamedBank):
     """A VX6 Bank"""
+
     def get_name(self):
         _bank = self._model._radio._memobj.bank_names[self.index]
         name = ""
@@ -291,8 +315,9 @@ class VX6BankModel(chirp_common.BankModel):
         try:
             channels_in_bank.remove(memory.number)
         except KeyError:
-            raise Exception("Memory %i is not in bank %s. Cannot remove" %
-                            (memory.number, bank))
+            raise Exception(
+                "Memory %i is not in bank %s. Cannot remove" % (memory.number, bank)
+            )
         self._update_bank_with_channel_numbers(bank, channels_in_bank)
 
         if not channels_in_bank:
@@ -318,6 +343,7 @@ class VX6BankModel(chirp_common.BankModel):
 @directory.register
 class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu VX-6"""
+
     BAUD_RATE = 19200
     VENDOR = "Yaesu"
     MODEL = "VX-6"
@@ -334,11 +360,11 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
     _BEEP_LEVEL = ["%i" % int(x) for x in range(1, 10)]
     _CH_CNT = ("5 MHz", "10 MHz", "50 MHz", "100 MHz")
     _DIM_LEVEL = ["%i" % int(x) for x in range(0, 13)]
-    _EMERGENCY = ("Beep", "Strobe", "Bp+Str", "Beam", "Bp+Bem", "CW",
-                  "Bp+CW", "CWT")
+    _EMERGENCY = ("Beep", "Strobe", "Bp+Str", "Beam", "Bp+Bem", "CW", "Bp+CW", "CWT")
     _HOME_REV = ("HOME", "REV")
-    _INT_CD = ["%i" % int(x) for x in range(0, 10)] + \
-        [chr(x) for x in range(ord("A"), ord("F")+1)]
+    _INT_CD = ["%i" % int(x) for x in range(0, 10)] + [
+        chr(x) for x in range(ord("A"), ord("F") + 1)
+    ]
     _INT_MD = ("SRG: Sister Radio Group", "FRG: Friendly Radio Group")
     _LAMP = ("Key", "Continuous", "Off")
     _LOCK = ("Key", "Dial", "Key+Dial", "PTT", "Key+PTT", "Dial+PTT", "All")
@@ -349,12 +375,10 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
     _NUM_0_9 = ["%i" % int(x) for x in range(10)]
     _NUM_0_63 = ["%i" % int(x) for x in range(64)]
     _NUM_1_50 = ["%i" % int(x) for x in range(1, 51)]
-    _ON_TIMER = ["OFF"] + \
-        ["%02d:%02d" % (t / 60, t % 60) for t in range(10, 1450, 10)]
+    _ON_TIMER = ["OFF"] + ["%02d:%02d" % (t / 60, t % 60) for t in range(10, 1450, 10)]
     _OPEN_MSG = ("Off", "DC Voltage", "Message")
     _PTT_DELAY = ("OFF", "20 ms", "50 ms", "100 ms", "200 ms")
-    _RF_SQL = ("OFF", "S1", "S2", "S3", "S4", "S5",
-               "S6", "S7", "S8", "S9", "S9+")
+    _RF_SQL = ("OFF", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S9+")
     _RX_SAVE = ("OFF", "200 ms", "300 ms", "500 ms", "1 s", "2 s")
     _RESUME = ("3 SEC", "5 SEC", "10 SEC", "BUSY", "HOLD")
     _SMART_SEARCH = ("SINGLE", "CONT")
@@ -370,15 +394,17 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/SP jack.\n"
             "3. Press and hold in the [F/W] key while turning the radio on\n"
-            "     (\"CLONE\" will appear on the display).\n"
+            '     ("CLONE" will appear on the display).\n'
             "4. <b>After clicking OK</b>, press the [BAND] key to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/SP jack.\n"
             "3. Press and hold in the [F/W] key while turning the radio on\n"
-            "     (\"CLONE\" will appear on the display).\n"
-            "4. Press the [V/M] key (\"-WAIT-\" will appear on the LCD).\n")
+            '     ("CLONE" will appear on the display).\n'
+            '4. Press the [V/M] key ("-WAIT-" will appear on the LCD).\n'
+        )
         return rp
 
     def _checksums(self):
@@ -394,7 +420,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         rf.has_dtcs_polarity = False
         rf.valid_modes = ["FM", "WFM", "AM", "NFM"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "TSQL-R", "Cross"]
-        rf.valid_cross_modes = [x for x in TMODES if '->' in x]
+        rf.valid_cross_modes = [x for x in TMODES if "->" in x]
         rf.valid_duplexes = DUPLEX
         rf.valid_tuning_steps = STEPS
         rf.valid_power_levels = POWER_LEVELS
@@ -408,14 +434,15 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         return rf
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1]) + \
-            repr(self._memobj.flags[(number-1)/2])
+        return repr(self._memobj.memory[number - 1]) + repr(
+            self._memobj.flags[(number - 1) / 2]
+        )
 
     def get_memory(self, number):
-        _mem = self._memobj.memory[number-1]
-        _flg = self._memobj.flags[(number-1)/2]
+        _mem = self._memobj.memory[number - 1]
+        _flg = self._memobj.flags[(number - 1) / 2]
 
-        nibble = ((number-1) % 2) and "even" or "odd"
+        nibble = ((number - 1) % 2) and "even" or "odd"
         used = _flg["%s_masked" % nibble]
         valid = _flg["%s_valid" % nibble]
         pskip = _flg["%s_pskip" % nibble]
@@ -433,10 +460,10 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
 
         mem.freq = chirp_common.fix_rounded_step(int(_mem.freq) * 1000)
         mem.offset = chirp_common.fix_rounded_step(int(_mem.offset) * 1000)
-        mem.rtone = mem.ctone = chirp_common.TONES[_mem.tone & 0x3f]
+        mem.rtone = mem.ctone = chirp_common.TONES[_mem.tone & 0x3F]
         tmode = TMODES[_mem.tmode]
-        if '->' in tmode:
-            mem.tmode = 'Cross'
+        if "->" in tmode:
+            mem.tmode = "Cross"
             mem.cross_mode = tmode
         else:
             mem.tmode = tmode
@@ -444,7 +471,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         mem.mode = MODES[_mem.mode]
         if mem.mode == "FM" and _mem.half_deviation:
             mem.mode = "NFM"
-        mem.dtcs = chirp_common.DTCS_CODES[_mem.dcs & 0x7f]
+        mem.dtcs = chirp_common.DTCS_CODES[_mem.dcs & 0x7F]
         mem.tuning_step = STEPS[_mem.tune_step]
         mem.skip = pskip and "P" or skip and "S" or ""
 
@@ -462,10 +489,10 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
-        _flag = self._memobj.flags[(mem.number-1)/2]
+        _mem = self._memobj.memory[mem.number - 1]
+        _flag = self._memobj.flags[(mem.number - 1) / 2]
 
-        nibble = ((mem.number-1) % 2) and "even" or "odd"
+        nibble = ((mem.number - 1) % 2) and "even" or "odd"
         used = _flag["%s_masked" % nibble]
         valid = _flag["%s_valid" % nibble]
 
@@ -491,7 +518,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         _mem.freq = mem.freq / 1000
         _mem.offset = mem.offset / 1000
         _mem.tone = chirp_common.TONES.index(mem.rtone)
-        if mem.tmode == 'Cross':
+        if mem.tmode == "Cross":
             _mem.tmode = TMODES.index(mem.cross_mode)
         else:
             _mem.tmode = TMODES.index(mem.tmode)
@@ -525,8 +552,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         # like editing a 2m channel to a 220 MHz frequency, etc.
         by_name = [str(x) for x in POWER_LEVELS]
         index = by_name.index(str(mem.power))
-        LOG.debug('Resolving power %r by name to index %i' % (
-            mem.power, index))
+        LOG.debug("Resolving power %r by name to index %i" % (mem.power, index))
         return index
 
     def validate_memory(self, mem):
@@ -571,45 +597,39 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
 
         # BASIC
 
-        val = RadioSettingValueList(
-            self._APO, current_index=_settings.auto_power_off)
+        val = RadioSettingValueList(self._APO, current_index=_settings.auto_power_off)
         rs = RadioSetting("auto_power_off", "Auto Power Off", val)
         basic.append(rs)
 
         val = RadioSettingValueList(
-            self._BEEP_LEVEL, current_index=_settings.beep_level)
+            self._BEEP_LEVEL, current_index=_settings.beep_level
+        )
         rs = RadioSetting("beep_level", "Beep Level", val)
         basic.append(rs)
 
-        val = RadioSettingValueList(
-            self._DIM_LEVEL, current_index=_settings.lcd_dimmer)
+        val = RadioSettingValueList(self._DIM_LEVEL, current_index=_settings.lcd_dimmer)
         rs = RadioSetting("lcd_dimmer", "Dimmer Level", val)
         basic.append(rs)
 
-        val = RadioSettingValueList(
-            self._LAMP, current_index=_settings.lamp)
+        val = RadioSettingValueList(self._LAMP, current_index=_settings.lamp)
         rs = RadioSetting("lamp", "Keypad Lamp", val)
         basic.append(rs)
 
-        val = RadioSettingValueList(
-            self._LOCK, current_index=_settings.lock)
+        val = RadioSettingValueList(self._LOCK, current_index=_settings.lock)
         rs = RadioSetting("lock", "Lock", val)
         basic.append(rs)
 
-        val = RadioSettingValueList(
-            self._NUM_1_9, current_index=_settings.mic_gain)
+        val = RadioSettingValueList(self._NUM_1_9, current_index=_settings.mic_gain)
         rs = RadioSetting("mic_gain", "Mic Gain", val)
         basic.append(rs)
 
         val = RadioSettingValueList(
-            self._OPEN_MSG, current_index=_settings.open_message_mode)
-        rs = RadioSetting("open_message_mode",
-                          "Open Message Mode", val)
+            self._OPEN_MSG, current_index=_settings.open_message_mode
+        )
+        rs = RadioSetting("open_message_mode", "Open Message Mode", val)
         basic.append(rs)
 
-        val = RadioSettingValueString(0, 6,
-                                      self._decode_chars(
-                                          _settings.open_message))
+        val = RadioSettingValueString(0, 6, self._decode_chars(_settings.open_message))
         val.set_charset(CHARSET)
         rs = RadioSetting("open_message", "Opening Message", val)
         basic.append(rs)
@@ -623,59 +643,64 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         rs = RadioSetting("password", "Password", val)
         basic.append(rs)
 
-        val = RadioSettingValueList(
-            self._RESUME, current_index=_settings.resume)
+        val = RadioSettingValueList(self._RESUME, current_index=_settings.resume)
         rs = RadioSetting("resume", "Scan Resume", val)
         basic.append(rs)
 
         val = RadioSettingValueList(
-            self._MONI_TCALL, current_index=_settings.moni_tcall)
+            self._MONI_TCALL, current_index=_settings.moni_tcall
+        )
         rs = RadioSetting("moni_tcall", "MONI/T-CALL switch", val)
         basic.append(rs)
 
-        rs = RadioSetting("scan_lamp", "Scan Lamp",
-                          RadioSettingValueBoolean(_settings.scan_lamp))
+        rs = RadioSetting(
+            "scan_lamp", "Scan Lamp", RadioSettingValueBoolean(_settings.scan_lamp)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Keypad Beep",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting(
+            "beep", "Keypad Beep", RadioSettingValueBoolean(_settings.beep)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("busy_led", "Busy LED",
-                          RadioSettingValueBoolean(_settings.busy_led))
+        rs = RadioSetting(
+            "busy_led", "Busy LED", RadioSettingValueBoolean(_settings.busy_led)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("bclo", "Busy Channel Lock-Out",
-                          RadioSettingValueBoolean(_settings.bclo))
+        rs = RadioSetting(
+            "bclo", "Busy Channel Lock-Out", RadioSettingValueBoolean(_settings.bclo)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("wx_alert", "WX Alert",
-                          RadioSettingValueBoolean(_settings.wx_alert))
+        rs = RadioSetting(
+            "wx_alert", "WX Alert", RadioSettingValueBoolean(_settings.wx_alert)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("att", "Attenuator",
-                          RadioSettingValueBoolean(_settings.att))
+        rs = RadioSetting("att", "Attenuator", RadioSettingValueBoolean(_settings.att))
         basic.append(rs)
 
         # ARTS
 
         val = RadioSettingValueList(
-            self._ARTS_INT, current_index=_settings.arts_interval)
+            self._ARTS_INT, current_index=_settings.arts_interval
+        )
         rs = RadioSetting("arts_interval", "ARTS Interval", val)
         arts.append(rs)
 
-        val = RadioSettingValueList(
-            self._ARTSBEEP, current_index=_settings.arts_beep)
+        val = RadioSettingValueList(self._ARTSBEEP, current_index=_settings.arts_beep)
         rs = RadioSetting("arts_beep", "ARTS Beep", val)
         arts.append(rs)
 
-        rs = RadioSetting("arts_cwid", "ARTS Send CWID",
-                          RadioSettingValueBoolean(_settings.arts_cwid))
+        rs = RadioSetting(
+            "arts_cwid", "ARTS Send CWID", RadioSettingValueBoolean(_settings.arts_cwid)
+        )
         arts.append(rs)
 
-        val = RadioSettingValueString(0, 16,
-                                      self._decode_chars(
-                                          _settings.arts_cwid_alpha))
+        val = RadioSettingValueString(
+            0, 16, self._decode_chars(_settings.arts_cwid_alpha)
+        )
         val.set_charset(CHARSET)
         rs = RadioSetting("arts_cwid_alpha", "ARTS CW ID", val)
         arts.append(rs)
@@ -683,12 +708,12 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
         # DTMF
 
         val = RadioSettingValueList(
-            self._MAN_AUTO, current_index=_settings.dtmf_autodial)
+            self._MAN_AUTO, current_index=_settings.dtmf_autodial
+        )
         rs = RadioSetting("dtmf_autodial", "DTMF Autodial", val)
         dtmf.append(rs)
 
-        val = RadioSettingValueList(
-            self._NUM_0_9, current_index=_settings.last_dtmf)
+        val = RadioSettingValueList(self._NUM_0_9, current_index=_settings.last_dtmf)
         rs = RadioSetting("last_dtmf", "Last DTMF Memory Set", val)
         dtmf.append(rs)
 
@@ -705,26 +730,24 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
 
         # WIRES
 
-        val = RadioSettingValueList(
-            self._INT_CD, current_index=_settings.internet_code)
+        val = RadioSettingValueList(self._INT_CD, current_index=_settings.internet_code)
         rs = RadioSetting("internet_code", "Internet Code", val)
         wires.append(rs)
 
-        val = RadioSettingValueList(
-            self._INT_MD, current_index=_settings.internet_mode)
-        rs = RadioSetting("internet_mode",
-                          "Internet Link Connection mode", val)
+        val = RadioSettingValueList(self._INT_MD, current_index=_settings.internet_mode)
+        rs = RadioSetting("internet_mode", "Internet Link Connection mode", val)
         wires.append(rs)
 
         val = RadioSettingValueList(
-            self._MAN_AUTO, current_index=_settings.int_autodial)
+            self._MAN_AUTO, current_index=_settings.int_autodial
+        )
         rs = RadioSetting("int_autodial", "Internet Autodial", val)
         wires.append(rs)
 
         val = RadioSettingValueList(
-            self._NUM_0_63, current_index=_settings.last_internet_dtmf)
-        rs = RadioSetting("last_internet_dtmf",
-                          "Last Internet DTMF Memory Set", val)
+            self._NUM_0_63, current_index=_settings.last_internet_dtmf
+        )
+        rs = RadioSetting("last_internet_dtmf", "Last Internet DTMF Memory Set", val)
         wires.append(rs)
 
         for i in range(64):
@@ -740,115 +763,120 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
 
         # MISC
 
-        val = RadioSettingValueList(
-            self._BELL, current_index=_settings.bell)
+        val = RadioSettingValueList(self._BELL, current_index=_settings.bell)
         rs = RadioSetting("bell", "CTCSS/DCS Bell", val)
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._CH_CNT, current_index=_settings.channel_counter_width)
-        rs = RadioSetting("channel_counter_width",
-                          "Channel Counter Search Width", val)
+            self._CH_CNT, current_index=_settings.channel_counter_width
+        )
+        rs = RadioSetting("channel_counter_width", "Channel Counter Search Width", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._EMERGENCY, current_index=_settings.emergency)
+        val = RadioSettingValueList(self._EMERGENCY, current_index=_settings.emergency)
         rs = RadioSetting("emergency", "Emergency alarm", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._ON_TIMER, current_index=_settings.on_timer)
+        val = RadioSettingValueList(self._ON_TIMER, current_index=_settings.on_timer)
         rs = RadioSetting("on_timer", "On Timer", val)
         misc.append(rs)
 
-        rs = RadioSetting("pager_answer_back", "Pager Answer Back",
-                          RadioSettingValueBoolean(
-                              _settings.pager_answer_back))
+        rs = RadioSetting(
+            "pager_answer_back",
+            "Pager Answer Back",
+            RadioSettingValueBoolean(_settings.pager_answer_back),
+        )
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._NUM_1_50, current_index=_settings.pager_rx_tone1)
+            self._NUM_1_50, current_index=_settings.pager_rx_tone1
+        )
         rs = RadioSetting("pager_rx_tone1", "Pager RX Tone 1", val)
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._NUM_1_50, current_index=_settings.pager_rx_tone2)
+            self._NUM_1_50, current_index=_settings.pager_rx_tone2
+        )
         rs = RadioSetting("pager_rx_tone2", "Pager RX Tone 2", val)
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._NUM_1_50, current_index=_settings.pager_tx_tone1)
+            self._NUM_1_50, current_index=_settings.pager_tx_tone1
+        )
         rs = RadioSetting("pager_tx_tone1", "Pager TX Tone 1", val)
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._NUM_1_50, current_index=_settings.pager_tx_tone2)
+            self._NUM_1_50, current_index=_settings.pager_tx_tone2
+        )
         rs = RadioSetting("pager_tx_tone2", "Pager TX Tone 2", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._PTT_DELAY, current_index=_settings.ptt_delay)
+        val = RadioSettingValueList(self._PTT_DELAY, current_index=_settings.ptt_delay)
         rs = RadioSetting("ptt_delay", "PTT Delay", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._RF_SQL, current_index=_settings.rf_squelch)
+        val = RadioSettingValueList(self._RF_SQL, current_index=_settings.rf_squelch)
         rs = RadioSetting("rf_squelch", "RF Squelch", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._RX_SAVE, current_index=_settings.rx_save)
+        val = RadioSettingValueList(self._RX_SAVE, current_index=_settings.rx_save)
         rs = RadioSetting("rx_save", "RX Save", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._TOT, current_index=_settings.tx_timeout)
+        val = RadioSettingValueList(self._TOT, current_index=_settings.tx_timeout)
         rs = RadioSetting("tx_timeout", "TOT", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._WAKEUP, current_index=_settings.wakeup)
+        val = RadioSettingValueList(self._WAKEUP, current_index=_settings.wakeup)
         rs = RadioSetting("wakeup", "Wakeup", val)
         misc.append(rs)
 
-        rs = RadioSetting("edge_beep", "Band-Edge Beep",
-                          RadioSettingValueBoolean(_settings.edge_beep))
+        rs = RadioSetting(
+            "edge_beep", "Band-Edge Beep", RadioSettingValueBoolean(_settings.edge_beep)
+        )
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._VFO_MODE, current_index=_settings.vfo_mode)
+        val = RadioSettingValueList(self._VFO_MODE, current_index=_settings.vfo_mode)
         rs = RadioSetting("vfo_mode", "VFO Band Edge Limiting", val)
         misc.append(rs)
 
-        rs = RadioSetting("tone_search_mute", "Tone Search Mute",
-                          RadioSettingValueBoolean(_settings.tone_search_mute))
+        rs = RadioSetting(
+            "tone_search_mute",
+            "Tone Search Mute",
+            RadioSettingValueBoolean(_settings.tone_search_mute),
+        )
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._TS_SPEED, current_index=_settings.ts_speed)
+        val = RadioSettingValueList(self._TS_SPEED, current_index=_settings.ts_speed)
         rs = RadioSetting("ts_speed", "Tone Search Speed", val)
         misc.append(rs)
 
-        rs = RadioSetting("dmr_wrt", "Direct Memory Recall Overwrite",
-                          RadioSettingValueBoolean(_settings.dmr_wrt))
+        rs = RadioSetting(
+            "dmr_wrt",
+            "Direct Memory Recall Overwrite",
+            RadioSettingValueBoolean(_settings.dmr_wrt),
+        )
         misc.append(rs)
 
-        rs = RadioSetting("tx_saver", "TX Battery Saver",
-                          RadioSettingValueBoolean(_settings.tx_saver))
+        rs = RadioSetting(
+            "tx_saver", "TX Battery Saver", RadioSettingValueBoolean(_settings.tx_saver)
+        )
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._SMART_SEARCH, current_index=_settings.smart_search)
+            self._SMART_SEARCH, current_index=_settings.smart_search
+        )
         rs = RadioSetting("smart_search", "Smart Search", val)
         misc.append(rs)
 
-        val = RadioSettingValueList(
-            self._HOME_REV, current_index=_settings.home_rev)
+        val = RadioSettingValueList(self._HOME_REV, current_index=_settings.home_rev)
         rs = RadioSetting("home_rev", "HM/RV(EMG)R/H key", val)
         misc.append(rs)
 
         val = RadioSettingValueList(
-            self._MEM_W_MD, current_index=_settings.memory_method)
+            self._MEM_W_MD, current_index=_settings.memory_method
+        )
         rs = RadioSetting("memory_method", "Memory Write Method", val)
         misc.append(rs)
 
@@ -859,6 +887,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
             return self._get_settings()
         except:
             import traceback
+
             print(traceback.format_exc())
             return None
 
@@ -872,7 +901,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
             try:
                 setting = element.get_name()
                 _settings = self._memobj.settings
-                if re.match(r'internet_dtmf_\d', setting):
+                if re.match(r"internet_dtmf_\d", setting):
                     # set dtmf fields
                     dtmfstr = str(element.value).strip()
                     newval = []
@@ -885,7 +914,7 @@ class VX6Radio(yaesu_clone.YaesuCloneModeRadio):
                     _settings = self._memobj.internet_dtmf[idx]
                     _settings.memory = newval
                     continue
-                elif re.match(r'dtmf_\d', setting):
+                elif re.match(r"dtmf_\d", setting):
                     # set dtmf fields
                     dtmfstr = str(element.value).strip()
                     newval = []

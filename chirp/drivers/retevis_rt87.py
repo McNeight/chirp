@@ -195,14 +195,16 @@ struct name names[128];
 
 
 # Radio supports UPPER/lower case and symbols
-CHARSET_ASCII_PLUS = chirp_common.CHARSET_ALPHANUMERIC + \
-                     "!\"#$%&'()*+,-./:;<=>?@[\\]^_`"
+CHARSET_ASCII_PLUS = (
+    chirp_common.CHARSET_ALPHANUMERIC + "!\"#$%&'()*+,-./:;<=>?@[\\]^_`"
+)
 
-POWER_LEVELS = [chirp_common.PowerLevel('Low', watts=1),
-                chirp_common.PowerLevel('High', watts=4)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1),
+    chirp_common.PowerLevel("High", watts=4),
+]
 
-VALID_BANDS = [(136000000, 174000000),
-               (400000000, 480000000)]
+VALID_BANDS = [(136000000, 174000000), (400000000, 480000000)]
 
 RT87_DTCS = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
 
@@ -226,8 +228,7 @@ LIST_TXSEL = ["Edit", "Busy"]
 LIST_VFOMR = ["Frequency (VFO)", "Channel (MR)"]
 LIST_VOXDELAYTIME = ["1 second", "2 seconds", "3 seconds", "4 seconds"]
 
-LED_CHOICES = ["Off", "On", "5 seconds", "10 seconds", "20 seconds",
-               "30 seconcds"]
+LED_CHOICES = ["Off", "On", "5 seconds", "10 seconds", "20 seconds", "30 seconcds"]
 LED_VALUES = [0x00, 0x01, 0x02, 0x04, 0x08, 0x10]
 
 DELAY_CHOICES = ["%s ms" % x for x in range(300, 1250, 50)]
@@ -249,19 +250,19 @@ def _identify(radio):
         if magic != echo:
             LOG.debug("expecting echo\n%s\n", util.hexprint(magic))
             LOG.debug("got echo\n%s\n", util.hexprint(echo))
-            raise Exception("Got false echo. Expected: '{}', got: '{}'."
-                            .format(magic, echo))
+            raise Exception(
+                "Got false echo. Expected: '{}', got: '{}'.".format(magic, echo)
+            )
 
         ack = radio.pipe.read(2)
         if not ack:
             raise errors.RadioNoResponse()
         elif ack != b"\x06\x30":
-            raise errors.RadioError("Radio did not ACK first command: %r" %
-                                    ack)
+            raise errors.RadioError("Radio did not ACK first command: %r" % ack)
     except errors.RadioError:
         raise
     except Exception:
-        LOG.exception('')
+        LOG.exception("")
         raise errors.RadioError("Unable to communicate with the radio")
 
 
@@ -269,20 +270,22 @@ def _download(radio):
     _identify(radio)
     data = bytes([])
     for i in range(0, 0x2000, 0x40):
-        msg = struct.pack('>cHb', b'R', i, 0x40)
+        msg = struct.pack(">cHb", b"R", i, 0x40)
         radio.pipe.write(msg)
         echo = radio.pipe.read(len(msg))  # Chew the echoed response
 
         if msg != echo:
             LOG.debug("expecting echo\n%s\n", util.hexprint(msg))
             LOG.debug("got echo\n%s\n", util.hexprint(echo))
-            raise Exception("Got false echo. Expected: '{}', got: '{}'."
-                            .format(msg, echo))
+            raise Exception(
+                "Got false echo. Expected: '{}', got: '{}'.".format(msg, echo)
+            )
 
         block = radio.pipe.read(0x40 + 4)
         if len(block) != (0x40 + 4):
-            raise errors.RadioError("Radio sent a short block (%02x/%02x)" % (
-                len(block), 0x44))
+            raise errors.RadioError(
+                "Radio sent a short block (%02x/%02x)" % (len(block), 0x44)
+            )
         data += block[4:]
 
         if radio.status_fn:
@@ -302,14 +305,15 @@ def _upload(radio):
 
     for start_addr, end_addr, block_size in radio._ranges:
         for addr in range(start_addr, end_addr, block_size):
-            msg = struct.pack('>cHb', b'W', addr, block_size)
-            msg += radio._mmap[addr:(addr + block_size)]
+            msg = struct.pack(">cHb", b"W", addr, block_size)
+            msg += radio._mmap[addr : (addr + block_size)]
             radio.pipe.write(msg)
             radio.pipe.read(block_size + 4)
             ack = radio.pipe.read(1)
-            if ack != b'\x06':
-                raise errors.RadioError('Radio did not ACK block %i (0x%04x)'
-                                        % (addr, addr))
+            if ack != b"\x06":
+                raise errors.RadioError(
+                    "Radio did not ACK block %i (0x%04x)" % (addr, addr)
+                )
 
             if radio.status_fn:
                 status = chirp_common.Status()
@@ -339,16 +343,22 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         # Attributes
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_duplexes = ['', '-', '+', 'split', 'off']
-        rf.valid_tuning_steps = [0.5, 2.5, 5, 6.25, 10, 12.5, 25, 37.5, 50,
-                                 100]
+        rf.valid_duplexes = ["", "-", "+", "split", "off"]
+        rf.valid_tuning_steps = [0.5, 2.5, 5, 6.25, 10, 12.5, 25, 37.5, 50, 100]
         rf.valid_bands = VALID_BANDS
         rf.valid_skips = ["", "S"]
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_characters = CHARSET_ASCII_PLUS
         rf.valid_name_length = 10
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
 
         rf.memory_bounds = (1, 128)
         rf.can_odd_split = True
@@ -364,9 +374,8 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -379,9 +388,8 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -393,12 +401,12 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return (repr(self._memobj.channels[number - 1]) +
-                repr(self._memobj.names[number - 1]))
+        return repr(self._memobj.channels[number - 1]) + repr(
+            self._memobj.names[number - 1]
+        )
 
     def _get_memobjs(self, number):
-        return (self._memobj.channels[number - 1],
-                self._memobj.names[number - 1])
+        return (self._memobj.channels[number - 1], self._memobj.names[number - 1])
 
     def _decode_tone(self, toneval):
         pol = "N"
@@ -439,12 +447,12 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         raw_tx = ""
         for i in range(0, 4):
             raw_tx += _mem.tx_freq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+        return raw_tx == "\xff\xff\xff\xff"
 
     def _bbcd2num(self, bcdarr, strlen=8):
         # doing bbcd
         LOG.debug(bcdarr.get_value())
-        string = ''.join("%02X" % b for b in bcdarr)
+        string = "".join("%02X" % b for b in bcdarr)
         LOG.debug("@_bbcd2num, received: %s" % string)
         if strlen <= 8:
             string = string[:strlen]
@@ -468,7 +476,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         else:
             mem.number = number
 
-        if _mem.get_raw(asbytes=False).startswith("\xFF\xFF\xFF\xFF"):
+        if _mem.get_raw(asbytes=False).startswith("\xff\xff\xff\xff"):
             mem.empty = True
             return mem
 
@@ -482,8 +490,9 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
             # TX freq set
             offset = (int(_mem.tx_freq) * 10) - mem.freq
             if offset != 0:
-                if chirp_common.is_split(self.get_features().valid_bands,
-                                         mem.freq, int(_mem.tx_freq) * 10):
+                if chirp_common.is_split(
+                    self.get_features().valid_bands, mem.freq, int(_mem.tx_freq) * 10
+                ):
                     mem.duplex = "split"
                     mem.offset = int(_mem.tx_freq) * 10
                 elif offset < 0:
@@ -498,14 +507,14 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         txmode, txval, txpol = self._decode_tone(_mem.tx_tone)
         rxmode, rxval, rxpol = self._decode_tone(_mem.rx_tone)
 
-        chirp_common.split_tone_decode(mem,
-                                       (txmode, txval, txpol),
-                                       (rxmode, rxval, rxpol))
+        chirp_common.split_tone_decode(
+            mem, (txmode, txval, txpol), (rxmode, rxval, rxpol)
+        )
 
-        mem.mode = 'NFM' if _mem.narrow else 'FM'
-        mem.skip = '' if _mem.scanadd else 'S'
+        mem.mode = "NFM" if _mem.narrow else "FM"
+        mem.skip = "" if _mem.scanadd else "S"
         mem.power = POWER_LEVELS[int(_mem.highpower)]
-        mem.name = str(_name.name).rstrip('\xFF ')
+        mem.name = str(_name.name).rstrip("\xff ")
 
         # Extra
         mem.extra = RadioSettingGroup("extra", "Extra")
@@ -535,16 +544,16 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
     def set_memory(self, mem):
         _mem, _name = self._get_memobjs(mem.number)
         if mem.empty:
-            _mem.set_raw('\xFF' * 16)
-            _name.set_raw('\xFF' * 10)
+            _mem.set_raw("\xff" * 16)
+            _name.set_raw("\xff" * 10)
             return
-        _mem.set_raw('\x00' * 16)
+        _mem.set_raw("\x00" * 16)
 
         _mem.rx_freq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.tx_freq = mem.offset / 10
         elif mem.duplex == "+":
@@ -554,16 +563,17 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         else:
             _mem.tx_freq = mem.freq / 10
 
-        (txmode, txval, txpol), (rxmode, rxval, rxpol) = \
-            chirp_common.split_tone_encode(mem)
+        (txmode, txval, txpol), (rxmode, rxval, rxpol) = chirp_common.split_tone_encode(
+            mem
+        )
 
         self._encode_tone(_mem.tx_tone, txmode, txval, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxval, rxpol)
 
-        _mem.narrow = mem.mode == 'NFM'
-        _mem.scanadd = mem.skip != 'S'
+        _mem.narrow = mem.mode == "NFM"
+        _mem.scanadd = mem.skip != "S"
         _mem.highpower = POWER_LEVELS.index(mem.power) if mem.power else 1
-        _name.name = mem.name.rstrip(' ').ljust(10, '\xFF')
+        _name.name = mem.name.rstrip(" ").ljust(10, "\xff")
 
         # extra settings
         for setting in mem.extra:
@@ -586,8 +596,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         # Menu 01: SCAN
 
         # Menu 02: TX.SEL aka PRI
-        rs = RadioSettingValueList(LIST_TXSEL,
-                                   current_index=_settings.txsel)
+        rs = RadioSettingValueList(LIST_TXSEL, current_index=_settings.txsel)
         rset = RadioSetting("txsel", "Priority Transmit", rs)
         basic.append(rset)
 
@@ -597,8 +606,9 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Function Setting: VOX Delay Time
-        rs = RadioSettingValueList(LIST_VOXDELAYTIME,
-                                   current_index=_settings.voxdelaytime)
+        rs = RadioSettingValueList(
+            LIST_VOXDELAYTIME, current_index=_settings.voxdelaytime
+        )
         rset = RadioSetting("voxdelaytime", "VOX Delay Time", rs)
         basic.append(rset)
 
@@ -616,8 +626,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
 
         # Menu 07: LED (Backlight Time)
         def apply_lamp_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(setting.value) +
-                      " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = LED_CHOICES.index(val)
             val = LED_VALUES[index]
@@ -633,8 +642,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 08: BRIGHT (Backlight Brightness)
-        rs = RadioSettingValueList(LIST_BRIGHTNESS,
-                                   current_index=_settings.brightness)
+        rs = RadioSettingValueList(LIST_BRIGHTNESS, current_index=_settings.brightness)
         rset = RadioSetting("brightness", "Backlight Brightness", rs)
         basic.append(rset)
 
@@ -649,8 +657,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 11: TOT (Transmitter Time-out Timer)
-        rs = RadioSettingValueList(LIST_TOT,
-                                   current_index=_settings.tot)
+        rs = RadioSettingValueList(LIST_TOT, current_index=_settings.tot)
         rset = RadioSetting("tot", "Time-Out Timer", rs)
         basic.append(rset)
 
@@ -673,8 +680,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 17: SCN-REV (Scan Mode)
-        rs = RadioSettingValueList(LIST_SCNREV,
-                                   current_index=_settings.scanmode)
+        rs = RadioSettingValueList(LIST_SCNREV, current_index=_settings.scanmode)
         rset = RadioSetting("scanmode", "Scan Mode", rs)
         basic.append(rset)
 
@@ -689,26 +695,22 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 20: BATT SHOW (Battery Display Method)
-        rs = RadioSettingValueList(LIST_BATTERY,
-                                   current_index=_settings.batterydis)
+        rs = RadioSettingValueList(LIST_BATTERY, current_index=_settings.batterydis)
         rset = RadioSetting("batterydis", "Battery Display Method", rs)
         basic.append(rset)
 
         # Menu 21: PF1 (Side-Key 1)
-        rs = RadioSettingValueList(LIST_SIDEKEY,
-                                   current_index=_settings.pf1)
+        rs = RadioSettingValueList(LIST_SIDEKEY, current_index=_settings.pf1)
         rset = RadioSetting("pf1", "Side Key Function 1", rs)
         basic.append(rset)
 
         # Menu 22: PF2 (Side-Key 2)
-        rs = RadioSettingValueList(LIST_SIDEKEY,
-                                   current_index=_settings.pf2)
+        rs = RadioSettingValueList(LIST_SIDEKEY, current_index=_settings.pf2)
         rset = RadioSetting("pf2", "Side Key Function 2", rs)
         basic.append(rset)
 
         # Menu 23: OPN.SET (Power-On Display)
-        rs = RadioSettingValueList(LIST_POWERON,
-                                   current_index=_settings.msgmode)
+        rs = RadioSettingValueList(LIST_POWERON, current_index=_settings.msgmode)
         rset = RadioSetting("msgmode", "Power-On Display Method", rs)
         basic.append(rset)
 
@@ -774,6 +776,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
                 except IndexError:
                     value.append(0xFF)
             obj.bot = value
+
         rs.set_apply_callback(apply_bot_code, self._memobj.pttid)
         pttid.append(rs)
 
@@ -792,6 +795,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
                 except IndexError:
                     value.append(0xFF)
             obj.eot = value
+
         rs.set_apply_callback(apply_eot_code, self._memobj.pttid)
         pttid.append(rs)
 
@@ -805,8 +809,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
 
         # Common Set: Digit Delay[ms] (broken in OEM software)
         def apply_delay_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(setting.value) +
-                      " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = DELAY_CHOICES.index(val)
             val = DELAY_VALUES[index]
@@ -822,8 +825,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         common.append(rset)
 
         # Common Set: Auto Reset Timer[s]
-        rs = RadioSettingValueList(LIST_RESET,
-                                   current_index=_optsig.autoresettimer)
+        rs = RadioSettingValueList(LIST_RESET, current_index=_optsig.autoresettimer)
         rset = RadioSetting("optsig.autoresettimer", "Auto Reset Timer", rs)
         common.append(rset)
 
@@ -834,8 +836,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
 
         # Common Set: Stun Mode
         def apply_stun_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(setting.value) +
-                      " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = STUN_CHOICES.index(val)
             val = STUN_VALUES[index]
@@ -897,8 +898,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
             code = RadioSettingValueString(0, 4, _filter(codestr))
             code.set_charset(NUMERIC_CHARSET + list(" "))
             code.set_mutable(False)
-            rs = RadioSetting("msklist/%i.mskcall" % i, "CallList %i" % i,
-                              code)
+            rs = RadioSetting("msklist/%i.mskcall" % i, "CallList %i" % i, code)
             msk.append(rs)
 
         # DTMF
@@ -909,12 +909,10 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
 
         for i in range(0, 10):
             _codeobj = self._memobj.dtmfenc[i].code
-            _code = "".join([DTMF_CHARSET[x] for x in _codeobj if
-                            int(x) < 0x1F])
+            _code = "".join([DTMF_CHARSET[x] for x in _codeobj if int(x) < 0x1F])
             val = RadioSettingValueString(0, 16, _code, False)
             val.set_charset(DTMF_CHARSET)
-            rs = RadioSetting("dtmfenc/%i.code" % i,
-                              "Encode %i" % i, val)
+            rs = RadioSetting("dtmfenc/%i.code" % i, "Encode %i" % i, val)
 
             def apply_code(setting, obj):
                 code = []
@@ -924,25 +922,23 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
                     except IndexError:
                         code.append(0xFF)
                 obj.code = code
+
             rs.set_apply_callback(apply_code, self._memobj.dtmfenc[i])
             dtmf.append(rs)
 
         # DTMF: DTMF Signaling
-        rs = RadioSettingValueList(LIST_DTMFSIG,
-                                   current_index=_settings.dtmfsig)
+        rs = RadioSettingValueList(LIST_DTMFSIG, current_index=_settings.dtmfsig)
         rset = RadioSetting("dtmfsig", "DTMF Signaling", rs)
         dtmf.append(rset)
 
         # DTMF: Intermediate Code
-        rs = RadioSettingValueList(LIST_INTCODE,
-                                   current_index=_optsig.intcode)
+        rs = RadioSettingValueList(LIST_INTCODE, current_index=_optsig.intcode)
         rset = RadioSetting("optsig.intcode", "Intermediate Code", rs)
         dtmf.append(rset)
 
         # DTMF: Group Code
         def apply_group_listvalue(setting, obj):
-            LOG.debug("Setting value: " + str(setting.value) +
-                      " from list")
+            LOG.debug("Setting value: " + str(setting.value) + " from list")
             val = str(setting.value)
             index = GROUP_CHOICES.index(val)
             val = GROUP_VALUES[index]
@@ -958,8 +954,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
         dtmf.append(rset)
 
         # DTMF: DTMF Code Length
-        rs = RadioSettingValueList(LIST_DTMFLEN,
-                                   current_index=_optsig.dtmflen - 3)
+        rs = RadioSettingValueList(LIST_DTMFLEN, current_index=_optsig.dtmflen - 3)
         rset = RadioSetting("optsig.dtmflen", "DTMF Code Length", rs)
         dtmf.append(rset)
 
@@ -970,6 +965,7 @@ class Rt87BaseRadio(chirp_common.CloneModeRadio):
             return self._get_settings()
         except:
             import traceback
+
             LOG.error("failed to parse settings")
             traceback.print_exc()
             return None
@@ -1026,8 +1022,8 @@ class RT87(Rt87BaseRadio):
     MODEL = "RT87"
 
     _ranges = [
-               (0x0000, 0x0A00, 0x40),
-               (0x0BC0, 0x0C00, 0x08),
-               (0x0C00, 0x0F00, 0x40),
-               (0x1000, 0x2000, 0x40),
-              ]
+        (0x0000, 0x0A00, 0x40),
+        (0x0BC0, 0x0C00, 0x08),
+        (0x0C00, 0x0F00, 0x40),
+        (0x1000, 0x2000, 0x40),
+    ]

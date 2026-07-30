@@ -27,44 +27,47 @@ LOG = logging.getLogger(__name__)
 
 
 class PrzemiennikiNet(base.NetworkResultRadio):
-    VENDOR = 'przemienniki.net'
+    VENDOR = "przemienniki.net"
 
     def get_label(self):
-        return 'przemienniki.net'
+        return "przemienniki.net"
 
     def do_fetch(self, status, params):
-        status.send_status(_('Querying'), 10)
-        if not params['range'] or int(params['range']) == 0:
-            params.pop('range')
-        LOG.debug('query params: %s' % str(params))
+        status.send_status(_("Querying"), 10)
+        if not params["range"] or int(params["range"]) == 0:
+            params.pop("range")
+        LOG.debug("query params: %s" % str(params))
         try:
-            r = requests.get('http://przemienniki.net/export/chirp.csv',
-                             headers=base.HEADERS,
-                             params=params,
-                             stream=True)
+            r = requests.get(
+                "http://przemienniki.net/export/chirp.csv",
+                headers=base.HEADERS,
+                params=params,
+                stream=True,
+            )
             r.raise_for_status()
         except requests.exceptions.RequestException as e:
-            LOG.error('Failed to query przemienniki.net: %s' % e)
-            status.send_fail(_('Unable to query'))
+            LOG.error("Failed to query przemienniki.net: %s" % e)
+            status.send_fail(_("Unable to query"))
             return
-        status.send_status(_('Parsing'), 20)
+        status.send_status(_("Parsing"), 20)
         try:
             csv = generic_csv.CSVRadio(None)
             csv._load(x.decode() for x in r.iter_lines())
         except errors.InvalidDataError:
-            status.send_fail(_('No results'))
+            status.send_fail(_("No results"))
             return
         except Exception as e:
-            LOG.error('Error parsing result: %s' % e)
-            status.send_fail(_('Failed to parse result'))
+            LOG.error("Error parsing result: %s" % e)
+            status.send_fail(_("Failed to parse result"))
             return
 
-        status.send_status(_('Sorting'), 80)
+        status.send_status(_("Sorting"), 80)
 
-        self._memories = [csv.get_memory(x) for x in range(1, 999)
-                          if not csv.get_memory(x).empty]
-        if not any([params['latitude'], params['longitude']]):
-            LOG.debug('Sorting memories by name')
+        self._memories = [
+            csv.get_memory(x) for x in range(1, 999) if not csv.get_memory(x).empty
+        ]
+        if not any([params["latitude"], params["longitude"]]):
+            LOG.debug("Sorting memories by name")
             self._memories.sort(key=lambda m: m.name)
             # Now renumber them
             for i, mem in enumerate(self._memories):

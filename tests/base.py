@@ -18,15 +18,24 @@ class DriverTest(unittest.TestCase):
         super().setUp()
         self.patches = []
 
-        if ('CHIRP_TEST_BITWISE_STRICT_BYTES' in os.environ and
-                not self.RADIO_CLASS.NEEDS_COMPAT_SERIAL):
-            self.use_patch(unittest.mock.patch(
-                'chirp.bitwise.DataElement._compat_bytes',
-                side_effect=self._strict_bytes))
-            self.use_patch(unittest.mock.patch(
-                'chirp.bitwise.string_straight_encode',
-                side_effect=AssertionError(
-                    'string_straight_encode not allowed in strict mode')))
+        if (
+            "CHIRP_TEST_BITWISE_STRICT_BYTES" in os.environ
+            and not self.RADIO_CLASS.NEEDS_COMPAT_SERIAL
+        ):
+            self.use_patch(
+                unittest.mock.patch(
+                    "chirp.bitwise.DataElement._compat_bytes",
+                    side_effect=self._strict_bytes,
+                )
+            )
+            self.use_patch(
+                unittest.mock.patch(
+                    "chirp.bitwise.string_straight_encode",
+                    side_effect=AssertionError(
+                        "string_straight_encode not allowed in strict mode"
+                    ),
+                )
+            )
 
         self.parent = self.RADIO_CLASS(self.TEST_IMAGE)
         self.parent_rf = self.parent.get_features()
@@ -50,8 +59,8 @@ class DriverTest(unittest.TestCase):
 
     def _strict_bytes(self, bs, asbytes):
         """Enforce strict get_raw() behavior returning bytes()"""
-        assert asbytes, 'asbytes must be True in strict mode'
-        assert isinstance(bs, bytes), 'Type should be bytes here'
+        assert asbytes, "asbytes must be True in strict mode"
+        assert isinstance(bs, bytes), "Type should be bytes here"
         return bs
 
     def get_mem(self):
@@ -61,12 +70,12 @@ class DriverTest(unittest.TestCase):
         try:
             m = self.radio.get_memory(1)
             # Pre-filter the name so it will match what we expect back
-            if 'name' not in m.immutable:
+            if "name" not in m.immutable:
                 m.name = self.radio.filter_name(m.name)
             # Disable duplex in case it's set because this will cause some
             # weirdness if we much with other values, like offset.
-            if 'duplex' not in m.immutable:
-                m.duplex = ''
+            if "duplex" not in m.immutable:
+                m.duplex = ""
             if m.immutable:
                 return m
         except Exception:
@@ -94,8 +103,7 @@ class DriverTest(unittest.TestCase):
                 # bottom of the band. Select a different tuning_step each
                 # time, as some radios have various requirements for which
                 # steps work in each band, mode, etc.
-                steps = [x for x in self.rf.valid_tuning_steps
-                         if x > 1]
+                steps = [x for x in self.rf.valid_tuning_steps if x > 1]
                 step_index = attempt % len(steps)
                 m.tuning_step = steps[step_index]
                 m.freq += int(m.tuning_step * 1000)
@@ -136,8 +144,10 @@ class DriverTest(unittest.TestCase):
 
                 attempt += 1
 
-        self.fail("No mutable memory locations found - unable to run this "
-                  "test because I don't have a memory to test with")
+        self.fail(
+            "No mutable memory locations found - unable to run this "
+            "test because I don't have a memory to test with"
+        )
 
     def assertEqualMem(self, a, b, ignore=None):
         if a.tmode == "Cross":
@@ -145,11 +155,11 @@ class DriverTest(unittest.TestCase):
         if ignore is None:
             ignore = []
 
-        if a.duplex == b.duplex == 'off':
+        if a.duplex == b.duplex == "off":
             # If we're asking for duplex=off, we should not obsess over the
             # driver keeping track of our offset, as it may use the offset
             # field to manage the TX behavior
-            ignore.append('offset')
+            ignore.append("offset")
 
         a_vals = {}
         b_vals = {}
@@ -172,26 +182,27 @@ class DriverTest(unittest.TestCase):
             elif k == "tuning_step" and not self.rf.has_tuning_step:
                 continue
             elif k == "rtone" and not (
-                a.tmode == "Tone" or
-                (a.tmode == "TSQL" and not self.rf.has_ctone) or
-                (a.tmode == "Cross" and tx_mode == "Tone") or
-                (a.tmode == "Cross" and rx_mode == "Tone" and
-                 not self.rf.has_ctone)
+                a.tmode == "Tone"
+                or (a.tmode == "TSQL" and not self.rf.has_ctone)
+                or (a.tmode == "Cross" and tx_mode == "Tone")
+                or (a.tmode == "Cross" and rx_mode == "Tone" and not self.rf.has_ctone)
             ):
                 continue
-            elif k == "ctone" and (not self.rf.has_ctone or
-                                   not (a.tmode == "TSQL" or
-                                        (a.tmode == "Cross" and
-                                         rx_mode == "Tone"))):
+            elif k == "ctone" and (
+                not self.rf.has_ctone
+                or not (a.tmode == "TSQL" or (a.tmode == "Cross" and rx_mode == "Tone"))
+            ):
                 continue
-            elif k == "dtcs" and (a.tmode != 'DTCS' or
-                                  (a.tmode == 'Cross' and tx_mode != 'DTCS')):
+            elif k == "dtcs" and (
+                a.tmode != "DTCS" or (a.tmode == "Cross" and tx_mode != "DTCS")
+            ):
                 # If we are not in a tmode where a transmit DTCS code is
                 # required, we do not care if the code is persisted.
                 continue
-            elif k == "rx_dtcs" and (not self.rf.has_rx_dtcs or
-                                     not (a.tmode == "Cross" and
-                                          rx_mode == "DTCS")):
+            elif k == "rx_dtcs" and (
+                not self.rf.has_rx_dtcs
+                or not (a.tmode == "Cross" and rx_mode == "DTCS")
+            ):
                 # If we are not in a tmode where a receive DTCS code is
                 # required, we do not care if the code is persisted.
                 continue
@@ -200,8 +211,11 @@ class DriverTest(unittest.TestCase):
             elif k == "cross_mode" and a.tmode != "Cross":
                 continue
 
-            if (a.freq in bandplan_na.ALL_GMRS_FREQS and
-                    k in a.immutable or k in b.immutable):
+            if (
+                a.freq in bandplan_na.ALL_GMRS_FREQS
+                and k in a.immutable
+                or k in b.immutable
+            ):
                 # If the radio returned a field in immutable, it probably
                 # means that it's a mandatory setting (i.e. power or duplex
                 # in GMRS)
@@ -210,8 +224,7 @@ class DriverTest(unittest.TestCase):
             a_vals[k] = v
             b_vals[k] = b.__dict__[k]
 
-        self.assertEqual(a_vals, b_vals,
-                         'Memories have unexpected differences')
+        self.assertEqual(a_vals, b_vals, "Memories have unexpected differences")
 
         # Consider mem.extra as matching if the structure remains the same.
         # Since we don't know anything about model-specific things here we
@@ -219,9 +232,11 @@ class DriverTest(unittest.TestCase):
         # structure doesn't change due to the contents of the rest of the
         # memory.
         if a.extra and b.extra:
-            self.assertEqual([x.get_name() for x in a.extra],
-                             [x.get_name() for x in b.extra],
-                             'Memories have different mem.extra keys')
+            self.assertEqual(
+                [x.get_name() for x in a.extra],
+                [x.get_name() for x in b.extra],
+                "Memories have different mem.extra keys",
+            )
 
 
 def requires_feature(flag, equal=None):
@@ -229,9 +244,11 @@ def requires_feature(flag, equal=None):
         @functools.wraps(fn)
         def wraps(self, *a, **k):
             val = getattr(self.rf, flag)
-            if (val == equal if equal is not None else val):
+            if val == equal if equal is not None else val:
                 fn(self, *a, **k)
             else:
-                self.skipTest('Feature %s not supported' % flag)
+                self.skipTest("Feature %s not supported" % flag)
+
         return wraps
+
     return inner

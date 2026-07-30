@@ -110,8 +110,18 @@ TMODES = ["", "Tone", "DTCS", "DTCS"]
 
 AB_LIST = ["A", "B"]
 ABR_LIST = ["OFF", "ON", "Key"]
-AREA_LIST = ["China", "Japan", "Korea", "Malaysia", "American",
-             "Australia", "Iran", "Taiwan", "Europe", "Russia"]
+AREA_LIST = [
+    "China",
+    "Japan",
+    "Korea",
+    "Malaysia",
+    "American",
+    "Australia",
+    "Iran",
+    "Taiwan",
+    "Europe",
+    "Russia",
+]
 MDF_LIST = ["Frequency", "Channel #", "Name"]
 RING_LIST = ["OFF"] + ["%s" % x for x in range(1, 11)]
 TOT_LIST = ["OFF"] + ["%s seconds" % x for x in range(30, 210, 30)]
@@ -119,35 +129,74 @@ TOT2_LIST = ["OFF"] + ["%s seconds" % x for x in range(60, 240, 30)]
 VOICE_LIST = ["Off", "Chinese", "English"]
 VOX_LIST = ["OFF"] + ["%s" % x for x in range(1, 6)]
 WORKMODE_LIST = ["General", "PMR"]
-WX_LIST = ["CH01 - 162.550",
-           "CH02 - 162.400",
-           "CH03 - 162.475",
-           "CH04 - 162.425",
-           "CH05 - 162.450",
-           "CH06 - 162.500",
-           "CH07 - 162.525",
-           "CH08 - 161.650",
-           "CH09 - 161.775",
-           "CH10 - 161.750",
-           "CH11 - 162.000"
-           ]
+WX_LIST = [
+    "CH01 - 162.550",
+    "CH02 - 162.400",
+    "CH03 - 162.475",
+    "CH04 - 162.425",
+    "CH05 - 162.450",
+    "CH06 - 162.500",
+    "CH07 - 162.525",
+    "CH08 - 161.650",
+    "CH09 - 161.775",
+    "CH10 - 161.750",
+    "CH11 - 162.000",
+]
 
-FRS_FREQS1 = [462562500, 462587500, 462612500, 462637500, 462662500,
-              462687500, 462712500]
-FRS_FREQS2 = [467562500, 467587500, 467612500, 467637500, 467662500,
-              467687500, 467712500]
-FRS_FREQS3 = [462550000, 462575000, 462600000, 462625000, 462650000,
-              462675000, 462700000, 462725000]
+FRS_FREQS1 = [
+    462562500,
+    462587500,
+    462612500,
+    462637500,
+    462662500,
+    462687500,
+    462712500,
+]
+FRS_FREQS2 = [
+    467562500,
+    467587500,
+    467612500,
+    467637500,
+    467662500,
+    467687500,
+    467712500,
+]
+FRS_FREQS3 = [
+    462550000,
+    462575000,
+    462600000,
+    462625000,
+    462650000,
+    462675000,
+    462700000,
+    462725000,
+]
 FRS_FREQS = FRS_FREQS1 + FRS_FREQS2 + FRS_FREQS3
 
 GMRS_FREQS = FRS_FREQS + FRS_FREQS3
 
 MURS_FREQS = [151820000, 151880000, 151940000, 154570000, 154600000]
 
-PMR_FREQS1 = [446006250, 446018750, 446031250, 446043750, 446056250,
-              446068750, 446081250, 446093750]
-PMR_FREQS2 = [446106250, 446118750, 446131250, 446143750, 446156250,
-              446168750, 446181250, 446193750]
+PMR_FREQS1 = [
+    446006250,
+    446018750,
+    446031250,
+    446043750,
+    446056250,
+    446068750,
+    446081250,
+    446093750,
+]
+PMR_FREQS2 = [
+    446106250,
+    446118750,
+    446131250,
+    446143750,
+    446156250,
+    446168750,
+    446181250,
+    446193750,
+]
 PMR_FREQS = PMR_FREQS1 + PMR_FREQS2
 
 VOICE_CHOICES = ["Off", "On"]
@@ -214,7 +263,7 @@ def _exit_programming_mode(radio):
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -244,8 +293,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -256,8 +305,7 @@ def _write_block(radio, block_addr, block_size):
             raise Exception("No ACK")
     except:
         _exit_programming_mode(radio)
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -307,6 +355,7 @@ def do_upload(radio):
 
 class BFT8Radio(chirp_common.CloneModeRadio):
     """Baofeng BF-T8"""
+
     VENDOR = "Baofeng"
     MODEL = "BF-T8"
     BAUD_RATE = 9600
@@ -320,21 +369,21 @@ class BFT8Radio(chirp_common.CloneModeRadio):
     DTCS_CODES = sorted(chirp_common.DTCS_CODES)
     DUPLEXES = ["", "-", "+", "split", "off"]
 
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
     VALID_BANDS = [(400000000, 470000000)]
 
     _magic = b"\x02" + b"PROGRAM"
-    _fingerprint = b"\x2E" + b"BF-T6" + b"\x2E"
+    _fingerprint = b"\x2e" + b"BF-T6" + b"\x2e"
     _upper = 99
-    _mem_params = (_upper,  # number of channels
-                   _upper   # number of names
-                   )
+    _mem_params = (_upper, _upper)  # number of channels  # number of names
     _frs = _gmrs = _murs = _pmr = False
 
     _ranges = [
-               (0x0000, 0x0B60),
-              ]
+        (0x0000, 0x0B60),
+    ]
     _memsize = 0x0B60
 
     def get_features(self):
@@ -351,14 +400,21 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         rf.valid_characters = self.VALID_CHARS
         rf.valid_skips = self.SKIP_VALUES
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_dtcs_codes = self.DTCS_CODES
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_duplexes = self.DUPLEXES
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
         rf.memory_bounds = (1, self._upper)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
         rf.valid_bands = self.VALID_BANDS
 
         return rf
@@ -377,9 +433,8 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -392,9 +447,8 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
@@ -418,14 +472,15 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         tx_pol = _mem.tx_tmode == 0x03 and "R" or "N"
         rx_pol = _mem.rx_tmode == 0x03 and "R" or "N"
 
-        chirp_common.split_tone_decode(mem, (tx_tmode, tx_tone, tx_pol),
-                                       (rx_tmode, rx_tone, rx_pol))
+        chirp_common.split_tone_decode(
+            mem, (tx_tmode, tx_tone, tx_pol), (rx_tmode, rx_tone, rx_pol)
+        )
 
     def _is_txinh(self, _mem):
         raw_tx = b""
         for i in range(0, 4):
             raw_tx += _mem.txfreq[i].get_raw()
-        return raw_tx == b"\xFF\xFF\xFF\xFF"
+        return raw_tx == b"\xff\xff\xff\xff"
 
     def _get_mem(self, number):
         return self._memobj.memory[number - 1]
@@ -448,14 +503,14 @@ class BFT8Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw() == b"\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
 
-        if _mem.get_raw() == (b"\xFF" * 16):
+        if _mem.get_raw() == (b"\xff" * 16):
             LOG.debug("Initializing empty memory")
-            _mem.set_raw("\x00" * 13 + "\xFF" * 3)
+            _mem.set_raw("\x00" * 13 + "\xff" * 3)
 
         if self._is_txinh(_mem):
             mem.duplex = "off"
@@ -474,7 +529,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
 
         if self.HAS_NAMES:
             for char in _nam.name:
-                if str(char) == "\xFF":
+                if str(char) == "\xff":
                     char = " "  # The OEM software may have 0xFF mid-name
                 mem.name += str(char)
             mem.name = mem.name.rstrip()
@@ -487,8 +542,10 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         try:
             mem.power = levels[_mem.lowpower]
         except IndexError:
-            LOG.error("Radio reported invalid power level %s (in %s)" %
-                      (_mem.lowpower, levels))
+            LOG.error(
+                "Radio reported invalid power level %s (in %s)"
+                % (_mem.lowpower, levels)
+            )
             mem.power = levels[0]
 
         immutable = []
@@ -498,13 +555,12 @@ class BFT8Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 22:
                     FRS_FREQ = FRS_FREQS[mem.number - 1]
                     mem.freq = FRS_FREQ
-                mem.duplex == ''
+                mem.duplex == ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 if mem.number >= 8 and mem.number <= 14:
                     mem.power = self.POWER_LEVELS[1]
-                    immutable = ["empty", "freq", "duplex", "offset", "mode",
-                                 "power"]
+                    immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
                 else:
                     immutable = ["empty", "freq", "duplex", "offset", "mode"]
         elif self._murs:
@@ -512,7 +568,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 5:
                     MURS_FREQ = MURS_FREQS[mem.number - 1]
                     mem.freq = MURS_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 if mem.number <= 3:
                     mem.mode = "NFM"
@@ -524,12 +580,11 @@ class BFT8Radio(chirp_common.CloneModeRadio):
                 if mem.number >= 1 and mem.number <= 16:
                     PMR_FREQ = PMR_FREQS[mem.number - 1]
                     mem.freq = PMR_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 mem.power = self.POWER_LEVELS[1]
-                immutable = ["empty", "freq", "duplex", "offset", "mode",
-                             "power"]
+                immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
         elif self._gmrs:
             if mem.freq in GMRS_FREQS:
                 if mem.number >= 1 and mem.number <= 30:
@@ -537,41 +592,41 @@ class BFT8Radio(chirp_common.CloneModeRadio):
                     mem.freq = GMRS_FREQ
                     immutable = ["empty", "freq"]
                 if mem.number >= 1 and mem.number <= 7:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     immutable += ["duplex", "offset"]
                 elif mem.number >= 8 and mem.number <= 14:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     mem.mode = "NFM"
                     mem.power = self.POWER_LEVELS[1]
                     immutable += ["duplex", "offset", "mode", "power"]
                 elif mem.number >= 15 and mem.number <= 22:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     immutable += ["duplex", "offset"]
                 elif mem.number >= 23 and mem.number <= 30:
-                    mem.duplex = '+'
+                    mem.duplex = "+"
                     mem.offset = 5000000
                     immutable += ["duplex", "offset"]
                 elif mem.freq in FRS_FREQS1:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     immutable += ["duplex", "offset"]
                 elif mem.freq in FRS_FREQS2:
-                    mem.duplex = ''
+                    mem.duplex = ""
                     mem.offset = 0
                     mem.mode = "NFM"
                     mem.power = self.POWER_LEVELS[1]
                     immutable += ["duplex", "offset", "mode", "power"]
                 elif mem.freq in FRS_FREQS3:
-                    if mem.duplex == '':
+                    if mem.duplex == "":
                         mem.offset = 0
-                    if mem.duplex == '+':
+                    if mem.duplex == "+":
                         mem.offset = 5000000
             else:
                 if mem.freq not in GMRS_FREQS:
-                    mem.duplex = 'off'
+                    mem.duplex = "off"
                     mem.offset = 0
                     immutable = ["duplex", "offset"]
 
@@ -580,8 +635,9 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         return mem
 
     def _set_tone(self, mem, _mem):
-        ((txmode, txtone, txpol),
-         (rxmode, rxtone, rxpol)) = chirp_common.split_tone_encode(mem)
+        (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = (
+            chirp_common.split_tone_encode(mem)
+        )
 
         _mem.tx_tmode = TMODES.index(txmode)
         _mem.rx_tmode = TMODES.index(rxmode)
@@ -609,22 +665,22 @@ class BFT8Radio(chirp_common.CloneModeRadio):
 
         # if empty memory
         if mem.empty:
-            _mem.set_raw("\xFF" * (_mem.size() // 8))
+            _mem.set_raw("\xff" * (_mem.size() // 8))
 
             if self.HAS_NAMES:
                 for i in range(0, self.NAME_LENGTH):
-                    _nam.name[i].set_raw("\xFF")
+                    _nam.name[i].set_raw("\xff")
 
             return mem
 
-        _mem.set_raw("\x00" * 13 + "\xFF" * 3)
+        _mem.set_raw("\x00" * 13 + "\xff" * 3)
 
         # frequency
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -644,7 +700,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
                 try:
                     _nam.name[i] = mem.name[i]
                 except IndexError:
-                    _nam.name[i] = "\xFF"
+                    _nam.name[i] = "\xff"
 
         # tone data
         self._set_tone(mem, _mem)
@@ -690,8 +746,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
         if self.MODEL == "FRS-A1":
             # Menu 14 (FRS-A1)
             def apply_voice_listvalue(setting, obj):
-                LOG.debug("Setting value: " + str(setting.value) +
-                          " from list")
+                LOG.debug("Setting value: " + str(setting.value) + " from list")
                 val = str(setting.value)
                 index = VOICE_CHOICES.index(val)
                 val = VOICE_VALUES[index]
@@ -707,8 +762,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
             basic.append(rset)
         else:
             # Menu 15 (BF-T8)
-            rs = RadioSettingValueList(
-                VOICE_LIST, current_index=_settings.voice)
+            rs = RadioSettingValueList(VOICE_LIST, current_index=_settings.voice)
             rset = RadioSetting("voice", "Voice", rs)
             basic.append(rset)
 
@@ -778,7 +832,7 @@ class BFT8Radio(chirp_common.CloneModeRadio):
             basic.append(rset)
 
         def myset_freq(setting, obj, atrb, mult):
-            """ Callback to set frequency by applying multiplier"""
+            """Callback to set frequency by applying multiplier"""
             value = int(float(str(setting.value)) * mult)
             setattr(obj, atrb, value)
             return
@@ -798,13 +852,11 @@ class BFT8Radio(chirp_common.CloneModeRadio):
 
         model_list = ["BF-T8", "BF-U9", "AR-8"]
         if self.MODEL in model_list:
-            rs = RadioSettingValueList(WORKMODE_LIST,
-                                       current_index=_settings2.workmode)
+            rs = RadioSettingValueList(WORKMODE_LIST, current_index=_settings2.workmode)
             rset = RadioSetting("settings2.workmode", "Work Mode", rs)
             basic.append(rset)
 
-            rs = RadioSettingValueList(
-                AREA_LIST, current_index=_settings2.area)
+            rs = RadioSettingValueList(AREA_LIST, current_index=_settings2.area)
             rs.set_mutable(False)
             rset = RadioSetting("settings2.area", "Area", rs)
             basic.append(rset)
@@ -863,7 +915,10 @@ class AR8Alias(chirp_common.Alias):
 
 @directory.register
 class BaofengBFT8Generic(BFT8Radio):
-    ALIASES = [BFU9Alias, AR8Alias, ]
+    ALIASES = [
+        BFU9Alias,
+        AR8Alias,
+    ]
 
 
 @directory.register
@@ -885,8 +940,10 @@ class RetevisRB27B(BFT8Radio):
     VALID_CHARS = chirp_common.CHARSET_UPPER_NUMERIC + "-"
     CH_OFFSET = True
     SKIP_VALUES = ["", "S"]
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
     VALID_BANDS = [(400000000, 520000000)]
 
     _upper = 22
@@ -894,9 +951,9 @@ class RetevisRB27B(BFT8Radio):
     _gmrs = _murs = _pmr = False
 
     _ranges = [
-               (0x0000, 0x0640),
-               (0x0D00, 0x1040),
-              ]
+        (0x0000, 0x0640),
+        (0x0D00, 0x1040),
+    ]
     _memsize = 0x1040
 
     def process_mmap(self):
@@ -908,11 +965,12 @@ class RetevisRB27B(BFT8Radio):
 class RetevisRB27(RetevisRB27B):
     VENDOR = "Retevis"
     MODEL = "RB27"
-    DUPLEXES = ['', '-', '+', 'off']
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
-    VALID_BANDS = [(136000000, 174000000),
-                   (400000000, 520000000)]
+    DUPLEXES = ["", "-", "+", "off"]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=5.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
+    VALID_BANDS = [(136000000, 174000000), (400000000, 520000000)]
     ODD_SPLIT = False
 
     _upper = 99
@@ -943,8 +1001,10 @@ class RetevisRB27V(RetevisRB27B):
 class RetevisRB627B(RetevisRB27B):
     VENDOR = "Retevis"
     MODEL = "RB627B"
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=0.50),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=0.50),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _upper = 16
     _pmr = True
@@ -954,6 +1014,7 @@ class RetevisRB627B(RetevisRB27B):
 @directory.register
 class FRSA1Radio(BFT8Radio):
     """BTECH FRS-A1"""
+
     VENDOR = "BTECH"
     MODEL = "FRS-A1"
     ODD_SPLIT = False
@@ -961,16 +1022,16 @@ class FRSA1Radio(BFT8Radio):
     NAME_LENGTH = 6
     SKIP_VALUES = ["", "S"]
     DTCS_CODES = tuple(sorted(chirp_common.DTCS_CODES + (645,)))
-    DUPLEXES = ['', '-', '+', 'off']
+    DUPLEXES = ["", "-", "+", "off"]
 
-    _fingerprint = b"BF-T8A" + b"\x2E"
+    _fingerprint = b"BF-T8A" + b"\x2e"
     _upper = 22
     _frs = _upper == 22
 
     _ranges = [
-               (0x0000, 0x0640),
-               (0x0D00, 0x0DC0),
-              ]
+        (0x0000, 0x0640),
+        (0x0D00, 0x0DC0),
+    ]
     _memsize = 0x0DC0
 
     def get_features(self):

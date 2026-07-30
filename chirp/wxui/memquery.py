@@ -45,11 +45,14 @@ range: PROPERTY "<" value "," value ">"
 %ignore " "
 """
 
-MEM_FIELDS_SKIP = ['CSV_FORMAT', 'empty', 'extd_number', 'immutable', 'vfo',
-                   'extra']
-MEM_FIELDS = [x for x in dir(chirp_common.Memory)
-              if not x.startswith('_') and x not in MEM_FIELDS_SKIP and
-              not inspect.isfunction(getattr(chirp_common.Memory, x))]
+MEM_FIELDS_SKIP = ["CSV_FORMAT", "empty", "extd_number", "immutable", "vfo", "extra"]
+MEM_FIELDS = [
+    x
+    for x in dir(chirp_common.Memory)
+    if not x.startswith("_")
+    and x not in MEM_FIELDS_SKIP
+    and not inspect.isfunction(getattr(chirp_common.Memory, x))
+]
 
 
 def union(a, b):
@@ -71,17 +74,17 @@ class Interpreter(lark.Transformer):
             value = tree
         else:
             value = tree.children[0]
-        if value.type == 'TEXT':
+        if value.type == "TEXT":
             return value.value
-        elif value.type == 'INT':
+        elif value.type == "INT":
             return int(value.value)
-        elif value.type == 'FLOAT':
+        elif value.type == "FLOAT":
             return float(value.value)
         else:
-            raise RuntimeError('Unsupported value type %r' % value.name)
+            raise RuntimeError("Unsupported value type %r" % value.name)
 
     def _get(self, mem, key):
-        if key == 'freq':
+        if key == "freq":
             return mem.freq / 1000000
         return getattr(mem, key)
 
@@ -98,8 +101,11 @@ class Interpreter(lark.Transformer):
     def match(self, items):
         prop = items[0].value
         value = self._val(items[1])
-        return [x for x in self._memories
-                if re.search(value, self._get(x, prop), re.IGNORECASE)]
+        return [
+            x
+            for x in self._memories
+            if re.search(value, self._get(x, prop), re.IGNORECASE)
+        ]
 
     def range(self, items):
         prop = items[0].value
@@ -116,7 +122,7 @@ class Interpreter(lark.Transformer):
             return items[1]
 
     def OPERATOR(self, item):
-        if item == 'OR':
+        if item == "OR":
             return union
         else:
             return intersection
@@ -136,23 +142,23 @@ class QueryFilterError(SyntaxError):
 
 
 class PropertyNameError(QueryFilterError):
-    label = _('Property Name')
+    label = _("Property Name")
 
 
 class OperatorError(QueryFilterError):
-    label = _('Operator')
+    label = _("Operator")
 
 
 class PropertyValueError(QueryFilterError):
-    label = _('Property Value')
+    label = _("Property Value")
 
 
 class PropertyValueStringError(QueryFilterError):
-    label = _('Close String')
+    label = _("Close String")
 
 
 class PropertyValueFloatError(QueryFilterError):
-    label = _('Finish Float')
+    label = _("Finish Float")
 
 
 class FilteringError(Exception):
@@ -167,8 +173,10 @@ class SearchHelp(wx.PopupTransientWindow):
         self._msg = wx.StaticText(self)
         vbox.Add(self._msg, 1, flag=wx.EXPAND | wx.ALL, border=10)
         link = wx.adv.HyperlinkCtrl(
-            self, label=_("Query syntax help"),
-            url='https://chirpmyradio.com/projects/chirp/wiki/QueryStrings')
+            self,
+            label=_("Query syntax help"),
+            url="https://chirpmyradio.com/projects/chirp/wiki/QueryStrings",
+        )
         vbox.Add(link, 1, flag=wx.EXPAND | wx.ALL, border=10)
         bgc = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
         self.SetBackgroundColour(bgc)
@@ -183,10 +191,11 @@ class SearchHelp(wx.PopupTransientWindow):
 
     def clear(self):
         if self.GetParent().valid:
-            self._msg.SetLabel(_('Query syntax OK'))
+            self._msg.SetLabel(_("Query syntax OK"))
         else:
-            self._msg.SetLabel(_('Type a simple search string or a formatted '
-                                 'query and press enter'))
+            self._msg.SetLabel(
+                _("Type a simple search string or a formatted " "query and press enter")
+            )
         self.Show(self.IsShown())
 
     def eat_error(self, exc, orig):
@@ -200,58 +209,60 @@ class SearchHelp(wx.PopupTransientWindow):
 
         label = []
         if isinstance(exc, PropertyNameError):
-            label.append(_('Memory field name (one of %s)') % ','.join(
-                sorted(MEM_FIELDS)))
+            label.append(
+                _("Memory field name (one of %s)") % ",".join(sorted(MEM_FIELDS))
+            )
         elif isinstance(exc, PropertyValueError):
-            label.append(_('Value to search memory field for'))
-        elif isinstance(exc,
-                        PropertyValueStringError) or expected == ['QUOTE']:
+            label.append(_("Value to search memory field for"))
+        elif isinstance(exc, PropertyValueStringError) or expected == ["QUOTE"]:
             label.append(_('Close string value with double-quote (")'))
         elif isinstance(exc, PropertyValueFloatError):
-            label.append(_('Finish float value like: 146.52'))
-        elif not isinstance(exc, (lark.exceptions.ParseError,
-                                  lark.exceptions.UnexpectedCharacters)):
+            label.append(_("Finish float value like: 146.52"))
+        elif not isinstance(
+            exc, (lark.exceptions.ParseError, lark.exceptions.UnexpectedCharacters)
+        ):
             label.append(str(exc))
 
-        LOG.debug('Query string %r allowed next: %r',
-                  self.GetParent().GetValue(), expected)
+        LOG.debug(
+            "Query string %r allowed next: %r", self.GetParent().GetValue(), expected
+        )
 
         exp_map = {
-            'QUOTE': '"',
-            'LESSTHAN': '<',
-            'MORETHAN': '>',
-            'LPAR': '(',
-            'RPAR': ')',
-            'TILDE': '~',
-            'EQUAL': '=',
-            'LSQB': '[',
-            'RSQB': ']',
+            "QUOTE": '"',
+            "LESSTHAN": "<",
+            "MORETHAN": ">",
+            "LPAR": "(",
+            "RPAR": ")",
+            "TILDE": "~",
+            "EQUAL": "=",
+            "LSQB": "[",
+            "RSQB": "]",
         }
         expected_filtered = sorted([exp_map.get(e, e) for e in expected])
         if expected:
-            label.append('Expected: %s' % (','.join(expected_filtered)))
+            label.append("Expected: %s" % (",".join(expected_filtered)))
 
         for exp in sorted(expected):
-            if exp == 'QUOTE':
+            if exp == "QUOTE":
                 label.append(_('Example: "foo"'))
-            elif exp == 'INT':
-                label.append(_('Example: 123'))
-            elif exp == 'FLOAT':
-                label.append(_('Example: 146.52'))
-            elif exp == 'OPERATOR':
-                label.append(_('Example: AND, OR'))
-            elif exp in ('LPAR', 'RPAR'):
-                label.append(_('Example: ( expression )'))
-            elif exp == 'TILDE':
+            elif exp == "INT":
+                label.append(_("Example: 123"))
+            elif exp == "FLOAT":
+                label.append(_("Example: 146.52"))
+            elif exp == "OPERATOR":
+                label.append(_("Example: AND, OR"))
+            elif exp in ("LPAR", "RPAR"):
+                label.append(_("Example: ( expression )"))
+            elif exp == "TILDE":
                 label.append(_('Example: name~"myrepea"'))
-            elif exp == 'EQUAL':
+            elif exp == "EQUAL":
                 label.append(_('Example: name="myrepeater'))
-            elif exp in ('LESSTHAN', 'MORETHAN'):
-                label.append(_('Example: freq<146.0,148.0>'))
-            elif exp == 'PROPERTY':
-                label.append(_('One of: %s') % ','.join(MEM_FIELDS))
+            elif exp in ("LESSTHAN", "MORETHAN"):
+                label.append(_("Example: freq<146.0,148.0>"))
+            elif exp == "PROPERTY":
+                label.append(_("One of: %s") % ",".join(MEM_FIELDS))
             else:
-                LOG.debug(_('No example for %s') % exp)
+                LOG.debug(_("No example for %s") % exp)
 
         self._msg.SetLabel(os.linesep.join(label))
         self.Show()
@@ -267,7 +278,7 @@ class SearchBox(wx.TextCtrl):
         self.help.Hide()
         self.help.clear()
         self.Bind(wx.EVT_SIZE, self._resize)
-        self.SetHint(_('Filter...'))
+        self.SetHint(_("Filter..."))
         self.Bind(wx.EVT_SET_FOCUS, self._focus)
         self.Bind(wx.EVT_KILL_FOCUS, self._unfocus)
 
@@ -286,11 +297,11 @@ class SearchBox(wx.TextCtrl):
         event.Skip()
 
     _errors = {
-        PropertyNameError: ['foo'],
-        PropertyValueError: ['foo=', 'foo<', 'foo IN', 'foo~'],
+        PropertyNameError: ["foo"],
+        PropertyValueError: ["foo=", "foo<", "foo IN", "foo~"],
         PropertyValueStringError: ['foo="', 'foo~"'],
-        PropertyValueFloatError: ['foo=1.'],
-        }
+        PropertyValueFloatError: ["foo=1."],
+    }
 
     def _typing(self, event):
         query_string = self.GetValue()
@@ -304,10 +315,11 @@ class SearchBox(wx.TextCtrl):
             return
         try:
             self.query = self.parser.parse(query_string)
-            LOG.debug('Query:\n%s', self.query.pretty())
+            LOG.debug("Query:\n%s", self.query.pretty())
         except lark.UnexpectedInput as e:
-            exc_class = e.match_examples(self.parser.parse, self._errors,
-                                         use_accepts=True)
+            exc_class = e.match_examples(
+                self.parser.parse, self._errors, use_accepts=True
+            )
             if not exc_class:
                 # No specific match
                 exc = e
@@ -316,7 +328,7 @@ class SearchBox(wx.TextCtrl):
             self.help.eat_error(exc, e)
             self.query = None
         except Exception as e:
-            LOG.debug('Parse error: %s (%s)', e, e.__class__)
+            LOG.debug("Parse error: %s (%s)", e, e.__class__)
             self.query = None
         else:
             self.help.clear()
@@ -327,12 +339,12 @@ class SearchBox(wx.TextCtrl):
 
     def filter_memories(self, memories):
         if not self.query:
-            raise QueryFilterError(_('Query string is invalid'))
+            raise QueryFilterError(_("Query string is invalid"))
         try:
             r = Interpreter(memories).transform(self.query)
         except lark.exceptions.VisitError as e:
             self.help.eat_error(e.orig_exc, e)
             self.help.Show()
-            raise FilteringError(_('Error applying filter'))
+            raise FilteringError(_("Error applying filter"))
         else:
             return r.children[0]

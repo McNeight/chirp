@@ -26,7 +26,7 @@ CONF = config.get()
 
 class MemoryPrinter(wx.html.HtmlEasyPrinting):
     def __init__(self, parent, radio, memedit):
-        super().__init__(name=_('Printing'), parentWindow=parent)
+        super().__init__(name=_("Printing"), parentWindow=parent)
         self._radio = radio
         self._features = radio.get_features()
         self._col_defs = memedit._col_defs
@@ -41,28 +41,27 @@ class MemoryPrinter(wx.html.HtmlEasyPrinting):
         # These are arbitrary defaults that seem to work okay. Let people
         # override via the config for now
         try:
-            self._font_size = CONF.get_int('font_size', 'printing')
+            self._font_size = CONF.get_int("font_size", "printing")
         except TypeError:
             self._font_size = 8
         try:
-            self._rows_per_page = CONF.get_int('rows_per_page', 'printing')
+            self._rows_per_page = CONF.get_int("rows_per_page", "printing")
         except TypeError:
             self._rows_per_page = 35
-        self._normal_font = CONF.get('normal_font', 'printing') or 'Sans'
-        self._fixed_font = CONF.get('fixed_font', 'printing') or 'Courier'
-        self.SetStandardFonts(self._font_size, self._normal_font,
-                              self._fixed_font)
+        self._normal_font = CONF.get("normal_font", "printing") or "Sans"
+        self._fixed_font = CONF.get("fixed_font", "printing") or "Courier"
+        self.SetStandardFonts(self._font_size, self._normal_font, self._fixed_font)
 
     def _memory(self, doc, mem):
         tag = doc.tag
-        with tag('td'):
-            with tag('tt'):
+        with tag("td"):
+            with tag("tt"):
                 doc.text(mem.number)
         for col_def in self._col_defs:
             if not col_def.valid:
                 continue
-            with tag('td', 'nowrap'):
-                with tag('tt'):
+            with tag("td", "nowrap"):
+                with tag("tt"):
                     doc.text(col_def.render_value(mem))
 
     def _memory_table(self, doc, memories):
@@ -70,39 +69,38 @@ class MemoryPrinter(wx.html.HtmlEasyPrinting):
         row = 0
 
         for i in range(0, len(memories), self._rows_per_page):
-            with tag('div', ('style', 'page-break-before:always')):
+            with tag("div", ("style", "page-break-before:always")):
                 pass
-            with tag('table', ('border', '1'), ('width', '100%'),
-                     ('cellspacing', '0')):
-                with tag('tr'):
-                    with tag('th'):
-                        doc.text('#')
+            with tag("table", ("border", "1"), ("width", "100%"), ("cellspacing", "0")):
+                with tag("tr"):
+                    with tag("th"):
+                        doc.text("#")
                     for col_def in self._col_defs:
                         if not col_def.valid:
                             continue
-                        with tag('th'):
+                        with tag("th"):
                             pieces = col_def.label.split()
                             for piece in pieces:
                                 doc.text(piece)
                                 if piece != pieces[-1]:
-                                    doc.stag('br')
+                                    doc.stag("br")
                 for row in range(i, i + self._rows_per_page):
                     try:
                         mem = memories[row]
                     except IndexError:
                         continue
-                    with tag('tr'):
+                    with tag("tr"):
                         try:
                             self._memory(doc, mem)
                         except IndexError:
                             pass
 
     def _print(self, memories):
-        report.report_model(self._radio, 'print')
+        report.report_model(self._radio, "print")
         memories = [m for m in memories if not m.empty]
         doc, tag, text = yattag.Doc().tagtext()
-        with tag('html'):
-            with tag('body'):
+        with tag("html"):
+            with tag("body"):
                 self._memory_table(doc, memories)
         return doc
 

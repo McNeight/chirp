@@ -141,16 +141,53 @@ VOXD_LIST = ["0.5", "1.0", "1.5", "2.0", "2.5", "3.0"]
 VOXL_LIST = ["OFF"] + ["%s" % x for x in range(1, 10)]
 
 PMR_TONES = tuple(
-    set(chirp_common.TONES) - set([69.3, 159.8, 165.5, 171.3, 177.3,
-                                   183.5, 189.9, 196.6, 199.5, 206.5,
-                                   229.1, 254.1]))
+    set(chirp_common.TONES)
+    - set(
+        [
+            69.3,
+            159.8,
+            165.5,
+            171.3,
+            177.3,
+            183.5,
+            189.9,
+            196.6,
+            199.5,
+            206.5,
+            229.1,
+            254.1,
+        ]
+    )
+)
 
 PMR_DTCS_CODES = tuple(
-    set(chirp_common.DTCS_CODES) - set([36,  53, 122, 145, 212,
-                                        225, 246, 252, 255, 266,
-                                        274, 325, 332, 356, 446,
-                                        452, 454, 455, 462, 523,
-                                        526]))
+    set(chirp_common.DTCS_CODES)
+    - set(
+        [
+            36,
+            53,
+            122,
+            145,
+            212,
+            225,
+            246,
+            252,
+            255,
+            266,
+            274,
+            325,
+            332,
+            356,
+            446,
+            452,
+            454,
+            455,
+            462,
+            523,
+            526,
+        ]
+    )
+)
 
 
 def _enter_programming_mode(radio):
@@ -207,7 +244,7 @@ def _exit_programming_mode(radio):
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -235,8 +272,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -246,8 +283,7 @@ def _write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -298,6 +334,7 @@ def do_upload(radio):
 @directory.register
 class RB28Radio(chirp_common.CloneModeRadio):
     """RETEVIS RB28"""
+
     VENDOR = "Retevis"
     MODEL = "RB28"
     BAUD_RATE = 9600
@@ -307,24 +344,26 @@ class RB28Radio(chirp_common.CloneModeRadio):
     TONES = PMR_TONES
     DTCS_CODES = PMR_DTCS_CODES
     PFKEY_LIST = PFKEY_US_LIST
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.50),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=2.50),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
     VALID_BANDS = [(400000000, 480000000)]
 
-    _magic = b"PHOGR\x0B\x28"
-    _fingerprint = [b"P32073" + b"\x02\xFF",
-                    b"P32073" + b"\x00\xFF",
-                    ]
+    _magic = b"PHOGR\x0b\x28"
+    _fingerprint = [
+        b"P32073" + b"\x02\xff",
+        b"P32073" + b"\x00\xff",
+    ]
     _upper = 22
-    _mem_params = (_upper,  # number of channels
-                   )
+    _mem_params = (_upper,)  # number of channels
     _ack_1st_block = False
     _reserved = True
     _frs = True
 
     _ranges = [
-               (0x0000, 0x0160),
-              ]
+        (0x0000, 0x0160),
+    ]
     _memsize = 0x0160
 
     def get_features(self):
@@ -340,22 +379,28 @@ class RB28Radio(chirp_common.CloneModeRadio):
         rf.has_name = False
         rf.valid_skips = []
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_duplexes = ["", "off"]
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
         rf.valid_tones = self.TONES
         rf.valid_dtcs_codes = self.DTCS_CODES
         rf.memory_bounds = (1, self._upper)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 25.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 25.0]
         rf.valid_bands = self.VALID_BANDS
 
         return rf
 
     def process_mmap(self):
-        self._memobj = bitwise.parse(MEM_FORMAT % self._mem_params,
-                                     self._mmap)
+        self._memobj = bitwise.parse(MEM_FORMAT % self._mem_params, self._mmap)
 
     def sync_in(self):
         """Download from radio"""
@@ -367,9 +412,8 @@ class RB28Radio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -382,9 +426,8 @@ class RB28Radio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
@@ -407,7 +450,7 @@ class RB28Radio(chirp_common.CloneModeRadio):
             mem.empty = True
             return mem
 
-        if _mem.rxfreq.get_raw(asbytes=False) == "\xFF\xFF\xFF\xFF":
+        if _mem.rxfreq.get_raw(asbytes=False) == "\xff\xff\xff\xff":
             mem.freq = 0
             mem.empty = True
             return mem
@@ -476,7 +519,7 @@ class RB28Radio(chirp_common.CloneModeRadio):
                 # 22 FRS fixed channels
                 FRS_FREQ = bandplan_na.ALL_GMRS_FREQS[mem.number - 1]
                 mem.freq = FRS_FREQ
-                mem.duplex == ''
+                mem.duplex == ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 immutable = ["empty", "freq", "duplex", "offset", "mode"]
@@ -488,12 +531,11 @@ class RB28Radio(chirp_common.CloneModeRadio):
                 # 16 PMR fixed channels
                 PMR_FREQ = bandplan_iaru_r1.PMR446_FREQS[mem.number - 1]
                 mem.freq = PMR_FREQ
-                mem.duplex = ''
+                mem.duplex = ""
                 mem.offset = 0
                 mem.mode = "NFM"
                 mem.power = self.POWER_LEVELS[1]
-                immutable = ["empty", "freq", "duplex", "offset", "mode",
-                             "power"]
+                immutable = ["empty", "freq", "duplex", "offset", "mode", "power"]
 
         mem.immutable = immutable
 
@@ -519,22 +561,22 @@ class RB28Radio(chirp_common.CloneModeRadio):
 
         if mem.empty:
             if self._reserved:
-                _mem.set_raw("\xFF" * 13 + _rsvd)
+                _mem.set_raw("\xff" * 13 + _rsvd)
             else:
-                _mem.set_raw("\xFF" * (_mem.size() // 8))
+                _mem.set_raw("\xff" * (_mem.size() // 8))
 
             return
 
         if self._reserved:
             _mem.set_raw("\x00" * 13 + _rsvd)
         else:
-            _mem.set_raw("\x00" * 13 + "\xFF\xFF\xFF")
+            _mem.set_raw("\x00" * 13 + "\xff\xff\xff")
 
         _mem.rxfreq = mem.freq / 10
 
         if mem.duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif mem.duplex == "split":
             _mem.txfreq = mem.offset / 10
         elif mem.duplex == "+":
@@ -589,23 +631,19 @@ class RB28Radio(chirp_common.CloneModeRadio):
         rset = RadioSetting("squelch", "Squelch Level", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(TIMEOUTTIMER_LIST,
-                                   current_index=_settings.tot - 1)
+        rs = RadioSettingValueList(TIMEOUTTIMER_LIST, current_index=_settings.tot - 1)
         rset = RadioSetting("tot", "Time-out timer", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(VOICE_LIST,
-                                   current_index=_settings.voice)
+        rs = RadioSettingValueList(VOICE_LIST, current_index=_settings.voice)
         rset = RadioSetting("voice", "Voice Prompts", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(SAVE_LIST,
-                                   current_index=_settings.savem)
+        rs = RadioSettingValueList(SAVE_LIST, current_index=_settings.savem)
         rset = RadioSetting("savem", "Battery Save Mode", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(BACKLIGHT_LIST,
-                                   current_index=_settings.backlight)
+        rs = RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.backlight)
         rset = RadioSetting("backlight", "Back Light", rs)
         basic.append(rset)
 
@@ -655,23 +693,19 @@ class RB28Radio(chirp_common.CloneModeRadio):
         rset = RadioSetting("keylock", "Key Lock", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(VOXL_LIST,
-                                   current_index=_settings.voxl)
+        rs = RadioSettingValueList(VOXL_LIST, current_index=_settings.voxl)
         rset = RadioSetting("voxl", "Vox Level", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(VOXD_LIST,
-                                   current_index=_settings.voxd)
+        rs = RadioSettingValueList(VOXD_LIST, current_index=_settings.voxd)
         rset = RadioSetting("voxd", "Vox Delay", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(self.PFKEY_LIST,
-                                   current_index=_settings.pfkey_lt)
+        rs = RadioSettingValueList(self.PFKEY_LIST, current_index=_settings.pfkey_lt)
         rset = RadioSetting("pfkey_lt", "Key Set < Long", rs)
         basic.append(rset)
 
-        rs = RadioSettingValueList(self.PFKEY_LIST,
-                                   current_index=_settings.pfkey_gt)
+        rs = RadioSettingValueList(self.PFKEY_LIST, current_index=_settings.pfkey_gt)
         rset = RadioSetting("pfkey_gt", "Key Set > Long", rs)
         basic.append(rset)
 
@@ -720,17 +754,21 @@ class RB28Radio(chirp_common.CloneModeRadio):
 @directory.register
 class RB628Radio(RB28Radio):
     """RETEVIS RB628"""
+
     VENDOR = "Retevis"
     MODEL = "RB628"
 
     PFKEY_LIST = PFKEY_EU_LIST
-    POWER_LEVELS = [chirp_common.PowerLevel("High", watts=0.50),
-                    chirp_common.PowerLevel("Low", watts=0.50)]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=0.50),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
-    _magic = b"PHOGR\x28\x0B"
-    _fingerprint = [b"P32073" + b"\x00\xFF", ]
+    _magic = b"PHOGR\x28\x0b"
+    _fingerprint = [
+        b"P32073" + b"\x00\xff",
+    ]
     _upper = 16
-    _mem_params = (_upper,  # number of channels
-                   )
+    _mem_params = (_upper,)  # number of channels
     _frs = False
     _pmr = True

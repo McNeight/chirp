@@ -25,15 +25,15 @@ TS850_TMODES = ["", "Tone"]
 TS850_SKIP = ["", "S"]
 
 TS850_MODES = {
-    "N/A0":  " ",
-    "N/A1":  "0",
-    "LSB":   "1",
-    "USB":   "2",
-    "CW":    "3",
-    "FM":    "4",
-    "AM":    "5",
-    "FSK":   "6",
-    "CW-R":  "7",
+    "N/A0": " ",
+    "N/A1": "0",
+    "LSB": "1",
+    "USB": "2",
+    "CW": "3",
+    "FM": "4",
+    "AM": "5",
+    "FSK": "6",
+    "CW-R": "7",
     "FSK-R": "9",
 }
 TS850_MODES_REV = {val: mode for mode, val in TS850_MODES.items()}
@@ -42,21 +42,22 @@ TS850_TONES = list(chirp_common.OLD_TONES)
 TS850_TONES.remove(69.3)
 
 TS850_BANDS = [
-    (1800000, 2000000),    # 160M Band
-    (3500000, 4000000),    # 80M Band
-    (7000000, 7300000),    # 40M Band
+    (1800000, 2000000),  # 160M Band
+    (3500000, 4000000),  # 80M Band
+    (7000000, 7300000),  # 40M Band
     (10100000, 10150000),  # 30M Band
     (14000000, 14350000),  # 20M Band
     (18068000, 18168000),  # 17M Band
     (21000000, 21450000),  # 15M Band
     (24890000, 24990000),  # 12M Band
-    (28000000, 29700000)   # 10M Band
+    (28000000, 29700000),  # 10M Band
 ]
 
 
 @directory.register
 class TS850Radio(KenwoodLiveRadio):
     """Kenwood TS-850"""
+
     MODEL = "TS-850"
     BAUD_RATE = 4800
 
@@ -89,7 +90,8 @@ class TS850Radio(KenwoodLiveRadio):
     def get_memory(self, number):
         if number < 0 or number > self._upper:
             raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and %i" % self._upper)
+                "Number must be between 0 and %i" % self._upper
+            )
         if number in self._memcache and not NOCACHE:
             return self._memcache[number]
 
@@ -114,7 +116,8 @@ class TS850Radio(KenwoodLiveRadio):
     def set_memory(self, memory):
         if memory.number < 0 or memory.number > self._upper:
             raise errors.InvalidMemoryLocation(
-                "Number must be between 0 and %i" % self._upper)
+                "Number must be between 0 and %i" % self._upper
+            )
 
         if memory.number > 90:
             # This is not a good solution here, but this driver was
@@ -133,26 +136,21 @@ class TS850Radio(KenwoodLiveRadio):
         # Clear out memory contents to prevent errors
         spec = self._make_base_spec(memory, 0)
         spec = "".join(spec)
-        result = self.command(self.pipe,
-                              *self._cmd_set_memory(memory.number, spec))
+        result = self.command(self.pipe, *self._cmd_set_memory(memory.number, spec))
 
         if iserr(result):
-            raise errors.InvalidDataError("Radio refused %i" %
-                                          memory.number)
+            raise errors.InvalidDataError("Radio refused %i" % memory.number)
 
         # If we have a split set the transmit frequency first.
         if memory.duplex == TS850_DUPLEX[1]:
             spec = "".join(self._make_split_spec(memory))
-            result = self.command(self.pipe,
-                                  *self._cmd_set_split(memory.number, spec))
+            result = self.command(self.pipe, *self._cmd_set_split(memory.number, spec))
             if iserr(result):
-                raise errors.InvalidDataError("Radio refused %i" %
-                                              memory.number)
+                raise errors.InvalidDataError("Radio refused %i" % memory.number)
 
         spec = self._make_mem_spec(memory)
         spec = "".join(spec)
-        result = self.command(self.pipe,
-                              *self._cmd_set_memory(memory.number, spec))
+        result = self.command(self.pipe, *self._cmd_set_memory(memory.number, spec))
         if iserr(result):
             raise errors.InvalidDataError("Radio refused %i" % memory.number)
 
@@ -193,16 +191,16 @@ class TS850Radio(KenwoodLiveRadio):
         mem = chirp_common.Memory()
 
         # pad string so indexes match Kenwood docs
-        spec = " " + spec   # Param Format Function
+        spec = " " + spec  # Param Format Function
 
-        _p1 = spec[3]       # P1    9      Split Specification
+        _p1 = spec[3]  # P1    9      Split Specification
         # _p2 = spec[4]     # P2    -      Blank
-        _p3 = spec[5:7]     # P3    7      Memory Channel
-        _p4 = spec[7:18]    # P4    4      Frequency
-        _p5 = spec[18]      # P5    2      Mode
-        _p6 = spec[19]      # P6    10     Memory Lockout
-        _p7 = spec[20]      # P7    1      Tone On/Off
-        _p8 = spec[21:23]   # P8    14     Tone Frequency
+        _p3 = spec[5:7]  # P3    7      Memory Channel
+        _p4 = spec[7:18]  # P4    4      Frequency
+        _p5 = spec[18]  # P5    2      Mode
+        _p6 = spec[19]  # P6    10     Memory Lockout
+        _p7 = spec[20]  # P7    1      Tone On/Off
+        _p8 = spec[21:23]  # P8    14     Tone Frequency
         # _p9 = spec[23]    # P9    -      Blank
 
         mem.duplex = TS850_DUPLEX[int(_p1)]
@@ -213,7 +211,7 @@ class TS850Radio(KenwoodLiveRadio):
         mem.tmode = TS850_TMODES[int(_p7)]
 
         if mem.tmode == TS850_TMODES[1]:
-            mem.rtone = TS850_TONES[int(_p8)-1]
+            mem.rtone = TS850_TONES[int(_p8) - 1]
 
         return mem
 
@@ -231,23 +229,25 @@ class TS850Radio(KenwoodLiveRadio):
         return mem
 
     def _make_base_spec(self, mem, freq):
-        if mem.mode == "FM" \
-                and mem.duplex == TS850_DUPLEX[1] \
-                and mem.tmode == TS850_TMODES[1]:
+        if (
+            mem.mode == "FM"
+            and mem.duplex == TS850_DUPLEX[1]
+            and mem.tmode == TS850_TMODES[1]
+        ):
             tmode = "1"
-            tone = "%02i" % (TS850_TONES.index(mem.rtone)+1)
+            tone = "%02i" % (TS850_TONES.index(mem.rtone) + 1)
         else:
             tmode = "0"
             tone = "  "
 
-        spec = (                                 # Param Format Function
-            "%011i" % freq,                      # P4    4      Frequency
-            TS850_MODES[mem.mode],               # P5    2      Mode
-                                                 #              (Except Tune)
+        spec = (  # Param Format Function
+            "%011i" % freq,  # P4    4      Frequency
+            TS850_MODES[mem.mode],  # P5    2      Mode
+            #              (Except Tune)
             "%i" % (mem.skip == TS850_SKIP[1]),  # P6    10     Memory Lockout
-            tmode,                               # P7    1      Tone On/Off
-            tone,                                # P8    1      Tone Frequency
-            " "                                  # P9    14     Padding
+            tmode,  # P7    1      Tone On/Off
+            tone,  # P8    1      Tone Frequency
+            " ",  # P9    14     Padding
         )
 
         return spec

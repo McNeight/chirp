@@ -23,8 +23,7 @@ class TestCaseBruteForce(base.DriverTest):
         # Damned Baofeng radios don't seem to properly store
         # shift and direction, so be gracious here
         if m.duplex == "split" and ret_m.duplex in ["-", "+"]:
-            ret_m.offset = ret_m.freq + \
-                (ret_m.offset * int(ret_m.duplex + "1"))
+            ret_m.offset = ret_m.freq + (ret_m.offset * int(ret_m.duplex + "1"))
             ret_m.duplex = "split"
 
         self.assertEqualMem(m, ret_m, **kwargs)
@@ -58,7 +57,7 @@ class TestCaseBruteForce(base.DriverTest):
                     # don't punish it
                     pass
 
-    @base.requires_feature('has_dtcs')
+    @base.requires_feature("has_dtcs")
     def test_dtcs(self):
         m = self.get_mem()
         m.tmode = "DTCS"
@@ -73,7 +72,7 @@ class TestCaseBruteForce(base.DriverTest):
             m.dtcs_polarity = pol
             self.set_and_compare(m)
 
-    @base.requires_feature('has_cross')
+    @base.requires_feature("has_cross")
     def test_cross(self):
         m = self.get_mem()
         m.tmode = "Cross"
@@ -87,17 +86,19 @@ class TestCaseBruteForce(base.DriverTest):
             m.cross_mode = cross_mode
             self.set_and_compare(m)
 
-    @base.requires_feature('valid_duplexes')
+    @base.requires_feature("valid_duplexes")
     def test_duplex(self):
         m = self.get_mem()
-        if 'duplex' in m.immutable:
-            self.skipTest('Test memory has immutable duplex')
+        if "duplex" in m.immutable:
+            self.skipTest("Test memory has immutable duplex")
         for duplex in self.rf.valid_duplexes:
             assert duplex in ["", "-", "+", "split", "off"]
-            if duplex == 'split':
-                self.assertTrue(self.rf.can_odd_split,
-                                'Radio supports split but does not set '
-                                'can_odd_split=True in features')
+            if duplex == "split":
+                self.assertTrue(
+                    self.rf.can_odd_split,
+                    "Radio supports split but does not set "
+                    "can_odd_split=True in features",
+                )
                 m.offset = self.rf.valid_bands[0][1] - 100000
             else:
                 m.offset = chirp_common.to_kHz(int(m.tuning_step) * 2)
@@ -105,14 +106,16 @@ class TestCaseBruteForce(base.DriverTest):
             # Ignore the offset because we do some fudging on this and we
             # don't necessarily know the best step to use. What we care about
             # is duplex here.
-            self.set_and_compare(m, ignore=['offset'])
+            self.set_and_compare(m, ignore=["offset"])
 
         if self.rf.can_odd_split:
-            self.assertIn('split', self.rf.valid_duplexes,
-                          'Radio claims can_odd_split but split not in '
-                          'valid_duplexes')
+            self.assertIn(
+                "split",
+                self.rf.valid_duplexes,
+                "Radio claims can_odd_split but split not in " "valid_duplexes",
+            )
 
-    @base.requires_feature('valid_skips')
+    @base.requires_feature("valid_skips")
     def test_skip(self):
         mem = self.get_mem()
         lo, hi = self.rf.memory_bounds
@@ -123,7 +126,7 @@ class TestCaseBruteForce(base.DriverTest):
             # toggle them on..off..on
             for skip in self.rf.valid_skips * 2:
                 m = mem.dupe()
-                if 'empty' not in m.immutable:
+                if "empty" not in m.immutable:
                     m.empty = False
                 m.number = i
                 m.skip = skip
@@ -132,11 +135,11 @@ class TestCaseBruteForce(base.DriverTest):
                 # dynamically allocated and will run out of space here.
                 self.radio.erase_memory(m.number)
 
-    @base.requires_feature('valid_modes')
+    @base.requires_feature("valid_modes")
     def test_mode(self):
         m = self.get_mem()
-        if 'mode' in m.immutable:
-            self.skipTest('Test memory has immutable duplex')
+        if "mode" in m.immutable:
+            self.skipTest("Test memory has immutable duplex")
 
         def ensure_urcall(call):
             lst = self.radio.get_urcall_list()
@@ -156,12 +159,9 @@ class TestCaseBruteForce(base.DriverTest):
 
         successes = 0
         for mode in self.rf.valid_modes:
-            self.assertIn(mode, chirp_common.MODES,
-                          'Radio exposes non-standard mode')
+            self.assertIn(mode, chirp_common.MODES, "Radio exposes non-standard mode")
             tmp = m.dupe()
-            if mode == "DV" and \
-                isinstance(self.radio,
-                           chirp_common.IcomDstarSupport):
+            if mode == "DV" and isinstance(self.radio, chirp_common.IcomDstarSupport):
                 tmp = chirp_common.DVMemory()
                 try:
                     ensure_urcall(tmp.dv_urcall)
@@ -184,13 +184,14 @@ class TestCaseBruteForce(base.DriverTest):
             if self.rf.validate_memory(tmp):
                 # A result (of error messages) from validate means the radio
                 # thinks this is invalid, so don't fail the test
-                LOG.warning('Failed to validate %s: %s' % (
-                    tmp, self.rf.validate_memory(tmp)))
+                LOG.warning(
+                    "Failed to validate %s: %s" % (tmp, self.rf.validate_memory(tmp))
+                )
                 continue
 
             # Ignore tuning_step because changing modes may cause step changes
             # in some radios
-            self.set_and_compare(tmp, ignore=['tuning_step'])
+            self.set_and_compare(tmp, ignore=["tuning_step"])
             successes += 1
 
     def test_validate_all(self):
@@ -200,12 +201,19 @@ class TestCaseBruteForce(base.DriverTest):
             if m1.empty:
                 continue
             errs, warns = chirp_common.split_validation_msgs(
-                self.radio.validate_memory(m1))
-            self.assertEqual([], errs,
-                             ('Radio has validation errors for memory %i '
-                              'stored in sample image: %s') % (i, m1))
+                self.radio.validate_memory(m1)
+            )
+            self.assertEqual(
+                [],
+                errs,
+                (
+                    "Radio has validation errors for memory %i "
+                    "stored in sample image: %s"
+                )
+                % (i, m1),
+            )
 
-    @base.requires_feature('has_nostep_tuning', equal=False)
+    @base.requires_feature("has_nostep_tuning", equal=False)
     def test_validate_all_steps(self):
         lo, hi = self.rf.memory_bounds
         for i in range(lo, hi + 1):
@@ -213,9 +221,9 @@ class TestCaseBruteForce(base.DriverTest):
             try:
                 chirp_common.required_step(m1.freq, self.rf.valid_tuning_steps)
             except Exception as e:
-                self.fail('Memory %i: %s' % (i, e))
+                self.fail("Memory %i: %s" % (i, e))
 
-    @pytest.mark.skip(reason='not ready yet')
+    @pytest.mark.skip(reason="not ready yet")
     def test_get_set_all(self):
         lo, hi = self.rf.memory_bounds
         for i in range(lo, hi + 1):

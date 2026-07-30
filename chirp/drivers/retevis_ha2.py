@@ -24,7 +24,7 @@ from chirp.settings import (
     RadioSettings,
     RadioSettingValueBoolean,
     RadioSettingValueFloat,
-    RadioSettingValueInteger
+    RadioSettingValueInteger,
 )
 from chirp.drivers import retevis_ha1g
 
@@ -305,7 +305,7 @@ SCRAMBLE_LIST = [
     {"id": 6, "name": "3300"},
     {"id": 7, "name": "3380"},
     {"id": 8, "name": "3400"},
-    {"id": 9, "name": "3450"}
+    {"id": 9, "name": "3450"},
 ]
 
 SIDE_KEY_LIST = [
@@ -322,7 +322,7 @@ SIDE_KEY_LIST = [
     {"name": "Emergency Stop", "id": 30},
     {"name": "Optional DTMF Code", "id": 32},
     {"name": "Switch To QuickZone", "id": 35},
-    {"name": "Prog PTT", "id": 31}
+    {"name": "Prog PTT", "id": 31},
 ]
 
 DTMF_SIGNALINGLIST_DISABLED = 15
@@ -342,32 +342,44 @@ def _get_memory(radio, mem, _mem, ch_index, isvfo=False):
             "tottime",
             "TOT",
             RadioSettingValueList(
-                retevis_ha1g.get_namedict_by_items(
-                    retevis_ha1g.TIMEOUTTIMER_LIST),
+                retevis_ha1g.get_namedict_by_items(retevis_ha1g.TIMEOUTTIMER_LIST),
                 current_index=(
-                  was_empty and TOTTIME_DISABLED - 1 or (_mem.tottime - 1)))))
+                    was_empty and TOTTIME_DISABLED - 1 or (_mem.tottime - 1)
+                ),
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
             "totpermissions",
             "TX Permissions",
-            RadioSettingValueList(retevis_ha1g.TOTPERMISSIONS_LIST,
-                                  current_index=_mem.totpermissions)))
+            RadioSettingValueList(
+                retevis_ha1g.TOTPERMISSIONS_LIST, current_index=_mem.totpermissions
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
             "rxsqlmode",
             "Squelch Level",
             RadioSettingValueList(
                 retevis_ha1g.SQUELCHLEVEL_LIST,
-                current_index=(
-                    was_empty and SQUELCHLEVEL_DISABLED or _mem.rxsqlmode))))
+                current_index=(was_empty and SQUELCHLEVEL_DISABLED or _mem.rxsqlmode),
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
             "alarmlist",
             "Alarm System",
             RadioSettingValueList(
                 retevis_ha1g.get_namedict_by_items(radio._alarm_list),
-                current_index=retevis_ha1g.get_item_by_id(radio._alarm_list,
-                                                          _mem.alarmlist))))
+                current_index=retevis_ha1g.get_item_by_id(
+                    radio._alarm_list, _mem.alarmlist
+                ),
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
             "dtmfsignalinglist",
@@ -376,32 +388,48 @@ def _get_memory(radio, mem, _mem, ch_index, isvfo=False):
                 retevis_ha1g.get_namedict_by_items(radio._dtmf_list),
                 current_index=retevis_ha1g.get_item_by_id(
                     radio._dtmf_list,
-                    (was_empty and DTMF_SIGNALINGLIST_DISABLED
-                     or _mem.dtmfsignalinglist)))))
+                    (
+                        was_empty
+                        and DTMF_SIGNALINGLIST_DISABLED
+                        or _mem.dtmfsignalinglist
+                    ),
+                ),
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
             "offlineorreversal",
             "Talkaround & Reversal",
-            RadioSettingValueList(retevis_ha1g.OFFLINE_REVERSAL_LIST,
-                                  current_index=_mem.offlineorreversal)))
+            RadioSettingValueList(
+                retevis_ha1g.OFFLINE_REVERSAL_LIST, current_index=_mem.offlineorreversal
+            ),
+        )
+    )
     mem.extra.append(
         RadioSetting(
-            "companding", "Compander",
-            RadioSettingValueList(COMPANDER_LIST,
-                                  current_index=_mem.companding)))
+            "companding",
+            "Compander",
+            RadioSettingValueList(COMPANDER_LIST, current_index=_mem.companding),
+        )
+    )
 
-    scramble_index = (0 if _mem.scramble == 0
-                      else retevis_ha1g.get_item_by_id(
-                          SCRAMBLE_LIST, _mem.scrambleFreq))
-    mem.extra.append(
-        RadioSetting("scrambleFreq", "Scramble",
-                     RadioSettingValueList(
-                         retevis_ha1g.get_namedict_by_items(SCRAMBLE_LIST),
-                         current_index=scramble_index)))
+    scramble_index = (
+        0
+        if _mem.scramble == 0
+        else retevis_ha1g.get_item_by_id(SCRAMBLE_LIST, _mem.scrambleFreq)
+    )
     mem.extra.append(
         RadioSetting(
-            "vox", "VOX",
-            RadioSettingValueBoolean(_mem.vox)))
+            "scrambleFreq",
+            "Scramble",
+            RadioSettingValueList(
+                retevis_ha1g.get_namedict_by_items(SCRAMBLE_LIST),
+                current_index=scramble_index,
+            ),
+        )
+    )
+    mem.extra.append(RadioSetting("vox", "VOX", RadioSettingValueBoolean(_mem.vox)))
     mem.freq = int(_mem.rxfreq)
     mem.name = radio.filter_name(str(_mem.alias).rstrip())
     if isvfo:
@@ -442,12 +470,24 @@ def _get_memory(radio, mem, _mem, ch_index, isvfo=False):
     elif _mem.txctcvaluetype in [2, 3]:
         txtone = int("%03o" % _mem.txctc)
 
-    rx_tone = (("" if _mem.rxctcvaluetype == 0
-                else "Tone" if _mem.rxctcvaluetype == 1 else "DTCS"),
-               rxtone, (_mem.rxctcvaluetype == 0x3) and "R" or "N")
-    tx_tone = (("" if _mem.txctcvaluetype == 0
-                else "Tone" if _mem.txctcvaluetype == 1 else "DTCS"),
-               txtone, (_mem.txctcvaluetype == 0x3) and "R" or "N")
+    rx_tone = (
+        (
+            ""
+            if _mem.rxctcvaluetype == 0
+            else "Tone" if _mem.rxctcvaluetype == 1 else "DTCS"
+        ),
+        rxtone,
+        (_mem.rxctcvaluetype == 0x3) and "R" or "N",
+    )
+    tx_tone = (
+        (
+            ""
+            if _mem.txctcvaluetype == 0
+            else "Tone" if _mem.txctcvaluetype == 1 else "DTCS"
+        ),
+        txtone,
+        (_mem.txctcvaluetype == 0x3) and "R" or "N",
+    )
     chirp_common.split_tone_decode(mem, tx_tone, rx_tone)
     mem.power = retevis_ha1g.POWER_LEVELS[(1 if _mem.power == 2 else 0)]
     return mem
@@ -473,22 +513,26 @@ def _set_memory(radio, mem, _mem, ch_index, isvfo=False):
 
     _mem.rxfreq = mem.freq
     _mem.alias = mem.name.ljust(14)
-    txfrq = (int(mem.freq - mem.offset)
-             if mem.duplex == "-" and mem.offset > 0
-             else (int(mem.freq + mem.offset)
-                   if mem.duplex == "+" and mem.offset > 0
-                   else mem.freq))
+    txfrq = (
+        int(mem.freq - mem.offset)
+        if mem.duplex == "-" and mem.offset > 0
+        else (
+            int(mem.freq + mem.offset)
+            if mem.duplex == "+" and mem.offset > 0
+            else mem.freq
+        )
+    )
     _mem.txfreq = txfrq
     _mem.bandwidth = 3 if mem.mode == "FM" else 1
 
     if mem.power in retevis_ha1g.POWER_LEVELS:
-        _mem.power = (2 if retevis_ha1g.POWER_LEVELS.index(mem.power) == 1
-                      else 0)
+        _mem.power = 2 if retevis_ha1g.POWER_LEVELS.index(mem.power) == 1 else 0
     else:
         _mem.power = 0
 
-    ((txmode, txtone, txpol),
-     (rxmode, rxtone, rxpol)) = chirp_common.split_tone_encode(mem)
+    (txmode, txtone, txpol), (rxmode, rxtone, rxpol) = chirp_common.split_tone_encode(
+        mem
+    )
 
     if rxmode == "Tone":
         _mem.rxctcvaluetype = 1
@@ -512,16 +556,20 @@ def _set_memory(radio, mem, _mem, ch_index, isvfo=False):
         name = setting.get_name()
         if name == "tottime":
             _mem.tottime = retevis_ha1g.get_item_by_name(
-                retevis_ha1g.TIMEOUTTIMER_LIST, str(setting.value))
+                retevis_ha1g.TIMEOUTTIMER_LIST, str(setting.value)
+            )
         elif name == "alarmlist":
             _mem.alarmlist = retevis_ha1g.get_item_by_name(
-                radio._alarm_list, setting.value)
+                radio._alarm_list, setting.value
+            )
         elif name == "dtmfsignalinglist":
             _mem.dtmfsignalinglist = retevis_ha1g.get_item_by_name(
-                radio._dtmf_list, setting.value)
+                radio._dtmf_list, setting.value
+            )
         elif name == "scrambleFreq":
             _mem.scrambleFreq = retevis_ha1g.get_item_by_name(
-                SCRAMBLE_LIST, setting.value)
+                SCRAMBLE_LIST, setting.value
+            )
             _mem.scramble = 0 if _mem.scrambleFreq == 255 else 1
         else:
             setattr(_mem, name, setting.value)
@@ -531,90 +579,167 @@ def _set_memory(radio, mem, _mem, ch_index, isvfo=False):
 def _get_common_setting(radio, common):
     _settings = radio._memobj.settings
     opts = ["Low", "Normal", "Strengthen"]
-    common.append(RadioSetting(
-        "settings.micgain", "Mic Gain",
-        RadioSettingValueList(opts, current_index=_settings.micgain)))
+    common.append(
+        RadioSetting(
+            "settings.micgain",
+            "Mic Gain",
+            RadioSettingValueList(opts, current_index=_settings.micgain),
+        )
+    )
 
     opts = ["Stun WakeUp", "Stun TX", "Stun TX/RX"]
     common.append(
-        RadioSetting("settings.stunmode", "Stun Type",
-                     RadioSettingValueList(opts,
-                                           current_index=_settings.stunmode)))
+        RadioSetting(
+            "settings.stunmode",
+            "Stun Type",
+            RadioSettingValueList(opts, current_index=_settings.stunmode),
+        )
+    )
 
     opts_dict = [{"name": "%s" % (x + 1), "id": x} for x in range(0, 10, 1)]
-    common.append(retevis_ha1g.get_radiosetting_by_key(
-        radio, _settings, "calltone", "Call Tone",
-        _settings.calltone, opts_dict))
+    common.append(
+        retevis_ha1g.get_radiosetting_by_key(
+            radio, _settings, "calltone", "Call Tone", _settings.calltone, opts_dict
+        )
+    )
 
-    opts = ["2.5kHz", "5kHz", "6.25kHz", "7.5kHz",
-            "8.33kHz", "10kHz", "12.5kHz", "15kHz",
-            "20kHz", "25kHz", "30kHz", "50kHz", "100kHz"]
+    opts = [
+        "2.5kHz",
+        "5kHz",
+        "6.25kHz",
+        "7.5kHz",
+        "8.33kHz",
+        "10kHz",
+        "12.5kHz",
+        "15kHz",
+        "20kHz",
+        "25kHz",
+        "30kHz",
+        "50kHz",
+        "100kHz",
+    ]
     common.append(
         RadioSetting(
-            "settings.freqstep", "Frequency Step",
-            RadioSettingValueList(opts, current_index=_settings.freqstep)))
+            "settings.freqstep",
+            "Frequency Step",
+            RadioSettingValueList(opts, current_index=_settings.freqstep),
+        )
+    )
 
     opts = ["OFF", "1:1", "1:2", "1:4"]
     common.append(
         RadioSetting(
-            "settings.powersavingmode", "Battery Mode",
-            RadioSettingValueList(
-                opts, current_index=_settings.powersavingmode)))
+            "settings.powersavingmode",
+            "Battery Mode",
+            RadioSettingValueList(opts, current_index=_settings.powersavingmode),
+        )
+    )
 
-    opts_dict = [
-        {"name": "%ss" % ((x + 1) * 5), "id": x} for x in range(0, 16, 1)]
+    opts_dict = [{"name": "%ss" % ((x + 1) * 5), "id": x} for x in range(0, 16, 1)]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "powersavingdelaytime", "Battery Delay Time",
-            _settings.powersavingdelaytime, opts_dict))
+            radio,
+            _settings,
+            "powersavingdelaytime",
+            "Battery Delay Time",
+            _settings.powersavingdelaytime,
+            opts_dict,
+        )
+    )
 
     opts_dict = [{"name": "%s" % x, "id": x} for x in range(1, 16, 1)]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "backlightbrightness", "Backlight Brightness",
-            _settings.backlightbrightness, opts_dict))
+            radio,
+            _settings,
+            "backlightbrightness",
+            "Backlight Brightness",
+            _settings.backlightbrightness,
+            opts_dict,
+        )
+    )
 
     opts = [
-        "Always", "5s", "10s", "15s", "20s", "25s", "30s",
-        "1min", "2min", "3min", "4min", "5min", "15min", "30min",
-        "45min", "1h"]
+        "Always",
+        "5s",
+        "10s",
+        "15s",
+        "20s",
+        "25s",
+        "30s",
+        "1min",
+        "2min",
+        "3min",
+        "4min",
+        "5min",
+        "15min",
+        "30min",
+        "45min",
+        "1h",
+    ]
     common.append(
-        RadioSetting("settings.backlighttime", "Backlight Time",
-                     RadioSettingValueList(
-                         opts, current_index=_settings.backlighttime)))
+        RadioSetting(
+            "settings.backlighttime",
+            "Backlight Time",
+            RadioSettingValueList(opts, current_index=_settings.backlighttime),
+        )
+    )
 
     opts_dict = [{"name": "%s" % x, "id": x} for x in range(1, 16, 1)]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "voxthreshold", "VOX Level",
-            _settings.voxthreshold, opts_dict))
+            radio,
+            _settings,
+            "voxthreshold",
+            "VOX Level",
+            _settings.voxthreshold,
+            opts_dict,
+        )
+    )
 
-    opts_dict = [
-        {"name": "%sms" % (x * 500), "id": x} for x in range(1, 5, 1)]
+    opts_dict = [{"name": "%sms" % (x * 500), "id": x} for x in range(1, 5, 1)]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "voxdelaytime", "VOX Delay Time",
-            _settings.voxdelaytime, opts_dict))
+            radio,
+            _settings,
+            "voxdelaytime",
+            "VOX Delay Time",
+            _settings.voxdelaytime,
+            opts_dict,
+        )
+    )
 
     opts_dict = [{"name": "OFF", "id": 0}] + [
-        {"name": "%ss" % x, "id": x} for x in range(5, 256, 5)]
+        {"name": "%ss" % x, "id": x} for x in range(5, 256, 5)
+    ]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "menuouttime", "Menu Timeout Setting",
-            _settings.menuouttime, opts_dict))
+            radio,
+            _settings,
+            "menuouttime",
+            "Menu Timeout Setting",
+            _settings.menuouttime,
+            opts_dict,
+        )
+    )
 
     opts = ["Manual", "Auto"]
     common.append(
         RadioSetting(
-            "settings.autoormanuallock", "Key Lock Mode",
-            RadioSettingValueList(opts,
-                                  current_index=_settings.autoormanuallock)))
+            "settings.autoormanuallock",
+            "Key Lock Mode",
+            RadioSettingValueList(opts, current_index=_settings.autoormanuallock),
+        )
+    )
 
     opts = ["Frequency", "Name", "Channel"]
     common.append(
         RadioSetting(
-            "settings.chdisplay", "Display Mode",
-            RadioSettingValueList(opts, current_index=_settings.chdisplay)))
+            "settings.chdisplay",
+            "Display Mode",
+            RadioSettingValueList(opts, current_index=_settings.chdisplay),
+        )
+    )
 
     opts = ["Band A", "Band B", "Band A & Band B", "Band B & Band A"]
     rs = RadioSetting(
@@ -623,10 +748,13 @@ def _get_common_setting(radio, common):
         RadioSettingValueList(
             opts,
             current_index=retevis_ha1g.get_band_selection(
-                _settings.homeselect, _settings.homeindex)))
+                _settings.homeselect, _settings.homeindex
+            ),
+        ),
+    )
     rs.set_apply_callback(
-        retevis_ha1g.set_band_selection, _settings, opts,
-        "homeselect", "homeindex")
+        retevis_ha1g.set_band_selection, _settings, opts, "homeselect", "homeindex"
+    )
     common.append(rs)
 
     opts = ["Channel", "VFO Frequency"]
@@ -634,163 +762,268 @@ def _get_common_setting(radio, common):
         RadioSetting(
             "settings.homechtype_1",
             "Channel Type A",
-            RadioSettingValueList(opts, current_index=_settings.homechtype_1)))
+            RadioSettingValueList(opts, current_index=_settings.homechtype_1),
+        )
+    )
     common.append(
         RadioSetting(
             "settings.homechtype_2",
             "Channel Type B",
-            RadioSettingValueList(opts, current_index=_settings.homechtype_2)))
+            RadioSettingValueList(opts, current_index=_settings.homechtype_2),
+        )
+    )
 
     opts = ["Last Active Channel", "Designated Channel"]
     common.append(
         RadioSetting(
             "settings.poweron_type_1",
             "Power On A",
-            RadioSettingValueList(opts,
-                                  current_index=_settings.poweron_type_1)))
+            RadioSettingValueList(opts, current_index=_settings.poweron_type_1),
+        )
+    )
     common.append(
         RadioSetting(
             "settings.poweron_type_2",
             "Power On B",
-            RadioSettingValueList(opts,
-                                  current_index=_settings.poweron_type_2)))
+            RadioSettingValueList(opts, current_index=_settings.poweron_type_2),
+        )
+    )
 
     opts = ["Icon", "Percent", "Voltage"]
-    common.append(RadioSetting(
-        "settings.batterydisplaymode", "Battery Display Mode",
-        RadioSettingValueList(
-            opts, current_index=_settings.batterydisplaymode)))
+    common.append(
+        RadioSetting(
+            "settings.batterydisplaymode",
+            "Battery Display Mode",
+            RadioSettingValueList(opts, current_index=_settings.batterydisplaymode),
+        )
+    )
 
     opts_dict = radio.get_scan_item_list()
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "scanlist", "Enable Scan List",
-            _settings.scanlist, opts_dict))
+            radio,
+            _settings,
+            "scanlist",
+            "Enable Scan List",
+            _settings.scanlist,
+            opts_dict,
+        )
+    )
 
     short_dict = SIDE_KEY_LIST[:13]
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "tk1_short", "Short Press Top Key",
-            _settings.tk1_short, short_dict))
+            radio,
+            _settings,
+            "tk1_short",
+            "Short Press Top Key",
+            _settings.tk1_short,
+            short_dict,
+        )
+    )
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "tk1_long", "Long Press Top Key",
-            _settings.tk1_long, short_dict))
+            radio,
+            _settings,
+            "tk1_long",
+            "Long Press Top Key",
+            _settings.tk1_long,
+            short_dict,
+        )
+    )
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "sk1_short", "Short Press Side Key 1",
-            _settings.sk1_short, short_dict))
+            radio,
+            _settings,
+            "sk1_short",
+            "Short Press Side Key 1",
+            _settings.sk1_short,
+            short_dict,
+        )
+    )
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "sk1_long", "Long Press Side Key 1",
-            _settings.sk1_long, SIDE_KEY_LIST))
+            radio,
+            _settings,
+            "sk1_long",
+            "Long Press Side Key 1",
+            _settings.sk1_long,
+            SIDE_KEY_LIST,
+        )
+    )
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "sk2_short", "Short Press Side Key 2",
-            _settings.sk2_short, short_dict))
+            radio,
+            _settings,
+            "sk2_short",
+            "Short Press Side Key 2",
+            _settings.sk2_short,
+            short_dict,
+        )
+    )
     common.append(
         retevis_ha1g.get_radiosetting_by_key(
-            radio, _settings, "sk2_long", "Long Press Side Key 2",
-            _settings.sk2_long, retevis_ha1g.SIDE_KEY_LIST))
+            radio,
+            _settings,
+            "sk2_long",
+            "Long Press Side Key 2",
+            _settings.sk2_long,
+            retevis_ha1g.SIDE_KEY_LIST,
+        )
+    )
 
     opts = ["55Hz", "120°", "180°", "240°"]
     common.append(
         RadioSetting(
-            "settings.tailsoundeliminationsfre", "CTC Tail Elimination",
+            "settings.tailsoundeliminationsfre",
+            "CTC Tail Elimination",
             RadioSettingValueList(
-                opts, current_index=_settings.tailsoundeliminationsfre)))
+                opts, current_index=_settings.tailsoundeliminationsfre
+            ),
+        )
+    )
 
     if _settings.salezone != 2:
         opts = ["NOAA-%s" % x for x in range(1, 13, 1)]
         common.append(
             RadioSetting(
-                "settings.wxch", "NOAA Channel",
-                RadioSettingValueList(opts, current_index=_settings.wxch)))
+                "settings.wxch",
+                "NOAA Channel",
+                RadioSettingValueList(opts, current_index=_settings.wxch),
+            )
+        )
 
     opts = ["1000Hz", "1450Hz", "1750Hz", "2100Hz"]
     common.append(
         RadioSetting(
-            "settings.singletone", "Single Tone",
-            RadioSettingValueList(opts, current_index=_settings.singletone)))
+            "settings.singletone",
+            "Single Tone",
+            RadioSettingValueList(opts, current_index=_settings.singletone),
+        )
+    )
 
     opts = ["OFF", "Roger Beep", "MDC"]
     common.append(
         RadioSetting(
-            "settings.rogerbeep", "Roger Beep",
-            RadioSettingValueList(opts, current_index=_settings.rogerbeep)))
+            "settings.rogerbeep",
+            "Roger Beep",
+            RadioSettingValueList(opts, current_index=_settings.rogerbeep),
+        )
+    )
 
     opts = ["OFF", "0.5h", "1.0h", "1.5h", "2.0h", "2.5h", "3.0h"]
     common.append(
         RadioSetting(
-            "settings.autooff", "Auto Power Off",
-            RadioSettingValueList(opts, current_index=_settings.autooff)))
+            "settings.autooff",
+            "Auto Power Off",
+            RadioSettingValueList(opts, current_index=_settings.autooff),
+        )
+    )
 
     opts = ["OFF", "BOT", "EOT", "BOTH"]
     common.append(
         RadioSetting(
-            "settings.pttidaliastxmode", "PTTID Alias TX Mode",
-            RadioSettingValueList(opts,
-                                  current_index=_settings.pttidaliastxmode)))
+            "settings.pttidaliastxmode",
+            "PTTID Alias TX Mode",
+            RadioSettingValueList(opts, current_index=_settings.pttidaliastxmode),
+        )
+    )
 
     opts = ["Alias-%s" % x for x in range(1, 31, 1)]
     rs = RadioSetting(
-            "settings.aliasnum", "Radio Alias",
-            RadioSettingValueList(opts, current_index=_settings.aliasnum))
+        "settings.aliasnum",
+        "Radio Alias",
+        RadioSettingValueList(opts, current_index=_settings.aliasnum),
+    )
     rs.set_doc("Radio Alias can quickly identify who is calling")
     common.append(rs)
 
-    opts = [("UTC%s" % x if x < 0 else "UTC+%s" % x)
-            for x in range(-12, 14, 1)]
+    opts = [("UTC%s" % x if x < 0 else "UTC+%s" % x) for x in range(-12, 14, 1)]
     common.append(
         RadioSetting(
-            "settings.timezone", "Time Zone",
-            RadioSettingValueList(opts, current_index=_settings.timezone)))
+            "settings.timezone",
+            "Time Zone",
+            RadioSettingValueList(opts, current_index=_settings.timezone),
+        )
+    )
 
     common.append(
         RadioSetting(
             "settings.tailsoundeliminationswitch",
             "Tail Elimination Switch",
-            RadioSettingValueBoolean(_settings.tailsoundeliminationswitch)))
+            RadioSettingValueBoolean(_settings.tailsoundeliminationswitch),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.touchtone", "Key Beep",
-            RadioSettingValueBoolean(_settings.touchtone)))
+            "settings.touchtone",
+            "Key Beep",
+            RadioSettingValueBoolean(_settings.touchtone),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.txpermittone", "TX Permit Tone",
-            RadioSettingValueBoolean(_settings.txpermittone)))
+            "settings.txpermittone",
+            "TX Permit Tone",
+            RadioSettingValueBoolean(_settings.txpermittone),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.voiceprompts", "Voice Broadcast",
-            RadioSettingValueBoolean(_settings.voiceprompts)))
+            "settings.voiceprompts",
+            "Voice Broadcast",
+            RadioSettingValueBoolean(_settings.voiceprompts),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.chknoblock", "Channel Knob Lock",
-            RadioSettingValueBoolean(_settings.chknoblock)))
+            "settings.chknoblock",
+            "Channel Knob Lock",
+            RadioSettingValueBoolean(_settings.chknoblock),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.panellock", "Keyboard Lock",
-            RadioSettingValueBoolean(_settings.panellock)))
+            "settings.panellock",
+            "Keyboard Lock",
+            RadioSettingValueBoolean(_settings.panellock),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.sidekeylock", "Side Key Lock",
-            RadioSettingValueBoolean(_settings.sidekeylock)))
+            "settings.sidekeylock",
+            "Side Key Lock",
+            RadioSettingValueBoolean(_settings.sidekeylock),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.lowbattery", "Low Battery Alert",
-            RadioSettingValueBoolean(_settings.lowbattery)))
+            "settings.lowbattery",
+            "Low Battery Alert",
+            RadioSettingValueBoolean(_settings.lowbattery),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.btswitch", "BT Switch",
-            RadioSettingValueBoolean(_settings.btswitch)))
+            "settings.btswitch",
+            "BT Switch",
+            RadioSettingValueBoolean(_settings.btswitch),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.screenlight", "Call in Light",
-            RadioSettingValueBoolean(_reverse_state(_settings.screenlight))))
+            "settings.screenlight",
+            "Call in Light",
+            RadioSettingValueBoolean(_reverse_state(_settings.screenlight)),
+        )
+    )
     common.append(
         RadioSetting(
-            "settings.btinspk", "BT + INT Spk",
-            RadioSettingValueBoolean(_settings.btinspk)))
+            "settings.btinspk",
+            "BT + INT Spk",
+            RadioSettingValueBoolean(_settings.btinspk),
+        )
+    )
 
 
 def _get_vfo_scan(radio, vfoscan):
@@ -798,130 +1031,210 @@ def _get_vfo_scan(radio, vfoscan):
     opts = ["Carrier", "Time", "Search"]
     vfoscan.append(
         RadioSetting(
-            "vfoscan.scanmode", "Scan Mode",
-            RadioSettingValueList(opts, current_index=_vfo_scan.scanmode)))
+            "vfoscan.scanmode",
+            "Scan Mode",
+            RadioSettingValueList(opts, current_index=_vfo_scan.scanmode),
+        )
+    )
 
     opts = ["Carrier", "CTC/DCS"]
     vfoscan.append(
         RadioSetting(
-            "vfoscan.scancondition", "Scan Condition",
-            RadioSettingValueList(opts,
-                                  current_index=_vfo_scan.scancondition)))
+            "vfoscan.scancondition",
+            "Scan Condition",
+            RadioSettingValueList(opts, current_index=_vfo_scan.scancondition),
+        )
+    )
 
     opts = ["%s" % (x + 1) for x in range(0, 16, 1)]
     vfoscan.append(
         RadioSetting(
-            "vfoscan.hangtime", "Scan Hang Time[s]",
-            RadioSettingValueList(opts, current_index=_vfo_scan.hangtime)))
+            "vfoscan.hangtime",
+            "Scan Hang Time[s]",
+            RadioSettingValueList(opts, current_index=_vfo_scan.hangtime),
+        )
+    )
     vfoscan.append(
         RadioSetting(
-            "vfoscan.talkback", "Talk Back Enable",
-            RadioSettingValueBoolean(_vfo_scan.talkback)))
+            "vfoscan.talkback",
+            "Talk Back Enable",
+            RadioSettingValueBoolean(_vfo_scan.talkback),
+        )
+    )
 
     opts = ["Current Frequency", "Preset Frequency"]
     vfoscan.append(
         RadioSetting(
-            "vfoscan.startcondition", "Start Condition",
-            RadioSettingValueList(opts,
-                                  current_index=_vfo_scan.startcondition)))
+            "vfoscan.startcondition",
+            "Start Condition",
+            RadioSettingValueList(opts, current_index=_vfo_scan.startcondition),
+        )
+    )
 
     freq_start = retevis_ha1g.from_MHz(_vfo_scan.vhffreq_start)
     vfoscan.append(
         RadioSetting(
-            "vfoscan.vhffreq_start", "Start Frequency",
-            RadioSettingValueFloat(108, 600, freq_start, 0.00001, 5)))
+            "vfoscan.vhffreq_start",
+            "Start Frequency",
+            RadioSettingValueFloat(108, 600, freq_start, 0.00001, 5),
+        )
+    )
 
     freq_end = retevis_ha1g.from_MHz(_vfo_scan.vhffreq_end)
     vfoscan.append(
         RadioSetting(
-            "vfoscan.vhffreq_end", "End Frequency",
-            RadioSettingValueFloat(108, 600, freq_end, 0.00001, 5)))
+            "vfoscan.vhffreq_end",
+            "End Frequency",
+            RadioSettingValueFloat(108, 600, freq_end, 0.00001, 5),
+        )
+    )
 
 
 def _get_aprs_setting(radio, aprs):
     _aprsinfo = radio._memobj.aprsinfo
     aprs.append(
         RadioSetting(
-            "aprsinfo.aprsswitch", "APRS Switch",
-            RadioSettingValueBoolean(_aprsinfo.aprsswitch)))
+            "aprsinfo.aprsswitch",
+            "APRS Switch",
+            RadioSettingValueBoolean(_aprsinfo.aprsswitch),
+        )
+    )
 
     opts = ["Auto", "Manual", "Smart"]
-    aprs.append(RadioSetting(
-        "aprsinfo.beaconmode", "Beacon TX Mode",
-        RadioSettingValueList(opts, current_index=_aprsinfo.beaconmode)))
-
-    opts = ["100ms", "150ms", "200ms", "250ms",
-            "300ms", "400ms", "500ms", "750ms", "1000ms"]
-    aprs.append(RadioSetting(
-        "aprsinfo.tx_delay", "APRS Tx Delay",
-        RadioSettingValueList(opts, current_index=_aprsinfo.tx_delay)))
-
-    opts = ["%ss" % x for x in range(3, 16, 1)] + ["Infinite"]
-    aprs.append(RadioSetting(
-        "aprsinfo.screenhold", "APRS Screen Hold Time",
-        RadioSettingValueList(opts, current_index=_aprsinfo.screenhold)))
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.beaconmode",
+            "Beacon TX Mode",
+            RadioSettingValueList(opts, current_index=_aprsinfo.beaconmode),
+        )
+    )
 
     opts = [
-        "30s", "1min", "2min", "3min", "5min", "10min", "15min",
-        "20min", "30min", "60min"
+        "100ms",
+        "150ms",
+        "200ms",
+        "250ms",
+        "300ms",
+        "400ms",
+        "500ms",
+        "750ms",
+        "1000ms",
     ]
-    aprs.append(RadioSetting(
-        "aprsinfo.autointerval", "APRS Beacon Interval",
-        RadioSettingValueList(opts, current_index=_aprsinfo.autointerval)))
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.tx_delay",
+            "APRS Tx Delay",
+            RadioSettingValueList(opts, current_index=_aprsinfo.tx_delay),
+        )
+    )
+
+    opts = ["%ss" % x for x in range(3, 16, 1)] + ["Infinite"]
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.screenhold",
+            "APRS Screen Hold Time",
+            RadioSettingValueList(opts, current_index=_aprsinfo.screenhold),
+        )
+    )
+
+    opts = [
+        "30s",
+        "1min",
+        "2min",
+        "3min",
+        "5min",
+        "10min",
+        "15min",
+        "20min",
+        "30min",
+        "60min",
+    ]
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.autointerval",
+            "APRS Beacon Interval",
+            RadioSettingValueList(opts, current_index=_aprsinfo.autointerval),
+        )
+    )
 
     aprs.append(
         RadioSetting(
-            "aprsinfo.beaconreceivetone", "APRS Ringer",
-            RadioSettingValueBoolean(
-                _reverse_state(_aprsinfo.beaconreceivetone))))
+            "aprsinfo.beaconreceivetone",
+            "APRS Ringer",
+            RadioSettingValueBoolean(_reverse_state(_aprsinfo.beaconreceivetone)),
+        )
+    )
 
     opts = ["GNSS", "Manual"]
-    aprs.append(RadioSetting(
-        "aprsinfo.positionorgps", "My Position",
-        RadioSettingValueList(opts, current_index=_aprsinfo.positionorgps)))
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.positionorgps",
+            "My Position",
+            RadioSettingValueList(opts, current_index=_aprsinfo.positionorgps),
+        )
+    )
 
     opts = ["OFF", "Type 1", "Type 2", "Type 3"]
-    aprs.append(RadioSetting(
-        "aprsinfo.smartbeaconing", "Smart Beacon",
-        RadioSettingValueList(opts, current_index=_aprsinfo.smartbeaconing)))
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.smartbeaconing",
+            "Smart Beacon",
+            RadioSettingValueList(opts, current_index=_aprsinfo.smartbeaconing),
+        )
+    )
 
     for i in range(3):
         smartbeacon = _aprsinfo.smartbeacons[i]
         rsg = RadioSettingSubGroup(
-            "Type-%d" % (i + 1), "Smart Beacon Type %d" % (i + 1))
+            "Type-%d" % (i + 1), "Smart Beacon Type %d" % (i + 1)
+        )
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.lowspeed_%d" % i, "Low Speed (km/h)",
-            RadioSettingValueInteger(2, 30, smartbeacon.lowspeed))
+            "aprsinfo.smartbeacons.lowspeed_%d" % i,
+            "Low Speed (km/h)",
+            RadioSettingValueInteger(2, 30, smartbeacon.lowspeed),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "lowspeed")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.highspeed_%d" % i, "High Speed (km/h)",
-            RadioSettingValueInteger(3, 90, smartbeacon.highspeed))
+            "aprsinfo.smartbeacons.highspeed_%d" % i,
+            "High Speed (km/h)",
+            RadioSettingValueInteger(3, 90, smartbeacon.highspeed),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "highspeed")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.slowrate_%d" % i, "Slow Rate (min)",
-            RadioSettingValueInteger(1, 100, smartbeacon.slowrate))
+            "aprsinfo.smartbeacons.slowrate_%d" % i,
+            "Slow Rate (min)",
+            RadioSettingValueInteger(1, 100, smartbeacon.slowrate),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "slowrate")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.fastrate_%d" % i, "Fast Rate (s)",
-            RadioSettingValueInteger(10, 180, smartbeacon.fastrate))
+            "aprsinfo.smartbeacons.fastrate_%d" % i,
+            "Fast Rate (s)",
+            RadioSettingValueInteger(10, 180, smartbeacon.fastrate),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "fastrate")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.turnangle_%d" % i, "Turn Angle (deg)",
-            RadioSettingValueInteger(1, 100, smartbeacon.turnangle))
+            "aprsinfo.smartbeacons.turnangle_%d" % i,
+            "Turn Angle (deg)",
+            RadioSettingValueInteger(1, 100, smartbeacon.turnangle),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "turnangle")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.turnslope_%d" % i, "Turn Slope (deg)",
-            RadioSettingValueInteger(10, 180, smartbeacon.turnslope))
+            "aprsinfo.smartbeacons.turnslope_%d" % i,
+            "Turn Slope (deg)",
+            RadioSettingValueInteger(10, 180, smartbeacon.turnslope),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "turnslope")
         rsg.append(rs)
         rs = RadioSetting(
-            "aprsinfo.smartbeacons.turntime_%d" % i, "Turn Time (s)",
-            RadioSettingValueInteger(1, 100, smartbeacon.turntime))
+            "aprsinfo.smartbeacons.turntime_%d" % i,
+            "Turn Time (s)",
+            RadioSettingValueInteger(1, 100, smartbeacon.turntime),
+        )
         rs.set_apply_callback(_set_int_callback, smartbeacon, "turntime")
         rsg.append(rs)
         aprs.append(rsg)
@@ -931,44 +1244,78 @@ def _get_ana_aprs_setting(radio, aprs):
     _aprsinfo = radio._memobj.aprsinfo
     aprs.append(
         RadioSetting(
-            "aprsinfo.anaptttype", "PTT Report Mode",
-            RadioSettingValueBoolean(_reverse_state(_aprsinfo.anaptttype))))
+            "aprsinfo.anaptttype",
+            "PTT Report Mode",
+            RadioSettingValueBoolean(_reverse_state(_aprsinfo.anaptttype)),
+        )
+    )
     aprs.append(
         RadioSetting(
-            "aprsinfo.aprsaudio", "APRS Audio",
-            RadioSettingValueBoolean(_aprsinfo.aprsaudio)))
+            "aprsinfo.aprsaudio",
+            "APRS Audio",
+            RadioSettingValueBoolean(_aprsinfo.aprsaudio),
+        )
+    )
     _get_callsign_setting(aprs, [_aprsinfo.call], "_aprsinfo.Mycall", "My")
     opts = [
-        "Selected Channel", "Channel 1", "Channel 2", "Channel 3",
-        "Channel 4", "Channel 5", "Channel 6", "Channel 7",
-        "Channel 8"]
-    aprs.append(RadioSetting(
-        "aprsinfo.ana_ch", "Channel",
-        RadioSettingValueList(opts, current_index=_aprsinfo.ana_ch)))
+        "Selected Channel",
+        "Channel 1",
+        "Channel 2",
+        "Channel 3",
+        "Channel 4",
+        "Channel 5",
+        "Channel 6",
+        "Channel 7",
+        "Channel 8",
+    ]
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.ana_ch",
+            "Channel",
+            RadioSettingValueList(opts, current_index=_aprsinfo.ana_ch),
+        )
+    )
 
     opts = [
-        "None", "WIDE1-1", "WIDE1-1,WIDE1-2", "Path1",
-        "Path2", "Path3", "Path4", "Full1", "Full2"]
-    aprs.append(RadioSetting(
-        "aprsinfo.digi_path", "DIGI Path",
-        RadioSettingValueList(opts, current_index=_aprsinfo.digi_path)))
+        "None",
+        "WIDE1-1",
+        "WIDE1-1,WIDE1-2",
+        "Path1",
+        "Path2",
+        "Path3",
+        "Path4",
+        "Full1",
+        "Full2",
+    ]
+    aprs.append(
+        RadioSetting(
+            "aprsinfo.digi_path",
+            "DIGI Path",
+            RadioSettingValueList(opts, current_index=_aprsinfo.digi_path),
+        )
+    )
 
     rsg = RadioSettingSubGroup("AnaChannel", "Channel")
     for i in range(len(_aprsinfo.ana_chs)):
         ch_freq = _aprsinfo.ana_chs[i].freq / 100000
         rs = RadioSetting(
-            "aprsinfo.ana_ch_%d" % i, "Channel %d" % (i + 1),
-            RadioSettingValueFloat(108, 600, ch_freq, 0.00001, 5))
-        rs.set_apply_callback(_set_freq_callback,
-                              _aprsinfo.ana_chs[i], "freq", 100000)
+            "aprsinfo.ana_ch_%d" % i,
+            "Channel %d" % (i + 1),
+            RadioSettingValueFloat(108, 600, ch_freq, 0.00001, 5),
+        )
+        rs.set_apply_callback(_set_freq_callback, _aprsinfo.ana_chs[i], "freq", 100000)
         rsg.append(rs)
     aprs.append(rsg)
 
     path_names = ["Path1", "Path2", "Path3", "Path4", "Full1", "Full2"]
     path_objs = [
-        _aprsinfo.digi_path_p1, _aprsinfo.digi_path_p2,
-        _aprsinfo.digi_path_p3, _aprsinfo.digi_path_p4,
-        _aprsinfo.digi_path_f1, _aprsinfo.digi_path_f2]
+        _aprsinfo.digi_path_p1,
+        _aprsinfo.digi_path_p2,
+        _aprsinfo.digi_path_p3,
+        _aprsinfo.digi_path_p4,
+        _aprsinfo.digi_path_f1,
+        _aprsinfo.digi_path_f2,
+    ]
     for name, obj in zip(path_names, path_objs):
         rsg = RadioSettingSubGroup(name, name)
         _get_callsign_setting(rsg, obj, name)
@@ -979,39 +1326,65 @@ def _get_gnss_setting(radio, gnss):
     _gnssinfo = radio._memobj.gnssinfo
     gnss.append(
         RadioSetting(
-            "gnssinfo.gnssswitch", "GNSS On/Off",
-            RadioSettingValueBoolean(_gnssinfo.gnssswitch)))
+            "gnssinfo.gnssswitch",
+            "GNSS On/Off",
+            RadioSettingValueBoolean(_gnssinfo.gnssswitch),
+        )
+    )
 
     opts = ["OFF", "TX Start", "TX End"]
-    gnss.append(RadioSetting(
-        "gnssinfo.pttuploadmode", "PTT Report Mode",
-        RadioSettingValueList(opts, current_index=_gnssinfo.pttuploadmode)))
+    gnss.append(
+        RadioSetting(
+            "gnssinfo.pttuploadmode",
+            "PTT Report Mode",
+            RadioSettingValueList(opts, current_index=_gnssinfo.pttuploadmode),
+        )
+    )
 
     opts = ["Manual", "Auto"]
-    gnss.append(RadioSetting(
-        "gnssinfo.txtype", "TX Type",
-        RadioSettingValueList(opts, current_index=_gnssinfo.txtype)))
+    gnss.append(
+        RadioSetting(
+            "gnssinfo.txtype",
+            "TX Type",
+            RadioSettingValueList(opts, current_index=_gnssinfo.txtype),
+        )
+    )
 
-    opts = [
-        "30s", "1min", "2min", "3min", "5min",
-        "10min", "20min", "30min", "60min"
-    ]
-    gnss.append(RadioSetting(
-        "gnssinfo.autotxtime", "Auto TX Interval",
-        RadioSettingValueList(opts, current_index=_gnssinfo.autotxtime)))
+    opts = ["30s", "1min", "2min", "3min", "5min", "10min", "20min", "30min", "60min"]
+    gnss.append(
+        RadioSetting(
+            "gnssinfo.autotxtime",
+            "Auto TX Interval",
+            RadioSettingValueList(opts, current_index=_gnssinfo.autotxtime),
+        )
+    )
 
     replay_text_len = 60
     rs = RadioSetting(
-        "gnssinfo.replaytext", "Comment Text",
+        "gnssinfo.replaytext",
+        "Comment Text",
         RadioSettingValueString(
-            0, replay_text_len,
-            "".join(retevis_ha1g.filter(
-                _gnssinfo.replaytext, retevis_ha1g.NAMECHARSET,
-                replay_text_len, True)),
-            False, retevis_ha1g.NAMECHARSET))
+            0,
+            replay_text_len,
+            "".join(
+                retevis_ha1g.filter(
+                    _gnssinfo.replaytext,
+                    retevis_ha1g.NAMECHARSET,
+                    replay_text_len,
+                    True,
+                )
+            ),
+            False,
+            retevis_ha1g.NAMECHARSET,
+        ),
+    )
     rs.set_apply_callback(
-        _set_char_callback, _gnssinfo, "replaytext",
-        replay_text_len, retevis_ha1g.NAMECHARSET)
+        _set_char_callback,
+        _gnssinfo,
+        "replaytext",
+        replay_text_len,
+        retevis_ha1g.NAMECHARSET,
+    )
     gnss.append(rs)
 
 
@@ -1020,26 +1393,38 @@ def _get_fm_setting(radio, fm):
     _settings = radio._memobj.settings
     fm.append(
         RadioSetting(
-            "settings.DualWatch", "dual watch",
-            RadioSettingValueBoolean(_reverse_state(_settings.DualWatch))))
+            "settings.DualWatch",
+            "dual watch",
+            RadioSettingValueBoolean(_reverse_state(_settings.DualWatch)),
+        )
+    )
 
     opts = ["Channel", "VFO Frequency"]
-    fm.append(RadioSetting(
-        "settings.fmchtype", "Channel Type",
-        RadioSettingValueList(opts, current_index=_settings.fmchtype)))
+    fm.append(
+        RadioSetting(
+            "settings.fmchtype",
+            "Channel Type",
+            RadioSettingValueList(opts, current_index=_settings.fmchtype),
+        )
+    )
 
     opts = ["FM-%d" % x for x in range(1, 65)]
-    fm.append(RadioSetting(
-        "settings.fmchannel", "Channel",
-        RadioSettingValueList(opts, current_index=_settings.fmchannel)))
+    fm.append(
+        RadioSetting(
+            "settings.fmchannel",
+            "Channel",
+            RadioSettingValueList(opts, current_index=_settings.fmchannel),
+        )
+    )
 
     for i in range(len(_fminfo)):
         fm_freq = retevis_ha1g.from_MHz(_fminfo[i].freq)
         rs = RadioSetting(
-            "fms.freq_%s" % i, "freq %s" % (i + 1),
-            RadioSettingValueFloat(50, 115, fm_freq, 0.0, 1))
-        rs.set_apply_callback(_set_freq_callback,
-                              _fminfo[i], "freq", 1000000)
+            "fms.freq_%s" % i,
+            "freq %s" % (i + 1),
+            RadioSettingValueFloat(50, 115, fm_freq, 0.0, 1),
+        )
+        rs.set_apply_callback(_set_freq_callback, _fminfo[i], "freq", 1000000)
         fm.append(rs)
 
 
@@ -1048,15 +1433,26 @@ def _get_radio_alias_setting(radio, radioalias):
     alias_len = 8
     for i in range(len(_radioaliasinfo)):
         rs = RadioSetting(
-            "radioalias.alias_%s" % i, "alias %s" % (i + 1),
+            "radioalias.alias_%s" % i,
+            "alias %s" % (i + 1),
             RadioSettingValueString(
-                0, alias_len,
-                "".join(retevis_ha1g.filter(
-                    _radioaliasinfo[i].alias, retevis_ha1g.NAMECHARSET,
-                    alias_len, True)),
-                False, retevis_ha1g.NAMECHARSET))
+                0,
+                alias_len,
+                "".join(
+                    retevis_ha1g.filter(
+                        _radioaliasinfo[i].alias,
+                        retevis_ha1g.NAMECHARSET,
+                        alias_len,
+                        True,
+                    )
+                ),
+                False,
+                retevis_ha1g.NAMECHARSET,
+            ),
+        )
         rs.set_apply_callback(
-            _set_char_callback, _radioaliasinfo[i], "alias", alias_len)
+            _set_char_callback, _radioaliasinfo[i], "alias", alias_len
+        )
         radioalias.append(rs)
 
 
@@ -1077,25 +1473,47 @@ def _get_callsign_setting(rsg, item, name, name_prefix=""):
     opts = ["-%d" % x for x in range(0, 16, 1)]
     item_len = len(item)
     for i in range(item_len):
-        cs_name = ("%s Callsign %d" % (name_prefix, (i + 1))
-                   if item_len > 1 else "%s Callsign" % name_prefix)
+        cs_name = (
+            "%s Callsign %d" % (name_prefix, (i + 1))
+            if item_len > 1
+            else "%s Callsign" % name_prefix
+        )
         rs = RadioSetting(
-            "%s.callsign_%s" % (name, i), cs_name,
+            "%s.callsign_%s" % (name, i),
+            cs_name,
             RadioSettingValueString(
-                0, callsign_input_len,
-                "".join(retevis_ha1g.filter(
-                    item[i].callsign, retevis_ha1g.NAMECHARSET,
-                    callsign_input_len, True)),
-                False, retevis_ha1g.NAMECHARSET))
+                0,
+                callsign_input_len,
+                "".join(
+                    retevis_ha1g.filter(
+                        item[i].callsign,
+                        retevis_ha1g.NAMECHARSET,
+                        callsign_input_len,
+                        True,
+                    )
+                ),
+                False,
+                retevis_ha1g.NAMECHARSET,
+            ),
+        )
         rs.set_apply_callback(
-            _set_char_callback, item[i], "callsign",
-            callsign_max_len, retevis_ha1g.NAMECHARSET)
+            _set_char_callback,
+            item[i],
+            "callsign",
+            callsign_max_len,
+            retevis_ha1g.NAMECHARSET,
+        )
         rsg.append(rs)
-        ssid_name = ("%s SSID %d" % (name_prefix, (i + 1))
-                     if item_len > 1 else "%s SSID" % name_prefix)
+        ssid_name = (
+            "%s SSID %d" % (name_prefix, (i + 1))
+            if item_len > 1
+            else "%s SSID" % name_prefix
+        )
         rs = RadioSetting(
-            "%s.ssid_%s" % (name, i), ssid_name,
-            RadioSettingValueList(opts, current_index=item[i].ssid))
+            "%s.ssid_%s" % (name, i),
+            ssid_name,
+            RadioSettingValueList(opts, current_index=item[i].ssid),
+        )
         rs.set_apply_callback(_set_ssid_callback, item[i], "ssid")
         rsg.append(rs)
 
@@ -1104,9 +1522,13 @@ def _set_char_callback(set_item, obj, name: str, charlen: int, charset=None):
     if charset is None:
         setattr(obj, name, str(set_item.value).ljust(charlen, "\x00"))
     else:
-        setattr(obj, name, retevis_ha1g.filter(
-            set_item.value, retevis_ha1g.NAMECHARSET, charlen, True
-        ).ljust(charlen, "\x00"))
+        setattr(
+            obj,
+            name,
+            retevis_ha1g.filter(
+                set_item.value, retevis_ha1g.NAMECHARSET, charlen, True
+            ).ljust(charlen, "\x00"),
+        )
 
 
 def _set_freq_callback(set_item, obj, name: str, freq_hz):
@@ -1150,10 +1572,9 @@ class HA2(retevis_ha1g.HA1G):
         "dTMFData": (15, 51202, 842),
         "aprsData": (38, 52334, 19364),
         "gnssData": (51, 71698, 76),
-        "aliasData": (53, 71774, 302)
+        "aliasData": (53, 71774, 302),
     }
-    _memsize = max(start + size for _, start,
-                   size in MEMORY_REGIONS_RANGES.values())
+    _memsize = max(start + size for _, start, size in MEMORY_REGIONS_RANGES.values())
     _airband = (108000000, 135999999)
     _vhf_uhf = (136000000, 600000001)
 
@@ -1164,8 +1585,9 @@ class HA2(retevis_ha1g.HA1G):
         return rf
 
     def process_mmap(self):
-        self._memobj = bitwise.parse(retevis_ha1g.MEM_DEFINITIONS + MEM_FORMAT,
-                                     self._mmap)
+        self._memobj = bitwise.parse(
+            retevis_ha1g.MEM_DEFINITIONS + MEM_FORMAT, self._mmap
+        )
         self._dtmf_list = self.get_dtmf_item_list()
         self._alarm_list = self.get_alarm_item_list()
 
@@ -1188,8 +1610,7 @@ class HA2(retevis_ha1g.HA1G):
             mem.number = number
             ch_index = number - 1
             _mem = _chs[ch_index]
-        return _get_memory(self, mem, _mem, ch_index,
-                           mem.number > channels_len)
+        return _get_memory(self, mem, _mem, ch_index, mem.number > channels_len)
 
     def set_memory(self, mem):
         _chs = self._memobj.channeldata.channels
@@ -1214,8 +1635,9 @@ class HA2(retevis_ha1g.HA1G):
         gnss = RadioSettingGroup("gnssinfo", "GNSS Settings")
         fm = RadioSettingGroup("fminfo", "FM Settings")
         radioalias = RadioSettingGroup("aliasinfo", "Radio Alias Settings")
-        setmode = RadioSettings(model_info, common, dtmf,
-                                vfoscan, aprs, ana_aprs, gnss, fm, radioalias)
+        setmode = RadioSettings(
+            model_info, common, dtmf, vfoscan, aprs, ana_aprs, gnss, fm, radioalias
+        )
         try:
             _get_model_info(self, model_info)
             _get_common_setting(self, common)
@@ -1265,11 +1687,13 @@ class HA2(retevis_ha1g.HA1G):
                         _dtmfcomm = self._memobj.dtmfinfos.dtmfcomm
                         if name in ["callid", "stunid", "revive"]:
                             value = retevis_ha1g.filter(
-                                value, retevis_ha1g.DTMFCHARSET, 10, True)
+                                value, retevis_ha1g.DTMFCHARSET, 10, True
+                            )
                             value = value.ljust(10, "\x00")
                         elif name in ["bot", "eot"]:
                             value = retevis_ha1g.filter(
-                                value, retevis_ha1g.DTMFCHARSET, 16, True)
+                                value, retevis_ha1g.DTMFCHARSET, 16, True
+                            )
                             value = value.ljust(16, "\x00")
                         setattr(_dtmfcomm, name, value)
                     elif name.startswith("vfoscan."):

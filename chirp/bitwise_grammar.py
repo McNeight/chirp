@@ -16,9 +16,27 @@
 import re
 from chirp.pyPEG import keyword, parse as pypeg_parse
 
-TYPES = ["bit", "lbit", "u8", "u16", "ul16", "u24", "ul24", "u32", "ul32",
-         "i8", "i16", "il16", "i24", "il24", "i32", "il32", "char",
-         "lbcd", "bbcd"]
+TYPES = [
+    "bit",
+    "lbit",
+    "u8",
+    "u16",
+    "ul16",
+    "u24",
+    "ul24",
+    "u32",
+    "ul32",
+    "i8",
+    "i16",
+    "il16",
+    "i24",
+    "il24",
+    "i32",
+    "il32",
+    "char",
+    "lbcd",
+    "bbcd",
+]
 DIRECTIVES = ["seekto", "seek", "printoffset"]
 
 
@@ -47,7 +65,7 @@ def bitfield():
 
 
 def array():
-    return symbol, '[', count, ']'
+    return symbol, "[", count, "]"
 
 
 def _typedef():
@@ -105,11 +123,12 @@ def _language():
 def parse(data):
     lines = data.split("\n")
     for index, line in enumerate(lines):
-        if '//' in line:
-            lines[index] = line[:line.index('//')]
+        if "//" in line:
+            lines[index] = line[: line.index("//")]
 
     class FakeFileInput(object):
         """Simulate line-by-line file reading from @data"""
+
         line = -1
 
         def isfirstline(self):

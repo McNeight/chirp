@@ -24,15 +24,15 @@ from chirp import memmap
 
 class FakeSerial:
     def __init__(self):
-        self.ibuf = b''
-        self.obuf = b''
+        self.ibuf = b""
+        self.obuf = b""
 
     def write(self, b):
         assert isinstance(b, bytes)
         self.obuf += b
 
     def read(self, n):
-        print('read %i (rem %i)' % (n, len(self.ibuf)))
+        print("read %i (rem %i)" % (n, len(self.ibuf)))
         r = self.ibuf[:n]
         self.ibuf = self.ibuf[n:]
         return r
@@ -42,24 +42,30 @@ class TestClone(unittest.TestCase):
     def test_identify(self):
         s = FakeSerial()
         s.ibuf = struct.pack(
-            'BBBB10sB', 0, 0, 0,
+            "BBBB10sB",
+            0,
+            0,
+            0,
             len(kguv920pa.KGUV920PARadio._model),
-            kguv920pa._str_encode(kguv920pa.KGUV920PARadio._model), 3)
+            kguv920pa._str_encode(kguv920pa.KGUV920PARadio._model),
+            3,
+        )
         print(s.ibuf)
         d = kguv920pa.KGUV920PARadio(s)
         d._identify()
 
     def test_download(self):
         s = FakeSerial()
-        oneresp = struct.pack('xxxB16sB', 0x10, b'\x01' * 16, 0)
+        oneresp = struct.pack("xxxB16sB", 0x10, b"\x01" * 16, 0)
         s.ibuf = oneresp * 2
         d = kguv920pa.KGUV920PARadio(s)
         d._do_download(0, 0x20, 0x10)
 
     def test_upload(self):
         s = FakeSerial()
-        s.ibuf = (struct.pack('>xxxBHB', 0x02, 0, 2) +
-                  struct.pack('>xxxBHB', 0x02, 0x10, 2))
+        s.ibuf = struct.pack(">xxxBHB", 0x02, 0, 2) + struct.pack(
+            ">xxxBHB", 0x02, 0x10, 2
+        )
         d = kguv920pa.KGUV920PARadio(s)
-        d._mmap = memmap.MemoryMapBytes(b'\x00' * 0x20)
+        d._mmap = memmap.MemoryMapBytes(b"\x00" * 0x20)
         d._do_upload(0, 0x20, 0x10)

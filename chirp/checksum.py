@@ -26,7 +26,7 @@ def crc16(data, poly, reverse=False):
         if reverse:
             crc ^= byte
         else:
-            crc ^= (byte << 8)
+            crc ^= byte << 8
         for _ in range(8):
             if reverse:
                 if crc & 0x0001:

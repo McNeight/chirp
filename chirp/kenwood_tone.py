@@ -41,8 +41,10 @@ class KenwoodToneModel:
     :param tone_flag: Flag to indicate a CTCSS tone (0x0000 or 0x8000)
     :param dcs_enc_base: Numerical base for DCS encoding (8 or 10)
     """
-    def __init__(self, dcs_base, pol_mask, tone_init=0x0000, tone_flag=0x8000,
-                 dcs_enc_base=8):
+
+    def __init__(
+        self, dcs_base, pol_mask, tone_init=0x0000, tone_flag=0x8000, dcs_enc_base=8
+    ):
         self.dcs_base = dcs_base
         self.pol_mask = pol_mask
         self.tone_init = tone_init
@@ -68,7 +70,7 @@ class KenwoodToneModel:
             pol = (tone_val & self.pol_mask) and "R" or "N"
             return code, pol
 
-        return (tone_val & 0x7fff) / 10.0, None
+        return (tone_val & 0x7FFF) / 10.0, None
 
     def _set_tone_val(self, code, pol):
         """
@@ -182,25 +184,23 @@ def parse_qtdqt(selcall):
      - val is the integer DTCS code or float tone frequency (ex: 023, 103.5)
      - pol is the DTCS polarity ('N' or 'R') or '' for tone/CSQ
     """
-    selcall = selcall or ''
+    selcall = selcall or ""
     selcall = selcall.upper().strip()
-    if selcall.startswith('D'):
+    if selcall.startswith("D"):
         try:
             val = int(selcall[1:4])
             pol = selcall[4]
-            return 'DTCS', val, pol
+            return "DTCS", val, pol
         except (ValueError, IndexError):
-            raise ValueError(
-                'DCS value must be in the form "D023N"')
+            raise ValueError('DCS value must be in the form "D023N"')
     elif selcall:
         try:
             val = float(selcall)
-            return 'Tone', val, ''
+            return "Tone", val, ""
         except ValueError:
-            raise ValueError(
-                'Tone value must be in the form "103.5"')
+            raise ValueError('Tone value must be in the form "103.5"')
     else:
-        return '', None, None
+        return "", None, None
 
 
 def format_qtdqt(mode, val, pol):
@@ -214,9 +214,9 @@ def format_qtdqt(mode, val, pol):
     :param pol: A DTCS polarity ('N' or 'R')
     :returns: A selcall string like '103.5' or 'D023N'
     """
-    if mode == 'DTCS':
-        return 'D%03.3i%s' % (val, pol)
-    elif mode == 'Tone':
-        return '%3.1f' % val
+    if mode == "DTCS":
+        return "D%03.3i%s" % (val, pol)
+    elif mode == "Tone":
+        return "%3.1f" % val
     else:
-        return ''
+        return ""

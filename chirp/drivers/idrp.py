@@ -53,13 +53,13 @@ def send(pipe, buf):
         data += buf
         LOG.debug("Got: \n%s" % util.hexprint(buf))
 
-    LOG.debug('Sent %i bytes, received %i', len(buf), len(data))
+    LOG.debug("Sent %i bytes, received %i", len(buf), len(data))
     return parse_frames(data)
 
 
 def send_magic(pipe):
     """Send the magic wakeup call to @pipe"""
-    LOG.debug('Sending magic wakeup')
+    LOG.debug("Sending magic wakeup")
     send(pipe, (b"\xfe" * 15) + b"\x01\x7f\x19")
 
 
@@ -99,26 +99,40 @@ def get_freq(pipe):
         if frame[4] == 3:
             els = frame[5:10]
 
-            freq = int("%02x%02x%02x%02x%02x" % (els[4],
-                                                 els[3],
-                                                 els[2],
-                                                 els[1],
-                                                 els[0]))
+            freq = int(
+                "%02x%02x%02x%02x%02x" % (els[4], els[3], els[2], els[1], els[0])
+            )
             LOG.debug("Freq: %f" % freq)
             return freq
         else:
-            LOG.debug('Unhandled frame type %i', frame[4])
+            LOG.debug("Unhandled frame type %i", frame[4])
 
     raise errors.InvalidDataError("No frequency frame received")
 
 
-RP_IMMUTABLE = ["number", "skip", "bank", "extd_number", "name", "rtone",
-                "ctone", "dtcs", "tmode", "dtcs_polarity", "skip", "duplex",
-                "offset", "mode", "tuning_step", "bank_index"]
+RP_IMMUTABLE = [
+    "number",
+    "skip",
+    "bank",
+    "extd_number",
+    "name",
+    "rtone",
+    "ctone",
+    "dtcs",
+    "tmode",
+    "dtcs_polarity",
+    "skip",
+    "duplex",
+    "offset",
+    "mode",
+    "tuning_step",
+    "bank_index",
+]
 
 
 class IDRPx000V(chirp_common.LiveRadio):
     """Icom IDRP-*"""
+
     BAUD_RATE = 19200
     VENDOR = "Icom"
     MODEL = "ID-2000V/4000V/2D/2V"

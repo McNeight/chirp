@@ -20,10 +20,16 @@ import logging
 
 from chirp.drivers.wouxun_common import do_download, do_upload
 from chirp import util, chirp_common, bitwise, errors, directory
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-                RadioSettingValueBoolean, RadioSettingValueList, \
-                RadioSettingValueInteger, RadioSettingValueString, \
-                RadioSettingValueFloat, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueBoolean,
+    RadioSettingValueList,
+    RadioSettingValueInteger,
+    RadioSettingValueString,
+    RadioSettingValueFloat,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -187,14 +193,17 @@ DUPLEX_LIST = ["Off", "-", "+"]
 STE_LIST = ["On", "Off"]
 
 UV3R_DUPLEX = ["", "-", "+", ""]
-UV3R_POWER_LEVELS = [chirp_common.PowerLevel("High", watts=2.00),
-                     chirp_common.PowerLevel("Low", watts=0.50)]
+UV3R_POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=2.00),
+    chirp_common.PowerLevel("Low", watts=0.50),
+]
 UV3R_DTCS_POL = ["NN", "NR", "RN", "RR"]
 
 
 @directory.register
 class UV3RRadio(chirp_common.CloneModeRadio):
     """Baofeng UV-3R"""
+
     VENDOR = "Baofeng"
     MODEL = "UV-3R"
 
@@ -207,8 +216,13 @@ class UV3RRadio(chirp_common.CloneModeRadio):
         rf.valid_bands = [(136000000, 235000000), (400000000, 529000000)]
         rf.valid_skips = []
         rf.valid_duplexes = ["", "-", "+", "split"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+        ]
         rf.valid_tuning_steps = STEPS
         rf.has_ctone = True
         rf.has_cross = True
@@ -313,7 +327,7 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             _mem.offset = abs(diff) / 10
             _mem.duplex = UV3R_DUPLEX.index(diff < 0 and "+" or "-")
             for i in range(0, 4):
-                _mem.tx_freq[i].set_raw("\xFF")
+                _mem.tx_freq[i].set_raw("\xff")
         else:
             _mem.offset = mem.offset / 10
             _mem.duplex = UV3R_DUPLEX.index(mem.duplex)
@@ -364,114 +378,151 @@ class UV3RRadio(chirp_common.CloneModeRadio):
         basic = RadioSettingGroup("basic", "Basic Settings")
         group = RadioSettings(basic)
 
-        rs = RadioSetting("squelch", "Squelch Level",
-                          RadioSettingValueInteger(0, 9, _settings.squelch))
+        rs = RadioSetting(
+            "squelch",
+            "Squelch Level",
+            RadioSettingValueInteger(0, 9, _settings.squelch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("backlight", "LCD Back Light",
-                          RadioSettingValueList(
-                              BACKLIGHT_LIST,
-                              current_index=_settings.backlight))
+        rs = RadioSetting(
+            "backlight",
+            "LCD Back Light",
+            RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.backlight),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Keypad Beep",
-                          RadioSettingValueBoolean(_settings.beep))
+        rs = RadioSetting(
+            "beep", "Keypad Beep", RadioSettingValueBoolean(_settings.beep)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX Level (0=OFF)",
-                          RadioSettingValueInteger(0, 9, _settings.vox))
+        rs = RadioSetting(
+            "vox", "VOX Level (0=OFF)", RadioSettingValueInteger(0, 9, _settings.vox)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("dw", "Dual Watch",
-                          RadioSettingValueBoolean(_settings.dw))
+        rs = RadioSetting("dw", "Dual Watch", RadioSettingValueBoolean(_settings.dw))
         basic.append(rs)
 
-        rs = RadioSetting("ste", "Squelch Tail Eliminate",
-                          RadioSettingValueList(
-                              STE_LIST, current_index=_settings.ste))
+        rs = RadioSetting(
+            "ste",
+            "Squelch Tail Eliminate",
+            RadioSettingValueList(STE_LIST, current_index=_settings.ste),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("save", "Battery Saver",
-                          RadioSettingValueBoolean(_settings.save))
+        rs = RadioSetting(
+            "save", "Battery Saver", RadioSettingValueBoolean(_settings.save)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("timeout", "Time Out Timer",
-                          RadioSettingValueList(
-                              TIMEOUT_LIST, current_index=_settings.timeout))
+        rs = RadioSetting(
+            "timeout",
+            "Time Out Timer",
+            RadioSettingValueList(TIMEOUT_LIST, current_index=_settings.timeout),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("scanm", "Scan Mode",
-                          RadioSettingValueList(
-                              SCANM_LIST, current_index=_settings.scanm))
+        rs = RadioSetting(
+            "scanm",
+            "Scan Mode",
+            RadioSettingValueList(SCANM_LIST, current_index=_settings.scanm),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("relaym", "Repeater Sound Response",
-                          RadioSettingValueBoolean(_settings.relaym))
+        rs = RadioSetting(
+            "relaym",
+            "Repeater Sound Response",
+            RadioSettingValueBoolean(_settings.relaym),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("bclo", "Busy Channel Lock Out",
-                          RadioSettingValueBoolean(_settings.bclo))
+        rs = RadioSetting(
+            "bclo", "Busy Channel Lock Out", RadioSettingValueBoolean(_settings.bclo)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("pri", "Priority Channel Scanning",
-                          RadioSettingValueBoolean(_settings.pri))
+        rs = RadioSetting(
+            "pri", "Priority Channel Scanning", RadioSettingValueBoolean(_settings.pri)
+        )
         basic.append(rs)
 
-        rs = RadioSetting("pri_ch", "Priority Channel",
-                          RadioSettingValueList(
-                              PRI_CH_LIST, current_index=_settings.pri_ch))
+        rs = RadioSetting(
+            "pri_ch",
+            "Priority Channel",
+            RadioSettingValueList(PRI_CH_LIST, current_index=_settings.pri_ch),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ch_flag", "Display Mode",
-                          RadioSettingValueList(
-                              CH_FLAG_LIST, current_index=_settings.ch_flag))
+        rs = RadioSetting(
+            "ch_flag",
+            "Display Mode",
+            RadioSettingValueList(CH_FLAG_LIST, current_index=_settings.ch_flag),
+        )
         basic.append(rs)
 
         _limit = int(self._memobj.limits.lower_vhf) / 10
         if _limit < 115 or _limit > 239:
             _limit = 144
-        rs = RadioSetting("limits.lower_vhf", "VHF Lower Limit (115-239 MHz)",
-                          RadioSettingValueInteger(115, 235, _limit))
+        rs = RadioSetting(
+            "limits.lower_vhf",
+            "VHF Lower Limit (115-239 MHz)",
+            RadioSettingValueInteger(115, 235, _limit),
+        )
 
         def apply_limit(setting, obj):
             value = int(setting.value) * 10
             obj.lower_vhf = value
+
         rs.set_apply_callback(apply_limit, self._memobj.limits)
         basic.append(rs)
 
         _limit = int(self._memobj.limits.upper_vhf) / 10
         if _limit < 115 or _limit > 239:
             _limit = 146
-        rs = RadioSetting("limits.upper_vhf", "VHF Upper Limit (115-239 MHz)",
-                          RadioSettingValueInteger(115, 235, _limit))
+        rs = RadioSetting(
+            "limits.upper_vhf",
+            "VHF Upper Limit (115-239 MHz)",
+            RadioSettingValueInteger(115, 235, _limit),
+        )
 
         def apply_limit(setting, obj):
             value = int(setting.value) * 10
             obj.upper_vhf = value
+
         rs.set_apply_callback(apply_limit, self._memobj.limits)
         basic.append(rs)
 
         _limit = int(self._memobj.limits.lower_uhf) / 10
         if _limit < 200 or _limit > 529:
             _limit = 420
-        rs = RadioSetting("limits.lower_uhf", "UHF Lower Limit (200-529 MHz)",
-                          RadioSettingValueInteger(200, 529, _limit))
+        rs = RadioSetting(
+            "limits.lower_uhf",
+            "UHF Lower Limit (200-529 MHz)",
+            RadioSettingValueInteger(200, 529, _limit),
+        )
 
         def apply_limit(setting, obj):
             value = int(setting.value) * 10
             obj.lower_uhf = value
+
         rs.set_apply_callback(apply_limit, self._memobj.limits)
         basic.append(rs)
 
         _limit = int(self._memobj.limits.upper_uhf) / 10
         if _limit < 200 or _limit > 529:
             _limit = 450
-        rs = RadioSetting("limits.upper_uhf", "UHF Upper Limit (200-529 MHz)",
-                          RadioSettingValueInteger(200, 529, _limit))
+        rs = RadioSetting(
+            "limits.upper_uhf",
+            "UHF Upper Limit (200-529 MHz)",
+            RadioSettingValueInteger(200, 529, _limit),
+        )
 
         def apply_limit(setting, obj):
             value = int(setting.value) * 10
             obj.upper_uhf = value
+
         rs.set_apply_callback(apply_limit, self._memobj.limits)
         basic.append(rs)
 
@@ -487,16 +538,16 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             value = chirp_common.parse_freq(str(setting.value)) / 10
             obj.vhf.freq = value
 
-        val = RadioSettingValueString(
-                0, 10, convert_bytes_to_freq(int(_vfo.vhf.freq)))
-        rs = RadioSetting("vfo.vhf.freq",
-                          "VHF RX Frequency (115.00000-236.00000)", val)
+        val = RadioSettingValueString(0, 10, convert_bytes_to_freq(int(_vfo.vhf.freq)))
+        rs = RadioSetting("vfo.vhf.freq", "VHF RX Frequency (115.00000-236.00000)", val)
         rs.set_apply_callback(apply_vhf_freq, _vfo)
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.vhf.duplex", "Shift Direction",
-                          RadioSettingValueList(
-                              DUPLEX_LIST, current_index=_vfo.vhf.duplex))
+        rs = RadioSetting(
+            "vfo.vhf.duplex",
+            "Shift Direction",
+            RadioSettingValueList(DUPLEX_LIST, current_index=_vfo.vhf.duplex),
+        )
         vfo_preset.append(rs)
 
         def convert_bytes_to_offset(bytes):
@@ -509,41 +560,47 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             obj.vhf.offset = value
 
         val = RadioSettingValueString(
-                0, 10, convert_bytes_to_offset(int(_vfo.vhf.offset)))
+            0, 10, convert_bytes_to_offset(int(_vfo.vhf.offset))
+        )
         rs = RadioSetting("vfo.vhf.offset", "Offset (0.00-37.995)", val)
         rs.set_apply_callback(apply_vhf_offset, _vfo)
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.vhf.power", "Power Level",
-                          RadioSettingValueList(
-                              POWER_LIST, current_index=_vfo.vhf.power))
+        rs = RadioSetting(
+            "vfo.vhf.power",
+            "Power Level",
+            RadioSettingValueList(POWER_LIST, current_index=_vfo.vhf.power),
+        )
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.vhf.bandwidth", "Bandwidth",
-                          RadioSettingValueList(
-                              BANDWIDTH_LIST,
-                              current_index=_vfo.vhf.bandwidth))
+        rs = RadioSetting(
+            "vfo.vhf.bandwidth",
+            "Bandwidth",
+            RadioSettingValueList(BANDWIDTH_LIST, current_index=_vfo.vhf.bandwidth),
+        )
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.vhf.step", "Step",
-                          RadioSettingValueList(
-                              STEP_LIST, current_index=_vfo.vhf.step))
+        rs = RadioSetting(
+            "vfo.vhf.step",
+            "Step",
+            RadioSettingValueList(STEP_LIST, current_index=_vfo.vhf.step),
+        )
         vfo_preset.append(rs)
 
         def apply_uhf_freq(setting, obj):
             value = chirp_common.parse_freq(str(setting.value)) / 10
             obj.uhf.freq = value
 
-        val = RadioSettingValueString(
-                0, 10, convert_bytes_to_freq(int(_vfo.uhf.freq)))
-        rs = RadioSetting("vfo.uhf.freq",
-                          "UHF RX Frequency (200.00000-529.00000)", val)
+        val = RadioSettingValueString(0, 10, convert_bytes_to_freq(int(_vfo.uhf.freq)))
+        rs = RadioSetting("vfo.uhf.freq", "UHF RX Frequency (200.00000-529.00000)", val)
         rs.set_apply_callback(apply_uhf_freq, _vfo)
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.uhf.duplex", "Shift Direction",
-                          RadioSettingValueList(
-                              DUPLEX_LIST, current_index=_vfo.uhf.duplex))
+        rs = RadioSetting(
+            "vfo.uhf.duplex",
+            "Shift Direction",
+            RadioSettingValueList(DUPLEX_LIST, current_index=_vfo.uhf.duplex),
+        )
         vfo_preset.append(rs)
 
         def apply_uhf_offset(setting, obj):
@@ -551,25 +608,31 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             obj.uhf.offset = value
 
         val = RadioSettingValueString(
-                0, 10, convert_bytes_to_offset(int(_vfo.uhf.offset)))
+            0, 10, convert_bytes_to_offset(int(_vfo.uhf.offset))
+        )
         rs = RadioSetting("vfo.uhf.offset", "Offset (0.00-69.995)", val)
         rs.set_apply_callback(apply_uhf_offset, _vfo)
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.uhf.power", "Power Level",
-                          RadioSettingValueList(
-                              POWER_LIST, current_index=_vfo.uhf.power))
+        rs = RadioSetting(
+            "vfo.uhf.power",
+            "Power Level",
+            RadioSettingValueList(POWER_LIST, current_index=_vfo.uhf.power),
+        )
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.uhf.bandwidth", "Bandwidth",
-                          RadioSettingValueList(
-                              BANDWIDTH_LIST,
-                              current_index=_vfo.uhf.bandwidth))
+        rs = RadioSetting(
+            "vfo.uhf.bandwidth",
+            "Bandwidth",
+            RadioSettingValueList(BANDWIDTH_LIST, current_index=_vfo.uhf.bandwidth),
+        )
         vfo_preset.append(rs)
 
-        rs = RadioSetting("vfo.uhf.step", "Step",
-                          RadioSettingValueList(
-                              STEP_LIST, current_index=_vfo.uhf.step))
+        rs = RadioSetting(
+            "vfo.uhf.step",
+            "Step",
+            RadioSettingValueList(STEP_LIST, current_index=_vfo.uhf.step),
+        )
         vfo_preset.append(rs)
 
         fm_preset = RadioSettingGroup("fm_preset", "FM Radio Presets")
@@ -582,9 +645,12 @@ class UV3RRadio(chirp_common.CloneModeRadio):
             else:
                 used = False
                 preset = 65
-            rs = RadioSetting("fm_presets_%1i" % i, "FM Preset %i" % (i + 1),
-                              RadioSettingValueBoolean(used),
-                              RadioSettingValueFloat(65, 108, preset, 0.1, 1))
+            rs = RadioSetting(
+                "fm_presets_%1i" % i,
+                "FM Preset %i" % (i + 1),
+                RadioSettingValueBoolean(used),
+                RadioSettingValueFloat(65, 108, preset, 0.1, 1),
+            )
             fm_preset.append(rs)
 
         return group
@@ -629,7 +695,7 @@ class UV3RRadio(chirp_common.CloneModeRadio):
     def _set_fm_preset(self, settings):
         for element in settings:
             try:
-                index = (int(element.get_name().split("_")[-1]))
+                index = int(element.get_name().split("_")[-1])
                 val = list(element.value)
                 if val[0].get_value():
                     value = int(val[1].get_value() * 10 - 650)

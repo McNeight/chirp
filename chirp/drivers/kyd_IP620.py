@@ -25,8 +25,12 @@ import time
 import logging
 from chirp import util, chirp_common, bitwise, memmap, errors, directory
 from chirp import kenwood_tone
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-                RadioSettingValueList, RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -130,11 +134,24 @@ BAT_SAVE_LIST = ["OFF", "0.2 Sec", "0.4 Sec", "0.6 Sec", "0.8 Sec", "1.0 Sec"]
 SHIFT_LIST = ["", "-", "+"]
 SCANM_LIST = ["Time", "Carrier wave", "Search"]
 ENDBEEP_LIST = ["OFF", "Begin", "End", "Begin/End"]
-POWER_LEVELS = [chirp_common.PowerLevel("Low",  watts=1.00), chirp_common.PowerLevel("Medium", watts=2.50), chirp_common.PowerLevel("High", watts=5.00)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1.00),
+    chirp_common.PowerLevel("Medium", watts=2.50),
+    chirp_common.PowerLevel("High", watts=5.00),
+]
 TIMEOUT_LIST = ["OFF", "1 Min", "3 Min", "10 Min"]
 TOTALERT_LIST = ["", "OFF"] + ["%s seconds" % x for x in range(1, 11)]
 VOX_LIST = ["OFF"] + ["%s" % x for x in range(1, 17)]
-VOXDELAY_LIST = ["0.3 Sec", "0.5 Sec", "1.0 Sec", "1.5 Sec", "2.0 Sec", "3.0 Sec", "4.0 Sec", "5.0 Sec"]
+VOXDELAY_LIST = [
+    "0.3 Sec",
+    "0.5 Sec",
+    "1.0 Sec",
+    "1.5 Sec",
+    "2.0 Sec",
+    "3.0 Sec",
+    "4.0 Sec",
+    "5.0 Sec",
+]
 PRI_NUM = [3, 5, 8, 10]
 PRI_NUM_LIST = [str(x) for x in PRI_NUM]
 CH_FLAG_LIST = ["Channel+Freq", "Channel+Name"]
@@ -158,25 +175,25 @@ IP620_BANDS = [
 
 
 @directory.register
-class IP620Radio(chirp_common.CloneModeRadio,
-                 chirp_common.ExperimentalRadio):
+class IP620Radio(chirp_common.CloneModeRadio, chirp_common.ExperimentalRadio):
     """KYD IP-620"""
+
     VENDOR = "KYD"
     MODEL = "IP-620"
     BAUD_RATE = 9600
     NEEDS_COMPAT_SERIAL = True
 
     _ranges = [
-               (0x0000, 0x2000),
-              ]
+        (0x0000, 0x2000),
+    ]
     _memsize = 0x2000
     _tone_model = kenwood_tone.KenwoodToneModel(
-        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000)
+        dcs_base=0x2800, pol_mask=0x8000, tone_init=0xFFFF, tone_flag=0x0000
+    )
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return len(filedata) == cls._memsize and \
-            filedata[0xF7E:0xF80] == b"\x01\xE2"
+        return len(filedata) == cls._memsize and filedata[0xF7E:0xF80] == b"\x01\xe2"
 
     def _ip620_exit_programming_mode(self):
         try:
@@ -207,7 +224,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
             raise
         except Exception as e:
             raise errors.RadioError("Error communicating with radio: %s" % e)
-        if not _ident.startswith("\x06\x4B\x47\x36\x37\x01\x56\xF8"):
+        if not _ident.startswith("\x06\x4b\x47\x36\x37\x01\x56\xf8"):
             print(util.hexprint(_ident))
             raise errors.RadioError("Radio returned unknown identification string")
         try:
@@ -221,8 +238,8 @@ class IP620Radio(chirp_common.CloneModeRadio,
             raise errors.RadioError("Radio refused to enter programming mode")
 
     def _ip620_write_block(self, block_addr):
-        _cmd = struct.pack(">cHb", 'W', block_addr, WRITE_BLOCK_SIZE)
-        _data = self.get_mmap()[block_addr:block_addr + WRITE_BLOCK_SIZE]
+        _cmd = struct.pack(">cHb", "W", block_addr, WRITE_BLOCK_SIZE)
+        _data = self.get_mmap()[block_addr : block_addr + WRITE_BLOCK_SIZE]
         LOG.debug("Writing Data:")
         LOG.debug(util.hexprint(_cmd + _data))
         try:
@@ -230,11 +247,12 @@ class IP620Radio(chirp_common.CloneModeRadio,
             if self.pipe.read(1) != CMD_ACK:
                 raise Exception("No ACK")
         except:
-            raise errors.RadioError("Failed to send block "
-                                    "to radio at %04x" % block_addr)
+            raise errors.RadioError(
+                "Failed to send block " "to radio at %04x" % block_addr
+            )
 
     def _ip620_read_block(self, block_addr):
-        _cmd = struct.pack(">cHb", 'R', block_addr, READ_BLOCK_SIZE)
+        _cmd = struct.pack(">cHb", "R", block_addr, READ_BLOCK_SIZE)
         _expectedresponse = "W" + _cmd[1:]
         LOG.debug("Reading block %04x..." % (block_addr))
         try:
@@ -284,9 +302,11 @@ class IP620Radio(chirp_common.CloneModeRadio,
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = ("This radio driver is currently under development. "
-                           "There are no known issues with it, but you should "
-                           "proceed with caution. However, proceed at your own risk!")
+        rp.experimental = (
+            "This radio driver is currently under development. "
+            "There are no known issues with it, but you should "
+            "proceed with caution. However, proceed at your own risk!"
+        )
         return rp
 
     def get_features(self):
@@ -306,7 +326,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
         rf.valid_modes = ["FM", "NFM"]
         rf.memory_bounds = (1, 200)
         rf.valid_bands = IP620_BANDS
-        rf.valid_characters = ''.join(set(IP620_CHARSET))
+        rf.valid_characters = "".join(set(IP620_CHARSET))
         rf.valid_name_length = CHAR_LENGTH_MAX
         return rf
 
@@ -333,7 +353,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
         _nam = self._memobj.chan_names[number - 1]
 
         def _is_empty():
-            if _mem.rx_freq.get_raw() != b"\xFF\xFF\xFF\xFF":
+            if _mem.rx_freq.get_raw() != b"\xff\xff\xff\xff":
                 return False
             return True
 
@@ -349,7 +369,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
         if int(_mem.rx_freq) == int(_mem.tx_freq):
             mem.duplex = ""
             mem.offset = 0
-        elif _mem.tx_freq.get_raw() == b"\xFF\xFF\xFF\xFF":
+        elif _mem.tx_freq.get_raw() == b"\xff\xff\xff\xff":
             mem.duplex = "off"
         else:
             mem.duplex = int(_mem.rx_freq) > int(_mem.tx_freq) and "-" or "+"
@@ -360,45 +380,51 @@ class IP620Radio(chirp_common.CloneModeRadio,
         mem.power = POWER_LEVELS[_mem.power]
 
         mem.extra = RadioSettingGroup("Extra", "extra")
-        rs = RadioSetting("lout", "Lock out",
-                          RadioSettingValueList(OFF_ON_LIST,
-                                                current_index=_mem.lout))
+        rs = RadioSetting(
+            "lout",
+            "Lock out",
+            RadioSettingValueList(OFF_ON_LIST, current_index=_mem.lout),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("busy_loc", "Busy lock",
-                          RadioSettingValueList(BUSYLOCK_LIST,
-                                                current_index=_mem.busy_loc))
+        rs = RadioSetting(
+            "busy_loc",
+            "Busy lock",
+            RadioSettingValueList(BUSYLOCK_LIST, current_index=_mem.busy_loc),
+        )
         mem.extra.append(rs)
 
-        rs = RadioSetting("scan_add", "Scan add",
-                          RadioSettingValueList(NO_YES_LIST,
-                                                current_index=_mem.scan_add))
+        rs = RadioSetting(
+            "scan_add",
+            "Scan add",
+            RadioSettingValueList(NO_YES_LIST, current_index=_mem.scan_add),
+        )
         mem.extra.append(rs)
         # TODO: Show name channel
-#        count = 0
-#        for i in _nam.chan_name:
-#            if i == 0xFF:
-#                break
-#            try:
-#                mem.name += IP620_CHARSET[i]
-#            except Exception:
-#                LOG.error("Unknown name char %i: 0x%02x (mem %i)" %
-#                          (count, i, number - 1))
-#                mem.name += " "
-#            count += 1
-#        mem.name = mem.name.rstrip()
+        #        count = 0
+        #        for i in _nam.chan_name:
+        #            if i == 0xFF:
+        #                break
+        #            try:
+        #                mem.name += IP620_CHARSET[i]
+        #            except Exception:
+        #                LOG.error("Unknown name char %i: 0x%02x (mem %i)" %
+        #                          (count, i, number - 1))
+        #                mem.name += " "
+        #            count += 1
+        #        mem.name = mem.name.rstrip()
 
         return mem
 
     def set_memory(self, mem):
         _mem = self._memobj.memory[mem.number - 1]
         if mem.empty:
-            _mem.fill_raw(b"\xFF")
+            _mem.fill_raw(b"\xff")
             return
 
         _mem.rx_freq = mem.freq / 10
         if mem.duplex == "off":
-            _mem.tx_freq.fill_raw(b"\xFF")
+            _mem.tx_freq.fill_raw(b"\xff")
         elif mem.duplex == "+":
             _mem.tx_freq = (mem.freq + mem.offset) / 10
         elif mem.duplex == "-":
@@ -410,7 +436,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
         self._tone_model.set_tone(mem, _mem)
         _mem.power = mem.power == POWER_LEVELS[1]
 
-        for setting in ('lout', 'busy_loc', 'scan_add'):
+        for setting in ("lout", "busy_loc", "scan_add"):
             setattr(_mem, setting, 0)
         for setting in mem.extra:
             setattr(_mem, setting.get_name(), setting.value)
@@ -421,94 +447,132 @@ class IP620Radio(chirp_common.CloneModeRadio,
         basic = RadioSettingGroup("basic", "Basic Settings")
         top = RadioSettings(basic)
 
-        rs = RadioSetting("rf_sql", "Squelch level (SQL)",
-                          RadioSettingValueList(RFSQL_LIST,
-                                                current_index=_settings.rf_sql))
+        rs = RadioSetting(
+            "rf_sql",
+            "Squelch level (SQL)",
+            RadioSettingValueList(RFSQL_LIST, current_index=_settings.rf_sql),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("step_freq", "Step frequency kHz (STP)",
-                          RadioSettingValueList(STEP_LIST,
-                                                current_index=_settings.step_freq))
+        rs = RadioSetting(
+            "step_freq",
+            "Step frequency kHz (STP)",
+            RadioSettingValueList(STEP_LIST, current_index=_settings.step_freq),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("fm_radio", "FM radio (DW)",
-                          RadioSettingValueList(OFF_ON_LIST,
-                                                current_index=_settings_misc.fm_radio))
+        rs = RadioSetting(
+            "fm_radio",
+            "FM radio (DW)",
+            RadioSettingValueList(OFF_ON_LIST, current_index=_settings_misc.fm_radio),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("call_tone", "Call tone (CK)",
-                          RadioSettingValueList(CALLTONE_LIST,
-                                                current_index=_settings.call_tone))
+        rs = RadioSetting(
+            "call_tone",
+            "Call tone (CK)",
+            RadioSettingValueList(CALLTONE_LIST, current_index=_settings.call_tone),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("tot", "Time-out timer (TOT)",
-                          RadioSettingValueList(TIMEOUT_LIST,
-                                                current_index=_settings.tot))
+        rs = RadioSetting(
+            "tot",
+            "Time-out timer (TOT)",
+            RadioSettingValueList(TIMEOUT_LIST, current_index=_settings.tot),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("chan_disp_way", "Channel display way",
-                          RadioSettingValueList(CH_FLAG_LIST,
-                                                current_index=_settings.chan_disp_way))
+        rs = RadioSetting(
+            "chan_disp_way",
+            "Channel display way",
+            RadioSettingValueList(CH_FLAG_LIST, current_index=_settings.chan_disp_way),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox", "VOX Gain (VOX)",
-                          RadioSettingValueList(VOX_LIST,
-                                                current_index=_settings.vox))
+        rs = RadioSetting(
+            "vox",
+            "VOX Gain (VOX)",
+            RadioSettingValueList(VOX_LIST, current_index=_settings.vox),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("vox_dly", "VOX Delay",
-                          RadioSettingValueList(VOXDELAY_LIST,
-                                                current_index=_settings.vox_dly))
+        rs = RadioSetting(
+            "vox_dly",
+            "VOX Delay",
+            RadioSettingValueList(VOXDELAY_LIST, current_index=_settings.vox_dly),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("beep", "Beep (BP)",
-                          RadioSettingValueList(OFF_ON_LIST,
-                                                current_index=_settings.beep))
+        rs = RadioSetting(
+            "beep",
+            "Beep (BP)",
+            RadioSettingValueList(OFF_ON_LIST, current_index=_settings.beep),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("auto_lock", "Auto lock (KY)",
-                          RadioSettingValueList(NO_YES_LIST,
-                                                current_index=_settings_misc.auto_lock))
+        rs = RadioSetting(
+            "auto_lock",
+            "Auto lock (KY)",
+            RadioSettingValueList(NO_YES_LIST, current_index=_settings_misc.auto_lock),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("bat_save", "Battery Saver (SAV)",
-                          RadioSettingValueList(BAT_SAVE_LIST,
-                                                current_index=_settings.bat_save))
+        rs = RadioSetting(
+            "bat_save",
+            "Battery Saver (SAV)",
+            RadioSettingValueList(BAT_SAVE_LIST, current_index=_settings.bat_save),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("chan_pri", "Channel PRI (PRI)",
-                          RadioSettingValueList(OFF_ON_LIST,
-                                                current_index=_settings.chan_pri))
+        rs = RadioSetting(
+            "chan_pri",
+            "Channel PRI (PRI)",
+            RadioSettingValueList(OFF_ON_LIST, current_index=_settings.chan_pri),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("chan_pri_num", "Channel PRI time Sec (PRI)",
-                          RadioSettingValueList(PRI_NUM_LIST,
-                                                current_index=_settings.chan_pri_num))
+        rs = RadioSetting(
+            "chan_pri_num",
+            "Channel PRI time Sec (PRI)",
+            RadioSettingValueList(PRI_NUM_LIST, current_index=_settings.chan_pri_num),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("end_beep", "End beep (ET)",
-                          RadioSettingValueList(ENDBEEP_LIST,
-                                                current_index=_settings.end_beep))
+        rs = RadioSetting(
+            "end_beep",
+            "End beep (ET)",
+            RadioSettingValueList(ENDBEEP_LIST, current_index=_settings.end_beep),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("ch_mode", "CH mode",
-                          RadioSettingValueList(ON_OFF_LIST,
-                                                current_index=_settings.ch_mode))
+        rs = RadioSetting(
+            "ch_mode",
+            "CH mode",
+            RadioSettingValueList(ON_OFF_LIST, current_index=_settings.ch_mode),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("scan_rev", "Scan rev (SCAN)",
-                          RadioSettingValueList(SCANM_LIST,
-                                                current_index=_settings.scan_rev))
+        rs = RadioSetting(
+            "scan_rev",
+            "Scan rev (SCAN)",
+            RadioSettingValueList(SCANM_LIST, current_index=_settings.scan_rev),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("enc", "Frequency lock (ENC)",
-                          RadioSettingValueList(OFF_ON_LIST,
-                                                current_index=_settings.enc))
+        rs = RadioSetting(
+            "enc",
+            "Frequency lock (ENC)",
+            RadioSettingValueList(OFF_ON_LIST, current_index=_settings.enc),
+        )
         basic.append(rs)
 
-        rs = RadioSetting("wait_back_light", "Wait back light (LED)",
-                          RadioSettingValueList(BACKLIGHT_LIST,
-                                                current_index=_settings.wait_back_light))
+        rs = RadioSetting(
+            "wait_back_light",
+            "Wait back light (LED)",
+            RadioSettingValueList(
+                BACKLIGHT_LIST, current_index=_settings.wait_back_light
+            ),
+        )
         basic.append(rs)
 
         return top
@@ -516,9 +580,7 @@ class IP620Radio(chirp_common.CloneModeRadio,
     def _set_misc_settings(self, settings):
         for element in settings:
             try:
-                setattr(self._memobj.settings_misc,
-                        element.get_name(),
-                        element.value)
+                setattr(self._memobj.settings_misc, element.get_name(), element.value)
             except Exception:
                 LOG.debug(element.get_name())
                 raise

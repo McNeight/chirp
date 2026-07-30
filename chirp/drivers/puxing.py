@@ -76,12 +76,16 @@ def puxing_upload(radio):
         raise errors.RadioError("Failed to communicate with radio: %s" % e)
 
 
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                chirp_common.PowerLevel("Low", watts=1.00)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=5.00),
+    chirp_common.PowerLevel("Low", watts=1.00),
+]
 
-PUXING_CHARSET = list("0123456789") + \
-    [chr(x + ord("A")) for x in range(0, 26)] + \
-    list("-                       ")
+PUXING_CHARSET = (
+    list("0123456789")
+    + [chr(x + ord("A")) for x in range(0, 26)]
+    + list("-                       ")
+)
 
 PUXING_MEM_FORMAT = """
 #seekto 0x0000;
@@ -134,7 +138,7 @@ PUXING_MODELS = {
 }
 
 PUXING_777_BANDS = [
-    (67000000,  72000000),
+    (67000000, 72000000),
     (136000000, 174000000),
     (240000000, 260000000),
     (350000000, 390000000),
@@ -150,6 +154,7 @@ PUXING_777_BANDS = [
 @directory.register
 class Puxing777Radio(chirp_common.CloneModeRadio):
     """Puxing PX-777"""
+
     VENDOR = "Puxing"
     MODEL = "PX-777"
 
@@ -165,10 +170,21 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS"]
         rf.valid_modes = ["FM", "NFM"]
         rf.valid_power_levels = POWER_LEVELS
-        rf.valid_characters = ''.join(set(PUXING_CHARSET))
+        rf.valid_characters = "".join(set(PUXING_CHARSET))
         rf.valid_name_length = 6
-        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 15.0, 20.0,
-                                 25.0, 30.0, 50.0, 100.0]
+        rf.valid_tuning_steps = [
+            2.5,
+            5.0,
+            6.25,
+            10.0,
+            12.5,
+            15.0,
+            20.0,
+            25.0,
+            30.0,
+            50.0,
+            100.0,
+        ]
         rf.has_ctone = False
         rf.has_tuning_step = False
         rf.has_bank = False
@@ -181,8 +197,10 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
             try:
                 rf.valid_bands = [PUXING_777_BANDS[limit_idx]]
             except IndexError:
-                LOG.error("Invalid band index %i (0x%02x)" %
-                          (limit_idx, self._memobj.model.limits))
+                LOG.error(
+                    "Invalid band index %i (0x%02x)"
+                    % (limit_idx, self._memobj.model.limits)
+                )
                 rf.valid_bands = [PUXING_777_BANDS[1]]
         elif self._memobj.model.model == PUXING_MODELS[328]:
             # There are PX-777 that says to be model 328 ...
@@ -190,9 +208,12 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
             if self._memobj.model.limits in (0xEE, 0xEF):
                 rf.valid_bands = [PUXING_777_BANDS[1]]
             else:
-                raise Exception("Unsupported band limits 0x%02x for PX-777" %
-                                (self._memobj.model.limits) + " submodel 328"
-                                " - PLEASE REPORT THIS ERROR TO DEVELOPERS!!")
+                raise Exception(
+                    "Unsupported band limits 0x%02x for PX-777"
+                    % (self._memobj.model.limits)
+                    + " submodel 328"
+                    " - PLEASE REPORT THIS ERROR TO DEVELOPERS!!"
+                )
 
         return rf
 
@@ -200,16 +221,22 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
         self._memobj = bitwise.parse(PUXING_MEM_FORMAT, self._mmap)
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number - 1]) + "\r\n" + \
-            repr(self._memobj.names[number - 1])
+        return (
+            repr(self._memobj.memory[number - 1])
+            + "\r\n"
+            + repr(self._memobj.names[number - 1])
+        )
 
     @classmethod
     def match_model(cls, filedata, filename):
         # There are PX-777 that says to be model 328 ...
-        return (len(filedata) == 3168 and
-                (util.byte_to_int(filedata[0x080B]) == PUXING_MODELS[777] or
-                (util.byte_to_int(filedata[0x080B]) == PUXING_MODELS[328] and
-                 util.byte_to_int(filedata[0x080A]) == 0xEE)))
+        return len(filedata) == 3168 and (
+            util.byte_to_int(filedata[0x080B]) == PUXING_MODELS[777]
+            or (
+                util.byte_to_int(filedata[0x080B]) == PUXING_MODELS[328]
+                and util.byte_to_int(filedata[0x080A]) == 0xEE
+            )
+        )
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number - 1]
@@ -217,12 +244,12 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
 
         def _is_empty():
             for i in range(0, 4):
-                if _mem.rx_freq[i].get_raw(asbytes=False) != "\xFF":
+                if _mem.rx_freq[i].get_raw(asbytes=False) != "\xff":
                     return False
             return True
 
         def _is_no_tone(field):
-            return field.get_raw(asbytes=False) in ["\x00\x00", "\xFF\xFF"]
+            return field.get_raw(asbytes=False) in ["\x00\x00", "\xff\xff"]
 
         def _get_dtcs(value):
             # Upper nibble 0x80 -> DCS, 0xC0 -> Inv. DCS
@@ -237,12 +264,12 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
             if int(txfield) < 8000 or int(rxfield) < 8000:
                 raise Exception("Split tone not supported")
 
-            if txfield[0].get_raw(asbytes=False) == "\xFF":
+            if txfield[0].get_raw(asbytes=False) == "\xff":
                 tp, tx = "N", None
             else:
                 tp, tx = _get_dtcs(int(txfield))
 
-            if rxfield[0].get_raw(asbytes=False) == "\xFF":
+            if rxfield[0].get_raw(asbytes=False) == "\xff":
                 rp, rx = "N", None
             else:
                 rp, rx = _get_dtcs(int(rxfield))
@@ -279,8 +306,9 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
 
         if _is_no_tone(_mem.tx_tone):
             pass  # No tone
-        elif int(_mem.tx_tone) > 8000 or \
-                (not _is_no_tone(_mem.rx_tone) and int(_mem.rx_tone) > 8000):
+        elif int(_mem.tx_tone) > 8000 or (
+            not _is_no_tone(_mem.rx_tone) and int(_mem.rx_tone) > 8000
+        ):
             mem.tmode = "DTCS"
             _do_dtcs(mem, _mem.tx_tone, _mem.rx_tone)
         else:
@@ -302,7 +330,7 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
         _nam = self._memobj.names[mem.number - 1]
 
         if mem.empty:
-            wipe_memory(_mem, "\xFF")
+            wipe_memory(_mem, "\xff")
             return
 
         _mem.rx_freq = mem.freq / 10
@@ -311,14 +339,14 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
         elif mem.duplex == "-":
             _mem.tx_freq = (mem.freq / 10) - (mem.offset / 10)
         else:
-            _mem.tx_freq = (mem.freq / 10)
+            _mem.tx_freq = mem.freq / 10
         _mem.skip = mem.skip != "S"
         _mem.iswide = mem.mode != "NFM"
 
-        _mem.rx_tone[0].set_raw("\xFF")
-        _mem.rx_tone[1].set_raw("\xFF")
-        _mem.tx_tone[0].set_raw("\xFF")
-        _mem.tx_tone[1].set_raw("\xFF")
+        _mem.rx_tone[0].set_raw("\xff")
+        _mem.rx_tone[1].set_raw("\xff")
+        _mem.tx_tone[0].set_raw("\xff")
+        _mem.tx_tone[1].set_raw("\xff")
 
         if mem.tmode == "DTCS":
             _mem.tx_tone = int("%x" % int("%i" % (mem.dtcs), 16))
@@ -328,9 +356,11 @@ class Puxing777Radio(chirp_common.CloneModeRadio):
             txm = mem.dtcs_polarity[0] == "N" and 0x80 or 0xC0
             rxm = mem.dtcs_polarity[1] == "N" and 0x80 or 0xC0
             _mem.tx_tone[1].set_raw(
-                chr(ord(_mem.tx_tone[1].get_raw(asbytes=False)) | txm))
+                chr(ord(_mem.tx_tone[1].get_raw(asbytes=False)) | txm)
+            )
             _mem.rx_tone[1].set_raw(
-                chr(ord(_mem.rx_tone[1].get_raw(asbytes=False)) | rxm))
+                chr(ord(_mem.rx_tone[1].get_raw(asbytes=False)) | rxm)
+            )
 
         elif mem.tmode:
             _mem.tx_tone = int(mem.rtone * 10)
@@ -412,14 +442,17 @@ struct {
 """
 
 PX2R_DUPLEX = ["", "+", "-", ""]
-PX2R_POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=1.0),
-                     chirp_common.PowerLevel("High", watts=2.0)]
+PX2R_POWER_LEVELS = [
+    chirp_common.PowerLevel("Low", watts=1.0),
+    chirp_common.PowerLevel("High", watts=2.0),
+]
 PX2R_CHARSET = "0123456789- ABCDEFGHIJKLMNOPQRSTUVWXYZ +"
 
 
 @directory.register
 class Puxing2RRadio(chirp_common.CloneModeRadio):
     """Puxing PX-2R"""
+
     VENDOR = "Puxing"
     MODEL = "PX-2R"
     NEEDS_COMPAT_SERIAL = True
@@ -444,9 +477,10 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return (len(filedata) == cls._memsize) and \
-            filedata[-16:] not in ("IcomCloneFormat3",
-                                   b'IcomCloneFormat3')
+        return (len(filedata) == cls._memsize) and filedata[-16:] not in (
+            "IcomCloneFormat3",
+            b"IcomCloneFormat3",
+        )
 
     def sync_in(self):
         self._mmap = puxing_2r_download(self)
@@ -459,7 +493,7 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
         self._memobj = bitwise.parse(PUXING_2R_MEM_FORMAT, self._mmap)
 
     def get_memory(self, number):
-        _mem = self._memobj.memory[number-1]
+        _mem = self._memobj.memory[number - 1]
 
         mem = chirp_common.Memory()
         mem.number = number
@@ -476,9 +510,9 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
         if _mem.tx_tone >= 0x33:
             mem.dtcs = chirp_common.DTCS_CODES[_mem.tx_tone - 0x33]
             mem.tmode = "DTCS"
-            mem.dtcs_polarity = \
-                (_mem.txdtcsinv and "R" or "N") + \
-                (_mem.rxdtcsinv and "R" or "N")
+            mem.dtcs_polarity = (_mem.txdtcsinv and "R" or "N") + (
+                _mem.rxdtcsinv and "R" or "N"
+            )
         elif _mem.tx_tone:
             mem.rtone = chirp_common.TONES[_mem.tx_tone - 1]
             mem.tmode = _mem.rx_tone and "TSQL" or "Tone"
@@ -490,8 +524,7 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
             try:
                 mem.name += PX2R_CHARSET[i]
             except Exception:
-                LOG.error("Unknown name char %i: 0x%02x (mem %i)" %
-                          (count, i, number))
+                LOG.error("Unknown name char %i: 0x%02x (mem %i)" % (count, i, number))
                 mem.name += " "
             count += 1
         mem.name = mem.name.rstrip()
@@ -499,7 +532,7 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
+        _mem = self._memobj.memory[mem.number - 1]
 
         if mem.empty:
             _mem.set_raw("\xff" * 16)
@@ -530,4 +563,4 @@ class Puxing2RRadio(chirp_common.CloneModeRadio):
                 _mem.name[i] = 0xFF
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])

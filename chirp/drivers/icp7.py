@@ -69,12 +69,27 @@ MODES = ["FM", "WFM", "AM", "Auto"]
 TMODES = ["", "Tone", "TSQL", "", "DTCS"]
 DUPLEX = ["", "-", "+"]
 DTCS_POLARITY = ["NN", "NR", "RN", "RR"]
-TUNING_STEPS = [5.0, 6.25, 8.33, 9.0, 10.0, 12.5, 15.0, 20.0,
-                25.0, 30.0, 50.0, 100.0, 200.0, 0.0]  # 0.0 as "Auto"
+TUNING_STEPS = [
+    5.0,
+    6.25,
+    8.33,
+    9.0,
+    10.0,
+    12.5,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    50.0,
+    100.0,
+    200.0,
+    0.0,
+]  # 0.0 as "Auto"
 
 
 class ICP7Bank(icf.IcomBank):
     """ICP7 bank"""
+
     def get_name(self):
         _bank = self._model._radio._memobj.bank_names[self.index]
         return str(_bank.name).rstrip()
@@ -87,6 +102,7 @@ class ICP7Bank(icf.IcomBank):
 @directory.register
 class ICP7Radio(icf.IcomCloneModeRadio):
     """Icom IC-P7"""
+
     VENDOR = "Icom"
     MODEL = "IC-P7"
 
@@ -102,7 +118,7 @@ class ICP7Radio(icf.IcomCloneModeRadio):
 
     def _get_bank(self, loc):
         _bank = self._memobj.banks[loc]
-        if _bank.bank != 0xff:
+        if _bank.bank != 0xFF:
             return _bank.bank
         else:
             return None
@@ -110,7 +126,7 @@ class ICP7Radio(icf.IcomCloneModeRadio):
     def _set_bank(self, loc, bank):
         _bank = self._memobj.banks[loc]
         if bank is None:
-            _bank.bank = 0xff
+            _bank.bank = 0xFF
         else:
             _bank.bank = bank
 

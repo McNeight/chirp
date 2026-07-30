@@ -40,7 +40,7 @@ def int_to_byte(i):
 def hexprint(data, addrfmt=None, block_size=8):
     """Return a hexdump-like encoding of @data"""
     if addrfmt is None:
-        addrfmt = '%(addr)03i'
+        addrfmt = "%(addr)03i"
 
     out = ""
 
@@ -54,7 +54,7 @@ def hexprint(data, addrfmt=None, block_size=8):
             out += addrfmt % locals()
         except (OverflowError, ValueError, TypeError, KeyError):
             out += "%03i" % addr
-        out += ': '
+        out += ": "
 
         for j in range(0, block_size):
             try:
@@ -68,7 +68,7 @@ def hexprint(data, addrfmt=None, block_size=8):
             try:
                 char = byte_to_int(data[(block * block_size) + j])
             except IndexError:
-                char = ord('.')
+                char = ord(".")
 
             if char > 0x20 and char < 0x7E:
                 out += "%s" % chr(char)
@@ -128,21 +128,26 @@ def safe_charset_string(indexes, charset, safechar=" "):
 
 class StringStruct(object):
     """String-compatible struct module."""
+
     @staticmethod
     def pack(*args):
         from chirp import bitwise
+
         fmt = args[0]
         # Encode any string arguments to bytes
-        newargs = (bitwise.string_straight_encode(x) if isinstance(x, str)
-                   else x
-                   for x in args[1:])
+        newargs = (
+            bitwise.string_straight_encode(x) if isinstance(x, str) else x
+            for x in args[1:]
+        )
         return bitwise.string_straight_decode(struct.pack(fmt, *newargs))
 
     @staticmethod
     def unpack(fmt, data):
         from chirp import bitwise
+
         result = struct.unpack(fmt, bitwise.string_straight_encode(data))
         # Decode any string results
-        return tuple(bitwise.string_straight_decode(x) if isinstance(x, bytes)
-                     else x
-                     for x in result)
+        return tuple(
+            bitwise.string_straight_decode(x) if isinstance(x, bytes) else x
+            for x in result
+        )

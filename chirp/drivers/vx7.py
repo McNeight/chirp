@@ -82,20 +82,25 @@ TMODES = ["", "Tone", "TSQL", "DTCS", "Cross"]
 CROSS_MODES = ["DTCS->", "Tone->DTCS", "DTCS->Tone"]
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0, 9.0]
 
-CHARSET = ["%i" % int(x) for x in range(0, 10)] + \
-    [" "] + \
-    [chr(x) for x in range(ord("A"), ord("Z")+1)] + \
-    [chr(x) for x in range(ord("a"), ord("z")+1)] + \
-    list(".,:;!\"#$%&'()*+-.=<>?@[?]^_\\{|}") + \
-    list("\x00" * 100)
+CHARSET = (
+    ["%i" % int(x) for x in range(0, 10)]
+    + [" "]
+    + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    + [chr(x) for x in range(ord("a"), ord("z") + 1)]
+    + list(".,:;!\"#$%&'()*+-.=<>?@[?]^_\\{|}")
+    + list("\x00" * 100)
+)
 
-POWER_LEVELS = [chirp_common.PowerLevel("L1", watts=0.05),
-                chirp_common.PowerLevel("L2", watts=1.00),
-                chirp_common.PowerLevel("L3", watts=2.50),
-                chirp_common.PowerLevel("Hi", watts=5.00)
-                ]
-POWER_LEVELS_220 = [chirp_common.PowerLevel("L1", watts=0.05),
-                    chirp_common.PowerLevel("L2", watts=0.30)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("L1", watts=0.05),
+    chirp_common.PowerLevel("L2", watts=1.00),
+    chirp_common.PowerLevel("L3", watts=2.50),
+    chirp_common.PowerLevel("Hi", watts=5.00),
+]
+POWER_LEVELS_220 = [
+    chirp_common.PowerLevel("L1", watts=0.05),
+    chirp_common.PowerLevel("L2", watts=0.30),
+]
 
 
 def _is220(freq):
@@ -104,13 +109,14 @@ def _is220(freq):
 
 class VX7BankModel(chirp_common.BankModel):
     """A VX-7 Bank model"""
+
     def get_num_mappings(self):
         return 9
 
     def get_mappings(self):
         banks = []
         for i in range(0, self.get_num_mappings()):
-            bank = chirp_common.Bank(self, "%i" % (i+1), "MG%i" % (i+1))
+            bank = chirp_common.Bank(self, "%i" % (i + 1), "MG%i" % (i + 1))
             bank.index = i
             banks.append(bank)
         return banks
@@ -138,8 +144,11 @@ class VX7BankModel(chirp_common.BankModel):
                 remaining_members += 1
 
         if not found:
-            raise Exception("Memory {num} is not in bank {bank}".format(
-                            num=memory.number, bank=bank))
+            raise Exception(
+                "Memory {num} is not in bank {bank}".format(
+                    num=memory.number, bank=bank
+                )
+            )
         if not remaining_members:
             _bank_used.in_use = 0xFFFF
 
@@ -155,14 +164,13 @@ class VX7BankModel(chirp_common.BankModel):
         for number in _members:
             if number == 0xFFFF:
                 continue
-            memories.append(self._radio.get_memory(number+1))
+            memories.append(self._radio.get_memory(number + 1))
         return memories
 
     def get_memory_mappings(self, memory):
         banks = []
         for bank in self.get_mappings():
-            if memory.number in [x.number for x in
-                                 self.get_mapping_memories(bank)]:
+            if memory.number in [x.number for x in self.get_mapping_memories(bank)]:
                 banks.append(bank)
         return banks
 
@@ -176,6 +184,7 @@ def _wipe_memory(mem):
 @directory.register
 class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
     """Yaesu VX-7"""
+
     BAUD_RATE = 19200
     VENDOR = "Yaesu"
     MODEL = "VX-7"
@@ -193,24 +202,27 @@ class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
             "2. Connect cable to MIC/SP jack.\n"
             "3. Press and hold in the [MON-F] key while turning the radio"
             " on\n"
-            "     (\"CLONE\" will appear on the display).\n"
+            '     ("CLONE" will appear on the display).\n'
             "4. <b>After clicking OK</b>, press the [BAND] key to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to MIC/SP jack.\n"
             "3. Press and hold in the [MON-F] key while turning the radio"
             " on\n"
-            "     (\"CLONE\" will appear on the display).\n"
-            "4. Press the [V/M] key (\"CLONE WAIT\" will appear on the"
-            " LCD).\n")
+            '     ("CLONE" will appear on the display).\n'
+            '4. Press the [V/M] key ("CLONE WAIT" will appear on the'
+            " LCD).\n"
+        )
         return rp
 
     def _checksums(self):
-        return [yaesu_clone.YaesuChecksum(0x0592, 0x0610),
-                yaesu_clone.YaesuChecksum(0x0612, 0x0690),
-                yaesu_clone.YaesuChecksum(0x0000, 0x3F51),
-                ]
+        return [
+            yaesu_clone.YaesuChecksum(0x0592, 0x0610),
+            yaesu_clone.YaesuChecksum(0x0612, 0x0690),
+            yaesu_clone.YaesuChecksum(0x0000, 0x3F51),
+        ]
 
     def process_mmap(self):
         self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
@@ -236,13 +248,13 @@ class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
         return rf
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def get_memory(self, number):
-        _mem = self._memobj.memory[number-1]
-        _flag = self._memobj.flags[(number-1)/2]
+        _mem = self._memobj.memory[number - 1]
+        _flag = self._memobj.flags[(number - 1) / 2]
 
-        nibble = ((number-1) % 2) and "even" or "odd"
+        nibble = ((number - 1) % 2) and "even" or "odd"
         used = _flag["%s_masked" % nibble]
         valid = _flag["%s_valid" % nibble]
         pskip = _flag["%s_pskip" % nibble]
@@ -281,12 +293,13 @@ class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
         try:
             mem.power = levels[_mem.power]
         except IndexError:
-            LOG.error("Radio reported invalid power level %s (in %s)" %
-                      (_mem.power, levels))
+            LOG.error(
+                "Radio reported invalid power level %s (in %s)" % (_mem.power, levels)
+            )
             mem.power = levels[0]
 
         for i in _mem.name:
-            if i == "\xFF":
+            if i == "\xff":
                 break
             mem.name += CHARSET[i]
         mem.name = mem.name.rstrip()
@@ -294,10 +307,10 @@ class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
         return mem
 
     def set_memory(self, mem):
-        _mem = self._memobj.memory[mem.number-1]
-        _flag = self._memobj.flags[(mem.number-1)/2]
+        _mem = self._memobj.memory[mem.number - 1]
+        _flag = self._memobj.flags[(mem.number - 1) / 2]
 
-        nibble = ((mem.number-1) % 2) and "even" or "odd"
+        nibble = ((mem.number - 1) % 2) and "even" or "odd"
 
         valid = _flag["%s_valid" % nibble]
         used = _flag["%s_masked" % nibble]
@@ -350,9 +363,11 @@ class VX7Radio(yaesu_clone.YaesuCloneModeRadio):
 
         if _is220(mem.freq):
             if str(mem.power) not in [str(l) for l in POWER_LEVELS_220]:
-                msgs.append(chirp_common.ValidationError(
-                        "Power level %s not supported on 220 MHz band" %
-                            mem.power))
+                msgs.append(
+                    chirp_common.ValidationError(
+                        "Power level %s not supported on 220 MHz band" % mem.power
+                    )
+                )
 
         return msgs
 

@@ -78,17 +78,19 @@ DUPLEX = ["", "-", "+"]
 DTCSP = ["NN", "NR", "RN", "RR"]
 STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
 
-POWER_LEVELS = [chirp_common.PowerLevel("High", watts=65),
-                chirp_common.PowerLevel("Low", watts=5),
-                chirp_common.PowerLevel("MidLow", watts=10),
-                chirp_common.PowerLevel("Mid", watts=25)]
+POWER_LEVELS = [
+    chirp_common.PowerLevel("High", watts=65),
+    chirp_common.PowerLevel("Low", watts=5),
+    chirp_common.PowerLevel("MidLow", watts=10),
+    chirp_common.PowerLevel("Mid", watts=25),
+]
 
 
 def _get_special():
     special = {"C": 206}
     for i in range(0, 3):
-        ida = "%iA" % (i+1)
-        idb = "%iB" % (i+1)
+        ida = "%iA" % (i + 1)
+        idb = "%iB" % (i + 1)
         num = 200 + i * 2
         special[ida] = num
         special[idb] = num + 1
@@ -103,6 +105,7 @@ def _wipe_memory(mem, char):
 @directory.register
 class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
     """Icom IC-2200"""
+
     VENDOR = "Icom"
     MODEL = "IC-2200H"
 
@@ -113,23 +116,20 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
     _memories = []
 
-    _ranges = [(0x0000, 0x1340, 32),
-               (0x1340, 0x1360, 16),
-               (0x1360, 0x136B,  8),
-
-               (0x1370, 0x1380, 16),
-               (0x1380, 0x15E0, 32),
-               (0x15E0, 0x1600, 16),
-               (0x1600, 0x1640, 32),
-               (0x1640, 0x1660, 16),
-               (0x1660, 0x1680, 32),
-
-               (0x16E0, 0x1860, 32),
-
-               (0x1880, 0x1AB0, 32),
-
-               (0x1AB8, 0x1AC0,  8),
-               ]
+    _ranges = [
+        (0x0000, 0x1340, 32),
+        (0x1340, 0x1360, 16),
+        (0x1360, 0x136B, 8),
+        (0x1370, 0x1380, 16),
+        (0x1380, 0x15E0, 32),
+        (0x15E0, 0x1600, 16),
+        (0x1600, 0x1640, 32),
+        (0x1640, 0x1660, 16),
+        (0x1660, 0x1680, 32),
+        (0x16E0, 0x1860, 32),
+        (0x1880, 0x1AB0, 32),
+        (0x1AB8, 0x1AC0, 8),
+    ]
 
     MYCALL_LIMIT = (0, 6)
     URCALL_LIMIT = (0, 6)
@@ -176,12 +176,9 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         if _mem.mode_dv and not _flag.empty:
             mem = chirp_common.DVMemory()
-            mem.dv_urcall = \
-                str(self._memobj.urcalls[_mem.urcall].call).rstrip()
-            mem.dv_rpt1call = \
-                str(self._memobj.rptcalls[_mem.r1call].call).rstrip()
-            mem.dv_rpt2call = \
-                str(self._memobj.rptcalls[_mem.r2call].call).rstrip()
+            mem.dv_urcall = str(self._memobj.urcalls[_mem.urcall].call).rstrip()
+            mem.dv_rpt1call = str(self._memobj.rptcalls[_mem.r1call].call).rstrip()
+            mem.dv_rpt2call = str(self._memobj.rptcalls[_mem.r2call].call).rstrip()
         else:
             mem = chirp_common.Memory()
 
@@ -190,8 +187,7 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             mem.skip = _flag.skip and "S" or ""
         else:
             mem.extd_number = util.get_dict_rev(_get_special(), number)
-            mem.immutable = ["number", "skip", "bank", "bank_index",
-                             "extd_number"]
+            mem.immutable = ["number", "skip", "bank", "bank_index", "extd_number"]
 
         if _flag.empty:
             mem.empty = True
@@ -199,8 +195,8 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
             return mem
 
         mult = _mem.is_625 and 6250 or 5000
-        mem.freq = (_mem.freq * mult)
-        mem.offset = (_mem.offset * mult)
+        mem.freq = _mem.freq * mult
+        mem.offset = _mem.offset * mult
         mem.rtone = chirp_common.TONES[_mem.rtone]
         mem.ctone = chirp_common.TONES[_mem.ctone]
         mem.tmode = TMODES[_mem.tmode]
@@ -211,7 +207,7 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
         mem.dtcs = chirp_common.DTCS_CODES[_mem.dtcs]
         mem.dtcs_polarity = DTCSP[_mem.dtcs_polarity]
         mem.tuning_step = STEPS[_mem.tuning_step]
-        mem.name = str(_mem.name).replace("\x0E", "").rstrip()
+        mem.name = str(_mem.name).replace("\x0e", "").rstrip()
         mem.power = POWER_LEVELS[_mem.power]
 
         return mem
@@ -233,7 +229,7 @@ class IC2200Radio(icf.IcomCloneModeRadio, chirp_common.IcomDstarSupport):
 
         _flag.empty = mem.empty
         if mem.empty:
-            _wipe_memory(_mem, "\xFF")
+            _wipe_memory(_mem, "\xff")
             return
 
         if was_empty:

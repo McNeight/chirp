@@ -15,8 +15,7 @@
 
 from chirp.drivers import icf
 from chirp import chirp_common, util, directory, bitwise
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueBoolean
+from chirp.settings import RadioSetting, RadioSettingGroup, RadioSettingValueBoolean
 
 MEM_FORMAT = """
 struct {
@@ -104,9 +103,7 @@ def _get_special():
 
 
 def _get_freq(mem):
-    freq = (int(mem.freq) * 100000) + \
-        (mem.freq_10khz * 10000) + \
-        (mem.freq_1khz * 1000)
+    freq = (int(mem.freq) * 100000) + (mem.freq_10khz * 10000) + (mem.freq_1khz * 1000)
 
     if mem.is_12_5:
         if chirp_common.is_12_5(freq):
@@ -164,6 +161,7 @@ def _wipe_memory(mem, char):
 @directory.register
 class IC2100Radio(icf.IcomCloneModeRadio):
     """Icom IC-2100"""
+
     VENDOR = "Icom"
     MODEL = "IC-2100H"
 
@@ -188,7 +186,7 @@ class IC2100Radio(icf.IcomCloneModeRadio):
         rf.valid_bands = [(118000000, 174000000)]
         rf.valid_skips = ["", "S"]
         rf.valid_special_chans = sorted(_get_special().keys())
-        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + '-/'
+        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "-/"
         return rf
 
     def process_mmap(self):
@@ -236,8 +234,9 @@ class IC2100Radio(icf.IcomCloneModeRadio):
 
         mem.extra = RadioSettingGroup("Extra", "extra")
 
-        rs = RadioSetting("anm", "Alphanumeric Name",
-                          RadioSettingValueBoolean(_mem.anm))
+        rs = RadioSetting(
+            "anm", "Alphanumeric Name", RadioSettingValueBoolean(_mem.anm)
+        )
         mem.extra.append(rs)
 
         return mem

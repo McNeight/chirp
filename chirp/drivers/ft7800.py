@@ -19,15 +19,21 @@ import re
 
 from chirp.drivers import yaesu_clone
 from chirp import chirp_common, memmap, directory, bitwise, errors
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean, \
-    RadioSettingValueString, RadioSettings, RadioSettingValueFloat
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettingValueString,
+    RadioSettings,
+    RadioSettingValueFloat,
+)
 
 from collections import defaultdict
 
 LOG = logging.getLogger(__name__)
 
-ACK = b'\x06'
+ACK = b"\x06"
 
 MEM_FORMAT = """
 struct mem_struct {
@@ -148,11 +154,13 @@ STEPS = (5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0, 100.0)
 STEPS_8800 = (5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 50.0)
 SKIPS = ["", "S", "P", ""]
 
-CHARSET = ["%i" % int(x) for x in range(0, 10)] + \
-    [chr(x) for x in range(ord("A"), ord("Z")+1)] + \
-    list(" " * 10) + \
-    list("*+,- /|      [ ] _") + \
-    list("\x00" * 100)
+CHARSET = (
+    ["%i" % int(x) for x in range(0, 10)]
+    + [chr(x) for x in range(ord("A"), ord("Z") + 1)]
+    + list(" " * 10)
+    + list("*+,- /|      [ ] _")
+    + list("\x00" * 100)
+)
 
 DTMFCHARSET = list("0123456789ABCD*#")
 
@@ -195,7 +203,7 @@ def _download(radio):
         if radio.status_fn:
             status = chirp_common.Status()
             status.max = radio.get_memsize()
-            status.cur = i+len(chunk)
+            status.cur = i + len(chunk)
             status.msg = "Cloning from radio"
             radio.status_fn(status)
 
@@ -214,7 +222,7 @@ def _upload(radio):
             length = min(radio._block_size, block)
             # LOG.debug("i=%i length=%i range: %i-%i" %
             #           (i, length, cur, cur+length))
-            _send(radio.pipe, mmap[cur:cur+length])
+            _send(radio.pipe, mmap[cur : cur + length])
             ack = radio.pipe.read(1)
             if not ack:
                 if first_exchange:
@@ -285,6 +293,7 @@ def _encode_chars(instr, length=16):
 
 class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
     """Base class for FT-7800,7900,8800,8900 radios"""
+
     BAUD_RATE = 9600
     VENDOR = "Yaesu"
     MODES = MODES
@@ -292,15 +301,19 @@ class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
 
     _block_size = 64
 
-    POWER_LEVELS_VHF = [chirp_common.PowerLevel("Hi", watts=50),
-                        chirp_common.PowerLevel("Mid1", watts=20),
-                        chirp_common.PowerLevel("Mid2", watts=10),
-                        chirp_common.PowerLevel("Low", watts=5)]
+    POWER_LEVELS_VHF = [
+        chirp_common.PowerLevel("Hi", watts=50),
+        chirp_common.PowerLevel("Mid1", watts=20),
+        chirp_common.PowerLevel("Mid2", watts=10),
+        chirp_common.PowerLevel("Low", watts=5),
+    ]
 
-    POWER_LEVELS_UHF = [chirp_common.PowerLevel("Hi", watts=35),
-                        chirp_common.PowerLevel("Mid1", watts=20),
-                        chirp_common.PowerLevel("Mid2", watts=10),
-                        chirp_common.PowerLevel("Low", watts=5)]
+    POWER_LEVELS_UHF = [
+        chirp_common.PowerLevel("Hi", watts=35),
+        chirp_common.PowerLevel("Mid1", watts=20),
+        chirp_common.PowerLevel("Mid2", watts=10),
+        chirp_common.PowerLevel("Low", watts=5),
+    ]
 
     @classmethod
     def get_prompts(cls):
@@ -310,23 +323,25 @@ class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
             "2. Connect cable to DATA jack.\n"
             "3. Press and hold in the [MHz(PRI)] key while turning the\n"
             " radio on.\n"
-            "4. Rotate the DIAL job to select \"F-7 CLONE\".\n"
+            '4. Rotate the DIAL job to select "F-7 CLONE".\n'
             "5. Press and hold in the [BAND(SET)] key. The display\n"
-            " will disappear for a moment, then the \"CLONE\" notation\n"
+            ' will disappear for a moment, then the "CLONE" notation\n'
             " will appear.\n"
             "6. <b>After clicking OK</b>, press the [V/M(MW)] key to send"
-            " image.\n")
+            " image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA jack.\n"
             "3. Press and hold in the [MHz(PRI)] key while turning the\n"
             "     radio on.\n"
-            "4. Rotate the DIAL job to select \"F-7 CLONE\".\n"
+            '4. Rotate the DIAL job to select "F-7 CLONE".\n'
             "5. Press and hold in the [BAND(SET)] key. The display\n"
-            "     will disappear for a moment, then the \"CLONE\" notation\n"
+            '     will disappear for a moment, then the "CLONE" notation\n'
             "     will appear.\n"
-            "6. Press the [LOW(ACC)] key (\"--RX--\" will appear on the"
-            " display).\n")
+            '6. Press the [LOW(ACC)] key ("--RX--" will appear on the'
+            " display).\n"
+        )
         return rp
 
     def get_features(self):
@@ -377,7 +392,7 @@ class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
         LOG.info("Upload finished in %i seconds" % (time.time() - start))
 
     def get_raw_memory(self, number):
-        return repr(self._memobj.memory[number-1])
+        return repr(self._memobj.memory[number - 1])
 
     def _get_mem_offset(self, mem, _mem):
         if mem.duplex == "split":
@@ -389,7 +404,7 @@ class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
         if mem.duplex == "split":
             set_freq(mem.offset, _mem, "split")
         else:
-            _mem.offset = (int(mem.offset / 10000) / 5)
+            _mem.offset = int(mem.offset / 10000) / 5
 
     def _get_mem_name(self, mem, _mem):
         _nam = self._memobj.names[mem.number - 1]
@@ -493,6 +508,7 @@ class FTx800Radio(yaesu_clone.YaesuCloneModeRadio):
 
 class FT7800BankModel(chirp_common.BankModel):
     """Yaesu FT-7800/7900 bank model"""
+
     def __init__(self, radio):
         super(FT7800BankModel, self).__init__(radio)
         self.__b2m_cache = defaultdict(list)
@@ -525,7 +541,7 @@ class FT7800BankModel(chirp_common.BankModel):
         index = memory.number - 1
         _bitmap = self._radio._memobj.bank_channels[bank.index]
         ishft = 31 - (index % 32)
-        _bitmap.bitmap[index // 32] |= (1 << ishft)
+        _bitmap.bitmap[index // 32] |= 1 << ishft
         self.__m2b_cache[memory.number].append(bank.index)
         self.__b2m_cache[bank.index].append(memory.number)
 
@@ -536,8 +552,11 @@ class FT7800BankModel(chirp_common.BankModel):
         _bitmap = self._radio._memobj.bank_channels[bank.index]
         ishft = 31 - (index % 32)
         if not (_bitmap.bitmap[index // 32] & (1 << ishft)):
-            raise Exception("Memory {num} is not in bank {bank}".format(
-                            num=memory.number, bank=bank))
+            raise Exception(
+                "Memory {num} is not in bank {bank}".format(
+                    num=memory.number, bank=bank
+                )
+            )
         _bitmap.bitmap[index // 32] &= ~(1 << ishft)
         self.__b2m_cache[bank.index].remove(memory.number)
         self.__m2b_cache[memory.number].remove(bank.index)
@@ -556,8 +575,7 @@ class FT7800BankModel(chirp_common.BankModel):
     def get_mapping_memories(self, bank):
         self.__precache()
 
-        return [self._radio.get_memory(n)
-                for n in self.__b2m_cache[bank.index]]
+        return [self._radio.get_memory(n) for n in self.__b2m_cache[bank.index]]
 
     def get_memory_mappings(self, memory):
         self.__precache()
@@ -569,6 +587,7 @@ class FT7800BankModel(chirp_common.BankModel):
 @directory.register
 class FT7800Radio(FTx800Radio):
     """Yaesu FT-7800"""
+
     MODEL = "FT-7800/7900"
 
     _model = b"AH016"
@@ -577,7 +596,7 @@ class FT7800Radio(FTx800Radio):
     TMODES = ["", "Tone", "TSQL", "TSQL-R", "DTCS"]
 
     def get_bank_model(self):
-        if not hasattr(self, '_banks'):
+        if not hasattr(self, "_banks"):
             self._banks = FT7800BankModel(self)
         return self._banks
 
@@ -601,102 +620,149 @@ class FT7800Radio(FTx800Radio):
 
         top = RadioSettings(basic, dtmf, arts, prog)
 
-        basic.append(RadioSetting(
-                "priority_revert", "Priority Revert",
-                RadioSettingValueBoolean(_settings.priority_revert)))
+        basic.append(
+            RadioSetting(
+                "priority_revert",
+                "Priority Revert",
+                RadioSettingValueBoolean(_settings.priority_revert),
+            )
+        )
 
-        basic.append(RadioSetting(
-                "memory_only", "Memory Only mode",
-                RadioSettingValueBoolean(_settings.memory_only)))
+        basic.append(
+            RadioSetting(
+                "memory_only",
+                "Memory Only mode",
+                RadioSettingValueBoolean(_settings.memory_only),
+            )
+        )
 
         opts = ["off"] + ["%0.1f" % (t / 60.0) for t in range(30, 750, 30)]
-        basic.append(RadioSetting(
-                "apo", "APO time (hrs)",
-                RadioSettingValueList(opts, current_index=_settings.apo)))
+        basic.append(
+            RadioSetting(
+                "apo",
+                "APO time (hrs)",
+                RadioSettingValueList(opts, current_index=_settings.apo),
+            )
+        )
 
-        basic.append(RadioSetting(
-                "beep_scan", "Beep: Scan",
-                RadioSettingValueBoolean(_settings.beep_scan)))
+        basic.append(
+            RadioSetting(
+                "beep_scan", "Beep: Scan", RadioSettingValueBoolean(_settings.beep_scan)
+            )
+        )
 
-        basic.append(RadioSetting(
-                "beep_edge", "Beep: Edge",
-                RadioSettingValueBoolean(_settings.beep_edge)))
+        basic.append(
+            RadioSetting(
+                "beep_edge", "Beep: Edge", RadioSettingValueBoolean(_settings.beep_edge)
+            )
+        )
 
-        basic.append(RadioSetting(
-                "beep_key", "Beep: Key",
-                RadioSettingValueBoolean(_settings.beep_key)))
+        basic.append(
+            RadioSetting(
+                "beep_key", "Beep: Key", RadioSettingValueBoolean(_settings.beep_key)
+            )
+        )
 
         opts = ["T/RX Normal", "RX Reverse", "TX Reverse", "T/RX Reverse"]
         basic.append(
             RadioSetting(
-                "dcs_polarity", "DCS polarity",
-                RadioSettingValueList(
-                    opts, current_index=_settings.dcs_polarity)))
+                "dcs_polarity",
+                "DCS polarity",
+                RadioSettingValueList(opts, current_index=_settings.dcs_polarity),
+            )
+        )
 
         opts = ["off", "dim 1", "dim 2", "dim 3"]
-        basic.append(RadioSetting(
-                "dimmer", "Dimmer",
-                RadioSettingValueList(opts, current_index=_settings.dimmer)))
+        basic.append(
+            RadioSetting(
+                "dimmer",
+                "Dimmer",
+                RadioSettingValueList(opts, current_index=_settings.dimmer),
+            )
+        )
 
         opts = ["manual", "auto", "1-auto"]
         basic.append(
             RadioSetting(
-                "hyper_write", "Hyper Write",
-                RadioSettingValueList(
-                    opts, current_index=_settings.hyper_write)))
+                "hyper_write",
+                "Hyper Write",
+                RadioSettingValueList(opts, current_index=_settings.hyper_write),
+            )
+        )
 
-        opts = ["", "key", "dial", "key+dial", "ptt",
-                "ptt+key", "ptt+dial", "all"]
-        basic.append(RadioSetting(
-                "lock", "Lock mode",
-                RadioSettingValueList(opts, current_index=_settings.lock)))
+        opts = ["", "key", "dial", "key+dial", "ptt", "ptt+key", "ptt+dial", "all"]
+        basic.append(
+            RadioSetting(
+                "lock",
+                "Lock mode",
+                RadioSettingValueList(opts, current_index=_settings.lock),
+            )
+        )
 
         opts = ["MH-42", "MH-48"]
         basic.append(
             RadioSetting(
-                "microphone_type", "Microphone Type",
-                RadioSettingValueList(
-                    opts, current_index=_settings.microphone_type)))
+                "microphone_type",
+                "Microphone Type",
+                RadioSettingValueList(opts, current_index=_settings.microphone_type),
+            )
+        )
 
         opts = ["off"] + ["S-%d" % n for n in range(2, 10)] + ["S-Full"]
-        basic.append(RadioSetting(
-                "rf_sql", "RF Squelch",
-                RadioSettingValueList(opts, current_index=_settings.rf_sql)))
+        basic.append(
+            RadioSetting(
+                "rf_sql",
+                "RF Squelch",
+                RadioSettingValueList(opts, current_index=_settings.rf_sql),
+            )
+        )
 
         opts = ["time", "hold", "busy"]
         basic.append(
             RadioSetting(
-                "scan_resume", "Scan Resume",
-                RadioSettingValueList(
-                    opts, current_index=_settings.scan_resume)))
+                "scan_resume",
+                "Scan Resume",
+                RadioSettingValueList(opts, current_index=_settings.scan_resume),
+            )
+        )
 
         opts = ["single", "continuous"]
         basic.append(
             RadioSetting(
-                "smart_search", "Smart Search",
-                RadioSettingValueList(
-                    opts, current_index=_settings.smart_search)))
+                "smart_search",
+                "Smart Search",
+                RadioSettingValueList(opts, current_index=_settings.smart_search),
+            )
+        )
 
         opts = ["off"] + ["%d" % t for t in range(1, 31)]
-        basic.append(RadioSetting(
-                "tot", "Time-out timer (mins)",
-                RadioSettingValueList(opts, current_index=_settings.tot)))
+        basic.append(
+            RadioSetting(
+                "tot",
+                "Time-out timer (mins)",
+                RadioSettingValueList(opts, current_index=_settings.tot),
+            )
+        )
 
         # dtmf tab
 
         opts = ["50", "100", "250", "450", "750", "1000"]
         dtmf.append(
             RadioSetting(
-                "dtmf_delay", "DTMF delay (ms)",
-                RadioSettingValueList(
-                    opts, current_index=_settings.dtmf_delay)))
+                "dtmf_delay",
+                "DTMF delay (ms)",
+                RadioSettingValueList(opts, current_index=_settings.dtmf_delay),
+            )
+        )
 
         opts = ["50", "75", "100"]
         dtmf.append(
             RadioSetting(
-                "dtmf_speed", "DTMF speed (ms)",
-                RadioSettingValueList(
-                    opts, current_index=_settings.dtmf_speed)))
+                "dtmf_speed",
+                "DTMF speed (ms)",
+                RadioSettingValueList(opts, current_index=_settings.dtmf_speed),
+            )
+        )
 
         for i in range(16):
             name = "dtmf%02d" % i
@@ -718,24 +784,31 @@ class FT7800Radio(FTx800Radio):
         opts = ["off", "in range", "always"]
         arts.append(
             RadioSetting(
-                "arts_mode", "ARTS beep",
-                RadioSettingValueList(
-                    opts, current_index=_settings.arts_mode)))
+                "arts_mode",
+                "ARTS beep",
+                RadioSettingValueList(opts, current_index=_settings.arts_mode),
+            )
+        )
 
         opts = ["15", "25"]
         arts.append(
             RadioSetting(
-                "arts_interval", "ARTS interval",
-                RadioSettingValueList(
-                    opts, current_index=_settings.arts_interval)))
+                "arts_interval",
+                "ARTS interval",
+                RadioSettingValueList(opts, current_index=_settings.arts_interval),
+            )
+        )
 
-        arts.append(RadioSetting(
-                "arts_cwid_enable", "CW ID",
-                RadioSettingValueBoolean(_settings.arts_cwid_enable)))
+        arts.append(
+            RadioSetting(
+                "arts_cwid_enable",
+                "CW ID",
+                RadioSettingValueBoolean(_settings.arts_cwid_enable),
+            )
+        )
 
         _arts_cwid = self._memobj.arts_cwid
-        cwid = RadioSettingValueString(
-                0, 16, _decode_chars(_arts_cwid.get_value()))
+        cwid = RadioSettingValueString(0, 16, _decode_chars(_arts_cwid.get_value()))
         cwid.set_charset(CHARSET)
         arts.append(RadioSetting("arts_cwid", "CW ID", cwid))
 
@@ -744,37 +817,72 @@ class FT7800Radio(FTx800Radio):
         opts = ["WX", "Reverse", "Repeater", "SQL Off", "Lock", "Dimmer"]
         prog.append(
             RadioSetting(
-                "prog_panel_acc", "Prog Panel - Low(ACC)",
-                RadioSettingValueList(
-                    opts, current_index=_settings.prog_panel_acc)))
+                "prog_panel_acc",
+                "Prog Panel - Low(ACC)",
+                RadioSettingValueList(opts, current_index=_settings.prog_panel_acc),
+            )
+        )
 
         opts = ["Reverse", "Home"]
         prog.append(
             RadioSetting(
-                "prog_tone_vm", "TONE | V/M",
-                RadioSettingValueList(
-                    opts, current_index=_settings.prog_tone_vm)))
+                "prog_tone_vm",
+                "TONE | V/M",
+                RadioSettingValueList(opts, current_index=_settings.prog_tone_vm),
+            )
+        )
 
-        opts = ["" for n in range(26)] + \
-            ["Priority", "Low", "Tone", "MHz", "Reverse", "Home", "Band",
-             "VFO/MR", "Scan", "Sql Off", "TCall", "SSCH", "ARTS", "Tone Freq",
-             "DCSC", "WX", "Repeater"]
+        opts = ["" for n in range(26)] + [
+            "Priority",
+            "Low",
+            "Tone",
+            "MHz",
+            "Reverse",
+            "Home",
+            "Band",
+            "VFO/MR",
+            "Scan",
+            "Sql Off",
+            "TCall",
+            "SSCH",
+            "ARTS",
+            "Tone Freq",
+            "DCSC",
+            "WX",
+            "Repeater",
+        ]
 
-        prog.append(RadioSetting(
-                "prog_p1", "P1",
-                RadioSettingValueList(opts, current_index=_settings.prog_p1)))
+        prog.append(
+            RadioSetting(
+                "prog_p1",
+                "P1",
+                RadioSettingValueList(opts, current_index=_settings.prog_p1),
+            )
+        )
 
-        prog.append(RadioSetting(
-                "prog_p2", "P2",
-                RadioSettingValueList(opts, current_index=_settings.prog_p2)))
+        prog.append(
+            RadioSetting(
+                "prog_p2",
+                "P2",
+                RadioSettingValueList(opts, current_index=_settings.prog_p2),
+            )
+        )
 
-        prog.append(RadioSetting(
-                "prog_p3", "P3",
-                RadioSettingValueList(opts, current_index=_settings.prog_p3)))
+        prog.append(
+            RadioSetting(
+                "prog_p3",
+                "P3",
+                RadioSettingValueList(opts, current_index=_settings.prog_p3),
+            )
+        )
 
-        prog.append(RadioSetting(
-                "prog_p4", "P4",
-                RadioSettingValueList(opts, current_index=_settings.prog_p4)))
+        prog.append(
+            RadioSetting(
+                "prog_p4",
+                "P4",
+                RadioSettingValueList(opts, current_index=_settings.prog_p4),
+            )
+        )
 
         return top
 
@@ -788,7 +896,7 @@ class FT7800Radio(FTx800Radio):
             try:
                 _settings = self._memobj.settings
                 setting = element.get_name()
-                if re.match(r'dtmf\d', setting):
+                if re.match(r"dtmf\d", setting):
                     # set dtmf fields
                     dtmfstr = str(element.value).strip()
                     newval = []
@@ -920,6 +1028,7 @@ class FT8800BankModel(FT7800BankModel):
 @directory.register
 class FT8800Radio(FTx800Radio):
     """Base class for Yaesu FT-8800"""
+
     MODEL = "FT-8800"
 
     _model = b"AH018"
@@ -938,24 +1047,26 @@ class FT8800Radio(FTx800Radio):
         rp.pre_download = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA jack.\n"
-            "3. Press and hold in the \"left\" [V/M] key while turning the\n"
+            '3. Press and hold in the "left" [V/M] key while turning the\n'
             "     radio on.\n"
-            "4. Rotate the \"right\" DIAL knob to select \"CLONE START\".\n"
+            '4. Rotate the "right" DIAL knob to select "CLONE START".\n'
             "5. Press the [SET] key. The display will disappear\n"
-            "     for a moment, then the \"CLONE\" notation will appear.\n"
-            "6. <b>After clicking OK</b>, press the \"left\" [V/M] key to\n"
-            "     send image.\n")
+            '     for a moment, then the "CLONE" notation will appear.\n'
+            '6. <b>After clicking OK</b>, press the "left" [V/M] key to\n'
+            "     send image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA jack.\n"
-            "3. Press and hold in the \"left\" [V/M] key while turning the\n"
+            '3. Press and hold in the "left" [V/M] key while turning the\n'
             "     radio on.\n"
-            "4. Rotate the \"right\" DIAL knob to select \"CLONE START\".\n"
+            '4. Rotate the "right" DIAL knob to select "CLONE START".\n'
             "5. Press the [SET] key. The display will disappear\n"
-            "     for a moment, then the \"CLONE\" notation will appear.\n"
-            "6. Press the \"left\" [LOW] key (\"CLONE -RX-\" will appear"
+            '     for a moment, then the "CLONE" notation will appear.\n'
+            '6. Press the "left" [LOW] key ("CLONE -RX-" will appear'
             " on\n"
-            "     the display).\n")
+            "     the display).\n"
+        )
         return rp
 
     def get_features(self):
@@ -970,7 +1081,7 @@ class FT8800Radio(FTx800Radio):
         return [FT8800RadioLeft(self._mmap), FT8800RadioRight(self._mmap)]
 
     def get_bank_model(self):
-        if not hasattr(self, '_banks'):
+        if not hasattr(self, "_banks"):
             self._banks = FT8800BankModel(self)
         return self._banks
 
@@ -983,9 +1094,9 @@ class FT8800Radio(FTx800Radio):
             return
 
         # Memory format for the sub devices
-        self._memobj = bitwise.parse(MEM_FORMAT_8800 % (self._memstart,
-                                                        self._bankstart),
-                                     self._mmap)
+        self._memobj = bitwise.parse(
+            MEM_FORMAT_8800 % (self._memstart, self._bankstart), self._mmap
+        )
 
     def _get_mem_offset(self, mem, _mem):
         if mem.duplex == "split":
@@ -1050,67 +1161,117 @@ class FT8800Radio(FTx800Radio):
 
         top = RadioSettings(basic, dtmf, arts, prog)
 
-        basic.append(RadioSetting(
-            "apo", "APO time (hrs)",
-            RadioSettingValueList(
-                ["off"] + ["%0.1f" % (t / 60.0)
-                           for t in range(30, 750, 30)],
-                current_index=_settings.apo)))
+        basic.append(
+            RadioSetting(
+                "apo",
+                "APO time (hrs)",
+                RadioSettingValueList(
+                    ["off"] + ["%0.1f" % (t / 60.0) for t in range(30, 750, 30)],
+                    current_index=_settings.apo,
+                ),
+            )
+        )
 
-        basic.append(RadioSetting("beep", "Beep: Key",
-                                  RadioSettingValueBoolean(_settings.beep)))
-        basic.append(RadioSetting("main", "Main: active device",
-                                  RadioSettingValueList(
-                                      ["Right", "Left"],
-                                      current_index=_settings.main)))
-        basic.append(RadioSetting("backlight", "Backlight",
-                                  RadioSettingValueList(
-                                      ["off", "dim 1", "dim 2", "dim 3"],
-                                      current_index=_settings.backlight)))
-        basic.append(RadioSetting("vfo_band_edge",
-                                  "BAND: VFO remain within band",
-                                  RadioSettingValueList(
-                                      ["BND. ON", "BND. OFF"],
-                                      current_index=_settings.vfo_band_edge)))
+        basic.append(
+            RadioSetting("beep", "Beep: Key", RadioSettingValueBoolean(_settings.beep))
+        )
+        basic.append(
+            RadioSetting(
+                "main",
+                "Main: active device",
+                RadioSettingValueList(["Right", "Left"], current_index=_settings.main),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "backlight",
+                "Backlight",
+                RadioSettingValueList(
+                    ["off", "dim 1", "dim 2", "dim 3"],
+                    current_index=_settings.backlight,
+                ),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "vfo_band_edge",
+                "BAND: VFO remain within band",
+                RadioSettingValueList(
+                    ["BND. ON", "BND. OFF"], current_index=_settings.vfo_band_edge
+                ),
+            )
+        )
         # 123.455  -> 0812345
         # 999.9875 -> 1299998
         # 155.2875 -> 1215528
         # 108.0000 -> 0010800
-        basic.append(RadioSetting("vfo_left", "VFO: left",
-                                  RadioSettingValueFloat(
-                                      0, 9**20, int(_cs.vfo_left) / 100)))
-        basic.append(RadioSetting("key_mod",
-                                  ("key functions for “right” band function "
-                                   "switches"),
-                                  RadioSettingValueList(
-                                      ["KEY1", "KEY2"],
-                                      current_index=_settings.key_mod)))
-        basic.append(RadioSetting("lock", "Lock: key/button",
-                                  RadioSettingValueBoolean(_settings.lock)))
-        basic.append(RadioSetting("lockt", "Lock: PTT",
-                                  RadioSettingValueList(
-                                      ["OFF", "BAND_R", "BAND_L", "BOTH"],
-                                      current_index=_settings.lockt)))
-        basic.append(RadioSetting("mute", "Audio Mute",
-                                  RadioSettingValueList(
-                                      ["OFF", "TX", "RX", "TX/RX"],
-                                      current_index=_settings.mute)))
-        basic.append(RadioSetting("mic", "Mic: type",
-                                  RadioSettingValueList(
-                                      ["MH-42", "MH-48"],
-                                      current_index=_settings.mic)))
+        basic.append(
+            RadioSetting(
+                "vfo_left",
+                "VFO: left",
+                RadioSettingValueFloat(0, 9**20, int(_cs.vfo_left) / 100),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "key_mod",
+                ("key functions for “right” band function " "switches"),
+                RadioSettingValueList(
+                    ["KEY1", "KEY2"], current_index=_settings.key_mod
+                ),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "lock", "Lock: key/button", RadioSettingValueBoolean(_settings.lock)
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "lockt",
+                "Lock: PTT",
+                RadioSettingValueList(
+                    ["OFF", "BAND_R", "BAND_L", "BOTH"], current_index=_settings.lockt
+                ),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "mute",
+                "Audio Mute",
+                RadioSettingValueList(
+                    ["OFF", "TX", "RX", "TX/RX"], current_index=_settings.mute
+                ),
+            )
+        )
+        basic.append(
+            RadioSetting(
+                "mic",
+                "Mic: type",
+                RadioSettingValueList(["MH-42", "MH-48"], current_index=_settings.mic),
+            )
+        )
 
         # arts tab
-        arts.append(RadioSetting("arts_mode", "ARTS beep",
-                                 RadioSettingValueList(
-                                    ["off", "in range", "always"],
-                                    current_index=_settings.arts_mode)))
-        arts.append(RadioSetting("arts_cwid_enable", "CW ID Enable",
-                                 RadioSettingValueBoolean(
-                                     _settings.arts_cwid_enable)))
-        cwid = RadioSettingValueString(0, 16,
-                                       _decode_chars(
-                                           _settings.arts_cwid.get_value()))
+        arts.append(
+            RadioSetting(
+                "arts_mode",
+                "ARTS beep",
+                RadioSettingValueList(
+                    ["off", "in range", "always"], current_index=_settings.arts_mode
+                ),
+            )
+        )
+        arts.append(
+            RadioSetting(
+                "arts_cwid_enable",
+                "CW ID Enable",
+                RadioSettingValueBoolean(_settings.arts_cwid_enable),
+            )
+        )
+        cwid = RadioSettingValueString(
+            0, 16, _decode_chars(_settings.arts_cwid.get_value())
+        )
         cwid.set_charset(CHARSET)
         arts.append(RadioSetting("arts_cwid", "CW ID", cwid))
 
@@ -1133,10 +1294,13 @@ class FT8800Radio(FTx800Radio):
         for n in range(1, 5):
             prog.append(
                 RadioSetting(
-                    f"prog_p{n}", f"P{n}",
+                    f"prog_p{n}",
+                    f"P{n}",
                     RadioSettingValueList(
-                        opts,
-                        current_index=getattr(_settings, f"prog_p{n}") - 26)))
+                        opts, current_index=getattr(_settings, f"prog_p{n}") - 26
+                    ),
+                )
+            )
 
         return top
 
@@ -1196,6 +1360,7 @@ class FT8800RadioLeft(FT8800Radio):
 
 class FT8800RadioRight(FT8800Radio):
     """Yaesu FT-8800 Right VFO subdevice"""
+
     VARIANT = "Right"
     _memstart = 0x2948
     _bankstart = 0x4BC8
@@ -1244,6 +1409,7 @@ u8 checksum;
 @directory.register
 class FT8900Radio(FTx800Radio):
     """Yaesu FT-8900"""
+
     MODEL = "FT-8900"
 
     _model = b"AH008"
@@ -1260,24 +1426,26 @@ class FT8900Radio(FTx800Radio):
         rp.pre_download = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA jack.\n"
-            "3. Press and hold in the \"left\" [V/M] key while turning the\n"
+            '3. Press and hold in the "left" [V/M] key while turning the\n'
             "     radio on.\n"
-            "4. Rotate the \"right\" DIAL knob to select \"CLONE START\".\n"
+            '4. Rotate the "right" DIAL knob to select "CLONE START".\n'
             "5. Press the [SET] key. The display will disappear\n"
-            "     for a moment, then the \"CLONE\" notation will appear.\n"
-            "6. <b>After clicking OK</b>, press the \"left\" [V/M] key to\n"
-            "     send image.\n")
+            '     for a moment, then the "CLONE" notation will appear.\n'
+            '6. <b>After clicking OK</b>, press the "left" [V/M] key to\n'
+            "     send image.\n"
+        )
         rp.pre_upload = _(
             "1. Turn radio off.\n"
             "2. Connect cable to DATA jack.\n"
-            "3. Press and hold in the \"left\" [V/M] key while turning the\n"
+            '3. Press and hold in the "left" [V/M] key while turning the\n'
             "     radio on.\n"
-            "4. Rotate the \"right\" DIAL knob to select \"CLONE START\".\n"
+            '4. Rotate the "right" DIAL knob to select "CLONE START".\n'
             "5. Press the [SET] key. The display will disappear\n"
-            "     for a moment, then the \"CLONE\" notation will appear.\n"
-            "6. Press the \"left\" [LOW] key (\"CLONE -RX-\" will appear"
+            '     for a moment, then the "CLONE" notation will appear.\n'
+            '6. Press the "left" [LOW] key ("CLONE -RX-" will appear'
             " on\n"
-            "     the display).\n")
+            "     the display).\n"
+        )
         return rp
 
     def process_mmap(self):
@@ -1286,11 +1454,13 @@ class FT8900Radio(FTx800Radio):
     def get_features(self):
         rf = FTx800Radio.get_features(self)
         rf.valid_modes = self.MODES
-        rf.valid_bands = [(28000000,  29700000),
-                          (50000000,  54000000),
-                          (108000000, 180000000),
-                          (320000000, 480000000),
-                          (700000000, 985000000)]
+        rf.valid_bands = [
+            (28000000, 29700000),
+            (50000000, 54000000),
+            (108000000, 180000000),
+            (320000000, 480000000),
+            (700000000, 985000000),
+        ]
         rf.memory_bounds = (1, 799)
         rf.has_tuning_step = False
 
@@ -1308,7 +1478,7 @@ class FT8900Radio(FTx800Radio):
         val = 0
         for i in _mem.name[2:6]:
             val <<= 2
-            val |= ((i & 0xC0) >> 6)
+            val |= (i & 0xC0) >> 6
 
         return (val * 5) * 10000
 

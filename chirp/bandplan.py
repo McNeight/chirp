@@ -21,24 +21,36 @@ LOG = logging.getLogger(__name__)
 
 
 class Band(object):
-    def __init__(self, limits, name, mode=None, step_khz=None,
-                 input_offset=None, output_offset=None, tones=None,
-                 duplex=None):
+    def __init__(
+        self,
+        limits,
+        name,
+        mode=None,
+        step_khz=None,
+        input_offset=None,
+        output_offset=None,
+        tones=None,
+        duplex=None,
+    ):
         # Apply semantic and chirp limitations to settings.
         # memedit applies radio limitations when settings are applied.
         try:
             assert limits[0] <= limits[1], "Lower freq > upper freq"
             if mode is not None:
                 assert mode in chirp_common.MODES, "Mode %s not one of %s" % (
-                    mode, chirp_common.MODES)
+                    mode,
+                    chirp_common.MODES,
+                )
             if step_khz is not None:
-                assert step_khz in chirp_common.TUNING_STEPS, (
-                    "step_khz %s not one of %s" %
-                    (step_khz, chirp_common.TUNING_STEPS))
+                assert (
+                    step_khz in chirp_common.TUNING_STEPS
+                ), "step_khz %s not one of %s" % (step_khz, chirp_common.TUNING_STEPS)
             if tones:
                 for tone in tones:
-                    assert tone in chirp_common.TONES, (
-                        "tone %s not one of %s" % (tone, chirp_common.TONES))
+                    assert tone in chirp_common.TONES, "tone %s not one of %s" % (
+                        tone,
+                        chirp_common.TONES,
+                    )
         except AssertionError as e:
             raise ValueError("%s %s: %s" % (name, limits, e))
 
@@ -50,15 +62,13 @@ class Band(object):
         self.offset = input_offset
         self.duplex = duplex
         if duplex is None and self.offset:
-            self.duplex = '+' if self.offset > 0 else '-'
+            self.duplex = "+" if self.offset > 0 else "-"
 
     def __eq__(self, other):
-        return (other.limits[0] == self.limits[0] and
-                other.limits[1] == self.limits[1])
+        return other.limits[0] == self.limits[0] and other.limits[1] == self.limits[1]
 
     def contains(self, other):
-        return (other.limits[0] >= self.limits[0] and
-                other.limits[1] <= self.limits[1])
+        return other.limits[0] >= self.limits[0] and other.limits[1] <= self.limits[1]
 
     def width(self):
         return self.limits[1] - self.limits[0]
@@ -69,22 +79,41 @@ class Band(object):
             return self
         limits = (self.limits[0] + self.offset, self.limits[1] + self.offset)
         offset = -1 * self.offset
-        if self.duplex and self.duplex in '+-':
-            duplex = '+' if self.duplex == '-' else '-'
-            return Band(limits, self.name, self.mode, self.step_khz,
-                        input_offset=offset, tones=self.tones, duplex=duplex)
-        return Band(limits, self.name, self.mode, self.step_khz,
-                    output_offset=offset, tones=self.tones)
+        if self.duplex and self.duplex in "+-":
+            duplex = "+" if self.duplex == "-" else "-"
+            return Band(
+                limits,
+                self.name,
+                self.mode,
+                self.step_khz,
+                input_offset=offset,
+                tones=self.tones,
+                duplex=duplex,
+            )
+        return Band(
+            limits,
+            self.name,
+            self.mode,
+            self.step_khz,
+            output_offset=offset,
+            tones=self.tones,
+        )
 
     def __repr__(self):
-        desc = '%s%s%s%s' % (
-            self.mode and 'mode: %s ' % (self.mode,) or '',
-            self.step_khz and 'step_khz: %s ' % (self.step_khz,) or '',
-            self.offset and 'offset: %s ' % (self.offset,) or '',
-            self.tones and 'tones: %s ' % (self.tones,) or '')
+        desc = "%s%s%s%s" % (
+            self.mode and "mode: %s " % (self.mode,) or "",
+            self.step_khz and "step_khz: %s " % (self.step_khz,) or "",
+            self.offset and "offset: %s " % (self.offset,) or "",
+            self.tones and "tones: %s " % (self.tones,) or "",
+        )
 
         return "%s-%s %s %s %s" % (
-            self.limits[0], self.limits[1], self.name, self.duplex, desc)
+            self.limits[0],
+            self.limits[1],
+            self.name,
+            self.duplex,
+            desc,
+        )
 
 
 class BandPlans(object):
@@ -105,8 +134,13 @@ class BandPlans(object):
         from chirp import bandplan_na, bandplan_au
         from chirp import bandplan_iaru_r1, bandplan_iaru_r2, bandplan_iaru_r3
 
-        for plan in (bandplan_na, bandplan_au, bandplan_iaru_r1,
-                     bandplan_iaru_r2, bandplan_iaru_r3):
+        for plan in (
+            bandplan_na,
+            bandplan_au,
+            bandplan_iaru_r1,
+            bandplan_iaru_r2,
+            bandplan_iaru_r3,
+        ):
             name = plan.DESC.get("name", plan.SHORTNAME)
             self.plans[plan.SHORTNAME] = (name, plan)
 
@@ -127,17 +161,17 @@ class BandPlans(object):
             if self._config.get_bool(shortname, "bandplan"):
                 matches = [x for x in details[1].bands if x.contains(result)]
                 # Add matches to defaults, favoring more specific matches.
-                matches = sorted(matches, key=lambda x: x.width(),
-                                 reverse=True)
+                matches = sorted(matches, key=lambda x: x.width(), reverse=True)
                 for match in matches:
                     result.mode = match.mode or result.mode
                     result.step_khz = match.step_khz or result.step_khz
                     result.offset = match.offset or result.offset
-                    result.duplex = (match.duplex if match.duplex is not None
-                                     else result.duplex)
+                    result.duplex = (
+                        match.duplex if match.duplex is not None else result.duplex
+                    )
                     result.tones = match.tones or result.tones
                     if match.name:
-                        result.name = '/'.join((result.name or '', match.name))
+                        result.name = "/".join((result.name or "", match.name))
                 # Limit ourselves to one band plan match for simplicity.
                 # Note that if the user selects multiple band plans by editing
                 # the config file it will work as expected (except where plans
@@ -173,14 +207,12 @@ class BandPlans(object):
             bands_with_repeaters.append(b)
 
         for band in current_plan.bands:
-            if (band.limits[0] >= min_freq and
-                    (band.name.lower().endswith('meter band') or
-                     band.name.lower().endswith('cm band'))):
+            if band.limits[0] >= min_freq and (
+                band.name.lower().endswith("meter band")
+                or band.name.lower().endswith("cm band")
+            ):
                 add_nodupes(band)
-        return sorted(bands_with_repeaters,
-                      key=lambda b: b.limits[0])
+        return sorted(bands_with_repeaters, key=lambda b: b.limits[0])
 
 
-BANDS_AIR = (
-  Band((118000000, 136975000), "Aviation", mode="AM"),
-)
+BANDS_AIR = (Band((118000000, 136975000), "Aviation", mode="AM"),)

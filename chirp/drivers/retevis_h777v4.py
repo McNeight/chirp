@@ -125,8 +125,16 @@ ONE_TO_NINE_LIST = OFF1TO9_LIST[1:]  # ["1", "2", ..., "9"]
 SCANM_LIST = ["Carrier", "Time"]
 SCRAMBOPT_LIST = ["1", "2", "3", "4", "5", "6", "7", "8"]
 SPECMODE_LIST = ["Spec Code 1", "Spec Code 2"]
-SKEY1_LIST = ["Off", "Monitor", "Scan", "Channel Lock", "VOX", "Power",
-              "Alarm", "Roger"]
+SKEY1_LIST = [
+    "Off",
+    "Monitor",
+    "Scan",
+    "Channel Lock",
+    "VOX",
+    "Power",
+    "Alarm",
+    "Roger",
+]
 SKEY2_LIST = ["Off", "VOX", "Power", "Scan"]
 TIMEOUTTIMER_LIST = ["Off"] + ["%s seconds" % x for x in range(30, 210, 30)]
 VOICE_LIST = ["Off", "English"]
@@ -147,7 +155,7 @@ DEFAULT_CONFIG = {
 def _read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"W" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -167,8 +175,8 @@ def _read_block(radio, block_addr, block_size):
 def _write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -178,8 +186,7 @@ def _write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except Exception:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -230,6 +237,7 @@ def do_upload(radio):
 
 class H777V4BaseRadio(chirp_common.CloneModeRadio):
     """RETEVIS H777 V4 Base"""
+
     VENDOR = "Retevis"
     MODEL = "H777 V4 Base"
     BAUD_RATE = 9600
@@ -251,15 +259,16 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
     _has_spec_mode = False
     _has_vox_level_off = True
 
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=0.50),
-                    chirp_common.PowerLevel("High", watts=2.00)
-                    ]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=0.50),
+        chirp_common.PowerLevel("High", watts=2.00),
+    ]
     VALID_BANDS = [(400000000, 520000000)]
 
     PROGRAM_CMD = b"C777HAM"
     _ranges = [
-               (0x0000, 0x00EA),
-              ]
+        (0x0000, 0x00EA),
+    ]
     _memsize = 0x00EA
 
     def get_features(self):
@@ -274,14 +283,21 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         rf.has_name = False
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = self.POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
         rf.valid_dtcs_codes = DTCS
         rf.memory_bounds = (1, 16)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 20., 25., 50.]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 20.0, 25.0, 50.0]
         rf.valid_bands = self.VALID_BANDS
         return rf
 
@@ -298,9 +314,8 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -313,9 +328,8 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         except Exception:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def _decode_tone(self, toneval, txrx, chnum):
         pol = "N"
@@ -325,22 +339,20 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
             mode = ""
             val = 0
         elif toneval[1].get_bits(0xC0) == 0xC0:
-            val = int(f'{rawval & 0x1FF:o}')
+            val = int(f"{rawval & 0x1FF:o}")
             if val in DTCS:
                 mode = "DTCS"
                 pol = "R"
             else:
-                LOG.error('unknown value: CH# %i DTCS %fR %s' % (
-                    chnum, val, txrx))
+                LOG.error("unknown value: CH# %i DTCS %fR %s" % (chnum, val, txrx))
                 mode = ""
                 val = 0
         elif toneval[1].get_bits(0x80):
-            val = int(f'{rawval & 0x1FF:o}')
+            val = int(f"{rawval & 0x1FF:o}")
             if val in DTCS:
                 mode = "DTCS"
             else:
-                LOG.error('unknown value: CH# %i DTCS %fN %s' % (
-                    chnum, val, txrx))
+                LOG.error("unknown value: CH# %i DTCS %fN %s" % (chnum, val, txrx))
                 mode = ""
                 val = 0
         else:
@@ -348,8 +360,7 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
             if val in chirp_common.TONES:
                 mode = "Tone"
             else:
-                LOG.error('unknown value: CH# %i CTCSS %fHZ %s' % (
-                    chnum, val, txrx))
+                LOG.error("unknown value: CH# %i CTCSS %fHZ %s" % (chnum, val, txrx))
                 mode = ""
                 val = 0
 
@@ -365,14 +376,9 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
             tens = (v // 10) % 10
             ones = v % 10
 
-            toneval = (
-                (thousands << 12)
-                | (hundreds << 8)
-                | (tens << 4)
-                | ones
-            )
+            toneval = (thousands << 12) | (hundreds << 8) | (tens << 4) | ones
         elif mode == "DTCS":
-            toneval = int('%i' % val, 8)
+            toneval = int("%i" % val, 8)
             toneval |= 0x8000
             if pol == "R":
                 toneval |= 0x4000
@@ -400,7 +406,7 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         mem = chirp_common.Memory()
         mem.number = number
 
-        if _mem.get_raw()[:1] == b"\xFF":
+        if _mem.get_raw()[:1] == b"\xff":
             mem.empty = True
             return mem
 
@@ -426,12 +432,12 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
                 mem.duplex = "-" if diff > 0 else "+"
                 mem.offset = abs(diff)
 
-        txmode, txval, txpol = self._decode_tone(_mem.tx_tone, 'TX', number)
-        rxmode, rxval, rxpol = self._decode_tone(_mem.rx_tone, 'RX', number)
+        txmode, txval, txpol = self._decode_tone(_mem.tx_tone, "TX", number)
+        rxmode, rxval, rxpol = self._decode_tone(_mem.rx_tone, "RX", number)
 
-        chirp_common.split_tone_decode(mem,
-                                       (txmode, txval, txpol),
-                                       (rxmode, rxval, rxpol))
+        chirp_common.split_tone_decode(
+            mem, (txmode, txval, txpol), (rxmode, rxval, rxpol)
+        )
 
         if _mem.scanadd:
             mem.skip = "S"
@@ -494,7 +500,7 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         cfg = self._model_cfg()
 
         if mem.empty:
-            _mem.set_raw(b"\xFF" * (_mem.size() // 8))
+            _mem.set_raw(b"\xff" * (_mem.size() // 8))
             return
 
         rx = self._encode_freq(mem.freq)
@@ -513,8 +519,9 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
 
         _mem.txfreq = tx
 
-        (txmode, txval, txpol), (rxmode, rxval, rxpol) = \
-            chirp_common.split_tone_encode(mem)
+        (txmode, txval, txpol), (rxmode, rxval, rxpol) = chirp_common.split_tone_encode(
+            mem
+        )
 
         self._encode_tone(_mem.tx_tone, txmode, txval, txpol)
         self._encode_tone(_mem.rx_tone, rxmode, rxval, rxpol)
@@ -539,46 +546,36 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Time Out Timer
-        rs = RadioSettingValueList(TIMEOUTTIMER_LIST,
-                                   current_index=_settings.tot)
+        rs = RadioSettingValueList(TIMEOUTTIMER_LIST, current_index=_settings.tot)
         rset = MemSetting("tot", "Time-out Timer", rs)
-        rset.set_doc("TX Time-out Timer: Off, 30, 60, 90, 120, 150," +
-                     " 180 seconds")
+        rset.set_doc("TX Time-out Timer: Off, 30, 60, 90, 120, 150," + " 180 seconds")
         basic.append(rset)
 
         # Vox Level
         if self._has_vox_level_off:
             # H777 behavior: 0-9 maps directly
-            rs = RadioSettingValueList(
-                OFF1TO9_LIST,
-                current_index=_settings.vox
-            )
+            rs = RadioSettingValueList(OFF1TO9_LIST, current_index=_settings.vox)
             rset = MemSetting("vox", "VOX Level", rs)
         else:
             # RT21H behavior: hide "Off"
             # Firmware: 1-9
             # UI index: 0-8
             index = min(8, max(0, _settings.vox_level - 1))
-            rs = RadioSettingValueList(
-                ONE_TO_NINE_LIST,
-                current_index=index
-            )
+            rs = RadioSettingValueList(ONE_TO_NINE_LIST, current_index=index)
             rset = MemSetting("vox_level", "VOX Level", rs)
 
         rset.set_doc(self.VOXL_DOC)
         basic.append(rset)
 
         # Vox Delay
-        rs = RadioSettingValueList(self.VOXD_LIST,
-                                   current_index=_settings.voxd)
+        rs = RadioSettingValueList(self.VOXD_LIST, current_index=_settings.voxd)
         rset = MemSetting("voxd", "Vox Delay", rs)
         rset.set_doc(self.VOXD_DOC)
         basic.append(rset)
 
         # Spec Mode
         if self._has_spec_mode:
-            rs = RadioSettingValueList(SPECMODE_LIST,
-                                       current_index=_settings.specmode)
+            rs = RadioSettingValueList(SPECMODE_LIST, current_index=_settings.specmode)
             rset = MemSetting("specmode", "Spec Mode", rs)
             rset.set_doc("Spec Mode: Spec Code 1, Spec Code 2")
             basic.append(rset)
@@ -590,27 +587,25 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Voice Annunciation
-        rs = RadioSettingValueList(VOICE_LIST,
-                                   current_index=_settings.voice)
+        rs = RadioSettingValueList(VOICE_LIST, current_index=_settings.voice)
         rset = MemSetting("voice", "Voice", rs)
         rset.set_doc("Voice Prompts: Off, English")
         basic.append(rset)
 
         # Side Key 1
         if self._has_sidekey1:
-            SKEY1_DOC = ("Off, Monitor, Scan, Channel Lock, VOX, Power," +
-                         " Alarm, Roger")
+            SKEY1_DOC = (
+                "Off, Monitor, Scan, Channel Lock, VOX, Power," + " Alarm, Roger"
+            )
 
             # Side Key 1 (short)
-            rs = RadioSettingValueList(SKEY1_LIST,
-                                       current_index=_settings.skey1S)
+            rs = RadioSettingValueList(SKEY1_LIST, current_index=_settings.skey1S)
             rset = MemSetting("skey1S", "Side Key 1 (short)", rs)
             rset.set_doc("Side Key 1 (short press): " + SKEY1_DOC)
             basic.append(rset)
 
             # Side Key 1 (long)
-            rs = RadioSettingValueList(SKEY1_LIST,
-                                       current_index=_settings.skey1L)
+            rs = RadioSettingValueList(SKEY1_LIST, current_index=_settings.skey1L)
             rset = MemSetting("skey1L", "Side Key 1 (long)", rs)
             rset.set_doc("Side Key 1 (long press): " + SKEY1_DOC)
             basic.append(rset)
@@ -618,8 +613,7 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
         # Side key 2
         if self._has_sidekey2:
             # Side Key 2 (long)
-            rs = RadioSettingValueList(SKEY2_LIST,
-                                       current_index=_settings.skey2)
+            rs = RadioSettingValueList(SKEY2_LIST, current_index=_settings.skey2)
             rset = MemSetting("skey2", "Side Key 2", rs)
             rset.set_doc("Side Key 2 (long press): Off, VOX, Power, Scan")
             basic.append(rset)
@@ -674,7 +668,7 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
     def set_settings(self, settings):
         others = settings.apply_to(self._memobj.settings)
         if others:
-            LOG.error('Did not apply %s' % others)
+            LOG.error("Did not apply %s" % others)
 
     @classmethod
     def match_model(cls, filedata, filename):
@@ -687,10 +681,11 @@ class H777V4BaseRadio(chirp_common.CloneModeRadio):
 @directory.detected_by(h777.RetevisH777)
 class H777V4(H777V4BaseRadio):
     """RETEVIS H777V4"""
+
     VENDOR = "Retevis"
     MODEL = "H777"
-    VARIANT = 'V4'
-    IDENT = [b'\x00' * 6, b'\xFF' * 6]
+    VARIANT = "V4"
+    IDENT = [b"\x00" * 6, b"\xff" * 6]
 
     # SKU #: A9294A (sold as FRS radio but supports full band TX/RX)
     # Serial #: 2412R777XXXXXXX
@@ -708,13 +703,14 @@ class H777V4(H777V4BaseRadio):
 @directory.register
 class RT21HRadio(H777V4BaseRadio):
     """RETEVIS RT21H"""
+
     VENDOR = "Retevis"
     MODEL = "RT21H"
 
     # SKU #: A9118R (sold as FRS radio but supports full band TX/RX)
     # SKU #: A9118S (sold as PMR radio but supports full band TX/RX)
 
-    IDENT = [b'SMP558\x02\xFF', b'SMP558\x02\x00']
+    IDENT = [b"SMP558\x02\xff", b"SMP558\x02\x00"]
     BLOCK_SIZE = 0x0C
     BLOCK_SIZE_UP = 0x0C
 
@@ -733,15 +729,16 @@ class RT21HRadio(H777V4BaseRadio):
     _has_spec_mode = True
     _has_vox_level_off = False
 
-    POWER_LEVELS = [chirp_common.PowerLevel("Low", watts=0.50),
-                    chirp_common.PowerLevel("High", watts=2.00)
-                    ]
+    POWER_LEVELS = [
+        chirp_common.PowerLevel("Low", watts=0.50),
+        chirp_common.PowerLevel("High", watts=2.00),
+    ]
     VALID_BANDS = [(400000000, 502000000)]
 
     PROGRAM_CMD = b"T210GAM"
     _ranges = [
-               (0x0000, 0x00D8),
-              ]
+        (0x0000, 0x00D8),
+    ]
     _memsize = 0x00D8
 
     def process_mmap(self):

@@ -193,12 +193,34 @@ WORKMODE_LIST = ["VFO Mode", "Channel Mode"]
 SKEY_CHOICES = ["FM", "Tx Power", "Moni", "Scan", "Offline", "Weather"]
 SKEY_VALUES = [0x07, 0x0A, 0x05, 0x1C, 0x0B, 0x0C]
 
-GMRS_FREQS1 = [462562500, 462587500, 462612500, 462637500, 462662500,
-               462687500, 462712500]
-GMRS_FREQS2 = [467562500, 467587500, 467612500, 467637500, 467662500,
-               467687500, 467712500]
-GMRS_FREQS3 = [462550000, 462575000, 462600000, 462625000, 462650000,
-               462675000, 462700000, 462725000]
+GMRS_FREQS1 = [
+    462562500,
+    462587500,
+    462612500,
+    462637500,
+    462662500,
+    462687500,
+    462712500,
+]
+GMRS_FREQS2 = [
+    467562500,
+    467587500,
+    467612500,
+    467637500,
+    467662500,
+    467687500,
+    467712500,
+]
+GMRS_FREQS3 = [
+    462550000,
+    462575000,
+    462600000,
+    462625000,
+    462650000,
+    462675000,
+    462700000,
+    462725000,
+]
 GMRS_FREQS = GMRS_FREQS1 + GMRS_FREQS2 + GMRS_FREQS3 * 2
 
 
@@ -248,7 +270,7 @@ def _rt76p_exit_programming_mode(radio):
 def _rt76p_read_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'R', block_addr, block_size)
+    cmd = struct.pack(">cHb", b"R", block_addr, block_size)
     expectedresponse = b"R" + cmd[1:]
     LOG.debug("Reading block %04x..." % (block_addr))
 
@@ -268,8 +290,8 @@ def _rt76p_read_block(radio, block_addr, block_size):
 def _rt76p_write_block(radio, block_addr, block_size):
     serial = radio.pipe
 
-    cmd = struct.pack(">cHb", b'W', block_addr, block_size)
-    data = radio.get_mmap()[block_addr:block_addr + block_size]
+    cmd = struct.pack(">cHb", b"W", block_addr, block_size)
+    data = radio.get_mmap()[block_addr : block_addr + block_size]
 
     LOG.debug("Writing Data:")
     LOG.debug(util.hexprint(cmd + data))
@@ -279,8 +301,7 @@ def _rt76p_write_block(radio, block_addr, block_size):
         if serial.read(1) != CMD_ACK:
             raise Exception("No ACK")
     except:
-        raise errors.RadioError("Failed to send block "
-                                "to radio at %04x" % block_addr)
+        raise errors.RadioError("Failed to send block " "to radio at %04x" % block_addr)
 
 
 def do_download(radio):
@@ -332,26 +353,30 @@ def do_upload(radio):
 @directory.register
 class RT76PRadio(chirp_common.CloneModeRadio):
     """RETEVIS RT76P"""
+
     VENDOR = "Retevis"
     MODEL = "RT76P"
     BAUD_RATE = 9600
     BLOCK_SIZE = 0x40
     BLOCK_SIZE_UP = 0x20
 
-    RT76P_POWER_LEVELS = [chirp_common.PowerLevel("High", watts=5.00),
-                          chirp_common.PowerLevel("Low", watts=0.50)]
+    RT76P_POWER_LEVELS = [
+        chirp_common.PowerLevel("High", watts=5.00),
+        chirp_common.PowerLevel("Low", watts=0.50),
+    ]
 
     _magic = b"PROGROMCD2U"
     _fingerprint = b"\x01\x36\x01\x74\x04\x00\x05\x20"
 
     _ranges = [
-               (0x0000, 0x0820),
-               (0x0C00, 0x1400),
-               (0x1A00, 0x1C20),
-              ]
+        (0x0000, 0x0820),
+        (0x0C00, 0x1400),
+        (0x1A00, 0x1C20),
+    ]
     _memsize = 0x2000
-    _valid_chars = chirp_common.CHARSET_ALPHANUMERIC + \
-        "`~!@#$%^&*()-=_+[]\\{}|;':\",./<>?"
+    _valid_chars = (
+        chirp_common.CHARSET_ALPHANUMERIC + "`~!@#$%^&*()-=_+[]\\{}|;':\",./<>?"
+    )
 
     def get_features(self):
         rf = chirp_common.RadioFeatures()
@@ -367,16 +392,22 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         rf.valid_characters = self._valid_chars
         rf.valid_skips = ["", "S"]
         rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_cross_modes = ["Tone->Tone", "Tone->DTCS", "DTCS->Tone",
-                                "->Tone", "->DTCS", "DTCS->", "DTCS->DTCS"]
+        rf.valid_cross_modes = [
+            "Tone->Tone",
+            "Tone->DTCS",
+            "DTCS->Tone",
+            "->Tone",
+            "->DTCS",
+            "DTCS->",
+            "DTCS->DTCS",
+        ]
         rf.valid_power_levels = self.RT76P_POWER_LEVELS
         rf.valid_duplexes = ["", "-", "+", "split", "off"]
         rf.valid_modes = ["FM", "NFM"]  # 25 kHz, 12.5 kHz.
         rf.valid_dtcs_codes = RT76P_DTCS
         rf.memory_bounds = (1, 128)
-        rf.valid_tuning_steps = [2.5, 5., 6.25, 10., 12.5, 20., 25., 50.]
-        rf.valid_bands = [(136000000, 174000000),
-                          (400000000, 480000000)]
+        rf.valid_tuning_steps = [2.5, 5.0, 6.25, 10.0, 12.5, 20.0, 25.0, 50.0]
+        rf.valid_bands = [(136000000, 174000000), (400000000, 480000000)]
         return rf
 
     def process_mmap(self):
@@ -392,9 +423,8 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during download')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during download")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
         self._mmap = data
         self.process_mmap()
 
@@ -405,15 +435,14 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         except:
             # If anything unexpected happens, make sure we raise
             # a RadioError and log the problem
-            LOG.exception('Unexpected error during upload')
-            raise errors.RadioError('Unexpected error communicating '
-                                    'with the radio')
+            LOG.exception("Unexpected error during upload")
+            raise errors.RadioError("Unexpected error communicating " "with the radio")
 
     def _is_txinh(self, _mem):
         raw_tx = ""
         for i in range(0, 4):
             raw_tx += _mem.txfreq[i].get_raw(asbytes=False)
-        return raw_tx == "\xFF\xFF\xFF\xFF"
+        return raw_tx == "\xff\xff\xff\xff"
 
     def get_memory(self, number):
         _mem = self._memobj.memory[number - 1]
@@ -444,7 +473,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
                 mem.offset = 0
 
         for char in _nam.name:
-            if str(char) == "\xFF":
+            if str(char) == "\xff":
                 char = " "  # may have 0xFF mid-name
             mem.name += str(char)
         mem.name = mem.name.rstrip()
@@ -548,28 +577,28 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         power = mem.power
 
         if mem.freq in GMRS_FREQS1:
-            duplex = ''
+            duplex = ""
             offset = 0
         elif mem.freq in GMRS_FREQS2:
-            duplex = ''
+            duplex = ""
             offset = 0
             mode = "NFM"
             power = self.RT76P_POWER_LEVELS[1]
         elif mem.freq in GMRS_FREQS3:
-            if mem.duplex == '+':
+            if mem.duplex == "+":
                 offset = 5000000
             else:
-                duplex = ''
+                duplex = ""
                 offset = 0
         else:
-            duplex = 'off'
+            duplex = "off"
             offset = 0
 
         _mem.rxfreq = mem.freq / 10
 
         if duplex == "off":
             for i in range(0, 4):
-                _mem.txfreq[i].set_raw("\xFF")
+                _mem.txfreq[i].set_raw("\xff")
         elif duplex == "split":
             _mem.txfreq = offset / 10
         elif duplex == "+":
@@ -584,7 +613,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
             try:
                 _nam.name[i] = mem.name[i]
             except IndexError:
-                _nam.name[i] = "\xFF"
+                _nam.name[i] = "\xff"
 
         rxmode = txmode = ""
         if mem.tmode == "Tone":
@@ -659,8 +688,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         # Menu 05: Bandwidth
 
         # Menu 06: Backlight (Auto Backlight)
-        rs = RadioSettingValueList(OFF1TO10_LIST,
-                                   current_index=_settings.abr)
+        rs = RadioSettingValueList(OFF1TO10_LIST, current_index=_settings.abr)
         rset = RadioSetting("abr", "Backlight Time-out", rs)
         basic.append(rset)
 
@@ -680,8 +708,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 10: Tx over time (Time Out)
-        rs = RadioSettingValueList(TIMEOUTTIMER_LIST,
-                                   current_index=_settings.tot - 1)
+        rs = RadioSettingValueList(TIMEOUTTIMER_LIST, current_index=_settings.tot - 1)
         rset = RadioSetting("tot", "Time-out Timer", rs)
         basic.append(rset)
 
@@ -729,20 +756,17 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 26: WT-LED (Wait Backlight)
-        rs = RadioSettingValueList(BACKLIGHT_LIST,
-                                   current_index=_settings.wtled)
+        rs = RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.wtled)
         rset = RadioSetting("wtled", "Wait Backlight Color", rs)
         basic.append(rset)
 
         # Menu 27: RX-LED (Rx Backlight)
-        rs = RadioSettingValueList(BACKLIGHT_LIST,
-                                   current_index=_settings.rxled)
+        rs = RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.rxled)
         rset = RadioSetting("rxled", "RX Backlight Color", rs)
         basic.append(rset)
 
         # Menu 28: TX-LED (Tx Backlight)
-        rs = RadioSettingValueList(BACKLIGHT_LIST,
-                                   current_index=_settings.txled)
+        rs = RadioSettingValueList(BACKLIGHT_LIST, current_index=_settings.txled)
         rset = RadioSetting("txled", "TX Backlight Color", rs)
         basic.append(rset)
 
@@ -762,14 +786,12 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         basic.append(rset)
 
         # Menu 32: Language
-        rs = RadioSettingValueList(LANGUAGE_LIST,
-                                   current_index=_settings.language)
+        rs = RadioSettingValueList(LANGUAGE_LIST, current_index=_settings.language)
         rset = RadioSetting("language", "Language", rs)
         basic.append(rset)
 
         # Menu 33: OPENMGS (Pwr On Msg)
-        rs = RadioSettingValueList(PWRONMSG_LIST,
-                                   current_index=_settings.pwronmsg)
+        rs = RadioSettingValueList(PWRONMSG_LIST, current_index=_settings.pwronmsg)
         rset = RadioSetting("pwronmsg", "Power On Message", rs)
         basic.append(rset)
 
@@ -790,8 +812,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
         group.append(advanced)
 
         # Work Mode
-        rs = RadioSettingValueList(WORKMODE_LIST,
-                                   current_index=_settings.workmode)
+        rs = RadioSettingValueList(WORKMODE_LIST, current_index=_settings.workmode)
         rset = RadioSetting("workmode", "Work Mode", rs)
         advanced.append(rset)
 
@@ -867,13 +888,17 @@ class RT76PRadio(chirp_common.CloneModeRadio):
             return filtered
 
         _msg = self._memobj.poweron_msg
-        rs = RadioSetting("poweron_msg.line1", "Power-On Message 1",
-                          RadioSettingValueString(
-                              0, 16, _filter(_msg.line1)))
+        rs = RadioSetting(
+            "poweron_msg.line1",
+            "Power-On Message 1",
+            RadioSettingValueString(0, 16, _filter(_msg.line1)),
+        )
         advanced.append(rs)
-        rs = RadioSetting("poweron_msg.line2", "Power-On Message 2",
-                          RadioSettingValueString(
-                              0, 16, _filter(_msg.line2)))
+        rs = RadioSetting(
+            "poweron_msg.line2",
+            "Power-On Message 2",
+            RadioSettingValueString(0, 16, _filter(_msg.line2)),
+        )
         advanced.append(rs)
 
         dtmf = RadioSettingGroup("dtmf", "DTMF Settings")
@@ -893,8 +918,7 @@ class RT76PRadio(chirp_common.CloneModeRadio):
             _code = "".join([DTMF_CHARS[x] for x in _codeobj if int(x) < 0x1F])
             val = RadioSettingValueString(0, 6, _code, False)
             val.set_charset(DTMF_CHARS)
-            pttid = RadioSetting("pttid/%i.code" % i,
-                                 "Signal Code %i" % (i + 1), val)
+            pttid = RadioSetting("pttid/%i.code" % i, "Signal Code %i" % (i + 1), val)
             pttid.set_apply_callback(apply_code, self._memobj.pttid[i], 6)
             dtmf.append(pttid)
 
@@ -926,18 +950,22 @@ class RT76PRadio(chirp_common.CloneModeRadio):
             val = 0x00
         else:
             val = _dtmf.dtmfon
-        rs = RadioSetting("dtmf.dtmfon", "DTMF Speed (on)",
-                          RadioSettingValueList(DTMFSPEED_LIST,
-                                                current_index=val))
+        rs = RadioSetting(
+            "dtmf.dtmfon",
+            "DTMF Speed (on)",
+            RadioSettingValueList(DTMFSPEED_LIST, current_index=val),
+        )
         dtmf.append(rs)
 
         if _dtmf.dtmfoff > 0xC3:
             val = 0x00
         else:
             val = _dtmf.dtmfoff
-        rs = RadioSetting("dtmf.dtmfoff", "DTMF Speed (off)",
-                          RadioSettingValueList(DTMFSPEED_LIST,
-                                                current_index=val))
+        rs = RadioSetting(
+            "dtmf.dtmfoff",
+            "DTMF Speed (off)",
+            RadioSettingValueList(DTMFSPEED_LIST, current_index=val),
+        )
         dtmf.append(rs)
 
         return group

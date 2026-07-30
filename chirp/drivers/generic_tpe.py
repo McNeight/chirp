@@ -20,21 +20,23 @@ from chirp.drivers import generic_csv
 @directory.register
 class TpeRadio(generic_csv.CSVRadio):
     """Generic ARRL Travel Plus"""
+
     VENDOR = "ARRL"
     MODEL = "Travel Plus"
     FILE_EXTENSION = "tpe"
-    FORMATS = [directory.register_format('ARRL TPE', '*.tpe')]
+    FORMATS = [directory.register_format("ARRL TPE", "*.tpe")]
 
     ATTR_MAP = {
-        "Sequence Number":  (int, "number"),
-        "Location":         (str, "comment"),
-        "Call Sign":        (str, "name"),
+        "Sequence Number": (int, "number"),
+        "Location": (str, "comment"),
+        "Call Sign": (str, "name"),
         "Output Frequency": (chirp_common.parse_freq, "freq"),
-        "Input Frequency":  (str, "duplex"),
-        "CTCSS Tones":      (lambda v: float(v)
-                             if v and float(v) in chirp_common.TONES
-                             else 88.5, "rtone"),
-        "Repeater Notes":   (str, "comment"),
+        "Input Frequency": (str, "duplex"),
+        "CTCSS Tones": (
+            lambda v: float(v) if v and float(v) in chirp_common.TONES else 88.5,
+            "rtone",
+        ),
+        "Repeater Notes": (str, "comment"),
     }
 
     def _clean_tmode(self, headers, line, mem):

@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 
 BAUDS = [4800]
 POWER_LEVELS = []
-DUPLEX_MODES = ['', 'split', 'off']
+DUPLEX_MODES = ["", "split", "off"]
 # do not reorder this list
 # MODULATION_MODES = ["USB", "R3E", "AM", "LSB", "AFS", "FSK", "CW"]
 MODULATION_MODES = ["USB", "USB", "AM", "LSB", "DIG", "FSK", "CW"]
@@ -45,12 +45,13 @@ struct {
 @directory.register
 class IcomM710Radio(icf.IcomCloneModeRadio):
     """ICOM IC-M710"""
+
     VENDOR = "Icom"
     MODEL = "IC-M710"
     BAUD_RATE = 4800
 
     _model = "\x162\x00\x01"  # 4-byte mode string
-    _endframe = ''
+    _endframe = ""
     _ignore_clone_ok = True
 
     _memsize = 0xEFC0
@@ -90,7 +91,7 @@ class IcomM710Radio(icf.IcomCloneModeRadio):
         rf.can_odd_split = True
         rf.valid_modes = MODULATION_MODES
         rf.valid_power_levels = POWER_LEVELS
-        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + '/-'
+        rf.valid_characters = chirp_common.CHARSET_UPPER_NUMERIC + "/-"
         rf.valid_tones = []
         rf.valid_tmodes = []
         rf.valid_skips = []
@@ -139,12 +140,12 @@ class IcomM710Radio(icf.IcomCloneModeRadio):
 
         # if the frequency is above 30MHz
         # (166666665 or FF,FF,FF,FF), it's simplex
-        if (int(_mem.tx_freq) > 29999999):
-            mem.duplex = 'off'
-        elif (int(_mem.rx_freq) == int(_mem.tx_freq)):
-            mem.duplex = ''
+        if int(_mem.tx_freq) > 29999999:
+            mem.duplex = "off"
+        elif int(_mem.rx_freq) == int(_mem.tx_freq):
+            mem.duplex = ""
         else:
-            mem.duplex = 'split'
+            mem.duplex = "split"
             mem.offset = int(_mem.tx_freq)
 
         # We'll consider any blank (i.e. 0 MHz frequency) to be empty
@@ -162,15 +163,15 @@ class IcomM710Radio(icf.IcomCloneModeRadio):
         _mem.name = mem.name.ljust(7)[:7]
 
         if mem.empty:
-            _mem.rx_freq.set_raw(b'\xFF' * 4)
-            _mem.mode.set_raw(b'\x00')
-            _mem.tx_freq.set_raw(b'\xFF' * 4)
+            _mem.rx_freq.set_raw(b"\xff" * 4)
+            _mem.mode.set_raw(b"\x00")
+            _mem.tx_freq.set_raw(b"\xff" * 4)
         else:
             _mem.rx_freq = mem.freq
             _mem.mode = MODULATION_MODES.index(mem.mode)
-            if mem.duplex == 'off':
-                _mem.tx_freq.set_raw(b'\xFF' * 4)
-            elif mem.duplex == '':
+            if mem.duplex == "off":
+                _mem.tx_freq.set_raw(b"\xff" * 4)
+            elif mem.duplex == "":
                 _mem.tx_freq = _mem.rx_freq
             else:
                 _mem.tx_freq = mem.offset

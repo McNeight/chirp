@@ -31,23 +31,26 @@ from chirp.wxui import config
 
 CONF = config.get()
 LOG = logging.getLogger(__name__)
-logging.getLogger('urllib3.connectionpool').setLevel(logging.INFO)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.INFO)
 SESSION = None
 DISABLED = False
 SEM = threading.Semaphore(2)
-BASE = 'http://chirpmyradio.com/report'
+BASE = "http://chirpmyradio.com/report"
 
 
 def get_environment():
     if wx:
         wx_ver = wx.version()
     else:
-        wx_ver = 'None'
-    return ' // '.join(['Python/%s' % platform.python_version(),
-                        '%s/%s' % (platform.system(),
-                                   platform.platform()),
-                        'CHIRP/%s' % CHIRP_VERSION,
-                        'wx/%s' % wx_ver])
+        wx_ver = "None"
+    return " // ".join(
+        [
+            "Python/%s" % platform.python_version(),
+            "%s/%s" % (platform.system(), platform.platform()),
+            "CHIRP/%s" % CHIRP_VERSION,
+            "wx/%s" % wx_ver,
+        ]
+    )
 
 
 class ReportThread(threading.Thread):
@@ -61,7 +64,7 @@ class ReportThread(threading.Thread):
         try:
             self.__fn()
         except Exception as e:
-            LOG.info('Disabling reporting because %s' % e)
+            LOG.info("Disabling reporting because %s" % e)
             DISABLED = True
         finally:
             SEM.release()
@@ -72,9 +75,9 @@ def ensure_session():
     if SESSION is None:
         SESSION = requests.Session()
         SESSION.headers = {
-            'User-Agent': 'CHIRP/%s' % CHIRP_VERSION,
-            'X-CHIRP-UUID': CONF.get('seat', 'state'),
-            'X-CHIRP-Environment': get_environment(),
+            "User-Agent": "CHIRP/%s" % CHIRP_VERSION,
+            "X-CHIRP-UUID": CONF.get("seat", "state"),
+            "X-CHIRP-Environment": get_environment(),
         }
         for k, v in SESSION.headers.items():
             base.HEADERS[k] = v
@@ -90,8 +93,8 @@ def with_session(fn):
         if not SEM.acquire(False):
             return
 
-        if not CONF.is_defined('seat', 'state'):
-            CONF.set('seat', str(uuid.uuid4()), 'state')
+        if not CONF.is_defined("seat", "state"):
+            CONF.set("seat", str(uuid.uuid4()), "state")
 
         ensure_session()
 
@@ -103,17 +106,21 @@ def with_session(fn):
 
 @with_session
 def check_for_updates(session, callback):
-    r = session.get('%s/latest' % BASE)
-    callback(r.json()['latest'])
+    r = session.get("%s/latest" % BASE)
+    callback(r.json()["latest"])
 
 
 @with_session
 def report_model(session, rclass, op):
-    if CONF.get_bool('no_report', 'global', False):
+    if CONF.get_bool("no_report", "global", False):
         return
 
-    session.post('%s/usage' % BASE,
-                 json={'vendor': rclass.VENDOR,
-                       'model': rclass.MODEL,
-                       'variant': rclass.VARIANT,
-                       'op': op})
+    session.post(
+        "%s/usage" % BASE,
+        json={
+            "vendor": rclass.VENDOR,
+            "model": rclass.MODEL,
+            "variant": rclass.VARIANT,
+            "op": op,
+        },
+    )

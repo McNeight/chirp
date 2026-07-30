@@ -17,9 +17,13 @@ import logging
 
 from chirp.drivers import icf
 from chirp import chirp_common, bitwise, errors, directory
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueList, RadioSettingValueBoolean, \
-    RadioSettings
+from chirp.settings import (
+    RadioSetting,
+    RadioSettingGroup,
+    RadioSettingValueList,
+    RadioSettingValueBoolean,
+    RadioSettings,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -115,9 +119,12 @@ struct {
 """
 
 SPECIAL_CHANNELS = {
-    "1A": 200, "1B": 201,
-    "2A": 202, "2B": 203,
-    "3A": 204, "3B": 205,
+    "1A": 200,
+    "1B": 201,
+    "2A": 202,
+    "2B": 203,
+    "3A": 204,
+    "3B": 205,
     "C": 206,
 }
 
@@ -130,13 +137,14 @@ TUNING_STEPS = [5.0, 10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 50.0]
 POWER_LEVELS = [
     chirp_common.PowerLevel("High", watts=5.5),
     chirp_common.PowerLevel("Low", watts=0.5),
-    chirp_common.PowerLevel("Mid", watts=2.5)
+    chirp_common.PowerLevel("Mid", watts=2.5),
 ]
 
 
 @directory.register
 class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
     """Icom IC-V80"""
+
     VENDOR = "Icom"
     MODEL = "IC-V80"
 
@@ -144,24 +152,27 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
     _memsize = 0x0E80
     _endframe = "Icom Inc\x2e7C"
     _can_hispeed = True
-    _ranges = [(0x0000, 0x0CE0, 32),
-               (0x0CE0, 0x0D40, 16),
-               (0x0D40, 0x0E00, 32),
-               (0x0E00, 0x0E20, 16),
-               (0x0E20, 0x0E60, 32),
-               (0x0E60, 0x0E70, 16),
-               (0x0E70, 0x0E72,  2),
-               (0x0E72, 0x0E77,  5),
-               (0x0E77, 0x0E78,  1),
-               (0x0E78, 0x0E80,  8),
-               ]
+    _ranges = [
+        (0x0000, 0x0CE0, 32),
+        (0x0CE0, 0x0D40, 16),
+        (0x0D40, 0x0E00, 32),
+        (0x0E00, 0x0E20, 16),
+        (0x0E20, 0x0E60, 32),
+        (0x0E60, 0x0E70, 16),
+        (0x0E70, 0x0E72, 2),
+        (0x0E72, 0x0E77, 5),
+        (0x0E77, 0x0E78, 1),
+        (0x0E78, 0x0E80, 8),
+    ]
 
     @classmethod
     def get_prompts(cls):
         rp = chirp_common.RadioPrompts()
-        rp.experimental = ("This radio driver is currently under development, "
-                           "and not all the features or functions may work as"
-                           "expected. You should proceed with caution.")
+        rp.experimental = (
+            "This radio driver is currently under development, "
+            "and not all the features or functions may work as"
+            "expected. You should proceed with caution."
+        )
         return rp
 
     def get_features(self):
@@ -170,7 +181,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
         rf.memory_bounds = (0, 199)
         rf.valid_modes = MODES
         rf.valid_tmodes = TMODES
-        rf.valid_duplexes = DUPLEXES + ['off']
+        rf.valid_duplexes = DUPLEXES + ["off"]
         rf.valid_tuning_steps = TUNING_STEPS
         rf.valid_power_levels = POWER_LEVELS
         rf.valid_skips = SKIPS
@@ -200,160 +211,211 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
         opts = ["Off"] + ["%d min" % t for t in range(1, 31)]
         setmode.append(
             RadioSetting(
-                "tot", "Time out Timer",
-                RadioSettingValueList(opts, current_index=_settings.tot)))
+                "tot",
+                "Time out Timer",
+                RadioSettingValueList(opts, current_index=_settings.tot),
+            )
+        )
 
         # Lockout
         opts = ["Off", "Rpt", "Busy"]
         setmode.append(
             RadioSetting(
-                "lockout", "Lockout",
-                RadioSettingValueList(opts, current_index=_settings.lockout)))
+                "lockout",
+                "Lockout",
+                RadioSettingValueList(opts, current_index=_settings.lockout),
+            )
+        )
 
         # Auto Power Off
         opts = ["Off", "30 min", "1 hr", "2 hrs"]
         setmode.append(
             RadioSetting(
-                "auto_pwr_off", "Auto Power Off",
-                RadioSettingValueList(
-                    opts, current_index=_settings.auto_pwr_off)))
+                "auto_pwr_off",
+                "Auto Power Off",
+                RadioSettingValueList(opts, current_index=_settings.auto_pwr_off),
+            )
+        )
 
         # Power Save
         opts = ["Off", "1:2", "1:8", "1:16", "Auto"]
         setmode.append(
             RadioSetting(
-                "pwr_save", "Power Save",
-                RadioSettingValueList(opts, current_index=_settings.pwr_save)))
+                "pwr_save",
+                "Power Save",
+                RadioSettingValueList(opts, current_index=_settings.pwr_save),
+            )
+        )
 
         # Battery Save
         opts = ["Off", "Ni-MH", "Li-Ion"]
         setmode.append(
             RadioSetting(
-                "battery_save", "Battery Save",
-                RadioSettingValueList(
-                    opts, current_index=_settings.battery_save)))
+                "battery_save",
+                "Battery Save",
+                RadioSettingValueList(opts, current_index=_settings.battery_save),
+            )
+        )
 
         # Auto Low Power
         opts = ["Off", "On"]
         setmode.append(
             RadioSetting(
-                "auto_low_pwr", "Auto Low Power",
-                RadioSettingValueList(
-                    opts, current_index=_settings.auto_low_pwr)))
+                "auto_low_pwr",
+                "Auto Low Power",
+                RadioSettingValueList(opts, current_index=_settings.auto_low_pwr),
+            )
+        )
 
         # Squelch Delay
         opts = ["Short", "Long"]
         setmode.append(
             RadioSetting(
-                "squelch_delay", "Squelch Delay",
-                RadioSettingValueList(
-                    opts, current_index=_settings.squelch_delay)))
+                "squelch_delay",
+                "Squelch Delay",
+                RadioSettingValueList(opts, current_index=_settings.squelch_delay),
+            )
+        )
 
         # MIC Simple Mode
         opts = ["Simple", "Normal 1", "Normal 2"]
         setmode.append(
             RadioSetting(
-                "mic_mode", "Mic Simple Mode",
-                RadioSettingValueList(opts, current_index=_settings.mic_mode)))
+                "mic_mode",
+                "Mic Simple Mode",
+                RadioSettingValueList(opts, current_index=_settings.mic_mode),
+            )
+        )
 
         # MIC Gain
         opts = ["1", "2", "3", "4"]
         setmode.append(
             RadioSetting(
-                "mic_gain", "Mic Gain",
-                RadioSettingValueList(opts, current_index=_settings.mic_gain)))
+                "mic_gain",
+                "Mic Gain",
+                RadioSettingValueList(opts, current_index=_settings.mic_gain),
+            )
+        )
 
         # VOX Gain
         opts = ["Off"] + ["%d" % t for t in range(1, 11)]
         setmode.append(
             RadioSetting(
-                "vox_gain", "VOX Gain",
-                RadioSettingValueList(opts, current_index=_settings.vox_gain)))
+                "vox_gain",
+                "VOX Gain",
+                RadioSettingValueList(opts, current_index=_settings.vox_gain),
+            )
+        )
 
         # VOX Delay
-        opts = ["0.5 sec", "1.0 sec", "1.5 sec", "2.0 sec", "2.5 sec",
-                "3.0 sec"]
+        opts = ["0.5 sec", "1.0 sec", "1.5 sec", "2.0 sec", "2.5 sec", "3.0 sec"]
         setmode.append(
             RadioSetting(
-                "vox_delay", "VOX Delay",
-                RadioSettingValueList(
-                    opts, current_index=_settings.vox_delay)))
+                "vox_delay",
+                "VOX Delay",
+                RadioSettingValueList(opts, current_index=_settings.vox_delay),
+            )
+        )
 
         # VOX Time out Timer
-        opts = ["Off", "1 min", "2 min", "3 min", "4 min", "5 min", "10 min",
-                "15 min"]
+        opts = ["Off", "1 min", "2 min", "3 min", "4 min", "5 min", "10 min", "15 min"]
         setmode.append(
             RadioSetting(
-                "vox_tot", "VOX Time-Out Timer",
-                RadioSettingValueList(opts, current_index=_settings.vox_tot)))
+                "vox_tot",
+                "VOX Time-Out Timer",
+                RadioSettingValueList(opts, current_index=_settings.vox_tot),
+            )
+        )
 
         # Select Speed
         opts = ["Manual", "Auto"]
         setmode.append(
             RadioSetting(
-                "sel_speed", "Select Speed",
-                RadioSettingValueList(
-                    opts, current_index=_settings.sel_speed)))
+                "sel_speed",
+                "Select Speed",
+                RadioSettingValueList(opts, current_index=_settings.sel_speed),
+            )
+        )
 
         # Dial Function
         opts = ["Audio Volume", "Tuning Dial"]
         setmode.append(
             RadioSetting(
-                "dial_func", "Dial Function",
-                RadioSettingValueList(
-                    opts, current_index=_settings.dial_func)))
+                "dial_func",
+                "Dial Function",
+                RadioSettingValueList(opts, current_index=_settings.dial_func),
+            )
+        )
 
         # Function Mode
         opts = ["0 sec", "1 sec", "2 sec", "3 sec", "Manual"]
         setmode.append(
             RadioSetting(
-                "func_mode", "Function Mode",
-                RadioSettingValueList(
-                    opts, current_index=_settings.func_mode)))
+                "func_mode",
+                "Function Mode",
+                RadioSettingValueList(opts, current_index=_settings.func_mode),
+            )
+        )
 
         # Backlight
         opts = ["Off", "On", "Auto"]
         display.append(
             RadioSetting(
-                "backlight", "Backlight",
-                RadioSettingValueList(
-                    opts, current_index=_settings.backlight)))
+                "backlight",
+                "Backlight",
+                RadioSettingValueList(opts, current_index=_settings.backlight),
+            )
+        )
 
         # LCD Contrast
         opts = ["Low", "Auto"]
         display.append(
             RadioSetting(
-                "lcd", "LCD Contrast",
-                RadioSettingValueList(opts, current_index=_settings.lcd)))
+                "lcd",
+                "LCD Contrast",
+                RadioSettingValueList(opts, current_index=_settings.lcd),
+            )
+        )
 
         # Memory Display
         opts = ["Frequency", "Channel", "Name"]
         display.append(
             RadioSetting(
-                "mem_display1", "Memory Display",
-                RadioSettingValueList(
-                    opts, current_index=_settings.mem_display1)))
+                "mem_display1",
+                "Memory Display",
+                RadioSettingValueList(opts, current_index=_settings.mem_display1),
+            )
+        )
 
         # Beep
         opts = ["Off", "1", "2", "3"]
         sounds.append(
             RadioSetting(
-                "beep", "Beep",
-                RadioSettingValueList(opts, current_index=_settings.beep)))
+                "beep",
+                "Beep",
+                RadioSettingValueList(opts, current_index=_settings.beep),
+            )
+        )
 
         # Edge
         opts = ["All", "P1", "P2", "P3"]
         scan.append(
             RadioSetting(
-                "edge", "Edge",
-                RadioSettingValueList(opts, current_index=_settings.edge)))
+                "edge",
+                "Edge",
+                RadioSettingValueList(opts, current_index=_settings.edge),
+            )
+        )
 
         # Resume
         opts = ["T-5", "T-10", "T-15", "P-2"]
         scan.append(
             RadioSetting(
-                "resume", "Resume",
-                RadioSettingValueList(opts, current_index=_settings.resume)))
+                "resume",
+                "Resume",
+                RadioSettingValueList(opts, current_index=_settings.resume),
+            )
+        )
 
         return settings
 
@@ -375,7 +437,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
                     LOG.debug("Setting %s = %s" % (setting, element.value))
                     setattr(_settings, setting, element.value)
                     # This appears to need to be mirrored?
-                    if element.get_name() == 'mem_display1':
+                    if element.get_name() == "mem_display1":
                         _settings.mem_display2 = _settings.mem_display1
             except Exception:
                 LOG.debug(element.get_name())
@@ -397,7 +459,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
             if extd_number == "C":
                 _unused = False
 
-        if (_unused & bit):
+        if _unused & bit:
             mem.empty = True
             return mem
 
@@ -411,7 +473,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
             mem.name = str(_mem.name).rstrip()
             mem.skip = (_skip & bit) and "S" or ""
         if not _mem.tx_inhibit:
-            mem.duplex = 'off'
+            mem.duplex = "off"
         else:
             mem.duplex = DUPLEXES[_mem.duplex]
         mem.power = POWER_LEVELS[_mem.power]
@@ -425,8 +487,11 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
 
         # Reverse duplex
         mem.extra = RadioSettingGroup("extra", "Extra")
-        rev = RadioSetting("reverse_duplex", "Reverse duplex",
-                           RadioSettingValueBoolean(bool(_mem.reverse_duplex)))
+        rev = RadioSetting(
+            "reverse_duplex",
+            "Reverse duplex",
+            RadioSettingValueBoolean(bool(_mem.reverse_duplex)),
+        )
         rev.set_doc("Reverse duplex")
         mem.extra.append(rev)
 
@@ -439,8 +504,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
                 extd_number = number
                 number = SPECIAL_CHANNELS[number]
             except KeyError:
-                raise errors.InvalidMemoryLocation(
-                    "Unknown channel %s" % number)
+                raise errors.InvalidMemoryLocation("Unknown channel %s" % number)
 
         return self._get_memory(number, extd_number)
 
@@ -474,7 +538,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
         _mem = self._memobj.memory[mem.number]
         _unused = self._memobj.unused[byte]
         _skip = (mem.extd_number == "") and self._memobj.skip[byte] or None
-        assert (_mem)
+        assert _mem
 
         if mem.empty:
             self._fill_memory(mem)
@@ -483,7 +547,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
                 _skip |= bit
             return
 
-        _mem.set_raw(b'\x00' * 16)
+        _mem.set_raw(b"\x00" * 16)
 
         if chirp_common.required_step(mem.freq) == 12.5:
             mult = 6250
@@ -497,7 +561,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
             _mem.duplex = DUPLEXES.index(mem.duplex)
         except ValueError:
             _mem.duplex = 0
-        _mem.tx_inhibit = mem.duplex != 'off'
+        _mem.tx_inhibit = mem.duplex != "off"
         power = mem.power or POWER_LEVELS[0]
         _mem.power = POWER_LEVELS.index(power)
         _mem.tuning_step = TUNING_STEPS.index(mem.tuning_step)
@@ -519,7 +583,7 @@ class ICV80Radio(icf.IcomCloneModeRadio, chirp_common.ExperimentalRadio):
                 _skip &= ~bit
 
         if mem.extra:
-            _mem.reverse_duplex = mem.extra['reverse_duplex'].value
+            _mem.reverse_duplex = mem.extra["reverse_duplex"].value
 
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number])
