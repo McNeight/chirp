@@ -106,6 +106,10 @@ class KenwoodToneModel:
         :param pol: Polarity string ("N" or "R") or None for CTCSS
         :return: Binary tone value
         """
+
+        assert isinstance(code, (int, float, type(None))
+                          ), "Expected either int, float, or None"
+
         if code is None:
             return 0x0000
 
@@ -114,8 +118,9 @@ class KenwoodToneModel:
             if pol == "R":
                 val += self.pol_mask
             return val
-
-        return int(code * 10) + self.tone_flag
+        else:
+            freq = int(round(code * 10))
+            return int("%i" % freq, self.tone_enc_base) + self.tone_flag
 
     def set_tone(self, mem, _mem):
         """
